@@ -12,6 +12,10 @@ def load_config(config_path):
     exclusions.setdefault('filenames', [])
     exclusions.setdefault('extensions', [])
     exclusions.setdefault('folders', [])
+    inclusion_groups = filters.get('inclusion_groups', {})
+    for group in inclusion_groups.values():
+        group.setdefault('enabled', False)
+        group.setdefault('filenames', [])
     return config
 
 
@@ -56,6 +60,11 @@ def find_and_combine_files(config):
     exclude_filenames = set(exclude_conf.get('filenames') or [])
     exclude_extensions = tuple(exclude_conf.get('extensions') or [])
     allowed_extensions = tuple(search_opts.get('allowed_extensions') or [])
+    inclusion_groups = filter_opts.get('inclusion_groups', {})
+    include_filenames = set()
+    for group_conf in inclusion_groups.values():
+        if group_conf.get('enabled'):
+            include_filenames.update(group_conf.get('filenames') or [])
 
     with open(output_file, 'w', encoding='utf8') as outfile:
         is_first_file = True
@@ -76,6 +85,8 @@ def find_and_combine_files(config):
                     if exclude_extensions and file.endswith(exclude_extensions):
                         continue
                     if allowed_extensions and not file.endswith(allowed_extensions):
+                        continue
+                    if include_filenames and file not in include_filenames:
                         continue
 
                     file_path = os.path.join(root, file)

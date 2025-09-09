@@ -33,6 +33,20 @@ filters:
   # Files larger than this (in bytes) will be skipped.
   max_size_bytes: 200000 #200 KB
 
+  # --- INCLUSION GROUPS ---
+  # Define groups of filenames that can be toggled on or off. When at least one
+  # group is enabled, only files listed in enabled groups will be processed.
+  inclusion_groups:
+    core_files:
+      enabled: true
+      filenames:
+        - 'sourcecombine.py'
+        - 'utils.py'
+    experimental_files:
+      enabled: false
+      filenames:
+        - 'experimental.py'
+
   # --- EXCLUSION RULES ---
   # Files and folders matching these rules will be skipped.
   exclusions:
@@ -48,21 +62,21 @@ filters:
     folders:
       - '.git'
 
-# --- Content Processing Options ---
-processing:
-  # If true, attempts to clean up and compact whitespace.
-  compact_whitespace: false
+  # --- Content Processing Options ---
+  processing:
+    # If true, attempts to clean up and compact whitespace.
+    compact_whitespace: false
 
-  # If true, removes all C-style block comments (/* ... */).
-  remove_all_c_style_comments: false
+    # If true, removes all C-style block comments (/* ... */).
+    remove_all_c_style_comments: false
 
-  # If true, removes only the *first* C-style block comment if it's at the top of the file.
-  remove_first_c_style_comment: false
+    # If true, removes only the *first* C-style block comment if it's at the top of the file.
+    remove_first_c_style_comment: false
 
-  # If true, replaces sequential lines of function calls with hex parameters with a placeholder.
-  remove_data_table: false
+    # If true, replaces sequential lines of function calls with hex parameters with a placeholder.
+    remove_data_table: false
 
-  # A regex pattern to snip content. The part to KEEP should be in the first capture group.
-  # Example: 'start_marker[\s\S]*?(content_to_keep)[\s\S]*?end_marker'
-  # Set to "" to disable.
-  snip_pattern: ""
+    # A regex pattern to snip content. The part to KEEP should be in the first capture group.
+    # Example: 'start_marker[\s\S]*?(content_to_keep)[\s\S]*?end_marker'
+    # Set to "" to disable.
+    snip_pattern: ""
