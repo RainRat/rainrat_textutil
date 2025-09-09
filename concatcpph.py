@@ -1,31 +1,14 @@
-import os
 from pathlib import Path
 import re
-import yaml
 import argparse
 import sys
+from utils import load_yaml_config, read_file_best_effort, normalize_whitespace, remove_hex_pattern_lines
 
-# The DEFAULT_CONFIG dictionary has been removed. All configuration
-# now comes exclusively from the mandatory YAML file.
 
 def load_config(config_file_path):
-    """Loads and validates configuration from the provided YAML file."""
-    print(f"Loading configuration from: {config_file_path}")
-    try:
-        with open(config_file_path, 'r') as f:
-            config = yaml.safe_load(f)
-            if not config:
-                print(f"Error: Configuration file '{config_file_path}' is empty or invalid.")
-                sys.exit(1)
-    except FileNotFoundError:
-        print(f"Error: Configuration file not found at '{config_file_path}'.")
-        sys.exit(1)
-    except yaml.YAMLError as e:
-        print(f"Error parsing YAML file: {e}")
-        sys.exit(1)
+    """Load and validate configuration from the provided YAML file."""
+    config = load_yaml_config(config_file_path)
 
-    # --- Configuration Validation ---
-    # Ensure all required top-level keys are present in the YAML file.
     required_keys = [
         'SOURCE_FOLDER', 'OUTPUT_FOLDER', 'RECURSE_SUBFOLDERS', 'INCLUDE_MISMATCHED_FILES',
         'SOURCE_EXTENSIONS', 'HEADER_EXTENSIONS', 'SINGLE_OUTPUT_FILE', 'MAX_FILE_SIZE_MB',
@@ -35,11 +18,10 @@ def load_config(config_file_path):
     if missing_keys:
         print(f"Error: Config file is missing required keys: {', '.join(missing_keys)}")
         sys.exit(1)
-    
-    # Ensure all required keys are present in the nested SHRINK_METHODS dictionary.
+
     if isinstance(config.get('SHRINK_METHODS'), dict):
         required_shrink_keys = [
-            'remove_initial_comment', 'normalize_whitespace', 
+            'remove_initial_comment', 'normalize_whitespace',
             'remove_hex_pattern_lines', 'regex_snips'
         ]
         missing_shrink_keys = [key for key in required_shrink_keys if key not in config['SHRINK_METHODS']]
@@ -50,21 +32,21 @@ def load_config(config_file_path):
         print("Error: 'SHRINK_METHODS' key must be a dictionary.")
         sys.exit(1)
 
-    # Ensure extension lists are tuples for the script to use
     config['SOURCE_EXTENSIONS'] = tuple(config['SOURCE_EXTENSIONS'])
     config['HEADER_EXTENSIONS'] = tuple(config['HEADER_EXTENSIONS'])
+    config['SINGLE_OUTPUT_FILENAME'] = config.get('SINGLE_OUTPUT_FILENAME', 'combined_output.txt')
     print("Configuration successfully loaded and validated.")
     return config
 
+
 def content_shrink(content, config):
-    """Shrinks file content based on methods enabled in the configuration."""
+    """Shrink file content based on methods enabled in the configuration."""
     shrink_settings = config.get('SHRINK_METHODS', {})
 
-    if shrink_settings.get('remove_initial_comment'):
-        if content.lstrip().startswith('/*'):
-            end_index = content.find('*/', 2)
-            if end_index != -1:
-                content = content[:content.find('/*')].rstrip() + content[end_index + 2:].lstrip()
+    if shrink_settings.get('remove_initial_comment') and content.lstrip().startswith('/*'):
+        end_index = content.find('*/', 2)
+        if end_index != -1:
+            content = content[:content.find('/*')].rstrip() + content[end_index + 2:].lstrip()
 
     for rule in shrink_settings.get('regex_snips', []):
         if rule.get('enabled') and 'pattern' in rule and 'replacement' in rule:
@@ -74,35 +56,13 @@ def content_shrink(content, config):
                 print(f"Warning: Invalid regex pattern in config: '{rule['pattern']}'. Error: {e}")
 
     if shrink_settings.get('normalize_whitespace'):
-        previous = None
-        while previous != content:
-            previous = content
-            content=content.replace('    ', '\t').replace('\r', '\n')
-            content=content.replace('\t ', '\t').replace(' \n', '\n').replace('\n\n\n', '\n\n').replace('\t\n', '\n').replace('  ', ' ').replace('\t=', ' =').replace(' \t', '\t')
-            content=re.sub(r'(?<!\n|\t)\t', ' ', content)
+        content = normalize_whitespace(content)
 
     if shrink_settings.get('remove_hex_pattern_lines'):
-        pattern = r"^\s*\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$"
-        lines = content.splitlines()
-        filtered_lines = [line for line in lines if not re.match(pattern, line)]
-        content = "\n".join(filtered_lines)
+        content = remove_hex_pattern_lines(content)
 
     return content
 
-# The rest of the functions (read_file_safe, write_content, combine_headers)
-# remain the same as the previous version. They already correctly use the `config` object.
-
-def read_file_safe(file_path):
-    """Attempt to read a file with different encodings."""
-    encodings = ['utf-8', 'latin-1', 'ascii', 'utf-16']
-    for encoding in encodings:
-        try:
-            with file_path.open('r', encoding=encoding) as f:
-                return f.read()
-        except UnicodeDecodeError:
-            continue
-    print(f"Warning: Could not decode {file_path} with any of the attempted encodings.")
-    return ""
 
 def write_content(content, file_path, config):
     """Write content to a file, respecting the max file size limit and adding a truncation note if necessary."""
@@ -111,7 +71,9 @@ def write_content(content, file_path, config):
 
     if len(encoded_content) > max_size:
         print(f"Warning: Content for {file_path} exceeds max size limit. Truncating.")
-        truncation_note = f"\n\n--- CONTENT TRUNCATED ---\nThis file has been truncated to {config['MAX_FILE_SIZE_MB']} MB due to size limitations.\nSome content may be missing.\n"
+        truncation_note = (
+            f"\n\n--- CONTENT TRUNCATED ---\nThis file has been truncated to {config['MAX_FILE_SIZE_MB']} MB due to size limitations.\nSome content may be missing.\n"
+        )
         note_size = len(truncation_note.encode('utf-8'))
         truncated_content = content.encode('utf-8')[:max_size - note_size].decode('utf-8', 'ignore')
         truncated_content = truncated_content.rsplit('\n', 1)[0]
@@ -121,6 +83,7 @@ def write_content(content, file_path, config):
 
     with file_path.open('w', encoding='utf-8') as f:
         f.write(final_content)
+
 
 def combine_headers(config):
     """Combine source and header files based on configuration settings."""
@@ -152,12 +115,12 @@ def combine_headers(config):
                     if potential_matching_file.exists():
                         matching_file = potential_matching_file
                         break
-            
-            shrunk_source = content_shrink(read_file_safe(source_file), config)
+
+            shrunk_source = content_shrink(read_file_best_effort(source_file), config)
             content = f"{source_file.name}:\n```\n{shrunk_source}\n```\n\n"
 
             if matching_file:
-                shrunk_header = content_shrink(read_file_safe(matching_file), config)
+                shrunk_header = content_shrink(read_file_best_effort(matching_file), config)
                 content += f"{matching_file.name}:\n```\n{shrunk_header}\n```\n\n"
                 processed_files.add(matching_file)
             elif not config['INCLUDE_MISMATCHED_FILES']:
@@ -172,9 +135,9 @@ def combine_headers(config):
             processed_files.add(source_file)
 
     if config['SINGLE_OUTPUT_FILE']:
-        single_output_file = output_folder / "combined_output.txt"
+        single_output_file = output_folder / config['SINGLE_OUTPUT_FILENAME']
         write_content(combined_content, single_output_file, config)
-    
+
     print("\nProcessing complete.")
 
 
@@ -183,9 +146,8 @@ if __name__ == "__main__":
         description="Combines source/header files based on a YAML configuration.",
         epilog="Example: python combiner.py my_config.yml"
     )
-    # The config_file argument is now mandatory (no 'nargs=?' or 'default').
     parser.add_argument('config_file', help='Path to the .yml configuration file.')
-    
+
     args = parser.parse_args()
     config = load_config(args.config_file)
     combine_headers(config)
