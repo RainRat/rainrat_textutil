@@ -1,0 +1,95 @@
+# ================================================================
+# Comprehensive configuration template for the File Combiner Tool
+# Lists every available option with default values and explanations.
+# ================================================================
+
+# --- Search Parameters ---
+search:
+  # Paths to scan for files.
+  # Replace with one or more folders on your system.
+  root_folders:
+    - '/path/to/project'
+
+  # Search folders recursively.
+  recursive: true
+
+  # Only include files with these extensions. Leave empty to include all.
+  # Mutually exclusive with `pairing` and `inclusion_groups`.
+  # This option CANNOT be used when `pairing.enabled` is true or when any
+  # `inclusion_groups` item is enabled. The script will raise a
+  # configuration error if these options are combined.
+  # For pairing, extensions are defined in `pairing.source_extensions` and
+  # `pairing.header_extensions`.
+  # For inclusion groups, specify file types within the glob patterns
+  # (e.g., 'src/**/*.py').
+  allowed_extensions: []
+
+# --- Output Configuration ---
+output:
+  # When pairing is disabled, all content is written to this file.
+  file: 'combined_files.txt'
+
+  # When pairing is enabled, each pair is written to this folder. Omit or set to null
+  # to place the .combined files next to their source files.
+  folder: null
+
+  # Add line numbers starting at 1 for each file.
+  add_line_numbers: false
+
+  # Template written before each file's content.
+  # The special sequence "{{FILENAME}}" is replaced with the file's
+  # path relative to the root folder. Set to null or an empty string
+  # to omit the header.
+  header_template: "{{FILENAME}}:\n```\n"
+
+  # Template written after each file's content.
+  # "{{FILENAME}}" is replaced with the file's relative path. Set to null
+  # or an empty string to omit the footer/separator.
+  footer_template: "\n```\n\n"
+
+# --- File Filtering ---
+filters:
+  # Files smaller than this (bytes) are skipped.
+  min_size_bytes: 0
+
+  # Files larger than this (bytes) are skipped. Omit or set 0 for no limit.
+  max_size_bytes: 0
+
+  # --- Inclusion Groups ---
+  # Enable specific groups to only include listed filenames or glob patterns.
+  # Mutually exclusive with ``search.allowed_extensions``; specify file types within the patterns instead.
+  inclusion_groups:
+    example_group:
+      enabled: false
+      filenames: []
+
+  # --- Exclusion Rules ---
+  exclusions:
+    filenames: []      # Skip files matching glob patterns (e.g., '*.log', 'tests/*').
+    # Exclude folders if any directory name in the path matches one of these
+    # patterns (e.g., 'build' excludes ./build and ./src/app/build). Case-insensitive.
+    folders: []
+
+# --- Content Processing Options ---
+processing:
+  compact_whitespace: false       # Compact and clean up whitespace
+  remove_all_c_style_comments: false  # Drop all /* ... */ comments
+  remove_initial_c_style_comment: false        # Drop first block comment if at file start
+  line_regex_replacements: []      # Collapse blocks of lines matching regexes
+  # Example line rule:
+  # line_regex_replacements:
+  #   - pattern: '^\s*\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$'
+  #     replacement: '<data removed>'
+  regex_replacements: []           # List of regex find/replace rules
+  # Example rule:
+  # regex_replacements:
+  #   - pattern: '^\s*//\s*TODO:.*$'
+  #     replacement: ''
+
+
+# --- Pairing Options ---
+pairing:
+  enabled: false
+  include_mismatched: false         # Include files without a pair
+  source_extensions: []             # e.g., ['.cpp', '.c']
+  header_extensions: []             # e.g., ['.h', '.hpp']

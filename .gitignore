@@ -1,0 +1,4 @@
+private*.yml
+combined_files.txt
+*.bak
+__pycache__

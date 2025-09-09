@@ -1,0 +1,47 @@
+# ================================================================
+# Configuration for the File Combiner Tool
+# ================================================================
+
+# --- Search Parameters ---
+search:
+  # List of root folders to search for files.
+  root_folders:
+    - 'C:\Users\Guest\GitHub\myproject'
+
+  # Whether to search recursively through subdirectories.
+  recursive: true
+
+  # List of file extensions to include.
+  # If this list is empty, all extensions are included (subject to exclusions).
+  allowed_extensions:
+      - '.txt' # or '.py'
+
+# --- Output Configuration ---
+output:
+  # The path for the final combined text file.
+  file: 'combined_files.txt'
+
+  # Write nothing before each file and insert a blank line after each file.
+  # Setting the header template to null omits headers entirely.
+  header_template: null
+  footer_template: "\n\n"
+
+# --- File Filtering ---
+filters:
+  # Files smaller than this (in bytes) will be skipped.
+  min_size_bytes: 4
+
+  # Files larger than this (in bytes) will be skipped.
+  max_size_bytes: 209715200 # 200 MiB
+
+  # --- Exclusion Rules ---
+  # Files and folders matching these rules will be skipped.
+  exclusions:
+    # Exclude files matching these glob patterns (e.g., 'test.py', '*.log').
+    filenames:
+      - '*.log'
+
+    # Exclude folders if any directory name in the path matches one of these
+    # patterns (e.g., 'build' excludes ./build and ./src/app/build). Case-insensitive.
+    folders:
+      - '.git'
