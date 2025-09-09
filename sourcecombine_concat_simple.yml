@@ -1,0 +1,71 @@
+# ================================================================
+# Configuration for the File Combiner Tool
+# ================================================================
+
+# --- Search Parameters ---
+search:
+  # List of root folders to search for files.
+  root_folders:
+    - 'C:\Users\Guest\GitHub\myproject'
+
+  # Whether to search recursively through subdirectories.
+  recursive: true
+
+  # List of file extensions to include.
+  # If this list is empty or omitted, ALL file extensions will be included
+  # (subject to the exclusion rules below).
+  allowed_extensions:
+      - '.txt'
+
+# --- Output Configuration ---
+output:
+  # The path for the final combined text file.
+  file: 'combined_files.txt'
+
+  # If true, prints a header like "path/to/file.py:\n```" for each file.
+  include_headers: false
+
+  # A string to insert between files ONLY when include_headers is false.
+  # Use "\n" for a simple newline.
+  no_header_separator: "\n"
+
+# --- File Filtering ---
+filters:
+  # Files smaller than this (in bytes) will be skipped.
+  min_size_bytes: 4
+
+  # Files larger than this (in bytes) will be skipped.
+  max_size_bytes: 200000000 #200 MB
+
+  # --- EXCLUSION RULES ---
+  # Files and folders matching these rules will be skipped.
+  exclusions:
+    # Exclude specific full filenames.
+    filenames:
+
+    # Exclude all files with these extensions.
+    extensions:
+
+    # Exclude entire folders. The script will not enter these directories.
+    # This is case-sensitive.
+    folders:
+      - '.git'
+
+# --- Content Processing Options ---
+processing:
+  # If true, attempts to clean up and compact whitespace.
+  compact_whitespace: false
+
+  # If true, removes all C-style block comments (/* ... */).
+  remove_all_c_style_comments: false
+
+  # If true, removes only the *first* C-style block comment if it's at the top of the file.
+  remove_first_c_style_comment: false
+
+  # If true, replaces sequential lines of function calls with hex parameters with a placeholder.
+  remove_data_table: false
+
+  # A regex pattern to snip content. The part to KEEP should be in the first capture group.
+  # Example: 'start_marker[\s\S]*?(content_to_keep)[\s\S]*?end_marker'
+  # Set to "" to disable.
+  snip_pattern: ""

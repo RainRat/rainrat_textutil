@@ -1,0 +1,43 @@
+# This is the complete configuration file for the script.
+# All settings must be defined here.
+
+# --- File and Folder Paths ---
+SOURCE_FOLDER: 'c:\\path\\to\\your\\source_code'
+OUTPUT_FOLDER: 'c:\\path\\to\\your\\output_folder'
+
+# --- File Discovery Options ---
+RECURSE_SUBFOLDERS: true
+INCLUDE_MISMATCHED_FILES: true
+SOURCE_EXTENSIONS: ['.cpp', '.c', '.cc', '.cxx']
+HEADER_EXTENSIONS: ['.h', '.hpp', '.hxx']
+
+# --- Output Options ---
+SINGLE_OUTPUT_FILE: false
+MAX_FILE_SIZE_MB: 200
+
+# --- File Shrinking Methods ---
+# All shrinking methods are configured in this section.
+SHRINK_METHODS:
+  # Removes the first /* ... */ block comment from a file.
+  remove_initial_comment: true
+  
+  # Performs a series of whitespace normalization steps.
+  normalize_whitespace: true
+  
+  # Removes lines that match a specific function(0xHEX, 0xHEX) pattern.
+  remove_hex_pattern_lines: true
+  
+  # A list of custom regex rules to apply to the content.
+  # The script will iterate through this list and apply each enabled rule.
+  # Each rule must have 'enabled', 'pattern', and 'replacement'.
+  regex_snips:
+
+    # - enabled: true
+    #   # Example: Remove C-style block comments marked with /* REMOVE */
+    #   pattern: '\/\*\s*REMOVE\s*\*\/[\s\S]*?\*\/\s*\n?'
+    #   replacement: ''
+
+    # - enabled: true
+    #   # Example: Remove single-line TODO comments
+    #   pattern: '\/\/\s*TODO:.*'
+    #   replacement: ''
