@@ -13,6 +13,7 @@ HEADER_EXTENSIONS: ['.h', '.hpp', '.hxx']
 
 # --- Output Options ---
 SINGLE_OUTPUT_FILE: false
+SINGLE_OUTPUT_FILENAME: 'combined_output.txt'
 MAX_FILE_SIZE_MB: 200
 
 # --- File Shrinking Methods ---

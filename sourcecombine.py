@@ -1,48 +1,28 @@
 import os
 import re
-import sys
 import argparse
-import yaml
+from utils import load_yaml_config, read_file_best_effort, normalize_whitespace, remove_hex_pattern_lines
+
 
 def load_config(config_path):
-    """Loads and validates the YAML configuration file."""
-    try:
-        with open(config_path, 'r', encoding='utf-8') as f:
-            config = yaml.safe_load(f)
-        filters = config.get('filters', {})
-        exclusions = filters.get('exclusions', {})
-        exclusions.setdefault('filenames', [])
-        exclusions.setdefault('extensions', [])
-        exclusions.setdefault('folders', [])
-        return config
-    except FileNotFoundError:
-        print(f"Error: Configuration file not found at '{config_path}'")
-        sys.exit(1)
-    except yaml.YAMLError as e:
-        print(f"Error parsing YAML file: {e}")
-        sys.exit(1)
+    """Load and validate the YAML configuration file."""
+    config = load_yaml_config(config_path)
+    filters = config.get('filters', {})
+    exclusions = filters.get('exclusions', {})
+    exclusions.setdefault('filenames', [])
+    exclusions.setdefault('extensions', [])
+    exclusions.setdefault('folders', [])
+    return config
 
-def open_file_best_effort(file_path):
-    """Tries to open a file with utf-8, falling back to latin-1."""
-    try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            return file.read()
-    except UnicodeDecodeError:
-        try:
-            with open(file_path, 'r', encoding='latin-1') as file:
-                return file.read()
-        except Exception as e:
-            return f"Unable to read file {file_path}: {e}"
-    except Exception as e:
-        return f"Unable to open file {file_path}: {e}"
 
 def remove_c_style_comments(text):
-    """Removes all C-style block comments."""
+    """Remove all C-style block comments."""
     pattern = r'/\*.*?\*/'
     return re.sub(pattern, '', text, flags=re.DOTALL)
 
+
 def process_file_content(buffer, config):
-    """Applies various text processing rules from the config to the file content."""
+    """Apply various text processing rules from the config to the file content."""
     proc_opts = config.get('processing', {})
     if proc_opts.get('remove_first_c_style_comment') and buffer.lstrip().startswith('/*'):
         end_index = buffer.find('*/', 2)
@@ -53,33 +33,15 @@ def process_file_content(buffer, config):
     if proc_opts.get('snip_pattern'):
         buffer = re.sub(proc_opts['snip_pattern'], r'\1', buffer, flags=re.DOTALL)
     if proc_opts.get('compact_whitespace'):
-        previous = None
-        while previous != buffer:
-            previous = buffer
-            buffer = buffer.replace('    ', '\t').replace('\r', '')
-        previous = None
-        while previous != buffer:
-            previous = buffer
-            buffer = buffer.replace('\t ', '\t').replace(' \n', '\n').replace('\n\n\n', '\n\n').replace('\t\n', '\n')
-            buffer = re.sub(r'(?<!\n|\t)\t', ' ', buffer)
+        buffer = normalize_whitespace(buffer)
     if proc_opts.get('remove_data_table'):
-        pattern = re.compile(r"^(\s*)\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$")
-        lines = buffer.splitlines()
-        placeholder_inserted = False
-        out_lines = []
-        for line in lines:
-            m = pattern.match(line)
-            if m:
-                if not placeholder_inserted:
-                    out_lines.append(f"{m.group(1)}[magic tables removed to save context space]")
-                    placeholder_inserted = True
-            else:
-                out_lines.append(line)
-        buffer = "\n".join(out_lines)
+        placeholder = "[magic tables removed to save context space]"
+        buffer = remove_hex_pattern_lines(buffer, placeholder)
     return buffer
 
+
 def find_and_combine_files(config):
-    """Finds, filters, and combines files based on the provided configuration."""
+    """Find, filter, and combine files based on the provided configuration."""
     search_opts = config.get('search', {})
     filter_opts = config.get('filters', {})
     output_opts = config.get('output', {})
@@ -87,7 +49,6 @@ def find_and_combine_files(config):
     output_file = output_opts.get('file', 'combined_files.txt')
     include_headers = output_opts.get('include_headers', True)
     no_header_separator = output_opts.get('no_header_separator', '\n\n')
-    # --- NEW: Get line number option ---
     add_line_numbers_opt = output_opts.get('add_line_numbers', False)
 
     exclude_conf = filter_opts.get('exclusions', {})
@@ -97,7 +58,7 @@ def find_and_combine_files(config):
     allowed_extensions = tuple(search_opts.get('allowed_extensions') or [])
 
     with open(output_file, 'w', encoding='utf8') as outfile:
-        is_first_file = True  # Flag to manage the separator for no-header mode
+        is_first_file = True
         for root_folder in search_opts.get('root_folders') or []:
             if not os.path.isdir(root_folder):
                 print(f"Warning: Root folder '{root_folder}' does not exist. Skipping.")
@@ -116,9 +77,9 @@ def find_and_combine_files(config):
                         continue
                     if allowed_extensions and not file.endswith(allowed_extensions):
                         continue
-                        
+
                     file_path = os.path.join(root, file)
-                    
+
                     try:
                         file_size = os.path.getsize(file_path)
                         min_size = filter_opts.get('min_size_bytes', 0)
@@ -126,19 +87,17 @@ def find_and_combine_files(config):
                         if not (min_size <= file_size <= max_size):
                             continue
                     except OSError:
-                        continue 
+                        continue
 
                     print(f"Processing: {file_path}")
-                    content = open_file_best_effort(file_path)
+                    content = read_file_best_effort(file_path)
                     processed_content = process_file_content(content, config)
 
-                    # --- NEW: Add line numbers if requested ---
                     if add_line_numbers_opt:
                         lines = processed_content.splitlines()
                         numbered_lines = [f"{i+1}: {line}" for i, line in enumerate(lines)]
                         processed_content = "\n".join(numbered_lines)
 
-                    # --- Conditional logic for writing output ---
                     if include_headers:
                         relative_path = os.path.relpath(file_path, root_folder)
                         outfile.write(f"{relative_path}:\n```\n")
@@ -150,6 +109,7 @@ def find_and_combine_files(config):
                         outfile.write(processed_content)
                         is_first_file = False
 
+
 def main():
     """Main function to parse arguments and run the tool."""
     parser = argparse.ArgumentParser(description="Combine files into a single text file based on a YAML configuration.")
@@ -160,6 +120,7 @@ def main():
     find_and_combine_files(config)
     output_file = config.get('output', {}).get('file', 'combined_files.txt')
     print(f"\nDone. Combined files have been written to '{output_file}'.")
+
 
 if __name__ == "__main__":
     main()
