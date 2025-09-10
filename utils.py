@@ -51,7 +51,16 @@ def normalize_whitespace(text):
 
 
 def remove_hex_pattern_lines(text, placeholder=None):
-    """Remove lines matching a hex pattern, optionally inserting a placeholder once."""
+    """Remove lines matching a hex pattern.
+
+    Parameters
+    ----------
+    text : str
+        The input text to filter.
+    placeholder : str, optional
+        If provided, this string is inserted once in place of the removed
+        lines. When ``None``, matching lines are simply deleted.
+    """
     pattern = re.compile(r"^\s*\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$")
     lines = text.splitlines()
     out_lines = []
@@ -67,7 +76,11 @@ def remove_hex_pattern_lines(text, placeholder=None):
 
 
 def load_and_validate_config(config_file_path, required_keys=None, defaults=None, nested_required=None):
-    """Load a YAML config file and enforce required keys and defaults."""
+    """Load a YAML config file and enforce required keys and defaults.
+
+    ``defaults`` may contain nested dictionaries, which are merged recursively
+    into the loaded configuration.
+    """
     config = load_yaml_config(config_file_path)
 
     if required_keys:
@@ -77,8 +90,16 @@ def load_and_validate_config(config_file_path, required_keys=None, defaults=None
             sys.exit(1)
 
     if defaults:
-        for key, value in defaults.items():
-            config.setdefault(key, value)
+        def apply_defaults(cfg, defs):
+            for key, value in defs.items():
+                if isinstance(value, dict):
+                    node = cfg.setdefault(key, {})
+                    if isinstance(node, dict):
+                        apply_defaults(node, value)
+                else:
+                    cfg.setdefault(key, value)
+
+        apply_defaults(config, defaults)
 
     if nested_required:
         for key, subkeys in nested_required.items():
@@ -109,7 +130,17 @@ def remove_c_style_comments(text):
 
 
 def process_content(buffer, options):
-    """Process text based on a dictionary of options."""
+    """Process text based on a dictionary of options.
+
+    Supported options include:
+    - ``remove_initial_comment`` (bool)
+    - ``remove_all_c_style_comments`` (bool)
+    - ``snip_pattern`` (str)
+    - ``regex_snips`` (list of dicts with ``pattern`` and ``replacement``)
+    - ``normalize_whitespace`` (bool)
+    - ``remove_hex_pattern_lines`` (bool or str): if a string is provided, it
+      will be used as placeholder text when matching lines are removed.
+    """
     if not options:
         return buffer
 

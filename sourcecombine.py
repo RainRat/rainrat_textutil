@@ -5,30 +5,32 @@ from utils import (
     read_file_best_effort,
     process_content,
     load_and_validate_config,
-    ensure_dict,
     add_line_numbers,
 )
 
 
 def load_config(config_path):
     """Load and validate the YAML configuration file."""
-    config = load_and_validate_config(config_path)
-    filters = ensure_dict(config, 'filters')
-    ensure_dict(filters, 'exclusions', {
-        'filenames': [],
-        'extensions': [],
-        'folders': [],
-    })
-    inclusion_groups = ensure_dict(filters, 'inclusion_groups')
-    for group in inclusion_groups.values():
+    defaults = {
+        'filters': {
+            'exclusions': {
+                'filenames': [],
+                'extensions': [],
+                'folders': [],
+            },
+            'inclusion_groups': {},
+        },
+        'pairing': {
+            'enabled': False,
+            'source_extensions': [],
+            'header_extensions': [],
+            'include_mismatched': False,
+        },
+    }
+    config = load_and_validate_config(config_path, defaults=defaults)
+    for group in config['filters']['inclusion_groups'].values():
         group.setdefault('enabled', False)
         group.setdefault('filenames', [])
-    ensure_dict(config, 'pairing', {
-        'enabled': False,
-        'source_extensions': [],
-        'header_extensions': [],
-        'include_mismatched': False,
-    })
     return config
 
 
