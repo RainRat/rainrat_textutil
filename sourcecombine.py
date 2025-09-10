@@ -97,8 +97,7 @@ def should_include(
     try:
         file_size = file_path.stat().st_size
         min_size = filter_opts.get('min_size_bytes', 0)
-        max_size_conf = filter_opts.get('max_size_bytes')
-        max_size = float('inf') if not max_size_conf else max_size_conf
+        max_size = filter_opts.get('max_size_bytes') or float('inf')
         if not (min_size <= file_size <= max_size):
             return False
     except OSError:

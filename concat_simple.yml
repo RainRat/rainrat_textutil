@@ -38,7 +38,7 @@ filters:
   min_size_bytes: 4
 
   # Files larger than this (in bytes) will be skipped.
-  max_size_bytes: 200000000 #200 MB
+  max_size_bytes: 209715200 # 200 MiB
 
   # --- EXCLUSION RULES ---
   # Files and folders matching these rules will be skipped.
@@ -72,8 +72,7 @@ processing:
   # Regex-based text transformations. Each rule should provide:
   #   pattern: 'regex'
   #   replacement: 'replacement text'
-  # To mimic the legacy "snip_pattern" option, use a rule with a capture group
-  # and set the replacement to "\1".
+  # Capture groups can be referenced in the replacement string, such as "\1".
   regex_snips: []
   # Example usage:
   # regex_snips:
