@@ -36,6 +36,163 @@ def load_config(config_path):
     )
 
 
+def should_include(
+    file_path,
+    root_path,
+    *,
+    exclude_folders,
+    exclude_filenames,
+    exclude_extensions,
+    allowed_extensions,
+    include_filenames,
+    filter_opts,
+):
+    """Return ``True`` if ``file_path`` passes all filtering rules."""
+    if not file_path.is_file():
+        return False
+    if any(part in exclude_folders for part in file_path.relative_to(root_path).parts[:-1]):
+        return False
+    file_name = file_path.name
+    if file_name in exclude_filenames:
+        return False
+    if exclude_extensions and file_path.suffix in exclude_extensions:
+        return False
+    if allowed_extensions and file_path.suffix not in allowed_extensions:
+        return False
+    if include_filenames and file_name not in include_filenames:
+        return False
+    try:
+        file_size = file_path.stat().st_size
+        min_size = filter_opts.get('min_size_bytes', 0)
+        max_size = filter_opts.get('max_size_bytes', float('inf'))
+        if not (min_size <= file_size <= max_size):
+            return False
+    except OSError:
+        return False
+    return True
+
+
+def collect_file_paths(root_folder, recursive):
+    """Return all paths in ``root_folder`` respecting ``recursive``."""
+    root_path = Path(root_folder)
+    if not root_path.is_dir():
+        print(f"Warning: Root folder '{root_folder}' does not exist. Skipping.")
+        return [], None
+    iter_paths = root_path.rglob('*') if recursive else root_path.glob('*')
+    return list(iter_paths), root_path
+
+
+def filter_and_pair_paths(
+    file_paths,
+    root_path,
+    *,
+    pairing_enabled,
+    source_exts,
+    header_exts,
+    include_mismatched,
+    exclude_folders,
+    exclude_filenames,
+    exclude_extensions,
+    allowed_extensions,
+    include_filenames,
+    filter_opts,
+):
+    """Apply filtering and optional pairing to ``file_paths``."""
+    filtered = [
+        p
+        for p in file_paths
+        if should_include(
+            p,
+            root_path,
+            exclude_folders=exclude_folders,
+            exclude_filenames=exclude_filenames,
+            exclude_extensions=exclude_extensions,
+            allowed_extensions=allowed_extensions,
+            include_filenames=include_filenames,
+            filter_opts=filter_opts,
+        )
+    ]
+    if not pairing_enabled:
+        return filtered
+    file_map = {}
+    for file_path in filtered:
+        file_map.setdefault(file_path.stem, {})[file_path.suffix] = file_path
+    paired = []
+    for stem_files in file_map.values():
+        src = next((stem_files.get(ext) for ext in source_exts if stem_files.get(ext)), None)
+        hdr = next((stem_files.get(ext) for ext in header_exts if stem_files.get(ext)), None)
+        if src and hdr:
+            paired.extend([src, hdr])
+        elif include_mismatched and (src or hdr):
+            paired.append(src or hdr)
+    return paired
+
+
+def handle_file(
+    file_path,
+    root_path,
+    outfile,
+    is_first_file,
+    *,
+    include_headers,
+    no_header_separator,
+    add_line_numbers_opt,
+    dry_run,
+    config,
+):
+    """Read, process, and write a single file."""
+    if dry_run:
+        print(file_path.resolve())
+        return is_first_file
+
+    print(f"Processing: {file_path}")
+    content = read_file_best_effort(file_path)
+    processed_content = process_content(content, config.get('processing', {}))
+
+    if add_line_numbers_opt:
+        processed_content = add_line_numbers(processed_content)
+
+    if include_headers:
+        relative_path = file_path.relative_to(root_path)
+        outfile.write(f"{relative_path}:\n```\n")
+        outfile.write(processed_content)
+        outfile.write("\n```\n\n")
+    else:
+        if not is_first_file:
+            outfile.write(no_header_separator)
+        outfile.write(processed_content)
+        is_first_file = False
+    return is_first_file
+
+
+def write_files(
+    file_paths,
+    root_path,
+    outfile,
+    *,
+    config,
+    dry_run,
+    include_headers,
+    no_header_separator,
+    add_line_numbers_opt,
+    is_first_file,
+):
+    """Iterate through ``file_paths`` and write their contents."""
+    for file_path in file_paths:
+        is_first_file = handle_file(
+            file_path,
+            root_path,
+            outfile,
+            is_first_file,
+            include_headers=include_headers,
+            no_header_separator=no_header_separator,
+            add_line_numbers_opt=add_line_numbers_opt,
+            dry_run=dry_run,
+            config=config,
+        )
+    return is_first_file
+
+
 def find_and_combine_files(config, output_file, dry_run=False):
     """Find, filter, and combine files based on the provided configuration."""
     search_opts = config.get('search', {})
@@ -65,90 +222,39 @@ def find_and_combine_files(config, output_file, dry_run=False):
         if group_conf.get('enabled'):
             include_filenames.update(group_conf.get('filenames') or [])
 
-    def should_include(file_path, root_path):
-        if not file_path.is_file():
-            return False
-        if any(part in exclude_folders for part in file_path.relative_to(root_path).parts[:-1]):
-            return False
-        file_name = file_path.name
-        if file_name in exclude_filenames:
-            return False
-        if exclude_extensions and file_path.suffix in exclude_extensions:
-            return False
-        if allowed_extensions and file_path.suffix not in allowed_extensions:
-            return False
-        if include_filenames and file_name not in include_filenames:
-            return False
-        try:
-            file_size = file_path.stat().st_size
-            min_size = filter_opts.get('min_size_bytes', 0)
-            max_size = filter_opts.get('max_size_bytes', float('inf'))
-            if not (min_size <= file_size <= max_size):
-                return False
-        except OSError:
-            return False
-        return True
-
-    def handle_file(file_path, root_path, outfile, is_first_file):
-        if dry_run:
-            print(file_path.resolve())
-            return is_first_file
-
-        print(f"Processing: {file_path}")
-        content = read_file_best_effort(file_path)
-        processed_content = process_content(content, config.get('processing', {}))
-
-        if add_line_numbers_opt:
-            processed_content = add_line_numbers(processed_content)
-
-        if include_headers:
-            relative_path = file_path.relative_to(root_path)
-            outfile.write(f"{relative_path}:\n```\n")
-            outfile.write(processed_content)
-            outfile.write("\n```\n\n")
-        else:
-            if not is_first_file:
-                outfile.write(no_header_separator)
-            outfile.write(processed_content)
-            is_first_file = False
-        return is_first_file
-
     outfile_ctx = nullcontext() if dry_run else open(output_file, 'w', encoding='utf8')
 
     with outfile_ctx as outfile:
         is_first_file = True
         for root_folder in search_opts.get('root_folders') or []:
-            root_path = Path(root_folder)
-            if not root_path.is_dir():
-                print(f"Warning: Root folder '{root_folder}' does not exist. Skipping.")
+            all_paths, root_path = collect_file_paths(root_folder, search_opts.get('recursive', True))
+            if not all_paths:
                 continue
-
-            iter_paths = (
-                root_path.rglob('*')
-                if search_opts.get('recursive', True)
-                else root_path.glob('*')
+            final_paths = filter_and_pair_paths(
+                all_paths,
+                root_path,
+                pairing_enabled=pairing_enabled,
+                source_exts=source_exts,
+                header_exts=header_exts,
+                include_mismatched=include_mismatched,
+                exclude_folders=exclude_folders,
+                exclude_filenames=exclude_filenames,
+                exclude_extensions=exclude_extensions,
+                allowed_extensions=allowed_extensions,
+                include_filenames=include_filenames,
+                filter_opts=filter_opts,
             )
-
-            if pairing_enabled:
-                file_map = {}
-                for file_path in iter_paths:
-                    if should_include(file_path, root_path):
-                        file_map.setdefault(file_path.stem, {})[file_path.suffix] = file_path
-                for stem_files in file_map.values():
-                    src = next((stem_files.get(ext) for ext in source_exts if stem_files.get(ext)), None)
-                    hdr = next((stem_files.get(ext) for ext in header_exts if stem_files.get(ext)), None)
-                    paths = []
-                    if src and hdr:
-                        paths = [src, hdr]
-                    elif include_mismatched and (src or hdr):
-                        paths = [src or hdr]
-                    for fpath in paths:
-                        is_first_file = handle_file(fpath, root_path, outfile, is_first_file)
-            else:
-                for file_path in iter_paths:
-                    if not should_include(file_path, root_path):
-                        continue
-                    is_first_file = handle_file(file_path, root_path, outfile, is_first_file)
+            is_first_file = write_files(
+                final_paths,
+                root_path,
+                outfile,
+                config=config,
+                dry_run=dry_run,
+                include_headers=include_headers,
+                no_header_separator=no_header_separator,
+                add_line_numbers_opt=add_line_numbers_opt,
+                is_first_file=is_first_file,
+            )
 
 
 def main():
