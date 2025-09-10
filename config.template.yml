@@ -1,0 +1,75 @@
+# ================================================================
+# Comprehensive configuration template for the File Combiner Tool
+# Lists every available option with default values and explanations.
+# ================================================================
+
+# --- Search Parameters ---
+search:
+  # Paths to scan for files.
+  # Replace with one or more folders on your system.
+  root_folders:
+    - '/path/to/project'
+
+  # Search folders recursively.
+  recursive: true
+
+  # Only include files with these extensions. Leave empty to include all.
+  allowed_extensions: []
+
+# --- Output Configuration ---
+output:
+  # When pairing is disabled, all content is written to this file.
+  file: 'combined_files.txt'
+
+  # When pairing is enabled, each pair is written to this folder.
+  folder: '.'
+
+  # Include a header ("path/to/file:\n```") before each file's content.
+  # Headers are included by default; set to false to omit them.
+  include_headers: true
+
+  # String inserted between files when headers are disabled.
+  no_header_separator: "\n\n"
+
+  # Add line numbers starting at 1 for each file.
+  add_line_numbers: false
+
+# --- File Filtering ---
+filters:
+  # Files smaller than this (bytes) are skipped.
+  min_size_bytes: 0
+
+  # Files larger than this (bytes) are skipped. Omit or set 0 for no limit.
+  max_size_bytes: 0
+
+  # --- Inclusion Groups ---
+  # Enable specific groups to only include listed filenames.
+  inclusion_groups:
+    example_group:
+      enabled: false
+      filenames: []
+
+  # --- Exclusion Rules ---
+  exclusions:
+    filenames: []      # Skip these filenames entirely
+    extensions: []     # Skip files with these extensions
+    folders: []        # Skip these folders
+
+# --- Content Processing Options ---
+processing:
+  normalize_whitespace: false       # Compact and clean up whitespace
+  remove_all_c_style_comments: false  # Drop all /* ... */ comments
+  remove_initial_comment: false        # Drop first block comment if at file start
+  remove_hex_pattern_lines: false     # Remove lines of hex data (or replace with string)
+  regex_snips: []                     # List of regex find/replace rules
+  # Example rule:
+  # regex_snips:
+  #   - pattern: '^\s*//\s*TODO:.*$'
+  #     replacement: ''
+
+# --- Pairing Options ---
+pairing:
+  enabled: false
+  include_mismatched: false         # Include files without a pair
+  source_extensions: []             # e.g., ['.cpp', '.c']
+  header_extensions: []             # e.g., ['.h', '.hpp']

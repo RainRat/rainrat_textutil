@@ -92,18 +92,37 @@ def filter_and_pair_paths(
     file_paths,
     root_path,
     *,
-    pairing_enabled,
-    source_exts,
-    header_exts,
-    include_mismatched,
-    exclude_folders,
-    exclude_filenames,
-    exclude_extensions,
-    allowed_extensions,
-    include_filenames,
     filter_opts,
+    pair_opts,
+    search_opts,
 ):
-    """Apply filtering and optional pairing to ``file_paths``."""
+    """Apply filtering and optional pairing to ``file_paths``.
+
+    ``filter_opts`` and ``pair_opts`` are sub-dictionaries of the main
+    configuration and contain all options related to filtering and file
+    pairing respectively.
+    """
+
+    pairing_enabled = pair_opts.get('enabled')
+    source_exts = tuple(pair_opts.get('source_extensions') or [])
+    header_exts = tuple(pair_opts.get('header_extensions') or [])
+    include_mismatched = pair_opts.get('include_mismatched', False)
+
+    allowed_extensions = tuple(search_opts.get('allowed_extensions') or [])
+    if pairing_enabled:
+        allowed_extensions = source_exts + header_exts
+
+    exclude_conf = filter_opts.get('exclusions', {})
+    exclude_folders = set(exclude_conf.get('folders') or [])
+    exclude_filenames = set(exclude_conf.get('filenames') or [])
+    exclude_extensions = tuple(exclude_conf.get('extensions') or [])
+
+    inclusion_groups = filter_opts.get('inclusion_groups', {})
+    include_filenames = set()
+    for group_conf in inclusion_groups.values():
+        if group_conf.get('enabled'):
+            include_filenames.update(group_conf.get('filenames') or [])
+
     filtered = [
         p
         for p in file_paths
@@ -206,87 +225,51 @@ def find_and_combine_files(config, output_path, dry_run=False):
     output_opts = config.get('output', {})
     pair_opts = config.get('pairing', {})
 
-    include_headers = output_opts.get('include_headers', True)
+    include_headers = output_opts.get('include_headers', True)  # Headers included by default
     no_header_separator = output_opts.get('no_header_separator', '\n\n')
     add_line_numbers_opt = output_opts.get('add_line_numbers', False)
 
     pairing_enabled = pair_opts.get('enabled')
-    source_exts = tuple(pair_opts.get('source_extensions') or [])
-    header_exts = tuple(pair_opts.get('header_extensions') or [])
-    include_mismatched = pair_opts.get('include_mismatched', False)
+    root_folders = search_opts.get('root_folders') or []
+    recursive = search_opts.get('recursive', True)
 
-    exclude_conf = filter_opts.get('exclusions', {})
-    exclude_folders = set(exclude_conf.get('folders') or [])
-    exclude_filenames = set(exclude_conf.get('filenames') or [])
-    exclude_extensions = tuple(exclude_conf.get('extensions') or [])
-    allowed_extensions = tuple(search_opts.get('allowed_extensions') or [])
-    if pairing_enabled:
-        allowed_extensions = source_exts + header_exts
-    inclusion_groups = filter_opts.get('inclusion_groups', {})
-    include_filenames = set()
-    for group_conf in inclusion_groups.values():
-        if group_conf.get('enabled'):
-            include_filenames.update(group_conf.get('filenames') or [])
-
+    out_folder = None
     if pairing_enabled:
         out_folder = Path(output_path)
         if not dry_run:
             out_folder.mkdir(parents=True, exist_ok=True)
-        for root_folder in search_opts.get('root_folders') or []:
-            all_paths, root_path = collect_file_paths(root_folder, search_opts.get('recursive', True))
+
+    outfile_ctx = nullcontext() if pairing_enabled or dry_run else open(output_path, 'w', encoding='utf8')
+    with outfile_ctx as outfile:
+        is_first_file = True
+        for root_folder in root_folders:
+            all_paths, root_path = collect_file_paths(root_folder, recursive)
             if not all_paths:
                 continue
-            final_pairs = filter_and_pair_paths(
+            final_paths = filter_and_pair_paths(
                 all_paths,
                 root_path,
-                pairing_enabled=pairing_enabled,
-                source_exts=source_exts,
-                header_exts=header_exts,
-                include_mismatched=include_mismatched,
-                exclude_folders=exclude_folders,
-                exclude_filenames=exclude_filenames,
-                exclude_extensions=exclude_extensions,
-                allowed_extensions=allowed_extensions,
-                include_filenames=include_filenames,
                 filter_opts=filter_opts,
+                pair_opts=pair_opts,
+                search_opts=search_opts,
             )
-            for stem, paths in final_pairs.items():
-                out_file = out_folder / f"{stem}.combined"
-                outfile_ctx = nullcontext() if dry_run else open(out_file, 'w', encoding='utf8')
-                with outfile_ctx as outfile:
-                    write_files(
-                        paths,
-                        root_path,
-                        outfile,
-                        config=config,
-                        dry_run=dry_run,
-                        include_headers=include_headers,
-                        no_header_separator=no_header_separator,
-                        add_line_numbers_opt=add_line_numbers_opt,
-                        is_first_file=True,
-                    )
-    else:
-        outfile_ctx = nullcontext() if dry_run else open(output_path, 'w', encoding='utf8')
-        with outfile_ctx as outfile:
-            is_first_file = True
-            for root_folder in search_opts.get('root_folders') or []:
-                all_paths, root_path = collect_file_paths(root_folder, search_opts.get('recursive', True))
-                if not all_paths:
-                    continue
-                final_paths = filter_and_pair_paths(
-                    all_paths,
-                    root_path,
-                    pairing_enabled=pairing_enabled,
-                    source_exts=source_exts,
-                    header_exts=header_exts,
-                    include_mismatched=include_mismatched,
-                    exclude_folders=exclude_folders,
-                    exclude_filenames=exclude_filenames,
-                    exclude_extensions=exclude_extensions,
-                    allowed_extensions=allowed_extensions,
-                    include_filenames=include_filenames,
-                    filter_opts=filter_opts,
-                )
+            if pairing_enabled:
+                for stem, paths in final_paths.items():
+                    out_file = out_folder / f"{stem}.combined"
+                    pair_ctx = nullcontext() if dry_run else open(out_file, 'w', encoding='utf8')
+                    with pair_ctx as pair_out:
+                        write_files(
+                            paths,
+                            root_path,
+                            pair_out,
+                            config=config,
+                            dry_run=dry_run,
+                            include_headers=include_headers,
+                            no_header_separator=no_header_separator,
+                            add_line_numbers_opt=add_line_numbers_opt,
+                            is_first_file=True,
+                        )
+            else:
                 is_first_file = write_files(
                     final_paths,
                     root_path,
