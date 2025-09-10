@@ -67,7 +67,7 @@ processing:
 
   # If true, removes lines matching the hex pattern.
   # If a string, each contiguous block of such lines is replaced with the string.
-  remove_hex_pattern_lines: '[hex data removed]'
+  remove_hex_pattern_lines: false
 
   # Regex-based text transformations. Each rule should provide:
   #   pattern: 'regex'
