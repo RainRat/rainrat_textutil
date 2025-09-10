@@ -31,15 +31,27 @@ def load_yaml_config(config_file_path):
 
 def read_file_best_effort(file_path):
     """Attempt to read a file trying several encodings."""
-    encodings = ['utf-8', 'latin-1', 'ascii', 'utf-16']
+    encodings = [
+        'utf-8-sig',
+        'utf-8',
+        'utf-16',
+        'utf-16-le',
+        'utf-16-be',
+        'cp1252',
+        'latin-1',
+    ]
     for encoding in encodings:
         try:
             with open(file_path, 'r', encoding=encoding) as f:
-                return f.read()
-        except UnicodeDecodeError:
+                return f.read().lstrip('\ufeff')
+        except UnicodeError:
             continue
-    print(f"Warning: Could not decode {file_path} with any of the attempted encodings.")
-    return ""
+    try:
+        with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+            return f.read().lstrip('\ufeff')
+    except Exception:
+        print(f"Warning: Could not decode {file_path} with any of the attempted encodings.")
+        return ""
 
 
 def normalize_whitespace(text):
