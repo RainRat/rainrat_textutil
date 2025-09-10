@@ -12,7 +12,8 @@ filters:
   exclusions:
     filenames: []
     extensions: []
-    # Exclude folders if any path component matches these globs (case-sensitive).
+    # Exclude folders if any directory name in the path matches one of these
+    # patterns (e.g., 'build' excludes ./build and ./src/app/build). Case-sensitive.
     folders: []
 
 processing:

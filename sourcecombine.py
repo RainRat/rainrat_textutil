@@ -78,8 +78,9 @@ def should_include(
     exclude_filenames,
     exclude_extensions,
     allowed_extensions,
-    include_filenames,
+    include_patterns,
     filter_opts,
+    relative_path=None,
 ):
     """Return ``True`` if ``file_path`` passes all filtering rules."""
     if not file_path.is_file():
@@ -92,8 +93,14 @@ def should_include(
         return False
     if allowed_extensions and suffix not in allowed_extensions:
         return False
-    if include_filenames and file_name not in include_filenames:
-        return False
+    if include_patterns:
+        rel_str = relative_path.as_posix() if relative_path else file_name
+        if not any(
+            fnmatch.fnmatchcase(file_name, pattern)
+            or fnmatch.fnmatchcase(rel_str, pattern)
+            for pattern in include_patterns
+        ):
+            return False
     try:
         file_size = file_path.stat().st_size
         min_size = filter_opts.get('min_size_bytes', 0)
@@ -139,6 +146,7 @@ def filter_and_pair_paths(
     filter_opts,
     pair_opts,
     search_opts,
+    root_path,
 ):
     """Apply filtering and optional pairing to ``file_paths``.
 
@@ -165,10 +173,10 @@ def filter_and_pair_paths(
     )
 
     inclusion_groups = filter_opts.get('inclusion_groups', {})
-    include_filenames = set()
+    include_patterns = set()
     for group_conf in inclusion_groups.values():
         if group_conf.get('enabled'):
-            include_filenames.update(group_conf.get('filenames') or [])
+            include_patterns.update(group_conf.get('filenames') or [])
 
     filtered = [
         p
@@ -178,8 +186,9 @@ def filter_and_pair_paths(
             exclude_filenames=exclude_filenames,
             exclude_extensions=exclude_extensions,
             allowed_extensions=allowed_extensions,
-            include_filenames=include_filenames,
+            include_patterns=include_patterns,
             filter_opts=filter_opts,
+            relative_path=p.relative_to(root_path),
         )
     ]
     if not pairing_enabled:
@@ -293,6 +302,7 @@ def find_and_combine_files(config, output_path, dry_run=False):
                 filter_opts=filter_opts,
                 pair_opts=pair_opts,
                 search_opts=search_opts,
+                root_path=root_path,
             )
             if pairing_enabled:
                 for stem, paths in final_paths.items():

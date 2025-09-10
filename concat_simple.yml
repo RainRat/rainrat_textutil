@@ -29,8 +29,8 @@ output:
   include_headers: false
 
   # A string to insert between files ONLY when include_headers is false.
-  # Use "\n" for a simple newline.
-  no_header_separator: "\n"
+  # Default is a blank line. Use "\n" for a simple newline.
+  no_header_separator: "\n\n"
 
 # --- File Filtering ---
 filters:
