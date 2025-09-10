@@ -14,15 +14,15 @@ filters:
     extensions: []
     folders: []
 
-  processing:
-    remove_initial_comment: true
-    normalize_whitespace: true
-    remove_hex_pattern_lines: true
-    # Example regex rule: remove lines starting with TODO comments.
-    regex_snips:
-      - pattern: '^\\s*//\\s*TODO:.*$'
-        replacement: ''
-        enabled: true
+processing:
+  remove_initial_comment: true
+  normalize_whitespace: true
+  remove_hex_pattern_lines: true
+  # Example regex rule: remove lines starting with TODO comments.
+  regex_snips:
+    - pattern: '^\\s*//\\s*TODO:.*$'
+      replacement: ''
+      enabled: true
 
 pairing:
   enabled: true
