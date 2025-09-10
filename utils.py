@@ -146,9 +146,10 @@ def process_content(buffer, options):
     Supported options include:
     - ``remove_initial_comment`` (bool)
     - ``remove_all_c_style_comments`` (bool)
-    - ``snip_pattern`` (str)
     - ``regex_snips`` (list of dicts): each rule must contain ``pattern`` (str),
-      ``replacement`` (str) and ``enabled`` (bool)
+      ``replacement`` (str) and ``enabled`` (bool). To replicate the legacy
+      ``snip_pattern`` behaviour, use a rule with your pattern and set
+      ``replacement`` to ``"\\1"``.
     - ``normalize_whitespace`` (bool)
     - ``remove_hex_pattern_lines`` (bool or str): if a string is provided, it
       will be used as placeholder text inserted for each contiguous block of
@@ -166,9 +167,6 @@ def process_content(buffer, options):
 
     if options.get('remove_all_c_style_comments'):
         buffer = remove_c_style_comments(buffer)
-
-    if options.get('snip_pattern'):
-        buffer = re.sub(options['snip_pattern'], r'\1', buffer, flags=re.DOTALL)
 
     for rule in options.get('regex_snips', []):
         if rule.get('enabled') and 'pattern' in rule and 'replacement' in rule:
