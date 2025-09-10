@@ -1,4 +1,4 @@
 private*.yml
 combined_files.txt
-*_old.py
-
+*.bak
+__pycache__
