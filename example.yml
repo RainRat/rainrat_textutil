@@ -36,14 +36,19 @@ filters:
   max_size_bytes: 204800 # 200 KiB
 
   # --- Inclusion Groups ---
-  # Define groups of filenames that can be toggled on or off. When at least one
-  # group is enabled, only files listed in enabled groups will be processed.
+  # Define groups of filenames or glob patterns that can be toggled on or off.
+  # When at least one group is enabled, only files listed in enabled groups will
+  # be processed.
   inclusion_groups:
     core_files:
       enabled: true
       filenames:
         - 'sourcecombine.py'
         - 'utils.py'
+    test_files:
+      enabled: true
+      filenames:
+        - 'tests/*'
     experimental_files:
       enabled: false
       filenames:

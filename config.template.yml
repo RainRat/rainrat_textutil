@@ -46,7 +46,7 @@ filters:
   max_size_bytes: 0
 
   # --- Inclusion Groups ---
-  # Enable specific groups to only include listed filenames.
+  # Enable specific groups to only include listed filenames or glob patterns.
   inclusion_groups:
     example_group:
       enabled: false
