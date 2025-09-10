@@ -85,3 +85,9 @@ processing:
   # To mimic the legacy "snip_pattern" option, use a rule with a capture group
   # and set the replacement to "\1".
   regex_snips: []
+  # Example usage:
+  # regex_snips:
+  #   - pattern: '^\\s*#\\s*TODO:.*$'
+  #     replacement: ''
+  #   - pattern: '(?s).*BEGIN_SNIP(.*)END_SNIP.*'
+  #     replacement: '\\1'
