@@ -64,3 +64,88 @@ def remove_hex_pattern_lines(text, placeholder=None):
         else:
             out_lines.append(line)
     return "\n".join(out_lines)
+
+
+def load_and_validate_config(config_file_path, required_keys=None, defaults=None, nested_required=None):
+    """Load a YAML config file and enforce required keys and defaults."""
+    config = load_yaml_config(config_file_path)
+
+    if required_keys:
+        missing_keys = [key for key in required_keys if key not in config]
+        if missing_keys:
+            print(f"Error: Config file is missing required keys: {', '.join(missing_keys)}")
+            sys.exit(1)
+
+    if defaults:
+        for key, value in defaults.items():
+            config.setdefault(key, value)
+
+    if nested_required:
+        for key, subkeys in nested_required.items():
+            if not isinstance(config.get(key), dict):
+                print(f"Error: '{key}' section must be a dictionary with keys: {', '.join(subkeys)}")
+                sys.exit(1)
+            missing_sub = [sub for sub in subkeys if sub not in config[key]]
+            if missing_sub:
+                print(f"Error: '{key}' section is missing keys: {', '.join(missing_sub)}")
+                sys.exit(1)
+
+    return config
+
+
+def ensure_dict(config, key, defaults=None):
+    """Ensure a key exists in config as a dict and apply defaults."""
+    if not isinstance(config.get(key), dict):
+        config[key] = {}
+    if defaults:
+        for dkey, dval in defaults.items():
+            config[key].setdefault(dkey, dval)
+    return config[key]
+
+
+def remove_c_style_comments(text):
+    """Remove all C-style block comments from text."""
+    return re.sub(r'/\*.*?\*/', '', text, flags=re.DOTALL)
+
+
+def process_content(buffer, options):
+    """Process text based on a dictionary of options."""
+    if not options:
+        return buffer
+
+    if options.get('remove_initial_comment') or options.get('remove_first_c_style_comment'):
+        stripped = buffer.lstrip()
+        if stripped.startswith('/*'):
+            end_index = stripped.find('*/', 2)
+            if end_index != -1:
+                buffer = stripped[end_index + 2:].lstrip()
+
+    if options.get('remove_all_c_style_comments'):
+        buffer = remove_c_style_comments(buffer)
+
+    if options.get('snip_pattern'):
+        buffer = re.sub(options['snip_pattern'], r'\1', buffer, flags=re.DOTALL)
+
+    for rule in options.get('regex_snips', []):
+        if rule.get('enabled') and 'pattern' in rule and 'replacement' in rule:
+            try:
+                buffer = re.sub(rule['pattern'], rule['replacement'], buffer)
+            except re.error as e:
+                print(f"Warning: Invalid regex pattern in config: '{rule['pattern']}'. Error: {e}")
+
+    if options.get('normalize_whitespace') or options.get('compact_whitespace'):
+        buffer = normalize_whitespace(buffer)
+
+    hex_option = options.get('remove_hex_pattern_lines') or options.get('remove_data_table')
+    if hex_option:
+        placeholder = hex_option if isinstance(hex_option, str) else None
+        buffer = remove_hex_pattern_lines(buffer, placeholder)
+
+    return buffer
+
+
+def add_line_numbers(text):
+    """Prepend line numbers to each line of text."""
+    lines = text.splitlines()
+    numbered = [f"{i + 1}: {line}" for i, line in enumerate(lines)]
+    return "\n".join(numbered)
