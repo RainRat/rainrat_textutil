@@ -1,6 +1,13 @@
 import re
-import sys
 import yaml
+
+
+class ConfigNotFoundError(FileNotFoundError):
+    """Raised when the configuration file cannot be found."""
+
+
+class InvalidConfigError(Exception):
+    """Raised when the configuration file is invalid."""
 
 
 def load_yaml_config(config_file_path):
@@ -12,15 +19,14 @@ def load_yaml_config(config_file_path):
             if config is None:
                 raise ValueError("Configuration file is empty or invalid.")
             return config
-    except FileNotFoundError:
-        print(f"Error: Configuration file not found at '{config_file_path}'.")
-        sys.exit(1)
+    except FileNotFoundError as e:
+        raise ConfigNotFoundError(
+            f"Configuration file not found at '{config_file_path}'."
+        ) from e
     except yaml.YAMLError as e:
-        print(f"Error parsing YAML file: {e}")
-        sys.exit(1)
+        raise InvalidConfigError(f"Error parsing YAML file: {e}") from e
     except ValueError as e:
-        print(f"Error: {e}")
-        sys.exit(1)
+        raise InvalidConfigError(str(e)) from e
 
 
 def read_file_best_effort(file_path):
@@ -89,8 +95,9 @@ def load_and_validate_config(config_file_path, required_keys=None, defaults=None
     if required_keys:
         missing_keys = [key for key in required_keys if key not in config]
         if missing_keys:
-            print(f"Error: Config file is missing required keys: {', '.join(missing_keys)}")
-            sys.exit(1)
+            raise InvalidConfigError(
+                f"Config file is missing required keys: {', '.join(missing_keys)}"
+            )
 
     if defaults:
         def apply_defaults(cfg, defs):
@@ -107,12 +114,14 @@ def load_and_validate_config(config_file_path, required_keys=None, defaults=None
     if nested_required:
         for key, subkeys in nested_required.items():
             if not isinstance(config.get(key), dict):
-                print(f"Error: '{key}' section must be a dictionary with keys: {', '.join(subkeys)}")
-                sys.exit(1)
+                raise InvalidConfigError(
+                    f"'{key}' section must be a dictionary with keys: {', '.join(subkeys)}"
+                )
             missing_sub = [sub for sub in subkeys if sub not in config[key]]
             if missing_sub:
-                print(f"Error: '{key}' section is missing keys: {', '.join(missing_sub)}")
-                sys.exit(1)
+                raise InvalidConfigError(
+                    f"'{key}' section is missing keys: {', '.join(missing_sub)}"
+                )
 
     filters = config.get('filters')
     if isinstance(filters, dict):
@@ -138,7 +147,8 @@ def process_content(buffer, options):
     - ``remove_initial_comment`` (bool)
     - ``remove_all_c_style_comments`` (bool)
     - ``snip_pattern`` (str)
-    - ``regex_snips`` (list of dicts with ``pattern`` and ``replacement``)
+    - ``regex_snips`` (list of dicts): each rule must contain ``pattern`` (str),
+      ``replacement`` (str) and ``enabled`` (bool)
     - ``normalize_whitespace`` (bool)
     - ``remove_hex_pattern_lines`` (bool or str): if a string is provided, it
       will be used as placeholder text inserted for each contiguous block of

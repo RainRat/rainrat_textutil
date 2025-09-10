@@ -1,4 +1,5 @@
 import argparse
+import sys
 from pathlib import Path
 from contextlib import nullcontext
 from utils import (
@@ -6,6 +7,8 @@ from utils import (
     process_content,
     load_and_validate_config,
     add_line_numbers,
+    ConfigNotFoundError,
+    InvalidConfigError,
 )
 
 
@@ -119,8 +122,8 @@ def filter_and_pair_paths(
         file_map.setdefault(file_path.stem, {})[file_path.suffix] = file_path
     paired = []
     for stem_files in file_map.values():
-        src = next((stem_files.get(ext) for ext in source_exts if stem_files.get(ext)), None)
-        hdr = next((stem_files.get(ext) for ext in header_exts if stem_files.get(ext)), None)
+        src = next((p for ext, p in stem_files.items() if ext in source_exts), None)
+        hdr = next((p for ext, p in stem_files.items() if ext in header_exts), None)
         if src and hdr:
             paired.extend([src, hdr])
         elif include_mismatched and (src or hdr):
@@ -264,7 +267,11 @@ def main():
     parser.add_argument("--dry-run", "-d", action="store_true", help="List files to be processed without writing output")
     args = parser.parse_args()
 
-    config = load_config(args.config_file)
+    try:
+        config = load_config(args.config_file)
+    except (ConfigNotFoundError, InvalidConfigError) as e:
+        print(e)
+        sys.exit(1)
     output_file = config.get('output', {}).get('file', 'combined_files.txt')
     find_and_combine_files(config, output_file, dry_run=args.dry_run)
     if not args.dry_run:

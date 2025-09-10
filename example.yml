@@ -73,7 +73,7 @@ filters:
     # If true, removes only the *first* C-style block comment if it's at the top of the file.
     remove_initial_comment: false
 
-    # If true, removes lines that match a hex-pattern function call.
+    # If true, removes lines matching the hex pattern.
     # If a string, each contiguous block of such lines is replaced with the string.
     remove_hex_pattern_lines: false
 
