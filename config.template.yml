@@ -14,6 +14,9 @@ search:
   recursive: true
 
   # Only include files with these extensions. Leave empty to include all.
+  # When pairing is enabled, this list is ignored and extensions from
+  # ``pairing.source_extensions`` and ``pairing.header_extensions`` are used
+  # instead.
   allowed_extensions: []
 
 # --- Output Configuration ---

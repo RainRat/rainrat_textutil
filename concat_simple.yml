@@ -13,7 +13,9 @@ search:
 
   # List of file extensions to include.
   # If this list is empty or omitted, ALL file extensions will be included
-  # (subject to the exclusion rules below).
+  # (subject to the exclusion rules below). When pairing is enabled, this
+  # option is ignored in favour of ``pairing.source_extensions`` and
+  # ``pairing.header_extensions``.
   allowed_extensions:
       - '.txt'
 
@@ -70,7 +72,6 @@ processing:
   # Regex-based text transformations. Each rule should provide:
   #   pattern: 'regex'
   #   replacement: 'replacement text'
-  #   enabled: false  # optional, deprecated
   # To mimic the legacy "snip_pattern" option, use a rule with a capture group
   # and set the replacement to "\1".
   regex_snips: []
