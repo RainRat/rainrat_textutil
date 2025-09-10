@@ -14,6 +14,9 @@ from utils import (
 )
 
 
+DEFAULT_OUTPUT_FILENAME = "combined_files.txt"
+
+
 def load_config(config_path):
     """Load and validate the YAML configuration file."""
     defaults = {
@@ -32,7 +35,7 @@ def load_config(config_path):
             'include_mismatched': False,
         },
         'output': {
-            'file': 'combined_files.txt',
+            'file': DEFAULT_OUTPUT_FILENAME,
             'folder': '.',
         },
     }
@@ -47,7 +50,7 @@ def load_config(config_path):
         and config.get('search', {}).get('allowed_extensions')
     ):
         raise InvalidConfigError(
-            "'allowed_extensions' is ignored when pairing is enabled; "
+            "'allowed_extensions' cannot be used when pairing is enabled; "
             "remove it or disable pairing."
         )
     return config
@@ -339,7 +342,7 @@ def main():
     if pairing_enabled:
         output_path = output_conf.get('folder', '.')
     else:
-        output_path = output_conf.get('file', 'combined_files.txt')
+        output_path = output_conf.get('file', DEFAULT_OUTPUT_FILENAME)
 
     find_and_combine_files(config, output_path, dry_run=args.dry_run)
     if not args.dry_run:

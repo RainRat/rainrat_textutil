@@ -14,9 +14,9 @@ search:
   recursive: true
 
   # Only include files with these extensions. Leave empty to include all.
-  # When pairing is enabled, this list is ignored and extensions from
-  # ``pairing.source_extensions`` and ``pairing.header_extensions`` are used
-  # instead.
+  # Cannot be used when pairing is enabled; use
+  # ``pairing.source_extensions`` and ``pairing.header_extensions`` instead.
+  # Specifying both options results in a configuration error.
   allowed_extensions: []
 
 # --- Output Configuration ---
@@ -56,7 +56,9 @@ filters:
   exclusions:
     filenames: []      # Skip these filenames entirely
     extensions: []     # Skip files with these extensions
-    folders: []        # Skip folders when any path component matches these glob patterns
+    # Exclude folders if any directory name in the path matches one of these
+    # patterns (e.g., 'build' excludes ./build and ./src/app/build). Case-sensitive.
+    folders: []
 
 # --- Content Processing Options ---
 processing:

@@ -69,7 +69,11 @@ def compact_whitespace(text):
 
 
 def remove_hex_pattern_lines(text, placeholder=None):
-    """Remove lines matching a hex pattern.
+    """Remove lines matching a specific two-hex-value call pattern.
+
+    Lines must follow the form ``name(0x..., 0x...),`` such as::
+
+        some_func(0x123, 0xABC),
 
     Parameters
     ----------
