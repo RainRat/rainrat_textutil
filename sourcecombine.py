@@ -88,9 +88,10 @@ def should_include(
     file_name = file_path.name
     if any(fnmatch.fnmatchcase(file_name, pattern) for pattern in exclude_filenames):
         return False
-    if exclude_extensions and file_path.suffix in exclude_extensions:
+    suffix = file_path.suffix.lower()
+    if exclude_extensions and suffix in exclude_extensions:
         return False
-    if allowed_extensions and file_path.suffix not in allowed_extensions:
+    if allowed_extensions and suffix not in allowed_extensions:
         return False
     if include_filenames and file_name not in include_filenames:
         return False
@@ -125,9 +126,12 @@ def collect_file_paths(root_folder, recursive, exclude_folders):
                 file_paths.append(Path(dirpath) / name)
     else:
         for entry in root_path.iterdir():
-            if entry.is_dir() and _match_path(entry.relative_to(root_path), exclude_folders):
+            if entry.is_dir():
+                if _match_path(entry.relative_to(root_path), exclude_folders):
+                    continue
                 continue
-            file_paths.append(entry)
+            if entry.is_file():
+                file_paths.append(entry)
     return file_paths, root_path
 
 
@@ -147,18 +151,22 @@ def filter_and_pair_paths(
     """
 
     pairing_enabled = pair_opts.get('enabled')
-    source_exts = tuple(pair_opts.get('source_extensions') or [])
-    header_exts = tuple(pair_opts.get('header_extensions') or [])
+    source_exts = tuple(e.lower() for e in (pair_opts.get('source_extensions') or []))
+    header_exts = tuple(e.lower() for e in (pair_opts.get('header_extensions') or []))
     include_mismatched = pair_opts.get('include_mismatched', False)
 
-    allowed_extensions = tuple(search_opts.get('allowed_extensions') or [])
+    allowed_extensions = tuple(
+        e.lower() for e in (search_opts.get('allowed_extensions') or [])
+    )
     if pairing_enabled:
         allowed_extensions = source_exts + header_exts
 
     exclude_conf = filter_opts.get('exclusions', {})
     exclude_folders = exclude_conf.get('folders') or []
     exclude_filenames = exclude_conf.get('filenames') or []
-    exclude_extensions = tuple(exclude_conf.get('extensions') or [])
+    exclude_extensions = tuple(
+        e.lower() for e in (exclude_conf.get('extensions') or [])
+    )
 
     inclusion_groups = filter_opts.get('inclusion_groups', {})
     include_filenames = set()
@@ -184,7 +192,7 @@ def filter_and_pair_paths(
         return filtered
     file_map = {}
     for file_path in filtered:
-        file_map.setdefault(file_path.stem, {})[file_path.suffix] = file_path
+        file_map.setdefault(file_path.stem, {})[file_path.suffix.lower()] = file_path
     paired = {}
     for stem, stem_files in file_map.items():
         src = next((p for ext, p in stem_files.items() if ext in source_exts), None)
