@@ -22,6 +22,9 @@ processing:
   regex_snips:
     - pattern: '^\\s*//\\s*TODO:.*$'
       replacement: ''
+    # Example: keep only code between START and END markers
+    # - pattern: '(?s).*START_SNIP(.*)END_SNIP.*'
+    #   replacement: '\\1'
 
 pairing:
   enabled: true
