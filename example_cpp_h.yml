@@ -16,11 +16,11 @@ filters:
     folders: []
 
 processing:
-  remove_initial_comment: true
-  normalize_whitespace: true
+  remove_initial_c_style_comment: true
+  compact_whitespace: true
   remove_hex_pattern_lines: true
   # Example regex rule: remove lines starting with TODO comments.
-  regex_snips:
+  regex_replacements:
     - pattern: '^\\s*//\\s*TODO:.*$'
       replacement: ''
     # Example: keep only code between BEGIN and END markers

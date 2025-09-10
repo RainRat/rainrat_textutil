@@ -54,7 +54,7 @@ def read_file_best_effort(file_path):
         return ""
 
 
-def normalize_whitespace(text):
+def compact_whitespace(text):
     """Normalize whitespace similarly to previous scripts."""
     previous = None
     while previous != text:
@@ -156,12 +156,12 @@ def process_content(buffer, options):
     """Process text based on a dictionary of options.
 
     Supported options include:
-    - ``remove_initial_comment`` (bool)
+    - ``remove_initial_c_style_comment`` (bool)
     - ``remove_all_c_style_comments`` (bool)
-    - ``regex_snips`` (list of dicts): each rule must contain ``pattern`` (str)
+    - ``regex_replacements`` (list of dicts): each rule must contain ``pattern`` (str)
       and ``replacement`` (str). Rules are applied sequentially. Capture groups
       can be referenced in the replacement string (e.g., ``"\\1"``).
-    - ``normalize_whitespace`` (bool)
+    - ``compact_whitespace`` (bool)
     - ``remove_hex_pattern_lines`` (bool or str): if a string is provided, it
       will be used as placeholder text inserted for each contiguous block of
       matching lines that are removed.
@@ -169,7 +169,7 @@ def process_content(buffer, options):
     if not options:
         return buffer
 
-    if options.get('remove_initial_comment'):
+    if options.get('remove_initial_c_style_comment'):
         stripped = buffer.lstrip()
         if stripped.startswith('/*'):
             end_index = stripped.find('*/', 2)
@@ -179,15 +179,15 @@ def process_content(buffer, options):
     if options.get('remove_all_c_style_comments'):
         buffer = remove_c_style_comments(buffer)
 
-    for rule in options.get('regex_snips', []):
+    for rule in options.get('regex_replacements', []):
         if 'pattern' in rule and 'replacement' in rule:
             try:
                 buffer = re.sub(rule['pattern'], rule['replacement'], buffer)
             except re.error as e:
                 print(f"Warning: Invalid regex pattern in config: '{rule['pattern']}'. Error: {e}")
 
-    if options.get('normalize_whitespace'):
-        buffer = normalize_whitespace(buffer)
+    if options.get('compact_whitespace'):
+        buffer = compact_whitespace(buffer)
 
     hex_option = options.get('remove_hex_pattern_lines')
     if hex_option:

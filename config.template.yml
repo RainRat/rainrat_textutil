@@ -60,13 +60,13 @@ filters:
 
 # --- Content Processing Options ---
 processing:
-  normalize_whitespace: false       # Compact and clean up whitespace
+  compact_whitespace: false       # Compact and clean up whitespace
   remove_all_c_style_comments: false  # Drop all /* ... */ comments
-  remove_initial_comment: false        # Drop first block comment if at file start
+  remove_initial_c_style_comment: false        # Drop first block comment if at file start
   remove_hex_pattern_lines: false     # Remove lines of hex data (or replace with string)
-  regex_snips: []                     # List of regex find/replace rules
+  regex_replacements: []                     # List of regex find/replace rules
   # Example rule:
-  # regex_snips:
+  # regex_replacements:
   #   - pattern: '^\s*//\s*TODO:.*$'
   #     replacement: ''
 
