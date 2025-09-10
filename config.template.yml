@@ -56,7 +56,7 @@ filters:
   exclusions:
     filenames: []      # Skip these filenames entirely
     extensions: []     # Skip files with these extensions
-    folders: []        # Skip these folders
+    folders: []        # Skip folders when any path component matches these glob patterns
 
 # --- Content Processing Options ---
 processing:

@@ -73,7 +73,6 @@ def should_include(
     file_path,
     root_path,
     *,
-    exclude_folders,
     exclude_filenames,
     exclude_extensions,
     allowed_extensions,
@@ -82,8 +81,6 @@ def should_include(
 ):
     """Return ``True`` if ``file_path`` passes all filtering rules."""
     if not file_path.is_file():
-        return False
-    if _match_path(file_path.relative_to(root_path).parent, exclude_folders):
         return False
     file_name = file_path.name
     if any(fnmatch.fnmatchcase(file_name, pattern) for pattern in exclude_filenames):
@@ -129,7 +126,6 @@ def collect_file_paths(root_folder, recursive, exclude_folders):
             if entry.is_dir():
                 if _match_path(entry.relative_to(root_path), exclude_folders):
                     continue
-                continue
             if entry.is_file():
                 file_paths.append(entry)
     return file_paths, root_path
@@ -162,7 +158,6 @@ def filter_and_pair_paths(
         allowed_extensions = source_exts + header_exts
 
     exclude_conf = filter_opts.get('exclusions', {})
-    exclude_folders = exclude_conf.get('folders') or []
     exclude_filenames = exclude_conf.get('filenames') or []
     exclude_extensions = tuple(
         e.lower() for e in (exclude_conf.get('extensions') or [])
@@ -180,7 +175,6 @@ def filter_and_pair_paths(
         if should_include(
             p,
             root_path,
-            exclude_folders=exclude_folders,
             exclude_filenames=exclude_filenames,
             exclude_extensions=exclude_extensions,
             allowed_extensions=allowed_extensions,
