@@ -23,6 +23,7 @@ output:
   file: 'combined_files.txt'
 
   # If true, prints a header like "path/to/file.py:\n```" for each file.
+  # Headers are included by default; set this to false to disable them.
   include_headers: false
 
   # A string to insert between files ONLY when include_headers is false.
