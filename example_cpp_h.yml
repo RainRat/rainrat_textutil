@@ -22,7 +22,6 @@ processing:
   regex_snips:
     - pattern: '^\\s*//\\s*TODO:.*$'
       replacement: ''
-      enabled: true
 
 pairing:
   enabled: true

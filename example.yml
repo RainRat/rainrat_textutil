@@ -80,7 +80,7 @@ processing:
   # Regex-based text transformations. Each rule should provide:
   #   pattern: 'regex'
   #   replacement: 'replacement text'
-  #   enabled: true/false
+  #   enabled: false  # optional, deprecated
   # To mimic the legacy "snip_pattern" option, use a rule with a capture group
   # and set the replacement to "\1".
   regex_snips: []
