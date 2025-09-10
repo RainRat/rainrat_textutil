@@ -62,8 +62,8 @@ processing:
   # If true, removes only the *first* C-style block comment if it's at the top of the file.
   remove_initial_comment: false
 
-  # If true, replaces sequential lines of function calls with hex parameters with a placeholder.
-  # Can also be set to a custom string to use as the placeholder, e.g., "// [HEX LINES REMOVED]"
+  # If true, removes lines matching the hex pattern.
+  # If a string, removes them and inserts the string as a placeholder.
   remove_hex_pattern_lines: false
 
   # A regex pattern to snip content. The part to KEEP should be in the first capture group.
