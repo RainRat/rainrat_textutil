@@ -113,7 +113,7 @@ def process_content(buffer, options):
     if not options:
         return buffer
 
-    if options.get('remove_initial_comment') or options.get('remove_first_c_style_comment'):
+    if options.get('remove_initial_comment'):
         stripped = buffer.lstrip()
         if stripped.startswith('/*'):
             end_index = stripped.find('*/', 2)
@@ -133,10 +133,10 @@ def process_content(buffer, options):
             except re.error as e:
                 print(f"Warning: Invalid regex pattern in config: '{rule['pattern']}'. Error: {e}")
 
-    if options.get('normalize_whitespace') or options.get('compact_whitespace'):
+    if options.get('normalize_whitespace'):
         buffer = normalize_whitespace(buffer)
 
-    hex_option = options.get('remove_hex_pattern_lines') or options.get('remove_data_table')
+    hex_option = options.get('remove_hex_pattern_lines')
     if hex_option:
         placeholder = hex_option if isinstance(hex_option, str) else None
         buffer = remove_hex_pattern_lines(buffer, placeholder)
