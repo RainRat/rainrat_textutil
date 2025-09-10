@@ -1,5 +1,7 @@
 import argparse
 import sys
+import os
+import fnmatch
 from pathlib import Path
 from contextlib import nullcontext
 from utils import (
@@ -51,6 +53,22 @@ def load_config(config_path):
     return config
 
 
+def _match_path(relative_path, patterns):
+    """Return True if ``relative_path`` matches any glob ``patterns``."""
+    if not patterns:
+        return False
+    rel_str = relative_path.as_posix()
+    parts = relative_path.parts
+    for pattern in patterns:
+        if fnmatch.fnmatchcase(rel_str, pattern) or fnmatch.fnmatchcase(
+            rel_str + '/', pattern
+        ):
+            return True
+        if any(fnmatch.fnmatchcase(part, pattern) for part in parts):
+            return True
+    return False
+
+
 def should_include(
     file_path,
     root_path,
@@ -65,10 +83,10 @@ def should_include(
     """Return ``True`` if ``file_path`` passes all filtering rules."""
     if not file_path.is_file():
         return False
-    if any(part in exclude_folders for part in file_path.relative_to(root_path).parts[:-1]):
+    if _match_path(file_path.relative_to(root_path).parent, exclude_folders):
         return False
     file_name = file_path.name
-    if file_name in exclude_filenames:
+    if any(fnmatch.fnmatchcase(file_name, pattern) for pattern in exclude_filenames):
         return False
     if exclude_extensions and file_path.suffix in exclude_extensions:
         return False
@@ -88,14 +106,30 @@ def should_include(
     return True
 
 
-def collect_file_paths(root_folder, recursive):
-    """Return all paths in ``root_folder`` respecting ``recursive``."""
+def collect_file_paths(root_folder, recursive, exclude_folders):
+    """Return all paths in ``root_folder`` while pruning excluded folders."""
     root_path = Path(root_folder)
     if not root_path.is_dir():
         print(f"Warning: Root folder '{root_folder}' does not exist. Skipping.")
         return [], None
-    iter_paths = root_path.rglob('*') if recursive else root_path.glob('*')
-    return list(iter_paths), root_path
+
+    file_paths = []
+    if recursive:
+        for dirpath, dirnames, filenames in os.walk(root_path):
+            rel_dir = Path(dirpath).relative_to(root_path)
+            dirnames[:] = [
+                d
+                for d in dirnames
+                if not _match_path(rel_dir / d, exclude_folders)
+            ]
+            for name in filenames:
+                file_paths.append(Path(dirpath) / name)
+    else:
+        for entry in root_path.iterdir():
+            if entry.is_dir() and _match_path(entry.relative_to(root_path), exclude_folders):
+                continue
+            file_paths.append(entry)
+    return file_paths, root_path
 
 
 def filter_and_pair_paths(
@@ -123,8 +157,8 @@ def filter_and_pair_paths(
         allowed_extensions = source_exts + header_exts
 
     exclude_conf = filter_opts.get('exclusions', {})
-    exclude_folders = set(exclude_conf.get('folders') or [])
-    exclude_filenames = set(exclude_conf.get('filenames') or [])
+    exclude_folders = exclude_conf.get('folders') or []
+    exclude_filenames = exclude_conf.get('filenames') or []
     exclude_extensions = tuple(exclude_conf.get('extensions') or [])
 
     inclusion_groups = filter_opts.get('inclusion_groups', {})
@@ -169,9 +203,7 @@ def handle_file(
     outfile,
     is_first_file,
     *,
-    include_headers,
-    no_header_separator,
-    add_line_numbers_opt,
+    output_opts,
     dry_run,
     config,
 ):
@@ -184,6 +216,9 @@ def handle_file(
     content = read_file_best_effort(file_path)
     processed_content = process_content(content, config.get('processing', {}))
 
+    include_headers = output_opts.get('include_headers', True)
+    no_header_separator = output_opts.get('no_header_separator', '\n\n')
+    add_line_numbers_opt = output_opts.get('add_line_numbers', False)
     if add_line_numbers_opt:
         processed_content = add_line_numbers(processed_content)
 
@@ -207,9 +242,7 @@ def write_files(
     *,
     config,
     dry_run,
-    include_headers,
-    no_header_separator,
-    add_line_numbers_opt,
+    output_opts,
     is_first_file,
 ):
     """Iterate through ``file_paths`` and write their contents."""
@@ -219,9 +252,7 @@ def write_files(
             root_path,
             outfile,
             is_first_file,
-            include_headers=include_headers,
-            no_header_separator=no_header_separator,
-            add_line_numbers_opt=add_line_numbers_opt,
+            output_opts=output_opts,
             dry_run=dry_run,
             config=config,
         )
@@ -235,9 +266,7 @@ def find_and_combine_files(config, output_path, dry_run=False):
     output_opts = config.get('output', {})
     pair_opts = config.get('pairing', {})
 
-    include_headers = output_opts.get('include_headers', True)  # Headers included by default
-    no_header_separator = output_opts.get('no_header_separator', '\n\n')
-    add_line_numbers_opt = output_opts.get('add_line_numbers', False)
+    exclude_folders = filter_opts.get('exclusions', {}).get('folders') or []
 
     pairing_enabled = pair_opts.get('enabled')
     root_folders = search_opts.get('root_folders') or []
@@ -253,7 +282,9 @@ def find_and_combine_files(config, output_path, dry_run=False):
     with outfile_ctx as outfile:
         is_first_file = True
         for root_folder in root_folders:
-            all_paths, root_path = collect_file_paths(root_folder, recursive)
+            all_paths, root_path = collect_file_paths(
+                root_folder, recursive, exclude_folders
+            )
             if not all_paths:
                 continue
             final_paths = filter_and_pair_paths(
@@ -274,9 +305,7 @@ def find_and_combine_files(config, output_path, dry_run=False):
                             pair_out,
                             config=config,
                             dry_run=dry_run,
-                            include_headers=include_headers,
-                            no_header_separator=no_header_separator,
-                            add_line_numbers_opt=add_line_numbers_opt,
+                            output_opts=output_opts,
                             is_first_file=True,
                         )
             else:
@@ -286,9 +315,7 @@ def find_and_combine_files(config, output_path, dry_run=False):
                     outfile,
                     config=config,
                     dry_run=dry_run,
-                    include_headers=include_headers,
-                    no_header_separator=no_header_separator,
-                    add_line_numbers_opt=add_line_numbers_opt,
+                    output_opts=output_opts,
                     is_first_file=is_first_file,
                 )
 
