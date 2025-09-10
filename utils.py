@@ -58,20 +58,23 @@ def remove_hex_pattern_lines(text, placeholder=None):
     text : str
         The input text to filter.
     placeholder : str, optional
-        If provided, this string is inserted once in place of the removed
-        lines. When ``None``, matching lines are simply deleted.
+        If provided, this string is inserted once for each contiguous block
+        of removed lines. When ``None``, matching lines are simply deleted.
     """
     pattern = re.compile(r"^\s*\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$")
     lines = text.splitlines()
     out_lines = []
-    inserted = False
+    in_block = False
     for line in lines:
         if pattern.match(line):
-            if placeholder and not inserted:
-                out_lines.append(placeholder)
-                inserted = True
-        else:
-            out_lines.append(line)
+            in_block = True
+            continue
+        if in_block and placeholder:
+            out_lines.append(placeholder)
+            in_block = False
+        out_lines.append(line)
+    if in_block and placeholder:
+        out_lines.append(placeholder)
     return "\n".join(out_lines)
 
 
@@ -138,7 +141,8 @@ def process_content(buffer, options):
     - ``regex_snips`` (list of dicts with ``pattern`` and ``replacement``)
     - ``normalize_whitespace`` (bool)
     - ``remove_hex_pattern_lines`` (bool or str): if a string is provided, it
-      will be used as placeholder text when matching lines are removed.
+      will be used as placeholder text inserted for each contiguous block of
+      matching lines that are removed.
     """
     if not options:
         return buffer
