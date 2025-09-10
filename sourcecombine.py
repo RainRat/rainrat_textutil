@@ -27,21 +27,22 @@ def load_config(config_path):
             'include_mismatched': False,
         },
     }
-    config = load_and_validate_config(config_path, defaults=defaults)
-    for group in config['filters']['inclusion_groups'].values():
-        group.setdefault('enabled', False)
-        group.setdefault('filenames', [])
-    return config
+    nested_required = {
+        'search': ['root_folders'],
+        'output': ['file'],
+    }
+    return load_and_validate_config(
+        config_path, defaults=defaults, nested_required=nested_required
+    )
 
 
-def find_and_combine_files(config, dry_run=False):
+def find_and_combine_files(config, output_file, dry_run=False):
     """Find, filter, and combine files based on the provided configuration."""
     search_opts = config.get('search', {})
     filter_opts = config.get('filters', {})
     output_opts = config.get('output', {})
     pair_opts = config.get('pairing', {})
 
-    output_file = output_opts.get('file', 'combined_files.txt')
     include_headers = output_opts.get('include_headers', True)
     no_header_separator = output_opts.get('no_header_separator', '\n\n')
     add_line_numbers_opt = output_opts.get('add_line_numbers', False)
@@ -158,9 +159,9 @@ def main():
     args = parser.parse_args()
 
     config = load_config(args.config_file)
-    find_and_combine_files(config, dry_run=args.dry_run)
+    output_file = config.get('output', {}).get('file', 'combined_files.txt')
+    find_and_combine_files(config, output_file, dry_run=args.dry_run)
     if not args.dry_run:
-        output_file = config.get('output', {}).get('file', 'combined_files.txt')
         print(f"\nDone. Combined files have been written to '{output_file}'.")
     else:
         print("\nDry run complete.")

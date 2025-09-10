@@ -111,17 +111,16 @@ def load_and_validate_config(config_file_path, required_keys=None, defaults=None
                 print(f"Error: '{key}' section is missing keys: {', '.join(missing_sub)}")
                 sys.exit(1)
 
+    filters = config.get('filters')
+    if isinstance(filters, dict):
+        groups = filters.get('inclusion_groups', {})
+        if isinstance(groups, dict):
+            for group in groups.values():
+                if isinstance(group, dict):
+                    group.setdefault('enabled', False)
+                    group.setdefault('filenames', [])
+
     return config
-
-
-def ensure_dict(config, key, defaults=None):
-    """Ensure a key exists in config as a dict and apply defaults."""
-    if not isinstance(config.get(key), dict):
-        config[key] = {}
-    if defaults:
-        for dkey, dval in defaults.items():
-            config[key].setdefault(dkey, dval)
-    return config[key]
 
 
 def remove_c_style_comments(text):
