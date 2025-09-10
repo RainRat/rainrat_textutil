@@ -29,10 +29,13 @@ def load_config(config_path):
             'header_extensions': [],
             'include_mismatched': False,
         },
+        'output': {
+            'file': 'combined_files.txt',
+            'folder': '.',
+        },
     }
     nested_required = {
         'search': ['root_folders'],
-        'output': ['file'],
     }
     return load_and_validate_config(
         config_path, defaults=defaults, nested_required=nested_required
@@ -120,14 +123,14 @@ def filter_and_pair_paths(
     file_map = {}
     for file_path in filtered:
         file_map.setdefault(file_path.stem, {})[file_path.suffix] = file_path
-    paired = []
-    for stem_files in file_map.values():
+    paired = {}
+    for stem, stem_files in file_map.items():
         src = next((p for ext, p in stem_files.items() if ext in source_exts), None)
         hdr = next((p for ext, p in stem_files.items() if ext in header_exts), None)
         if src and hdr:
-            paired.extend([src, hdr])
+            paired[stem] = [src, hdr]
         elif include_mismatched and (src or hdr):
-            paired.append(src or hdr)
+            paired[stem] = [src or hdr]
     return paired
 
 
@@ -196,7 +199,7 @@ def write_files(
     return is_first_file
 
 
-def find_and_combine_files(config, output_file, dry_run=False):
+def find_and_combine_files(config, output_path, dry_run=False):
     """Find, filter, and combine files based on the provided configuration."""
     search_opts = config.get('search', {})
     filter_opts = config.get('filters', {})
@@ -225,15 +228,15 @@ def find_and_combine_files(config, output_file, dry_run=False):
         if group_conf.get('enabled'):
             include_filenames.update(group_conf.get('filenames') or [])
 
-    outfile_ctx = nullcontext() if dry_run else open(output_file, 'w', encoding='utf8')
-
-    with outfile_ctx as outfile:
-        is_first_file = True
+    if pairing_enabled:
+        out_folder = Path(output_path)
+        if not dry_run:
+            out_folder.mkdir(parents=True, exist_ok=True)
         for root_folder in search_opts.get('root_folders') or []:
             all_paths, root_path = collect_file_paths(root_folder, search_opts.get('recursive', True))
             if not all_paths:
                 continue
-            final_paths = filter_and_pair_paths(
+            final_pairs = filter_and_pair_paths(
                 all_paths,
                 root_path,
                 pairing_enabled=pairing_enabled,
@@ -247,17 +250,54 @@ def find_and_combine_files(config, output_file, dry_run=False):
                 include_filenames=include_filenames,
                 filter_opts=filter_opts,
             )
-            is_first_file = write_files(
-                final_paths,
-                root_path,
-                outfile,
-                config=config,
-                dry_run=dry_run,
-                include_headers=include_headers,
-                no_header_separator=no_header_separator,
-                add_line_numbers_opt=add_line_numbers_opt,
-                is_first_file=is_first_file,
-            )
+            for stem, paths in final_pairs.items():
+                out_file = out_folder / f"{stem}.combined"
+                outfile_ctx = nullcontext() if dry_run else open(out_file, 'w', encoding='utf8')
+                with outfile_ctx as outfile:
+                    write_files(
+                        paths,
+                        root_path,
+                        outfile,
+                        config=config,
+                        dry_run=dry_run,
+                        include_headers=include_headers,
+                        no_header_separator=no_header_separator,
+                        add_line_numbers_opt=add_line_numbers_opt,
+                        is_first_file=True,
+                    )
+    else:
+        outfile_ctx = nullcontext() if dry_run else open(output_path, 'w', encoding='utf8')
+        with outfile_ctx as outfile:
+            is_first_file = True
+            for root_folder in search_opts.get('root_folders') or []:
+                all_paths, root_path = collect_file_paths(root_folder, search_opts.get('recursive', True))
+                if not all_paths:
+                    continue
+                final_paths = filter_and_pair_paths(
+                    all_paths,
+                    root_path,
+                    pairing_enabled=pairing_enabled,
+                    source_exts=source_exts,
+                    header_exts=header_exts,
+                    include_mismatched=include_mismatched,
+                    exclude_folders=exclude_folders,
+                    exclude_filenames=exclude_filenames,
+                    exclude_extensions=exclude_extensions,
+                    allowed_extensions=allowed_extensions,
+                    include_filenames=include_filenames,
+                    filter_opts=filter_opts,
+                )
+                is_first_file = write_files(
+                    final_paths,
+                    root_path,
+                    outfile,
+                    config=config,
+                    dry_run=dry_run,
+                    include_headers=include_headers,
+                    no_header_separator=no_header_separator,
+                    add_line_numbers_opt=add_line_numbers_opt,
+                    is_first_file=is_first_file,
+                )
 
 
 def main():
@@ -272,10 +312,19 @@ def main():
     except (ConfigNotFoundError, InvalidConfigError) as e:
         print(e)
         sys.exit(1)
-    output_file = config.get('output', {}).get('file', 'combined_files.txt')
-    find_and_combine_files(config, output_file, dry_run=args.dry_run)
+
+    pairing_enabled = config.get('pairing', {}).get('enabled')
+    output_conf = config.get('output', {})
+    if pairing_enabled:
+        output_path = output_conf.get('folder', '.')
+    else:
+        output_path = output_conf.get('file', 'combined_files.txt')
+
+    find_and_combine_files(config, output_path, dry_run=args.dry_run)
     if not args.dry_run:
-        print(f"\nDone. Combined files have been written to '{output_file}'.")
+        print(
+            f"\nDone. Combined files have been written to '{output_path}'."
+        )
     else:
         print("\nDry run complete.")
 

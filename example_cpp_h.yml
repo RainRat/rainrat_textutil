@@ -5,7 +5,7 @@ search:
   recursive: true
 
 output:
-  file: 'combined_output.txt'
+  folder: 'combined_outputs'
   add_line_numbers: false
 
 filters:
