@@ -74,7 +74,6 @@ def _match_path(relative_path, patterns):
 
 def should_include(
     file_path,
-    root_path,
     *,
     exclude_filenames,
     exclude_extensions,
@@ -136,7 +135,6 @@ def collect_file_paths(root_folder, recursive, exclude_folders):
 
 def filter_and_pair_paths(
     file_paths,
-    root_path,
     *,
     filter_opts,
     pair_opts,
@@ -177,7 +175,6 @@ def filter_and_pair_paths(
         for p in file_paths
         if should_include(
             p,
-            root_path,
             exclude_filenames=exclude_filenames,
             exclude_extensions=exclude_extensions,
             allowed_extensions=allowed_extensions,
@@ -293,7 +290,6 @@ def find_and_combine_files(config, output_path, dry_run=False):
                 continue
             final_paths = filter_and_pair_paths(
                 all_paths,
-                root_path,
                 filter_opts=filter_opts,
                 pair_opts=pair_opts,
                 search_opts=search_opts,
@@ -301,8 +297,13 @@ def find_and_combine_files(config, output_path, dry_run=False):
             if pairing_enabled:
                 for stem, paths in final_paths.items():
                     out_file = out_folder / f"{stem}.combined"
-                    pair_ctx = nullcontext() if dry_run else open(out_file, 'w', encoding='utf8')
-                    with pair_ctx as pair_out:
+                    if dry_run:
+                        print(f"[PAIR {stem}] -> {out_file}")
+                        for path in paths:
+                            rel_path = path.relative_to(root_path)
+                            print(f"  - {rel_path}")
+                        continue
+                    with open(out_file, 'w', encoding='utf8') as pair_out:
                         write_files(
                             paths,
                             root_path,
@@ -326,9 +327,23 @@ def find_and_combine_files(config, output_path, dry_run=False):
 
 def main():
     """Main function to parse arguments and run the tool."""
-    parser = argparse.ArgumentParser(description="Combine files into a single text file based on a YAML configuration.")
-    parser.add_argument("config_file", help="Path to the YAML configuration file (e.g., config.yml)")
-    parser.add_argument("--dry-run", "-d", action="store_true", help="List files to be processed without writing output")
+    parser = argparse.ArgumentParser(
+        description=(
+            "Combine files into one output or pair source/header files into "
+            "separate outputs based on a YAML configuration. Use --dry-run "
+            "to preview the files and destinations without writing them."
+        )
+    )
+    parser.add_argument(
+        "config_file",
+        help="Path to the YAML configuration file (e.g., config.yml)",
+    )
+    parser.add_argument(
+        "--dry-run",
+        "-d",
+        action="store_true",
+        help="List files and planned outputs without writing files",
+    )
     args = parser.parse_args()
 
     try:

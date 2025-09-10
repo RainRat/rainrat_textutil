@@ -4,6 +4,16 @@ This repository contains a simple file-combining utility driven by YAML configur
 It can collect source files from multiple directories, apply filtering and text-processing
 rules, and output a single consolidated text file or paired files.
 
+## CLI usage
+
+```bash
+python sourcecombine.py CONFIG_FILE [--dry-run]
+```
+
+Combine files into one output or pair source and header files into separate
+outputs based on the options in `CONFIG_FILE`. Use `--dry-run` to preview the
+files and destination paths without writing any output.
+
 ## Regex-based text transformations
 
 The `processing.regex_replacements` option lets you apply regular-expression search/replace
@@ -28,6 +38,18 @@ processing:
 
 See `example.yml`, `concat_simple.yml`, and `example_cpp_h.yml` for more configuration
 examples.
+
+### Windows path note
+
+When specifying Windows paths in YAML, wrap them in single quotes so backslashes
+are treated literally:
+
+```yaml
+root_folders:
+  - 'C:\Users\Guest\GitHub\myproject'
+```
+
+Using double quotes would require escaping each backslash (`"C:\\Users\\Guest"`).
 
 ## Example configurations
 
