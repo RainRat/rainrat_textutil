@@ -16,9 +16,8 @@ processing:
       replacement: ''
 ```
 
-You can also emulate the legacy `snip_pattern` behaviour by using a capture group in
-your pattern and referencing it in the replacement string. This allows you to keep only
-the text between custom markers:
+You can keep only the text between custom markers by using a capture group in
+your pattern and referencing it in the replacement string:
 
 ```yaml
 processing:
