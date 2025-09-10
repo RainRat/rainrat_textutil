@@ -35,7 +35,7 @@ filters:
   # Files larger than this (in bytes) will be skipped.
   max_size_bytes: 204800 # 200 KiB
 
-  # --- INCLUSION GROUPS ---
+  # --- Inclusion Groups ---
   # Define groups of filenames that can be toggled on or off. When at least one
   # group is enabled, only files listed in enabled groups will be processed.
   inclusion_groups:
@@ -49,7 +49,7 @@ filters:
       filenames:
         - 'experimental.py'
 
-  # --- EXCLUSION RULES ---
+  # --- Exclusion Rules ---
   # Files and folders matching these rules will be skipped.
   exclusions:
     # Exclude specific full filenames.

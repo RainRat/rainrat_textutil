@@ -146,12 +146,6 @@ def load_and_validate_config(config_file_path, required_keys=None, defaults=None
 
     return config
 
-
-def remove_c_style_comments(text):
-    """Remove all C-style block comments from text."""
-    return re.sub(r'/\*.*?\*/', '', text, flags=re.DOTALL)
-
-
 def process_content(buffer, options):
     """Process text based on a dictionary of options.
 
@@ -177,7 +171,7 @@ def process_content(buffer, options):
                 buffer = stripped[end_index + 2:].lstrip()
 
     if options.get('remove_all_c_style_comments'):
-        buffer = remove_c_style_comments(buffer)
+        buffer = re.sub(r'/\*.*?\*/', '', buffer, flags=re.DOTALL)
 
     for rule in options.get('regex_replacements', []):
         if 'pattern' in rule and 'replacement' in rule:

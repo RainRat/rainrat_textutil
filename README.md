@@ -28,3 +28,11 @@ processing:
 
 See `example.yml`, `concat_simple.yml`, and `example_cpp_h.yml` for more configuration
 examples.
+
+## Example configurations
+
+- `concat_simple.yml`: basic text file concatenation with minimal options.
+- `example.yml`: a full-featured configuration showcasing filtering groups and
+  regex-based processing.
+- `example_cpp_h.yml`: demonstrates pairing C/C++ source files with their
+  corresponding headers.
