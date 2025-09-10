@@ -147,9 +147,9 @@ def process_content(buffer, options):
     - ``remove_initial_comment`` (bool)
     - ``remove_all_c_style_comments`` (bool)
     - ``regex_snips`` (list of dicts): each rule must contain ``pattern`` (str)
-      and ``replacement`` (str). The ``enabled`` flag is deprecated; rules are
-      applied by default. To replicate the legacy ``snip_pattern`` behaviour,
-      use a rule with your pattern and set ``replacement`` to ``"\\1"``.
+      and ``replacement`` (str). Rules are applied sequentially. To replicate
+      the legacy ``snip_pattern`` behaviour, use a rule with your pattern and
+      set ``replacement`` to ``"\\1"``.
     - ``normalize_whitespace`` (bool)
     - ``remove_hex_pattern_lines`` (bool or str): if a string is provided, it
       will be used as placeholder text inserted for each contiguous block of
@@ -169,7 +169,7 @@ def process_content(buffer, options):
         buffer = remove_c_style_comments(buffer)
 
     for rule in options.get('regex_snips', []):
-        if 'pattern' in rule and 'replacement' in rule and rule.get('enabled', True):
+        if 'pattern' in rule and 'replacement' in rule:
             try:
                 buffer = re.sub(rule['pattern'], rule['replacement'], buffer)
             except re.error as e:

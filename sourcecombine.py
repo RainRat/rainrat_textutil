@@ -37,9 +37,18 @@ def load_config(config_path):
     nested_required = {
         'search': ['root_folders'],
     }
-    return load_and_validate_config(
+    config = load_and_validate_config(
         config_path, defaults=defaults, nested_required=nested_required
     )
+    if (
+        config.get('pairing', {}).get('enabled')
+        and config.get('search', {}).get('allowed_extensions')
+    ):
+        raise InvalidConfigError(
+            "'allowed_extensions' is ignored when pairing is enabled; "
+            "remove it or disable pairing."
+        )
+    return config
 
 
 def should_include(
@@ -70,7 +79,8 @@ def should_include(
     try:
         file_size = file_path.stat().st_size
         min_size = filter_opts.get('min_size_bytes', 0)
-        max_size = filter_opts.get('max_size_bytes', float('inf'))
+        max_size_conf = filter_opts.get('max_size_bytes')
+        max_size = float('inf') if not max_size_conf else max_size_conf
         if not (min_size <= file_size <= max_size):
             return False
     except OSError:
