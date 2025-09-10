@@ -1,67 +1,43 @@
 from pathlib import Path
-import re
 import argparse
-import sys
-from utils import load_yaml_config, read_file_best_effort, normalize_whitespace, remove_hex_pattern_lines
+from utils import (
+    read_file_best_effort,
+    process_content,
+    load_and_validate_config,
+    add_line_numbers,
+)
 
 
 def load_config(config_file_path):
     """Load and validate configuration from the provided YAML file."""
-    config = load_yaml_config(config_file_path)
-
     required_keys = [
         'SOURCE_FOLDER', 'OUTPUT_FOLDER', 'RECURSE_SUBFOLDERS', 'INCLUDE_MISMATCHED_FILES',
         'SOURCE_EXTENSIONS', 'HEADER_EXTENSIONS', 'SINGLE_OUTPUT_FILE', 'MAX_FILE_SIZE_MB',
-        'SHRINK_METHODS'
+        'SHRINK_METHODS',
     ]
-    missing_keys = [key for key in required_keys if key not in config]
-    if missing_keys:
-        print(f"Error: Config file is missing required keys: {', '.join(missing_keys)}")
-        sys.exit(1)
-
-    if isinstance(config.get('SHRINK_METHODS'), dict):
-        required_shrink_keys = [
-            'remove_initial_comment', 'normalize_whitespace',
-            'remove_hex_pattern_lines', 'regex_snips'
+    nested_required = {
+        'SHRINK_METHODS': [
+            'remove_initial_comment',
+            'normalize_whitespace',
+            'remove_hex_pattern_lines',
+            'regex_snips',
         ]
-        missing_shrink_keys = [key for key in required_shrink_keys if key not in config['SHRINK_METHODS']]
-        if missing_shrink_keys:
-            print(f"Error: 'SHRINK_METHODS' section is missing keys: {', '.join(missing_shrink_keys)}")
-            sys.exit(1)
-    else:
-        print("Error: 'SHRINK_METHODS' key must be a dictionary.")
-        sys.exit(1)
+    }
+    defaults = {
+        'SINGLE_OUTPUT_FILENAME': 'combined_output.txt',
+        'ADD_LINE_NUMBERS': False,
+    }
+    config = load_and_validate_config(
+        config_file_path,
+        required_keys=required_keys,
+        defaults=defaults,
+        nested_required=nested_required,
+    )
 
     config['SOURCE_EXTENSIONS'] = tuple(config['SOURCE_EXTENSIONS'])
     config['HEADER_EXTENSIONS'] = tuple(config['HEADER_EXTENSIONS'])
-    config['SINGLE_OUTPUT_FILENAME'] = config.get('SINGLE_OUTPUT_FILENAME', 'combined_output.txt')
     print("Configuration successfully loaded and validated.")
     return config
-
-
-def content_shrink(content, config):
-    """Shrink file content based on methods enabled in the configuration."""
-    shrink_settings = config.get('SHRINK_METHODS', {})
-
-    if shrink_settings.get('remove_initial_comment') and content.lstrip().startswith('/*'):
-        end_index = content.find('*/', 2)
-        if end_index != -1:
-            content = content[:content.find('/*')].rstrip() + content[end_index + 2:].lstrip()
-
-    for rule in shrink_settings.get('regex_snips', []):
-        if rule.get('enabled') and 'pattern' in rule and 'replacement' in rule:
-            try:
-                content = re.sub(rule['pattern'], rule['replacement'], content)
-            except re.error as e:
-                print(f"Warning: Invalid regex pattern in config: '{rule['pattern']}'. Error: {e}")
-
-    if shrink_settings.get('normalize_whitespace'):
-        content = normalize_whitespace(content)
-
-    if shrink_settings.get('remove_hex_pattern_lines'):
-        content = remove_hex_pattern_lines(content)
-
-    return content
 
 
 def write_content(content, file_path, config):
@@ -116,11 +92,15 @@ def combine_headers(config):
                         matching_file = potential_matching_file
                         break
 
-            shrunk_source = content_shrink(read_file_best_effort(source_file), config)
+            shrunk_source = process_content(read_file_best_effort(source_file), config['SHRINK_METHODS'])
+            if config['ADD_LINE_NUMBERS']:
+                shrunk_source = add_line_numbers(shrunk_source)
             content = f"{source_file.name}:\n```\n{shrunk_source}\n```\n\n"
 
             if matching_file:
-                shrunk_header = content_shrink(read_file_best_effort(matching_file), config)
+                shrunk_header = process_content(read_file_best_effort(matching_file), config['SHRINK_METHODS'])
+                if config['ADD_LINE_NUMBERS']:
+                    shrunk_header = add_line_numbers(shrunk_header)
                 content += f"{matching_file.name}:\n```\n{shrunk_header}\n```\n\n"
                 processed_files.add(matching_file)
             elif not config['INCLUDE_MISMATCHED_FILES']:
@@ -144,7 +124,7 @@ def combine_headers(config):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Combines source/header files based on a YAML configuration.",
-        epilog="Example: python combiner.py my_config.yml"
+        epilog="Example: python concatcpph.py my_config.yml"
     )
     parser.add_argument('config_file', help='Path to the .yml configuration file.')
 
