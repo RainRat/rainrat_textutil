@@ -62,21 +62,22 @@ filters:
     folders:
       - '.git'
 
-  # --- Content Processing Options ---
-  processing:
-    # If true, attempts to clean up and compact whitespace.
-    normalize_whitespace: false
+# --- Content Processing Options ---
+processing:
+  # If true, attempts to clean up and compact whitespace.
+  normalize_whitespace: false
 
-    # If true, removes all C-style block comments (/* ... */).
-    remove_all_c_style_comments: false
+  # If true, removes all C-style block comments (/* ... */).
+  remove_all_c_style_comments: false
 
-    # If true, removes only the *first* C-style block comment if it's at the top of the file.
-    remove_initial_comment: false
+  # If true, removes only the *first* C-style block comment if it's at the top of the file.
+  remove_initial_comment: false
 
-    # If true, replaces sequential lines of function calls with hex parameters with a placeholder.
-    remove_hex_pattern_lines: false
+  # If true, replaces sequential lines of function calls with hex parameters with a placeholder.
+  # Can also be set to a custom string to use as the placeholder, e.g., "// [HEX LINES REMOVED]"
+  remove_hex_pattern_lines: false
 
-    # A regex pattern to snip content. The part to KEEP should be in the first capture group.
-    # Example: 'start_marker[\s\S]*?(content_to_keep)[\s\S]*?end_marker'
-    # Set to "" to disable.
-    snip_pattern: ""
+  # A regex pattern to snip content. The part to KEEP should be in the first capture group.
+  # Example: 'start_marker[\s\S]*?(content_to_keep)[\s\S]*?end_marker'
+  # Set to "" to disable.
+  snip_pattern: ""
