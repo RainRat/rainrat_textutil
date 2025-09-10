@@ -1,7 +1,7 @@
 # Example configuration demonstrating C++/header pairing using sourcecombine.py
 search:
   root_folders:
-    - 'c:\\path\\to\\your\\source_code'
+    - 'C:\path\to\your\source_code'
   recursive: true
 
 output:
