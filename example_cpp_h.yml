@@ -12,6 +12,7 @@ filters:
   exclusions:
     filenames: []
     extensions: []
+    # Exclude folders if any path component matches these globs (case-sensitive).
     folders: []
 
 processing:
@@ -22,8 +23,8 @@ processing:
   regex_snips:
     - pattern: '^\\s*//\\s*TODO:.*$'
       replacement: ''
-    # Example: keep only code between START and END markers
-    # - pattern: '(?s).*START_SNIP(.*)END_SNIP.*'
+    # Example: keep only code between BEGIN and END markers
+    # - pattern: '(?s).*BEGIN_SNIP(.*)END_SNIP.*'
     #   replacement: '\\1'
 
 pairing:
