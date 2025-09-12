@@ -79,10 +79,7 @@ processing:
 
   # If true, removes only the *first* C-style block comment if it's at the top of the file.
   remove_initial_c_style_comment: false
-
-  # If true, removes lines matching the hex pattern.
-  # If a string, each contiguous block of such lines is replaced with the string.
-  remove_hex_pattern_lines: false
+  line_regex_replacements: []
 
   # Regex-based text transformations. Each rule should provide:
   #   pattern: 'regex'
@@ -95,3 +92,7 @@ processing:
   #     replacement: ''
   #   - pattern: '(?s).*BEGIN_SNIP(.*)END_SNIP.*'
   #     replacement: '\\1'
+  # Example line rule:
+  # line_regex_replacements:
+  #   - pattern: '^\\s*\\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$'
+  #     replacement: '<data removed>'

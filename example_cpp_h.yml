@@ -19,7 +19,9 @@ filters:
 processing:
   remove_initial_c_style_comment: true
   compact_whitespace: true
-  remove_hex_pattern_lines: true
+  line_regex_replacements:
+    - pattern: '^\\s*\\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$'
+      replacement: '<data removed>'
   # Example regex rule: remove lines starting with TODO comments.
   regex_replacements:
     - pattern: '^\\s*//\\s*TODO:.*$'

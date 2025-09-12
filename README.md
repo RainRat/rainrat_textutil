@@ -36,6 +36,17 @@ processing:
       replacement: '\\1'
 ```
 
+To collapse entire blocks of matching lines, use the `processing.line_regex_replacements`
+option. Each rule operates line-by-line: consecutive lines that match the
+pattern are removed and optionally replaced with a single `replacement` string.
+
+```yaml
+processing:
+  line_regex_replacements:
+    - pattern: '^\\s*\\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$'
+      replacement: '<data removed>'
+```
+
 See `example.yml`, `concat_simple.yml`, and `example_cpp_h.yml` for more configuration
 examples.
 
