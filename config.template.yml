@@ -37,6 +37,15 @@ output:
   # Add line numbers starting at 1 for each file.
   add_line_numbers: false
 
+  # Template written before each file's content when headers are enabled.
+  # The special sequence "{{FILENAME}}" is replaced with the file's
+  # path relative to the root folder.
+  header_template: "{{FILENAME}}:\n```\n"
+
+  # Template written after each file's content when headers are enabled.
+  # "{{FILENAME}}" is replaced with the file's relative path.
+  footer_template: "\n```\n\n"
+
 # --- File Filtering ---
 filters:
   # Files smaller than this (bytes) are skipped.
