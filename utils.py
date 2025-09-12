@@ -68,36 +68,51 @@ def compact_whitespace(text):
     return text
 
 
-def remove_hex_pattern_lines(text, placeholder=None):
-    """Remove lines matching a specific two-hex-value call pattern.
+def _replace_line_block(text, pattern, replacement=None):
+    """Collapse blocks of lines matching ``pattern`` into ``replacement``.
 
-    Lines must follow the form ``name(0x..., 0x...),`` such as::
-
-        some_func(0x123, 0xABC),
-
-    Parameters
-    ----------
-    text : str
-        The input text to filter.
-    placeholder : str, optional
-        If provided, this string is inserted once for each contiguous block
-        of removed lines. When ``None``, matching lines are simply deleted.
+    ``pattern`` should match an entire line. Consecutive matching lines are
+    treated as a single block. If ``replacement`` is ``None`` the block is
+    simply removed; otherwise ``replacement`` is inserted once for each block.
     """
-    pattern = re.compile(r"^\s*\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$")
+    regex = re.compile(pattern)
     lines = text.splitlines()
     out_lines = []
     in_block = False
     for line in lines:
-        if pattern.match(line):
+        if regex.match(line):
             in_block = True
             continue
-        if in_block and placeholder:
-            out_lines.append(placeholder)
+        if in_block:
+            if replacement is not None:
+                out_lines.append(replacement)
             in_block = False
         out_lines.append(line)
-    if in_block and placeholder:
-        out_lines.append(placeholder)
+    if in_block and replacement is not None:
+        out_lines.append(replacement)
     return "\n".join(out_lines)
+
+
+def apply_line_regex_replacements(text, rules):
+    """Apply line-oriented regex replacements.
+
+    Each rule in ``rules`` must provide a ``pattern`` key. If ``replacement``
+    is supplied, it is inserted once for each contiguous block of matching
+    lines; otherwise matching lines are removed. Rules are applied
+    sequentially.
+    """
+    for rule in rules or []:
+        pattern = rule.get('pattern')
+        if not pattern:
+            continue
+        replacement = rule.get('replacement')
+        try:
+            text = _replace_line_block(text, pattern, replacement)
+        except re.error as e:
+            print(
+                f"Warning: Invalid regex pattern in config: '{pattern}'. Error: {e}"
+            )
+    return text
 
 
 def load_and_validate_config(config_file_path, required_keys=None, defaults=None, nested_required=None):
@@ -159,10 +174,10 @@ def process_content(buffer, options):
     - ``regex_replacements`` (list of dicts): each rule must contain ``pattern`` (str)
       and ``replacement`` (str). Rules are applied sequentially. Capture groups
       can be referenced in the replacement string (e.g., ``"\\1"``).
+    - ``line_regex_replacements`` (list of dicts): like ``regex_replacements`` but
+      applied to whole lines. Consecutive matching lines are collapsed into a
+      single ``replacement`` entry (or removed if ``replacement`` is omitted).
     - ``compact_whitespace`` (bool)
-    - ``remove_hex_pattern_lines`` (bool or str): if a string is provided, it
-      will be used as placeholder text inserted for each contiguous block of
-      matching lines that are removed.
     """
     if not options:
         return buffer
@@ -184,13 +199,12 @@ def process_content(buffer, options):
             except re.error as e:
                 print(f"Warning: Invalid regex pattern in config: '{rule['pattern']}'. Error: {e}")
 
+    line_rules = options.get('line_regex_replacements')
+    if line_rules:
+        buffer = apply_line_regex_replacements(buffer, line_rules)
+
     if options.get('compact_whitespace'):
         buffer = compact_whitespace(buffer)
-
-    hex_option = options.get('remove_hex_pattern_lines')
-    if hex_option:
-        placeholder = hex_option if isinstance(hex_option, str) else None
-        buffer = remove_hex_pattern_lines(buffer, placeholder)
 
     return buffer
 
