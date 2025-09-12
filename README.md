@@ -14,6 +14,22 @@ Combine files into one output or pair source and header files into separate
 outputs based on the options in `CONFIG_FILE`. Use `--dry-run` to preview the
 files and destination paths without writing any output.
 
+## Customizing file boundaries
+
+The `output.header_template` and `output.footer_template` options control the
+text written before and after each file's content. The special sequence
+`{{FILENAME}}` is replaced with the file's path relative to the configured root
+folder.
+
+```yaml
+output:
+  header_template: "--- {{FILENAME}} ---\n"
+  footer_template: "\n--- end {{FILENAME}} ---\n"
+```
+
+Omit these options or use the defaults to keep the original behaviour of
+printing a filename followed by fenced code blocks.
+
 ## Regex-based text transformations
 
 The `processing.regex_replacements` option lets you apply regular-expression search/replace

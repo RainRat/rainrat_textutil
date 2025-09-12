@@ -15,6 +15,8 @@ from utils import (
 
 
 DEFAULT_OUTPUT_FILENAME = "combined_files.txt"
+# Placeholder used in templates to insert the file's relative path
+FILENAME_PLACEHOLDER = "{{FILENAME}}"
 
 
 def load_config(config_path):
@@ -37,6 +39,11 @@ def load_config(config_path):
         'output': {
             'file': DEFAULT_OUTPUT_FILENAME,
             'folder': '.',
+            'include_headers': True,
+            'no_header_separator': '\n\n',
+            'add_line_numbers': False,
+            'header_template': f"{FILENAME_PLACEHOLDER}:\n```\n",
+            'footer_template': '\n```\n\n',
         },
     }
     nested_required = {
@@ -234,9 +241,21 @@ def handle_file(
 
     if include_headers:
         relative_path = file_path.relative_to(root_path)
-        outfile.write(f"{relative_path}:\n```\n")
+        header_template = output_opts.get(
+            'header_template', f"{FILENAME_PLACEHOLDER}:\n```\n"
+        )
+        footer_template = output_opts.get(
+            'footer_template', "\n```\n\n"
+        )
+        header_text = header_template.replace(
+            FILENAME_PLACEHOLDER, str(relative_path)
+        )
+        footer_text = footer_template.replace(
+            FILENAME_PLACEHOLDER, str(relative_path)
+        )
+        outfile.write(header_text)
         outfile.write(processed_content)
-        outfile.write("\n```\n\n")
+        outfile.write(footer_text)
     else:
         if not is_first_file:
             outfile.write(no_header_separator)
