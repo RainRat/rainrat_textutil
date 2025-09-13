@@ -24,8 +24,9 @@ output:
   # When pairing is disabled, all content is written to this file.
   file: 'combined_files.txt'
 
-  # When pairing is enabled, each pair is written to this folder.
-  folder: '.'
+  # When pairing is enabled, each pair is written to this folder. Omit or set to null
+  # to place the .combined files next to their source files.
+  folder: null
 
   # Include a header ("path/to/file:\n```") before each file's content.
   # Headers are included by default; set to false to omit them.

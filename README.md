@@ -16,6 +16,10 @@ Combine files into one output or pair source and header files into separate
 outputs based on the options in `CONFIG_FILE`. Use `--dry-run` to preview the
 files and destination paths without writing any output.
 
+When pairing is enabled and `output.folder` is omitted, each resulting
+`.combined` file is written alongside its source files. Specify
+`output.folder` to collect them in a separate directory.
+
 ## Customizing file boundaries
 
 The `output.header_template` and `output.footer_template` options control the

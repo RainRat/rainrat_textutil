@@ -43,7 +43,7 @@ def load_config(config_path):
         },
         'output': {
             'file': DEFAULT_OUTPUT_FILENAME,
-            'folder': '.',
+            'folder': None,
             'include_headers': True,
             'no_header_separator': '\n\n',
             'add_line_numbers': False,
@@ -307,7 +307,7 @@ def find_and_combine_files(config, output_path, dry_run=False):
     recursive = search_opts.get('recursive', True)
 
     out_folder = None
-    if pairing_enabled:
+    if pairing_enabled and output_path:
         out_folder = Path(output_path)
         if not dry_run:
             out_folder.mkdir(parents=True, exist_ok=True)
@@ -330,7 +330,11 @@ def find_and_combine_files(config, output_path, dry_run=False):
             )
             if pairing_enabled:
                 for stem, paths in final_paths.items():
-                    out_file = out_folder / f"{stem}.combined"
+                    out_file = (
+                        out_folder / f"{stem}.combined"
+                        if out_folder
+                        else paths[0].with_suffix('.combined')
+                    )
                     if dry_run:
                         print(f"[PAIR {stem}] -> {out_file}")
                         for path in paths:
@@ -389,15 +393,18 @@ def main():
     pairing_enabled = config.get('pairing', {}).get('enabled')
     output_conf = config.get('output', {})
     if pairing_enabled:
-        output_path = output_conf.get('folder', '.')
+        output_path = output_conf.get('folder')
     else:
         output_path = output_conf.get('file', DEFAULT_OUTPUT_FILENAME)
 
     find_and_combine_files(config, output_path, dry_run=args.dry_run)
     if not args.dry_run:
-        print(
-            f"\nDone. Combined files have been written to '{output_path}'."
-        )
+        if pairing_enabled and output_path is None:
+            print("\nDone. Combined files have been written alongside their source files.")
+        else:
+            print(
+                f"\nDone. Combined files have been written to '{output_path}'."
+            )
     else:
         print("\nDry run complete.")
 
