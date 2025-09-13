@@ -1,4 +1,6 @@
-# Rainrat TextUtil
+# RainRat's Text Utilities
+
+Currently this repo contains only SourceCombine, but new tools will be added.
 
 This repository contains a simple file-combining utility driven by YAML configuration files.
 It can collect source files from multiple directories, apply filtering and text-processing
