@@ -19,6 +19,11 @@ DEFAULT_OUTPUT_FILENAME = "combined_files.txt"
 FILENAME_PLACEHOLDER = "{{FILENAME}}"
 
 
+def _fnmatch_casefold(name, pattern):
+    """Case-insensitive ``fnmatch`` using Unicode casefolding."""
+    return fnmatch.fnmatchcase(name.casefold(), pattern.casefold())
+
+
 def load_config(config_path):
     """Load and validate the YAML configuration file."""
     defaults = {
@@ -70,11 +75,11 @@ def _match_path(relative_path, patterns):
     rel_str = relative_path.as_posix()
     parts = relative_path.parts
     for pattern in patterns:
-        if fnmatch.fnmatchcase(rel_str, pattern) or fnmatch.fnmatchcase(
+        if _fnmatch_casefold(rel_str, pattern) or _fnmatch_casefold(
             rel_str + '/', pattern
         ):
             return True
-        if any(fnmatch.fnmatchcase(part, pattern) for part in parts):
+        if any(_fnmatch_casefold(part, pattern) for part in parts):
             return True
     return False
 
@@ -93,7 +98,7 @@ def should_include(
     if not file_path.is_file():
         return False
     file_name = file_path.name
-    if any(fnmatch.fnmatchcase(file_name, pattern) for pattern in exclude_filenames):
+    if any(_fnmatch_casefold(file_name, pattern) for pattern in exclude_filenames):
         return False
     suffix = file_path.suffix.lower()
     if exclude_extensions and suffix in exclude_extensions:
@@ -103,8 +108,8 @@ def should_include(
     if include_patterns:
         rel_str = relative_path.as_posix() if relative_path else file_name
         if not any(
-            fnmatch.fnmatchcase(file_name, pattern)
-            or fnmatch.fnmatchcase(rel_str, pattern)
+            _fnmatch_casefold(file_name, pattern)
+            or _fnmatch_casefold(rel_str, pattern)
             for pattern in include_patterns
         ):
             return False

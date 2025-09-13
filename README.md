@@ -66,6 +66,12 @@ processing:
 See `example.yml`, `concat_simple.yml`, and `example_cpp_h.yml` for more configuration
 examples.
 
+### Case-insensitive pattern matching
+
+Filename and folder filters defined in the configuration are matched without
+regard to case, so patterns like `src/*` will include `SRC/Example.py` on
+case-sensitive filesystems.
+
 ### Windows path note
 
 When specifying Windows paths in YAML, wrap them in single quotes so backslashes
