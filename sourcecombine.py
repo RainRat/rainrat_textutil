@@ -11,12 +11,9 @@ from utils import (
     add_line_numbers,
     ConfigNotFoundError,
     InvalidConfigError,
+    FILENAME_PLACEHOLDER,
+    DEFAULT_OUTPUT_FILENAME,
 )
-
-
-DEFAULT_OUTPUT_FILENAME = "combined_files.txt"
-# Placeholder used in templates to insert the file's relative path
-FILENAME_PLACEHOLDER = "{{FILENAME}}"
 
 
 def _fnmatch_casefold(name, pattern):
@@ -26,37 +23,10 @@ def _fnmatch_casefold(name, pattern):
 
 def load_config(config_path):
     """Load and validate the YAML configuration file."""
-    defaults = {
-        'filters': {
-            'exclusions': {
-                'filenames': [],
-                'extensions': [],
-                'folders': [],
-            },
-            'inclusion_groups': {},
-        },
-        'pairing': {
-            'enabled': False,
-            'source_extensions': [],
-            'header_extensions': [],
-            'include_mismatched': False,
-        },
-        'output': {
-            'file': DEFAULT_OUTPUT_FILENAME,
-            'folder': None,
-            'include_headers': True,
-            'no_header_separator': '\n\n',
-            'add_line_numbers': False,
-            'header_template': f"{FILENAME_PLACEHOLDER}:\n```\n",
-            'footer_template': '\n```\n\n',
-        },
-    }
     nested_required = {
         'search': ['root_folders'],
     }
-    config = load_and_validate_config(
-        config_path, defaults=defaults, nested_required=nested_required
-    )
+    config = load_and_validate_config(config_path, nested_required=nested_required)
     if (
         config.get('pairing', {}).get('enabled')
         and config.get('search', {}).get('allowed_extensions')
@@ -64,6 +34,14 @@ def load_config(config_path):
         raise InvalidConfigError(
             "'allowed_extensions' cannot be used when pairing is enabled; "
             "remove it or disable pairing."
+        )
+    if (
+        config.get('pairing', {}).get('enabled')
+        and config.get('output', {}).get('file') != DEFAULT_OUTPUT_FILENAME
+    ):
+        raise InvalidConfigError(
+            "'output.file' cannot be used when pairing is enabled. "
+            "Use 'output.folder' to specify an output directory, or remove 'output.file'."
         )
     return config
 
