@@ -53,9 +53,7 @@ def _match_path(relative_path, patterns):
     rel_str = relative_path.as_posix()
     parts = relative_path.parts
     for pattern in patterns:
-        if _fnmatch_casefold(rel_str, pattern) or _fnmatch_casefold(
-            rel_str + '/', pattern
-        ):
+        if _fnmatch_casefold(rel_str, pattern):
             return True
         if any(_fnmatch_casefold(part, pattern) for part in parts):
             return True
