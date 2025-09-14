@@ -12,12 +12,9 @@ search:
   recursive: true
 
   # List of file extensions to include.
-  # If this list is empty or omitted, ALL file extensions will be included
-  # (subject to the exclusion rules below). Cannot be used when pairing is
-  # enabled; use ``pairing.source_extensions`` and ``pairing.header_extensions``
-  # instead. Using both results in a configuration error.
+  # If this list is empty, all extensions are included (subject to exclusions).
   allowed_extensions:
-      - '.txt'
+      - '.txt' # or '.py'
 
 # --- Output Configuration ---
 output:
