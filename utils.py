@@ -55,16 +55,15 @@ def read_file_best_effort(file_path):
 
 
 def compact_whitespace(text):
-    """Normalize whitespace similarly to previous scripts."""
-    previous = None
-    while previous != text:
-        previous = text
-        text = text.replace('    ', '\t').replace('\r', '')
-    previous = None
-    while previous != text:
-        previous = text
-        text = text.replace('\t ', '\t').replace(' \n', '\n').replace('\n\n\n', '\n\n').replace('\t\n', '\n')
-        text = re.sub(r'(?<!\n|\t)\t', ' ', text)
+    """Normalize whitespace using a more efficient, non-iterative approach."""
+    text = text.replace('\r', '')
+    text = text.replace('    ', '\t')
+    text = re.sub(r'\t +', '\t', text)
+    text = re.sub(r' +\n', '\n', text)
+    text = re.sub(r'\t+\n', '\n', text)
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    text = re.sub(r'(?<!\n)\t+', lambda m: ' ' * len(m.group(0)), text)
+    text = re.sub(r' +\n', '\n', text)
     return text
 
 
