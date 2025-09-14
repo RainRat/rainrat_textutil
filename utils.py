@@ -2,6 +2,36 @@ import re
 import yaml
 
 
+DEFAULT_OUTPUT_FILENAME = "combined_files.txt"
+FILENAME_PLACEHOLDER = "{{FILENAME}}"
+
+DEFAULT_CONFIG = {
+    'filters': {
+        'exclusions': {
+            'filenames': [],
+            'extensions': [],
+            'folders': [],
+        },
+        'inclusion_groups': {},
+    },
+    'pairing': {
+        'enabled': False,
+        'source_extensions': [],
+        'header_extensions': [],
+        'include_mismatched': False,
+    },
+    'output': {
+        'file': DEFAULT_OUTPUT_FILENAME,
+        'folder': None,
+        'include_headers': True,
+        'no_header_separator': '\n\n',
+        'add_line_numbers': False,
+        'header_template': f"{FILENAME_PLACEHOLDER}:\n```\n",
+        'footer_template': '\n```\n\n',
+    },
+}
+
+
 class ConfigNotFoundError(FileNotFoundError):
     """Raised when the configuration file cannot be found."""
 
@@ -114,11 +144,18 @@ def apply_line_regex_replacements(text, rules):
     return text
 
 
-def load_and_validate_config(config_file_path, required_keys=None, defaults=None, nested_required=None):
+def load_and_validate_config(
+    config_file_path,
+    required_keys=None,
+    defaults=DEFAULT_CONFIG,
+    nested_required=None,
+):
     """Load a YAML config file and enforce required keys and defaults.
 
     ``defaults`` may contain nested dictionaries, which are merged recursively
-    into the loaded configuration.
+    into the loaded configuration. The canonical defaults are provided by
+    ``DEFAULT_CONFIG`` but may be overridden or extended via the ``defaults``
+    parameter.
     """
     config = load_yaml_config(config_file_path)
 
