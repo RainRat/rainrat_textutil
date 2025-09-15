@@ -68,7 +68,7 @@ def should_include(
     allowed_extensions,
     include_patterns,
     filter_opts,
-    relative_path=None,
+    relative_path,
 ):
     """Return ``True`` if ``file_path`` passes all filtering rules."""
     if not file_path.is_file():
@@ -82,7 +82,7 @@ def should_include(
     if allowed_extensions and suffix not in allowed_extensions:
         return False
     if include_patterns:
-        rel_str = relative_path.as_posix() if relative_path else file_name
+        rel_str = relative_path.as_posix()
         if not any(
             _fnmatch_casefold(file_name, pattern)
             or _fnmatch_casefold(rel_str, pattern)
@@ -373,16 +373,22 @@ def main():
     else:
         output_path = output_conf.get('file', DEFAULT_OUTPUT_FILENAME)
 
-    find_and_combine_files(config, output_path, dry_run=args.dry_run)
-    if not args.dry_run:
-        if pairing_enabled and output_path is None:
-            print("\nDone. Combined files have been written alongside their source files.")
-        else:
-            print(
-                f"\nDone. Combined files have been written to '{output_path}'."
-            )
+    # Determine output description before the main loop
+    if pairing_enabled:
+        destination_desc = (
+            "alongside their source files"
+            if output_path is None
+            else f"to '{output_path}'"
+        )
     else:
+        destination_desc = f"to '{output_path}'"
+
+    find_and_combine_files(config, output_path, dry_run=args.dry_run)
+
+    if args.dry_run:
         print("\nDry run complete.")
+    else:
+        print(f"\nDone. Combined files have been written {destination_desc}.")
 
 
 if __name__ == "__main__":
