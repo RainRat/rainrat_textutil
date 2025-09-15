@@ -54,7 +54,7 @@ filters:
   # --- Exclusion Rules ---
   # Files and folders matching these rules will be skipped.
   exclusions:
-    # Exclude specific full filenames.
+    # Exclude files matching these glob patterns (e.g., 'test.py', '*.log').
     filenames:
       - 'test.py'
 

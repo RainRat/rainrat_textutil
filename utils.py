@@ -201,6 +201,18 @@ def load_and_validate_config(
                     group.setdefault('enabled', False)
                     group.setdefault('filenames', [])
 
+        if (
+            isinstance(groups, dict)
+            and any(
+                isinstance(g, dict) and g.get('enabled')
+                for g in groups.values()
+            )
+            and config.get('search', {}).get('allowed_extensions')
+        ):
+            raise InvalidConfigError(
+                "'search.allowed_extensions' cannot be used when 'filters.inclusion_groups' are enabled. Please specify file types within the inclusion group patterns (e.g., 'src/**/*.py') or remove 'allowed_extensions'."
+            )
+
     if (
         config.get('pairing', {}).get('enabled')
         and config.get('search', {}).get('allowed_extensions')
