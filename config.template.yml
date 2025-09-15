@@ -61,8 +61,7 @@ filters:
 
   # --- Exclusion Rules ---
   exclusions:
-    filenames: []      # Skip files whose names match these glob patterns.
-    extensions: []     # Skip files with these extensions
+    filenames: []      # Skip files matching glob patterns (e.g., '*.log', 'tests/*').
     # Exclude folders if any directory name in the path matches one of these
     # patterns (e.g., 'build' excludes ./build and ./src/app/build). Case-insensitive.
     folders: []
