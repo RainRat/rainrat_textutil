@@ -26,24 +26,7 @@ def load_config(config_path):
     nested_required = {
         'search': ['root_folders'],
     }
-    config = load_and_validate_config(config_path, nested_required=nested_required)
-    if (
-        config.get('pairing', {}).get('enabled')
-        and config.get('search', {}).get('allowed_extensions')
-    ):
-        raise InvalidConfigError(
-            "'allowed_extensions' cannot be used when pairing is enabled; "
-            "remove it or disable pairing."
-        )
-    if (
-        config.get('pairing', {}).get('enabled')
-        and config.get('output', {}).get('file') != DEFAULT_OUTPUT_FILENAME
-    ):
-        raise InvalidConfigError(
-            "'output.file' cannot be used when pairing is enabled. "
-            "Use 'output.folder' to specify an output directory, or remove 'output.file'."
-        )
-    return config
+    return load_and_validate_config(config_path, nested_required=nested_required)
 
 
 def _match_path(relative_path, patterns):
@@ -60,27 +43,22 @@ def _match_path(relative_path, patterns):
     return False
 
 
-def should_include(
-    file_path,
-    *,
-    exclude_filenames,
-    exclude_extensions,
-    allowed_extensions,
-    include_patterns,
-    filter_opts,
-    relative_path,
-):
+def should_include(file_path, relative_path, filter_config):
     """Return ``True`` if ``file_path`` passes all filtering rules."""
     if not file_path.is_file():
         return False
     file_name = file_path.name
+    exclude_filenames = filter_config.get('exclude_filenames', [])
     if any(_fnmatch_casefold(file_name, pattern) for pattern in exclude_filenames):
         return False
     suffix = file_path.suffix.lower()
+    exclude_extensions = filter_config.get('exclude_extensions')
     if exclude_extensions and suffix in exclude_extensions:
         return False
+    allowed_extensions = filter_config.get('allowed_extensions')
     if allowed_extensions and suffix not in allowed_extensions:
         return False
+    include_patterns = filter_config.get('include_patterns')
     if include_patterns:
         rel_str = relative_path.as_posix()
         if not any(
@@ -91,8 +69,8 @@ def should_include(
             return False
     try:
         file_size = file_path.stat().st_size
-        min_size = filter_opts.get('min_size_bytes', 0)
-        max_size = filter_opts.get('max_size_bytes') or float('inf')
+        min_size = filter_config.get('min_size_bytes', 0)
+        max_size = filter_config.get('max_size_bytes') or float('inf')
         if not (min_size <= file_size <= max_size):
             return False
     except OSError:
@@ -166,18 +144,19 @@ def filter_and_pair_paths(
         if group_conf.get('enabled'):
             include_patterns.update(group_conf.get('filenames') or [])
 
+    filter_config = {
+        'exclude_filenames': exclude_filenames,
+        'exclude_extensions': exclude_extensions,
+        'allowed_extensions': allowed_extensions,
+        'include_patterns': include_patterns,
+        'min_size_bytes': filter_opts.get('min_size_bytes', 0),
+        'max_size_bytes': filter_opts.get('max_size_bytes'),
+    }
+
     filtered = [
         p
         for p in file_paths
-        if should_include(
-            p,
-            exclude_filenames=exclude_filenames,
-            exclude_extensions=exclude_extensions,
-            allowed_extensions=allowed_extensions,
-            include_patterns=include_patterns,
-            filter_opts=filter_opts,
-            relative_path=p.relative_to(root_path),
-        )
+        if should_include(p, p.relative_to(root_path), filter_config)
     ]
     if not pairing_enabled:
         return filtered
@@ -245,30 +224,6 @@ def handle_file(
     return is_first_file
 
 
-def write_files(
-    file_paths,
-    root_path,
-    outfile,
-    *,
-    config,
-    dry_run,
-    output_opts,
-    is_first_file,
-):
-    """Iterate through ``file_paths`` and write their contents."""
-    for file_path in file_paths:
-        is_first_file = handle_file(
-            file_path,
-            root_path,
-            outfile,
-            is_first_file,
-            output_opts=output_opts,
-            dry_run=dry_run,
-            config=config,
-        )
-    return is_first_file
-
-
 def find_and_combine_files(config, output_path, dry_run=False):
     """Find, filter, and combine files based on the provided configuration."""
     search_opts = config.get('search', {})
@@ -318,25 +273,28 @@ def find_and_combine_files(config, output_path, dry_run=False):
                             print(f"  - {rel_path}")
                         continue
                     with open(out_file, 'w', encoding='utf8') as pair_out:
-                        write_files(
-                            paths,
-                            root_path,
-                            pair_out,
-                            config=config,
-                            dry_run=dry_run,
-                            output_opts=output_opts,
-                            is_first_file=True,
-                        )
+                        is_first_in_pair = True
+                        for file_path in paths:
+                            is_first_in_pair = handle_file(
+                                file_path,
+                                root_path,
+                                pair_out,
+                                is_first_in_pair,
+                                output_opts=output_opts,
+                                dry_run=dry_run,
+                                config=config,
+                            )
             else:
-                is_first_file = write_files(
-                    final_paths,
-                    root_path,
-                    outfile,
-                    config=config,
-                    dry_run=dry_run,
-                    output_opts=output_opts,
-                    is_first_file=is_first_file,
-                )
+                for file_path in final_paths:
+                    is_first_file = handle_file(
+                        file_path,
+                        root_path,
+                        outfile,
+                        is_first_file,
+                        output_opts=output_opts,
+                        dry_run=dry_run,
+                        config=config,
+                    )
 
 
 def main():

@@ -201,6 +201,21 @@ def load_and_validate_config(
                     group.setdefault('enabled', False)
                     group.setdefault('filenames', [])
 
+    if (
+        config.get('pairing', {}).get('enabled')
+        and config.get('search', {}).get('allowed_extensions')
+    ):
+        raise InvalidConfigError(
+            "'allowed_extensions' cannot be used when pairing is enabled; remove it or disable pairing."
+        )
+    if (
+        config.get('pairing', {}).get('enabled')
+        and config.get('output', {}).get('file') != DEFAULT_OUTPUT_FILENAME
+    ):
+        raise InvalidConfigError(
+            "'output.file' cannot be used when pairing is enabled. Use 'output.folder' to specify an output directory, or remove 'output.file'."
+        )
+
     return config
 
 def process_content(buffer, options):
