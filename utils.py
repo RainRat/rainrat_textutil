@@ -23,8 +23,6 @@ DEFAULT_CONFIG = {
     'output': {
         'file': DEFAULT_OUTPUT_FILENAME,
         'folder': None,
-        'include_headers': True,
-        'no_header_separator': '\n\n',
         'add_line_numbers': False,
         'header_template': f"{FILENAME_PLACEHOLDER}:\n```\n",
         'footer_template': '\n```\n\n',

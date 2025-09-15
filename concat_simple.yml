@@ -21,13 +21,10 @@ output:
   # The path for the final combined text file.
   file: 'combined_files.txt'
 
-  # If true, prints a header like "path/to/file.py:\n```" for each file.
-  # Headers are included by default; set this to false to disable them.
-  include_headers: false
-
-  # A string to insert between files ONLY when include_headers is false.
-  # Default is a blank line. Use "\n" for a simple newline.
-  no_header_separator: "\n\n"
+  # Write nothing before each file and insert a blank line after each file.
+  # Setting the header template to null omits headers entirely.
+  header_template: null
+  footer_template: "\n\n"
 
 # --- File Filtering ---
 filters:
