@@ -2,9 +2,14 @@
 
 Currently this repo contains only SourceCombine, but new tools will be added.
 
-This repository contains a simple file-combining utility driven by YAML configuration files.
+## SourceCombine
+
+A simple file-combining utility driven by YAML configuration files.
 It can collect source files from multiple directories, apply filtering and text-processing
 rules, and output a single consolidated text file or paired files.
+
+Whether you are preparing files for printing, for providing to an LLM, or just
+like all your files you need to refer to presented compactly.
 
 ## CLI usage
 
