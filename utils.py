@@ -219,10 +219,10 @@ def load_and_validate_config(
         )
     if (
         config.get('pairing', {}).get('enabled')
-        and config.get('output', {}).get('file') != DEFAULT_OUTPUT_FILENAME
+        and 'file' in config.get('output', {})
     ):
         raise InvalidConfigError(
-            "'output.file' cannot be used when pairing is enabled. Use 'output.folder' to specify an output directory, or remove 'output.file'."
+            "'output.file' cannot be used when pairing is enabled. Use 'output.folder' to specify an output directory, or remove the 'file' key from the output configuration."
         )
 
     return config

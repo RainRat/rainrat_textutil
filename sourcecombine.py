@@ -21,6 +21,17 @@ def _fnmatch_casefold(name, pattern):
     return fnmatch.fnmatchcase(name.casefold(), pattern.casefold())
 
 
+def _matches_file_pattern(file_name, relative_path_str, patterns):
+    """Return True if ``file_name`` or ``relative_path_str`` matches ``patterns``."""
+    if not patterns:
+        return False
+    return any(
+        _fnmatch_casefold(file_name, pattern)
+        or _fnmatch_casefold(relative_path_str, pattern)
+        for pattern in patterns
+    )
+
+
 def load_config(config_path):
     """Load and validate the YAML configuration file."""
     nested_required = {
@@ -50,10 +61,7 @@ def should_include(file_path, relative_path, filter_config):
     file_name = file_path.name
     exclude_filenames = filter_config.get('exclude_filenames', [])
     rel_str = relative_path.as_posix()
-    if any(
-        _fnmatch_casefold(file_name, pattern) or _fnmatch_casefold(rel_str, pattern)
-        for pattern in exclude_filenames
-    ):
+    if _matches_file_pattern(file_name, rel_str, exclude_filenames):
         return False
     suffix = file_path.suffix.lower()
     allowed_extensions = filter_config.get('allowed_extensions')
@@ -61,11 +69,7 @@ def should_include(file_path, relative_path, filter_config):
         return False
     include_patterns = filter_config.get('include_patterns')
     if include_patterns:
-        if not any(
-            _fnmatch_casefold(file_name, pattern)
-            or _fnmatch_casefold(rel_str, pattern)
-            for pattern in include_patterns
-        ):
+        if not _matches_file_pattern(file_name, rel_str, include_patterns):
             return False
     try:
         file_size = file_path.stat().st_size
