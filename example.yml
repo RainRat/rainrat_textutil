@@ -67,8 +67,10 @@ filters:
       - '.git'
 
 # --- Content Processing Options ---
-processing:
+  # All of these processes could be lossy.
+  processing:
   # If true, attempts to clean up and compact whitespace.
+  # Not recommended for languages where whitespace matters (ie. Python)
   compact_whitespace: false
 
   # If true, removes all C-style block comments (/* ... */).
