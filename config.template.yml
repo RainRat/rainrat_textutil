@@ -17,6 +17,7 @@ search:
   # Cannot be used when pairing is enabled; use
   # ``pairing.source_extensions`` and ``pairing.header_extensions`` instead.
   # Specifying both options results in a configuration error.
+  # Cannot be used when any inclusion_group is enabled.
   allowed_extensions: []
 
 # --- Output Configuration ---
@@ -57,6 +58,7 @@ filters:
 
   # --- Inclusion Groups ---
   # Enable specific groups to only include listed filenames or glob patterns.
+  # Mutually exclusive with ``search.allowed_extensions``; specify file types within the patterns instead.
   inclusion_groups:
     example_group:
       enabled: false
@@ -64,7 +66,7 @@ filters:
 
   # --- Exclusion Rules ---
   exclusions:
-    filenames: []      # Skip these filenames entirely
+    filenames: []      # Skip files whose names match these glob patterns.
     extensions: []     # Skip files with these extensions
     # Exclude folders if any directory name in the path matches one of these
     # patterns (e.g., 'build' excludes ./build and ./src/app/build). Case-insensitive.
