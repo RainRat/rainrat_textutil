@@ -29,23 +29,18 @@ output:
   # to place the .combined files next to their source files.
   folder: null
 
-  # Include a header ("path/to/file:\n```") before each file's content.
-  # Headers are included by default; set to false to omit them.
-  include_headers: true
-
-  # String inserted between files when headers are disabled.
-  no_header_separator: "\n\n"
-
   # Add line numbers starting at 1 for each file.
   add_line_numbers: false
 
-  # Template written before each file's content when headers are enabled.
+  # Template written before each file's content.
   # The special sequence "{{FILENAME}}" is replaced with the file's
-  # path relative to the root folder.
+  # path relative to the root folder. Set to null or an empty string
+  # to omit the header.
   header_template: "{{FILENAME}}:\n```\n"
 
-  # Template written after each file's content when headers are enabled.
-  # "{{FILENAME}}" is replaced with the file's relative path.
+  # Template written after each file's content.
+  # "{{FILENAME}}" is replaced with the file's relative path. Set to null
+  # or an empty string to omit the footer/separator.
   footer_template: "\n```\n\n"
 
 # --- File Filtering ---

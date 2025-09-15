@@ -178,7 +178,6 @@ def handle_file(
     file_path,
     root_path,
     outfile,
-    is_first_file,
     *,
     output_opts,
     dry_run,
@@ -187,41 +186,34 @@ def handle_file(
     """Read, process, and write a single file."""
     if dry_run:
         print(file_path.resolve())
-        return is_first_file
+        return
 
     print(f"Processing: {file_path}")
     content = read_file_best_effort(file_path)
     processed_content = process_content(content, config.get('processing', {}))
 
-    include_headers = output_opts.get('include_headers', True)
-    no_header_separator = output_opts.get('no_header_separator', '\n\n')
     add_line_numbers_opt = output_opts.get('add_line_numbers', False)
     if add_line_numbers_opt:
         processed_content = add_line_numbers(processed_content)
 
-    if include_headers:
-        relative_path = file_path.relative_to(root_path)
-        header_template = output_opts.get(
-            'header_template', f"{FILENAME_PLACEHOLDER}:\n```\n"
-        )
-        footer_template = output_opts.get(
-            'footer_template', "\n```\n\n"
-        )
+    relative_path = file_path.relative_to(root_path)
+    header_template = output_opts.get(
+        'header_template', f"{FILENAME_PLACEHOLDER}:\n```\n"
+    )
+    footer_template = output_opts.get(
+        'footer_template', "\n```\n\n"
+    )
+    if header_template:
         header_text = header_template.replace(
             FILENAME_PLACEHOLDER, str(relative_path)
         )
+        outfile.write(header_text)
+    outfile.write(processed_content)
+    if footer_template:
         footer_text = footer_template.replace(
             FILENAME_PLACEHOLDER, str(relative_path)
         )
-        outfile.write(header_text)
-        outfile.write(processed_content)
         outfile.write(footer_text)
-    else:
-        if not is_first_file:
-            outfile.write(no_header_separator)
-        outfile.write(processed_content)
-        is_first_file = False
-    return is_first_file
 
 
 def find_and_combine_files(config, output_path, dry_run=False):
@@ -245,7 +237,6 @@ def find_and_combine_files(config, output_path, dry_run=False):
 
     outfile_ctx = nullcontext() if pairing_enabled or dry_run else open(output_path, 'w', encoding='utf8')
     with outfile_ctx as outfile:
-        is_first_file = True
         for root_folder in root_folders:
             all_paths, root_path = collect_file_paths(
                 root_folder, recursive, exclude_folders
@@ -273,24 +264,21 @@ def find_and_combine_files(config, output_path, dry_run=False):
                             print(f"  - {rel_path}")
                         continue
                     with open(out_file, 'w', encoding='utf8') as pair_out:
-                        is_first_in_pair = True
                         for file_path in paths:
-                            is_first_in_pair = handle_file(
+                            handle_file(
                                 file_path,
                                 root_path,
                                 pair_out,
-                                is_first_in_pair,
                                 output_opts=output_opts,
                                 dry_run=dry_run,
                                 config=config,
                             )
             else:
                 for file_path in final_paths:
-                    is_first_file = handle_file(
+                    handle_file(
                         file_path,
                         root_path,
                         outfile,
-                        is_first_file,
                         output_opts=output_opts,
                         dry_run=dry_run,
                         config=config,
