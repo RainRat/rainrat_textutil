@@ -85,15 +85,18 @@ def read_file_best_effort(file_path):
 
 
 def compact_whitespace(text):
-    previous = None
-    while previous != text:
-        previous = text
-        text=text.replace('    ', '\t').replace('\r', '\n')
-    previous = None
-    while previous != text:
-        previous = text
-        text=text.replace('\t ', '\t').replace(' \n', '\n').replace('\n\n\n', '\n\n').replace('\t\n', '\n').replace('   ', '  ').replace(' \t', '\t')
-        text=re.sub(r'(?<!\n|\t)\t', ' ', text)
+    """Compact and normalize whitespace within ``text``."""
+    # Normalize line endings and convert runs of four spaces to tabs.
+    text = text.replace('\r', '\n')
+    text = re.sub(r' {4}', '\t', text)
+    # Remove spaces around tabs and collapse stray tabs into spaces.
+    text = re.sub(r'\t +| +\t', '\t', text)
+    text = re.sub(r'(?<!\n|\t)\t', ' ', text)
+    # Strip trailing whitespace and collapse multiple blank lines.
+    text = re.sub(r'[ \t]+\n', '\n', text)
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    # Reduce runs of spaces to at most two.
+    text = re.sub(r' {3,}', '  ', text)
     return text
 
 def _replace_line_block(text, pattern, replacement=None):
