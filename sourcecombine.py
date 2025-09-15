@@ -49,18 +49,18 @@ def should_include(file_path, relative_path, filter_config):
         return False
     file_name = file_path.name
     exclude_filenames = filter_config.get('exclude_filenames', [])
-    if any(_fnmatch_casefold(file_name, pattern) for pattern in exclude_filenames):
+    rel_str = relative_path.as_posix()
+    if any(
+        _fnmatch_casefold(file_name, pattern) or _fnmatch_casefold(rel_str, pattern)
+        for pattern in exclude_filenames
+    ):
         return False
     suffix = file_path.suffix.lower()
-    exclude_extensions = filter_config.get('exclude_extensions')
-    if exclude_extensions and suffix in exclude_extensions:
-        return False
     allowed_extensions = filter_config.get('allowed_extensions')
     if allowed_extensions and suffix not in allowed_extensions:
         return False
     include_patterns = filter_config.get('include_patterns')
     if include_patterns:
-        rel_str = relative_path.as_posix()
         if not any(
             _fnmatch_casefold(file_name, pattern)
             or _fnmatch_casefold(rel_str, pattern)
@@ -134,9 +134,6 @@ def filter_and_pair_paths(
 
     exclude_conf = filter_opts.get('exclusions', {})
     exclude_filenames = exclude_conf.get('filenames') or []
-    exclude_extensions = tuple(
-        e.lower() for e in (exclude_conf.get('extensions') or [])
-    )
 
     inclusion_groups = filter_opts.get('inclusion_groups', {})
     include_patterns = set()
@@ -146,7 +143,6 @@ def filter_and_pair_paths(
 
     filter_config = {
         'exclude_filenames': exclude_filenames,
-        'exclude_extensions': exclude_extensions,
         'allowed_extensions': allowed_extensions,
         'include_patterns': include_patterns,
         'min_size_bytes': filter_opts.get('min_size_bytes', 0),

@@ -9,7 +9,6 @@ DEFAULT_CONFIG = {
     'filters': {
         'exclusions': {
             'filenames': [],
-            'extensions': [],
             'folders': [],
         },
         'inclusion_groups': {},
@@ -84,7 +83,7 @@ def read_file_best_effort(file_path):
 
 def compact_whitespace(text):
     """Compact and normalize whitespace within ``text``."""
-    # Normalize line endings and convert runs of four spaces to tabs.
+    # Normalize line endings and replace every four consecutive spaces with a tab.
     text = text.replace('\r', '\n')
     text = re.sub(r' {4}', '\t', text)
     # Remove spaces around tabs and collapse stray tabs into spaces.

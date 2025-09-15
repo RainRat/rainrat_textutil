@@ -77,6 +77,17 @@ processing:
 See `example.yml`, `concat_simple.yml`, and `example_cpp_h.yml` for more configuration
 examples.
 
+### Excluding by file extension
+
+Use glob patterns in `filters.exclusions.filenames` to skip files by extension:
+
+```yaml
+filters:
+  exclusions:
+    filenames:
+      - '*.bak'
+```
+
 ### Case-insensitive pattern matching
 
 Filename and folder filters defined in the configuration are matched without

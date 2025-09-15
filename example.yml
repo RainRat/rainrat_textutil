@@ -57,9 +57,7 @@ filters:
     # Exclude files matching these glob patterns (e.g., 'test.py', '*.log').
     filenames:
       - 'test.py'
-
-    # Exclude all files with these extensions.
-    extensions:
+      - '*.log'
 
     # Exclude folders if any directory name in the path matches one of these
     # patterns (e.g., 'build' excludes ./build and ./src/app/build). Case-insensitive.
