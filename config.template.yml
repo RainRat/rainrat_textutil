@@ -73,15 +73,16 @@ processing:
   remove_all_c_style_comments: false  # Drop all /* ... */ comments
   remove_initial_c_style_comment: false        # Drop first block comment if at file start
   line_regex_replacements: []      # Collapse blocks of lines matching regexes
+  # Example line rule:
+  # line_regex_replacements:
+  #   - pattern: '^\s*\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$'
+  #     replacement: '<data removed>'
   regex_replacements: []           # List of regex find/replace rules
   # Example rule:
   # regex_replacements:
   #   - pattern: '^\s*//\s*TODO:.*$'
   #     replacement: ''
-  # Example line rule:
-  # line_regex_replacements:
-  #   - pattern: '^\s*\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$'
-  #     replacement: '<data removed>'
+
 
 # --- Pairing Options ---
 pairing:
