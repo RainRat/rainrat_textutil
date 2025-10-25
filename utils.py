@@ -1,4 +1,7 @@
 import re
+import unicodedata
+from pathlib import Path
+
 import yaml
 
 
@@ -58,24 +61,72 @@ def load_yaml_config(config_file_path):
 
 def read_file_best_effort(file_path):
     """Attempt to read a file trying several encodings."""
-    encodings = [
-        'utf-8-sig',
-        'utf-8',
+
+    def _strip_bom(text):
+        return text.lstrip('\ufeff')
+
+    try:
+        with open(file_path, 'r', encoding='utf-8-sig') as f:
+            return _strip_bom(f.read())
+    except UnicodeError:
+        pass
+    except FileNotFoundError:
+        raise
+
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return _strip_bom(f.read())
+    except UnicodeError:
+        pass
+
+    try:
+        raw_bytes = Path(file_path).read_bytes()
+    except Exception:
+        print(f"Warning: Could not read {file_path}.")
+        return ""
+
+    def _score_text(text):
+        score = 0.0
+        for ch in text:
+            category = unicodedata.category(ch)
+            if category.startswith('L'):
+                score += 2.0
+            elif category.startswith('N'):
+                score += 1.5
+            elif category.startswith('Z'):
+                score += 1.0
+            elif category.startswith('P'):
+                score += 0.2
+            elif category == 'Co':
+                score -= 2.0
+            elif category.startswith('C'):
+                score -= 1.5
+        return score
+
+    scored_candidates = []
+    candidate_encodings = (
         'utf-16',
         'utf-16-le',
         'utf-16-be',
         'cp1252',
         'latin-1',
-    ]
-    for encoding in encodings:
+    )
+
+    for index, encoding in enumerate(candidate_encodings):
         try:
-            with open(file_path, 'r', encoding=encoding) as f:
-                return f.read().lstrip('\ufeff')
+            decoded = _strip_bom(raw_bytes.decode(encoding))
         except UnicodeError:
             continue
+        score = _score_text(decoded)
+        normalized = score / max(len(decoded), 1)
+        scored_candidates.append((normalized, score, -index, decoded))
+
+    if scored_candidates:
+        scored_candidates.sort(reverse=True)
+        return scored_candidates[0][3]
+
     try:
-        with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
-            return f.read().lstrip('\ufeff')
+        return _strip_bom(raw_bytes.decode('utf-8', errors='replace'))
     except Exception:
         print(f"Warning: Could not decode {file_path} with any of the attempted encodings.")
         return ""
@@ -84,7 +135,7 @@ def read_file_best_effort(file_path):
 def compact_whitespace(text):
     """Compact and normalize whitespace within ``text``."""
     # Normalize line endings and replace every four consecutive spaces with a tab.
-    text = text.replace('\r', '\n')
+    text = text.replace('\r\n', '\n').replace('\r', '\n')
     text = re.sub(r' {4}', '\t', text)
     # Remove spaces around tabs and collapse stray tabs into spaces.
     text = re.sub(r'\t +| +\t', '\t', text)
