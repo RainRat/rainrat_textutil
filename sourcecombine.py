@@ -21,7 +21,7 @@ def _fnmatch_casefold(name, pattern):
     return fnmatch.fnmatchcase(name.casefold(), pattern.casefold())
 
 
-def _matches_file_pattern(file_name, relative_path_str, patterns):
+def _matches_file_glob(file_name, relative_path_str, patterns):
     """Return True if ``file_name`` or ``relative_path_str`` matches ``patterns``."""
     if not patterns:
         return False
@@ -32,16 +32,8 @@ def _matches_file_pattern(file_name, relative_path_str, patterns):
     )
 
 
-def load_config(config_path):
-    """Load and validate the YAML configuration file."""
-    nested_required = {
-        'search': ['root_folders'],
-    }
-    return load_and_validate_config(config_path, nested_required=nested_required)
-
-
-def _match_path(relative_path, patterns):
-    """Return True if ``relative_path`` matches any glob ``patterns``."""
+def _matches_folder_glob(relative_path, patterns):
+    """Return True if ``relative_path`` matches any folder glob ``patterns``."""
     if not patterns:
         return False
     rel_str = relative_path.as_posix()
@@ -61,7 +53,7 @@ def should_include(file_path, relative_path, filter_config):
     file_name = file_path.name
     exclude_filenames = filter_config.get('exclude_filenames', [])
     rel_str = relative_path.as_posix()
-    if _matches_file_pattern(file_name, rel_str, exclude_filenames):
+    if _matches_file_glob(file_name, rel_str, exclude_filenames):
         return False
     suffix = file_path.suffix.lower()
     allowed_extensions = filter_config.get('allowed_extensions')
@@ -69,7 +61,7 @@ def should_include(file_path, relative_path, filter_config):
         return False
     include_patterns = filter_config.get('include_patterns')
     if include_patterns:
-        if not _matches_file_pattern(file_name, rel_str, include_patterns):
+        if not _matches_file_glob(file_name, rel_str, include_patterns):
             return False
     try:
         file_size = file_path.stat().st_size
@@ -96,14 +88,14 @@ def collect_file_paths(root_folder, recursive, exclude_folders):
             dirnames[:] = [
                 d
                 for d in dirnames
-                if not _match_path(rel_dir / d, exclude_folders)
+                if not _matches_folder_glob(rel_dir / d, exclude_folders)
             ]
             for name in filenames:
                 file_paths.append(Path(dirpath) / name)
     else:
         for entry in root_path.iterdir():
             if entry.is_dir():
-                if _match_path(entry.relative_to(root_path), exclude_folders):
+                if _matches_folder_glob(entry.relative_to(root_path), exclude_folders):
                     continue
             if entry.is_file():
                 file_paths.append(entry)
@@ -118,17 +110,11 @@ def filter_and_pair_paths(
     search_opts,
     root_path,
 ):
-    """Apply filtering and optional pairing to ``file_paths``.
-
-    ``filter_opts`` and ``pair_opts`` are sub-dictionaries of the main
-    configuration and contain all options related to filtering and file
-    pairing respectively.
-    """
+    """Apply filtering rules to ``file_paths`` and return the matches."""
 
     pairing_enabled = pair_opts.get('enabled')
     source_exts = tuple(e.lower() for e in (pair_opts.get('source_extensions') or []))
     header_exts = tuple(e.lower() for e in (pair_opts.get('header_extensions') or []))
-    include_mismatched = pair_opts.get('include_mismatched', False)
 
     allowed_extensions = tuple(
         e.lower() for e in (search_opts.get('allowed_extensions') or [])
@@ -153,16 +139,20 @@ def filter_and_pair_paths(
         'max_size_bytes': filter_opts.get('max_size_bytes'),
     }
 
-    filtered = [
+    return [
         p
         for p in file_paths
         if should_include(p, p.relative_to(root_path), filter_config)
     ]
-    if not pairing_enabled:
-        return filtered
+
+
+def _pair_files(filtered_paths, source_exts, header_exts, include_mismatched):
+    """Return a mapping of stems to paired file paths."""
+
     file_map = {}
-    for file_path in filtered:
+    for file_path in filtered_paths:
         file_map.setdefault(file_path.stem, {})[file_path.suffix.lower()] = file_path
+
     paired = {}
     for stem, stem_files in file_map.items():
         src = next((p for ext, p in stem_files.items() if ext in source_exts), None)
@@ -243,7 +233,7 @@ def find_and_combine_files(config, output_path, dry_run=False):
             )
             if not all_paths:
                 continue
-            final_paths = filter_and_pair_paths(
+            filtered_paths = filter_and_pair_paths(
                 all_paths,
                 filter_opts=filter_opts,
                 pair_opts=pair_opts,
@@ -251,7 +241,20 @@ def find_and_combine_files(config, output_path, dry_run=False):
                 root_path=root_path,
             )
             if pairing_enabled:
-                for stem, paths in final_paths.items():
+                source_exts = tuple(
+                    e.lower() for e in (pair_opts.get('source_extensions') or [])
+                )
+                header_exts = tuple(
+                    e.lower() for e in (pair_opts.get('header_extensions') or [])
+                )
+                include_mismatched = pair_opts.get('include_mismatched', False)
+                paired_paths = _pair_files(
+                    filtered_paths,
+                    source_exts,
+                    header_exts,
+                    include_mismatched,
+                )
+                for stem, paths in paired_paths.items():
                     out_file = (
                         out_folder / f"{stem}.combined"
                         if out_folder
@@ -274,7 +277,7 @@ def find_and_combine_files(config, output_path, dry_run=False):
                                 config=config,
                             )
             else:
-                for file_path in final_paths:
+                for file_path in filtered_paths:
                     handle_file(
                         file_path,
                         root_path,
@@ -307,7 +310,12 @@ def main():
     args = parser.parse_args()
 
     try:
-        config = load_config(args.config_file)
+        nested_required = {
+            'search': ['root_folders'],
+        }
+        config = load_and_validate_config(
+            args.config_file, nested_required=nested_required
+        )
     except (ConfigNotFoundError, InvalidConfigError) as e:
         print(e)
         sys.exit(1)

@@ -77,16 +77,23 @@ processing:
 See `example.yml`, `concat_simple.yml`, and `example_cpp_h.yml` for more configuration
 examples.
 
-### Excluding by file extension
+### Filtering and Exclusion Rules
 
-Use glob patterns in `filters.exclusions.filenames` to skip files by extension:
+Use glob patterns in `filters.exclusions.filenames` to skip specific files.
+Patterns can match an extension (`'*.bak'`), a complete filename (`'test.py'`),
+or a relative path glob (`'tests/*'`).
 
-```yaml
-filters:
-  exclusions:
-    filenames:
-      - '*.bak'
-```
+Exclude entire directories with `filters.exclusions.folders`. Each pattern is
+checked against every directory name in the path, so a single entry like
+`'build'` will exclude both `./build` and nested folders such as
+`./src/app/build`.
+
+### Inclusion Groups
+
+Enable selective opt-in filtering by configuring `filters.inclusion_groups`.
+Each group defines a set of filename patterns and can be toggled on or off via
+its `enabled` flag. When at least one group is enabled, only files matching the
+enabled groups' patterns are included in the search results.
 
 ### Case-insensitive pattern matching
 
