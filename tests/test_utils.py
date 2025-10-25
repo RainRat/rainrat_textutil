@@ -69,8 +69,13 @@ def test_read_file_best_effort_handles_various_encodings(tmp_path):
     latin_file = tmp_path / "latin.txt"
     latin_file.write_bytes(latin_text.encode("cp1252"))
 
+    cjk_text = "漢字仮名"
+    cjk_file = tmp_path / "cjk_utf16.txt"
+    cjk_file.write_bytes(cjk_text.encode("utf-16-le"))
+
     assert read_file_best_effort(bom_file) == utf8_bom
     assert read_file_best_effort(latin_file) == latin_text
+    assert read_file_best_effort(cjk_file) == cjk_text
 
 
 def _write_config(tmp_path: Path, data: dict) -> Path:

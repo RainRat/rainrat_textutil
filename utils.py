@@ -1,4 +1,5 @@
 import re
+import unicodedata
 from pathlib import Path
 
 import yaml
@@ -84,18 +85,45 @@ def read_file_best_effort(file_path):
         print(f"Warning: Could not read {file_path}.")
         return ""
 
-    if b'\x00' in raw_bytes:
-        for encoding in ('utf-16', 'utf-16-le', 'utf-16-be'):
-            try:
-                return _strip_bom(raw_bytes.decode(encoding))
-            except UnicodeError:
-                continue
+    def _score_text(text):
+        score = 0.0
+        for ch in text:
+            category = unicodedata.category(ch)
+            if category.startswith('L'):
+                score += 2.0
+            elif category.startswith('N'):
+                score += 1.5
+            elif category.startswith('Z'):
+                score += 1.0
+            elif category.startswith('P'):
+                score += 0.2
+            elif category == 'Co':
+                score -= 2.0
+            elif category.startswith('C'):
+                score -= 1.5
+        return score
 
-    for encoding in ('cp1252', 'latin-1'):
+    scored_candidates = []
+    candidate_encodings = (
+        'utf-16',
+        'utf-16-le',
+        'utf-16-be',
+        'cp1252',
+        'latin-1',
+    )
+
+    for index, encoding in enumerate(candidate_encodings):
         try:
-            return _strip_bom(raw_bytes.decode(encoding))
+            decoded = _strip_bom(raw_bytes.decode(encoding))
         except UnicodeError:
             continue
+        score = _score_text(decoded)
+        normalized = score / max(len(decoded), 1)
+        scored_candidates.append((normalized, score, -index, decoded))
+
+    if scored_candidates:
+        scored_candidates.sort(reverse=True)
+        return scored_candidates[0][3]
 
     try:
         return _strip_bom(raw_bytes.decode('utf-8', errors='replace'))
