@@ -217,14 +217,6 @@ def load_and_validate_config(
         raise InvalidConfigError(
             "'allowed_extensions' cannot be used when pairing is enabled; remove it or disable pairing."
         )
-    if (
-        config.get('pairing', {}).get('enabled')
-        and 'file' in config.get('output', {})
-    ):
-        raise InvalidConfigError(
-            "'output.file' cannot be used when pairing is enabled. Use 'output.folder' to specify an output directory, or remove the 'file' key from the output configuration."
-        )
-
     return config
 
 def process_content(buffer, options):

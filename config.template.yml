@@ -14,14 +14,8 @@ search:
   recursive: true
 
   # Only include files with these extensions. Leave empty to include all.
-  # Mutually exclusive with `pairing` and `inclusion_groups`.
-  # This option CANNOT be used when `pairing.enabled` is true or when any
-  # `inclusion_groups` item is enabled. The script will raise a
-  # configuration error if these options are combined.
-  # For pairing, extensions are defined in `pairing.source_extensions` and
-  # `pairing.header_extensions`.
-  # For inclusion groups, specify file types within the glob patterns
-  # (e.g., 'src/**/*.py').
+  # NOTE: This option cannot be used if `pairing.enabled` is true or
+  # if any `inclusion_groups` are enabled.
   allowed_extensions: []
 
 # --- Output Configuration ---
