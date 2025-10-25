@@ -1,4 +1,6 @@
 import re
+from pathlib import Path
+
 import yaml
 
 
@@ -58,24 +60,45 @@ def load_yaml_config(config_file_path):
 
 def read_file_best_effort(file_path):
     """Attempt to read a file trying several encodings."""
-    encodings = [
-        'utf-8-sig',
-        'utf-8',
-        'utf-16',
-        'utf-16-le',
-        'utf-16-be',
-        'cp1252',
-        'latin-1',
-    ]
-    for encoding in encodings:
+
+    def _strip_bom(text):
+        return text.lstrip('\ufeff')
+
+    try:
+        with open(file_path, 'r', encoding='utf-8-sig') as f:
+            return _strip_bom(f.read())
+    except UnicodeError:
+        pass
+    except FileNotFoundError:
+        raise
+
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return _strip_bom(f.read())
+    except UnicodeError:
+        pass
+
+    try:
+        raw_bytes = Path(file_path).read_bytes()
+    except Exception:
+        print(f"Warning: Could not read {file_path}.")
+        return ""
+
+    if b'\x00' in raw_bytes:
+        for encoding in ('utf-16', 'utf-16-le', 'utf-16-be'):
+            try:
+                return _strip_bom(raw_bytes.decode(encoding))
+            except UnicodeError:
+                continue
+
+    for encoding in ('cp1252', 'latin-1'):
         try:
-            with open(file_path, 'r', encoding=encoding) as f:
-                return f.read().lstrip('\ufeff')
+            return _strip_bom(raw_bytes.decode(encoding))
         except UnicodeError:
             continue
+
     try:
-        with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
-            return f.read().lstrip('\ufeff')
+        return _strip_bom(raw_bytes.decode('utf-8', errors='replace'))
     except Exception:
         print(f"Warning: Could not decode {file_path} with any of the attempted encodings.")
         return ""
@@ -84,7 +107,7 @@ def read_file_best_effort(file_path):
 def compact_whitespace(text):
     """Compact and normalize whitespace within ``text``."""
     # Normalize line endings and replace every four consecutive spaces with a tab.
-    text = text.replace('\r', '\n')
+    text = text.replace('\r\n', '\n').replace('\r', '\n')
     text = re.sub(r' {4}', '\t', text)
     # Remove spaces around tabs and collapse stray tabs into spaces.
     text = re.sub(r'\t +| +\t', '\t', text)
