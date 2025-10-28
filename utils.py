@@ -261,13 +261,22 @@ def load_and_validate_config(
                 "'search.allowed_extensions' cannot be used when 'filters.inclusion_groups' are enabled. Please specify file types within the inclusion group patterns (e.g., 'src/**/*.py') or remove 'allowed_extensions'."
             )
 
-    if (
-        config.get('pairing', {}).get('enabled')
-        and config.get('search', {}).get('allowed_extensions')
-    ):
-        raise InvalidConfigError(
-            "'allowed_extensions' cannot be used when pairing is enabled; remove it or disable pairing."
+    pairing_conf = config.get('pairing', {}) or {}
+    search_conf = config.get('search', {}) or {}
+
+    if pairing_conf.get('enabled'):
+        if search_conf.get('allowed_extensions'):
+            raise InvalidConfigError(
+                "'allowed_extensions' cannot be used when pairing is enabled; remove it or disable pairing."
+            )
+        source_exts = tuple(
+            e.lower() for e in (pairing_conf.get('source_extensions') or [])
         )
+        header_exts = tuple(
+            e.lower() for e in (pairing_conf.get('header_extensions') or [])
+        )
+        search_conf['allowed_extensions'] = source_exts + header_exts
+
     return config
 
 def process_content(buffer, options):

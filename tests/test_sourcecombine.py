@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
-from sourcecombine import should_include
+from sourcecombine import should_include, _pair_files, collect_file_paths
 
 
 def test_should_include_respects_filters(tmp_path):
@@ -47,3 +47,64 @@ def test_should_include_respects_size_bounds(tmp_path):
     just_right = tmp_path / "ok.py"
     just_right.write_text("ok", encoding="utf-8")
     assert should_include(just_right, Path(just_right.name), filter_config) is True
+
+
+def test_pair_files_logic(tmp_path):
+    base = tmp_path
+    src = base / "file.cpp"
+    hdr = base / "file.h"
+    src.write_text("", encoding="utf-8")
+    hdr.write_text("", encoding="utf-8")
+
+    result = _pair_files([src, hdr], (".cpp",), (".h",), include_mismatched=False)
+    assert result == {"file": [src, hdr]}
+
+    mismatched_src = _pair_files([src], (".cpp",), (".h",), include_mismatched=True)
+    assert mismatched_src == {"file": [src]}
+
+    lonely_hdr = _pair_files([hdr], (".cpp",), (".h",), include_mismatched=True)
+    assert lonely_hdr == {"file": [hdr]}
+
+    other_hdr = base / "lonely.h"
+    other_hdr.write_text("", encoding="utf-8")
+    no_pairs = _pair_files([src, other_hdr], (".cpp",), (".h",), include_mismatched=False)
+    assert no_pairs == {}
+
+    upper_src = base / "file.CPP"
+    upper_hdr = base / "file.H"
+    upper_src.write_text("", encoding="utf-8")
+    upper_hdr.write_text("", encoding="utf-8")
+    mixed_case = _pair_files([upper_src, upper_hdr], (".cpp",), (".h",), include_mismatched=False)
+    assert mixed_case == {"file": [upper_src, upper_hdr]}
+
+
+def test_collect_file_paths_prunes_excluded_folders(tmp_path):
+    (tmp_path / "root.txt").write_text("", encoding="utf-8")
+    src_dir = tmp_path / "src"
+    src_dir.mkdir()
+    (src_dir / "include.py").write_text("", encoding="utf-8")
+
+    git_dir = tmp_path / ".git"
+    git_dir.mkdir()
+    (git_dir / "config").write_text("", encoding="utf-8")
+
+    build_dir = tmp_path / "build"
+    build_dir.mkdir()
+    (build_dir / "app.exe").write_text("", encoding="utf-8")
+
+    nested_build = src_dir / "build"
+    nested_build.mkdir()
+    (nested_build / "another.o").write_text("", encoding="utf-8")
+
+    collected, _ = collect_file_paths(
+        tmp_path,
+        recursive=True,
+        exclude_folders=[".git", "build"],
+    )
+
+    collected_set = {path.relative_to(tmp_path) for path in collected}
+    assert Path("root.txt") in collected_set
+    assert Path("src/include.py") in collected_set
+    assert Path(".git/config") not in collected_set
+    assert Path("build/app.exe") not in collected_set
+    assert Path("src/build/another.o") not in collected_set

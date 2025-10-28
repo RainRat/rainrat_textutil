@@ -67,8 +67,8 @@ filters:
 # --- Content Processing Options ---
 processing:
   compact_whitespace: false       # Compact and clean up whitespace
-  remove_all_c_style_comments: false  # Drop all /* ... */ comments
-  remove_initial_c_style_comment: false        # Drop first block comment if at file start
+  remove_all_c_style_comments: false  # Drop all /* ... */ comments. This runs *after* remove_initial_c_style_comment.
+  remove_initial_c_style_comment: false        # Drop first block comment if at file start. This runs *first* and also strips leading whitespace after the comment.
   line_regex_replacements: []      # Collapse blocks of lines matching regexes
   # Example line rule:
   # line_regex_replacements:

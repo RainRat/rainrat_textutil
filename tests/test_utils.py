@@ -11,6 +11,7 @@ sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 from utils import (
     DEFAULT_CONFIG,
     InvalidConfigError,
+    add_line_numbers,
     compact_whitespace,
     apply_line_regex_replacements,
     load_and_validate_config,
@@ -129,3 +130,26 @@ def test_load_and_validate_config_rejects_conflicting_options(tmp_path):
     )
     with pytest.raises(InvalidConfigError):
         load_and_validate_config(pairing_path)
+
+
+def test_load_and_validate_config_sets_allowed_extensions_when_pairing_enabled(tmp_path):
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "pairing": {
+                "enabled": True,
+                "source_extensions": [".CPP"],
+                "header_extensions": [".H"],
+            },
+        },
+    )
+    config = load_and_validate_config(config_path)
+    assert config["search"]["allowed_extensions"] == (".cpp", ".h")
+
+
+def test_add_line_numbers():
+    assert add_line_numbers("a\nb") == "1: a\n2: b"
+    assert add_line_numbers("") == ""
+    assert add_line_numbers("hello") == "1: hello"
+    assert add_line_numbers("a\n") == "1: a"
