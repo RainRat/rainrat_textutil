@@ -119,8 +119,6 @@ def filter_and_pair_paths(
     allowed_extensions = tuple(
         e.lower() for e in (search_opts.get('allowed_extensions') or [])
     )
-    if pairing_enabled:
-        allowed_extensions = source_exts + header_exts
 
     exclude_conf = filter_opts.get('exclusions', {})
     exclude_filenames = exclude_conf.get('filenames') or []

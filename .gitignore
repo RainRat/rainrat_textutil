@@ -2,3 +2,13 @@ private*.yml
 combined_files.txt
 *.bak
 __pycache__
+
+# Virtual Environments
+venv/
+.venv/
+env/
+
+# IDE / OS
+.vscode/
+.idea/
+*.DS_Store
