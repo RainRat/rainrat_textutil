@@ -152,4 +152,22 @@ def test_add_line_numbers():
     assert add_line_numbers("a\nb") == "1: a\n2: b"
     assert add_line_numbers("") == ""
     assert add_line_numbers("hello") == "1: hello"
-    assert add_line_numbers("a\n") == "1: a"
+    assert add_line_numbers("a\n") == "1: a\n"
+    assert add_line_numbers("a\nb\n") == "1: a\n2: b\n"
+
+
+def test_compact_whitespace_converts_spaces_to_tabs():
+    assert compact_whitespace("line\n    indent") == "line\n\tindent"
+
+
+def test_compact_whitespace_removes_spaces_around_tabs():
+    assert compact_whitespace("\n\t  indent") == "\n\tindent"
+    assert compact_whitespace("indent  \t\n") == "indent\n"
+
+
+def test_compact_whitespace_replaces_standalone_tabs():
+    assert compact_whitespace("a\tb") == "a b"
+
+
+def test_compact_whitespace_collapses_long_space_runs():
+    assert compact_whitespace("a   b") == "a  b"

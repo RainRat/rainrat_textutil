@@ -289,8 +289,8 @@ def process_content(buffer, options):
       and ``replacement`` (str). Rules are applied sequentially. Capture groups
       can be referenced in the replacement string (e.g., ``"\\1"``).
     - ``line_regex_replacements`` (list of dicts): like ``regex_replacements`` but
-      applied to whole lines. Consecutive matching lines are collapsed into a
-      single ``replacement`` entry (or removed if ``replacement`` is omitted).
+      applied to whole lines. Consecutive blocks of matching lines collapse into a
+      single ``replacement`` entry (or are removed if ``replacement`` is omitted).
     - ``compact_whitespace`` (bool)
     """
     if not options:
@@ -327,4 +327,6 @@ def add_line_numbers(text):
     """Prepend line numbers to each line of text."""
     lines = text.splitlines()
     numbered = [f"{i + 1}: {line}" for i, line in enumerate(lines)]
+    if text.endswith("\n"):
+        numbered.append("")
     return "\n".join(numbered)
