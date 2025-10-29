@@ -102,7 +102,7 @@ def collect_file_paths(root_folder, recursive, exclude_folders):
     return file_paths, root_path
 
 
-def filter_and_pair_paths(
+def filter_file_paths(
     file_paths,
     *,
     filter_opts,
@@ -162,46 +162,48 @@ def _pair_files(filtered_paths, source_exts, header_exts, include_mismatched):
     return paired
 
 
-def handle_file(
-    file_path,
-    root_path,
-    outfile,
-    *,
-    output_opts,
-    dry_run,
-    config,
-):
-    """Read, process, and write a single file."""
-    if dry_run:
-        print(file_path.resolve())
-        return
+class FileProcessor:
+    """Process files according to configuration and write them to an output."""
 
-    print(f"Processing: {file_path}")
-    content = read_file_best_effort(file_path)
-    processed_content = process_content(content, config.get('processing', {}))
+    def __init__(self, config, output_opts, dry_run=False):
+        self.config = config
+        self.output_opts = output_opts or {}
+        self.dry_run = dry_run
 
-    add_line_numbers_opt = output_opts.get('add_line_numbers', False)
-    if add_line_numbers_opt:
-        processed_content = add_line_numbers(processed_content)
+    def process_and_write(self, file_path, root_path, outfile):
+        """Read, process, and write a single file."""
+        if self.dry_run:
+            print(file_path.resolve())
+            return
 
-    relative_path = file_path.relative_to(root_path)
-    header_template = output_opts.get(
-        'header_template', f"{FILENAME_PLACEHOLDER}:\n```\n"
-    )
-    footer_template = output_opts.get(
-        'footer_template', "\n```\n\n"
-    )
-    if header_template:
-        header_text = header_template.replace(
-            FILENAME_PLACEHOLDER, str(relative_path)
+        print(f"Processing: {file_path}")
+        content = read_file_best_effort(file_path)
+        processed_content = process_content(
+            content, self.config.get('processing', {})
         )
-        outfile.write(header_text)
-    outfile.write(processed_content)
-    if footer_template:
-        footer_text = footer_template.replace(
-            FILENAME_PLACEHOLDER, str(relative_path)
+
+        if self.output_opts.get('add_line_numbers', False):
+            processed_content = add_line_numbers(processed_content)
+
+        relative_path = file_path.relative_to(root_path)
+        header_template = self.output_opts.get(
+            'header_template', f"{FILENAME_PLACEHOLDER}:\n```\n"
         )
-        outfile.write(footer_text)
+        footer_template = self.output_opts.get('footer_template', "\n```\n\n")
+
+        if header_template:
+            header_text = header_template.replace(
+                FILENAME_PLACEHOLDER, str(relative_path)
+            )
+            outfile.write(header_text)
+
+        outfile.write(processed_content)
+
+        if footer_template:
+            footer_text = footer_template.replace(
+                FILENAME_PLACEHOLDER, str(relative_path)
+            )
+            outfile.write(footer_text)
 
 
 def find_and_combine_files(config, output_path, dry_run=False):
@@ -224,6 +226,7 @@ def find_and_combine_files(config, output_path, dry_run=False):
             out_folder.mkdir(parents=True, exist_ok=True)
 
     outfile_ctx = nullcontext() if pairing_enabled or dry_run else open(output_path, 'w', encoding='utf8')
+    processor = FileProcessor(config, output_opts, dry_run=dry_run)
     with outfile_ctx as outfile:
         for root_folder in root_folders:
             all_paths, root_path = collect_file_paths(
@@ -231,7 +234,7 @@ def find_and_combine_files(config, output_path, dry_run=False):
             )
             if not all_paths:
                 continue
-            filtered_paths = filter_and_pair_paths(
+            filtered_paths = filter_file_paths(
                 all_paths,
                 filter_opts=filter_opts,
                 pair_opts=pair_opts,
@@ -266,23 +269,17 @@ def find_and_combine_files(config, output_path, dry_run=False):
                         continue
                     with open(out_file, 'w', encoding='utf8') as pair_out:
                         for file_path in paths:
-                            handle_file(
+                            processor.process_and_write(
                                 file_path,
                                 root_path,
                                 pair_out,
-                                output_opts=output_opts,
-                                dry_run=dry_run,
-                                config=config,
                             )
             else:
                 for file_path in filtered_paths:
-                    handle_file(
+                    processor.process_and_write(
                         file_path,
                         root_path,
                         outfile,
-                        output_opts=output_opts,
-                        dry_run=dry_run,
-                        config=config,
                     )
 
 
