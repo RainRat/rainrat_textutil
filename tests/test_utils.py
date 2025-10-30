@@ -145,7 +145,23 @@ def test_load_and_validate_config_sets_allowed_extensions_when_pairing_enabled(t
         },
     )
     config = load_and_validate_config(config_path)
-    assert config["search"]["allowed_extensions"] == (".cpp", ".h")
+    assert config["search"]["effective_allowed_extensions"] == (".cpp", ".h")
+    assert "allowed_extensions" not in config["search"]
+
+
+def test_load_and_validate_config_preserves_user_allowed_extensions(tmp_path):
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {
+                "root_folders": ["."],
+                "allowed_extensions": [".Py"],
+            }
+        },
+    )
+    config = load_and_validate_config(config_path)
+    assert config["search"]["allowed_extensions"] == [".Py"]
+    assert config["search"]["effective_allowed_extensions"] == (".py",)
 
 
 def test_add_line_numbers():
@@ -158,6 +174,8 @@ def test_add_line_numbers():
 
 def test_compact_whitespace_converts_spaces_to_tabs():
     assert compact_whitespace("line\n    indent") == "line\n\tindent"
+    assert compact_whitespace(" " * 8) == "\t\t"
+    assert compact_whitespace(" " * 5) == "\t "
 
 
 def test_compact_whitespace_removes_spaces_around_tabs():
