@@ -133,13 +133,33 @@ def read_file_best_effort(file_path):
 
 
 def compact_whitespace(text):
-    """Compact and normalize whitespace within ``text``."""
+    """Compact and normalize whitespace within ``text``.
+
+    Transformations are applied in the following order:
+
+    - Normalize Windows (CRLF) and classic Mac (CR) endings to LF.
+    - Replace runs of four consecutive spaces with a tab to preserve indentation.
+    - Trim spaces that surround tabs so mixed indentation collapses while leaving
+      at most a single trailing space when indentation is uneven.
+    - Replace mid-line tabs (those not following another tab or a newline) with
+      single spaces for readability.
+    - Trim trailing horizontal whitespace from lines and collapse multiple blank
+      lines into at most two consecutive newlines.
+    - Reduce any remaining long runs of spaces to at most two characters.
+
+    Note: keep the regular expressions compatible with Python 3.8 for the sake
+    of the packaging targets this project supports.
+    """
     # Normalize line endings and replace every four consecutive spaces with a tab.
     text = text.replace('\r\n', '\n').replace('\r', '\n')
     text = re.sub(r' {4}', '\t', text)
     # Remove spaces around tabs and collapse stray tabs into spaces.
-    text = re.sub(r'\t +| +\t', '\t', text)
-    text = re.sub(r'(?<!\n|\t)\t', ' ', text)
+    text = re.sub(r' +\t', '\t', text)
+    text = re.sub(r'(?<=[^\n\t])\t +', '\t', text)
+    text = re.sub(r'(?<=\n)\t +(?=\S)', '\t', text)
+    text = re.sub(r'^\t +(?=\S)', '\t', text)
+    text = re.sub(r'\t {2,}(?=\s|$)', '\t ', text)
+    text = re.sub(r'(?<=[^\n\t])\t', ' ', text)
     # Strip trailing whitespace and collapse multiple blank lines.
     text = re.sub(r'[ \t]+\n', '\n', text)
     text = re.sub(r'\n{3,}', '\n\n', text)
@@ -167,8 +187,9 @@ def _replace_line_block(text, pattern, replacement=None):
                 out_lines.append(replacement)
             in_block = False
         out_lines.append(line)
-    if in_block and replacement is not None:
-        out_lines.append(replacement)
+    if in_block:
+        if replacement is not None:
+            out_lines.append(replacement)
     return "\n".join(out_lines)
 
 
@@ -262,7 +283,10 @@ def load_and_validate_config(
             )
 
     pairing_conf = config.get('pairing', {}) or {}
-    search_conf = config.get('search', {}) or {}
+    search_conf = config.get('search')
+    if not isinstance(search_conf, dict):
+        search_conf = {}
+    config['search'] = search_conf
 
     if pairing_conf.get('enabled'):
         if search_conf.get('allowed_extensions'):
@@ -275,7 +299,13 @@ def load_and_validate_config(
         header_exts = tuple(
             e.lower() for e in (pairing_conf.get('header_extensions') or [])
         )
-        search_conf['allowed_extensions'] = source_exts + header_exts
+        effective_allowed_extensions = source_exts + header_exts
+    else:
+        effective_allowed_extensions = tuple(
+            e.lower() for e in (search_conf.get('allowed_extensions') or [])
+        )
+
+    search_conf['effective_allowed_extensions'] = effective_allowed_extensions
 
     return config
 

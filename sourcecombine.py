@@ -2,6 +2,7 @@ import argparse
 import sys
 import os
 import fnmatch
+from functools import lru_cache
 from pathlib import Path
 from contextlib import nullcontext
 from utils import (
@@ -16,13 +17,28 @@ from utils import (
 )
 
 
+@lru_cache(maxsize=None)
+def _casefold_pattern(pattern):
+    return pattern.casefold()
+
+
 def _fnmatch_casefold(name, pattern):
     """Case-insensitive ``fnmatch`` using Unicode casefolding."""
-    return fnmatch.fnmatchcase(name.casefold(), pattern.casefold())
+    return fnmatch.fnmatchcase(name.casefold(), _casefold_pattern(pattern))
 
 
-def _matches_file_glob(file_name, relative_path_str, patterns):
-    """Return True if ``file_name`` or ``relative_path_str`` matches ``patterns``."""
+def _normalize_patterns(patterns):
+    if not patterns:
+        return ()
+    if isinstance(patterns, set):
+        return tuple(sorted(patterns))
+    if isinstance(patterns, (list, tuple)):
+        return tuple(patterns)
+    return tuple(patterns)
+
+
+@lru_cache(maxsize=None)
+def _matches_file_glob_cached(file_name, relative_path_str, patterns):
     if not patterns:
         return False
     return any(
@@ -32,18 +48,34 @@ def _matches_file_glob(file_name, relative_path_str, patterns):
     )
 
 
-def _matches_folder_glob(relative_path, patterns):
-    """Return True if ``relative_path`` matches any folder glob ``patterns``."""
+def _matches_file_glob(file_name, relative_path_str, patterns):
+    """Return True if ``file_name`` or ``relative_path_str`` matches ``patterns``."""
+    normalized = _normalize_patterns(patterns)
+    if not normalized:
+        return False
+    return _matches_file_glob_cached(file_name, relative_path_str, normalized)
+
+
+@lru_cache(maxsize=None)
+def _matches_folder_glob_cached(relative_path_str, parts, patterns):
     if not patterns:
         return False
-    rel_str = relative_path.as_posix()
-    parts = relative_path.parts
     for pattern in patterns:
-        if _fnmatch_casefold(rel_str, pattern):
+        if _fnmatch_casefold(relative_path_str, pattern):
             return True
         if any(_fnmatch_casefold(part, pattern) for part in parts):
             return True
     return False
+
+
+def _matches_folder_glob(relative_path, patterns):
+    """Return True if ``relative_path`` matches any folder glob ``patterns``."""
+    normalized = _normalize_patterns(patterns)
+    if not normalized:
+        return False
+    rel_str = relative_path.as_posix()
+    parts = tuple(relative_path.parts)
+    return _matches_folder_glob_cached(rel_str, parts, normalized)
 
 
 def should_include(file_path, relative_path, filter_config):
@@ -116,9 +148,7 @@ def filter_file_paths(
     source_exts = tuple(e.lower() for e in (pair_opts.get('source_extensions') or []))
     header_exts = tuple(e.lower() for e in (pair_opts.get('header_extensions') or []))
 
-    allowed_extensions = tuple(
-        e.lower() for e in (search_opts.get('allowed_extensions') or [])
-    )
+    allowed_extensions = search_opts.get('effective_allowed_extensions') or ()
 
     exclude_conf = filter_opts.get('exclusions', {})
     exclude_filenames = exclude_conf.get('filenames') or []
