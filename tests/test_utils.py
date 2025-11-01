@@ -189,3 +189,8 @@ def test_compact_whitespace_replaces_standalone_tabs():
 
 def test_compact_whitespace_collapses_long_space_runs():
     assert compact_whitespace("a   b") == "a  b"
+
+
+def test_compact_whitespace_handles_mixed_indent_tabs_and_spaces():
+    assert compact_whitespace("  \t  code") == "\tcode"
+    assert compact_whitespace("\t    code") == "\t\tcode"

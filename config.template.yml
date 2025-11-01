@@ -34,12 +34,12 @@ output:
   # The special sequence "{{FILENAME}}" is replaced with the file's
   # path relative to the root folder. Set to null or an empty string
   # to omit the header.
-  header_template: "{{FILENAME}}:\n```\n"
+  header_template: "--- {{FILENAME}} ---\n"
 
   # Template written after each file's content.
   # "{{FILENAME}}" is replaced with the file's relative path. Set to null
   # or an empty string to omit the footer/separator.
-  footer_template: "\n```\n\n"
+  footer_template: "\n--- end {{FILENAME}} ---\n"
 
 # --- File Filtering ---
 filters:

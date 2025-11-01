@@ -26,8 +26,8 @@ DEFAULT_CONFIG = {
         'file': DEFAULT_OUTPUT_FILENAME,
         'folder': None,
         'add_line_numbers': False,
-        'header_template': f"{FILENAME_PLACEHOLDER}:\n```\n",
-        'footer_template': '\n```\n\n',
+        'header_template': f"--- {FILENAME_PLACEHOLDER} ---\n",
+        'footer_template': f"\n--- end {FILENAME_PLACEHOLDER} ---\n",
     },
 }
 
@@ -167,14 +167,14 @@ def compact_whitespace(text):
     text = re.sub(r' {3,}', '  ', text)
     return text
 
-def _replace_line_block(text, pattern, replacement=None):
-    """Collapse blocks of lines matching ``pattern`` into ``replacement``.
+def _replace_line_block(text, regex, replacement=None):
+    """Collapse blocks of lines matching ``regex`` into ``replacement``.
 
-    ``pattern`` should match an entire line. Consecutive matching lines are
-    treated as a single block. If ``replacement`` is ``None`` the block is
-    simply removed; otherwise ``replacement`` is inserted once for each block.
+    ``regex`` should be a compiled regular expression that matches an entire
+    line. Consecutive matching lines are treated as a single block. If
+    ``replacement`` is ``None`` the block is simply removed; otherwise
+    ``replacement`` is inserted once for each block.
     """
-    regex = re.compile(pattern)
     lines = text.splitlines()
     out_lines = []
     in_block = False
@@ -206,12 +206,10 @@ def apply_line_regex_replacements(text, rules):
         if not pattern:
             continue
         replacement = rule.get('replacement')
-        try:
-            text = _replace_line_block(text, pattern, replacement)
-        except re.error as e:
-            print(
-                f"Warning: Invalid regex pattern in config: '{pattern}'. Error: {e}"
-            )
+        compiled = validate_regex_pattern(
+            pattern, context="processing.line_regex_replacements"
+        )
+        text = _replace_line_block(text, compiled, replacement)
     return text
 
 
@@ -336,12 +334,19 @@ def process_content(buffer, options):
     if options.get('remove_all_c_style_comments'):
         buffer = re.sub(r'/\*.*?\*/', '', buffer, flags=re.DOTALL)
 
+    regex_rules = []
     for rule in options.get('regex_replacements', []):
-        if 'pattern' in rule and 'replacement' in rule:
-            try:
-                buffer = re.sub(rule['pattern'], rule['replacement'], buffer)
-            except re.error as e:
-                print(f"Warning: Invalid regex pattern in config: '{rule['pattern']}'. Error: {e}")
+        pattern = rule.get('pattern')
+        replacement = rule.get('replacement')
+        if pattern is None or replacement is None:
+            continue
+        compiled = validate_regex_pattern(
+            pattern, context="processing.regex_replacements"
+        )
+        regex_rules.append((compiled, replacement))
+
+    for compiled, replacement in regex_rules:
+        buffer = compiled.sub(replacement, buffer)
 
     line_rules = options.get('line_regex_replacements')
     if line_rules:
@@ -360,3 +365,20 @@ def add_line_numbers(text):
     if text.endswith("\n"):
         numbered.append("")
     return "\n".join(numbered)
+
+
+def validate_regex_pattern(pattern, *, context="regex pattern"):
+    """Return a compiled regex after validating ``pattern``.
+
+    Raises ``InvalidConfigError`` with a helpful message when ``pattern`` is
+    invalid. ``context`` describes where the pattern originated so the error
+    can guide the user to the right configuration entry.
+    """
+
+    try:
+        return re.compile(pattern)
+    except re.error as exc:
+        raise InvalidConfigError(
+            f"Invalid regex pattern in {context}: '{pattern}'. {exc}"
+        ) from exc
+

@@ -48,14 +48,6 @@ def _matches_file_glob_cached(file_name, relative_path_str, patterns):
     )
 
 
-def _matches_file_glob(file_name, relative_path_str, patterns):
-    """Return True if ``file_name`` or ``relative_path_str`` matches ``patterns``."""
-    normalized = _normalize_patterns(patterns)
-    if not normalized:
-        return False
-    return _matches_file_glob_cached(file_name, relative_path_str, normalized)
-
-
 @lru_cache(maxsize=None)
 def _matches_folder_glob_cached(relative_path_str, parts, patterns):
     if not patterns:
@@ -68,32 +60,26 @@ def _matches_folder_glob_cached(relative_path_str, parts, patterns):
     return False
 
 
-def _matches_folder_glob(relative_path, patterns):
-    """Return True if ``relative_path`` matches any folder glob ``patterns``."""
-    normalized = _normalize_patterns(patterns)
-    if not normalized:
-        return False
-    rel_str = relative_path.as_posix()
-    parts = tuple(relative_path.parts)
-    return _matches_folder_glob_cached(rel_str, parts, normalized)
-
-
 def should_include(file_path, relative_path, filter_config):
     """Return ``True`` if ``file_path`` passes all filtering rules."""
     if not file_path.is_file():
         return False
     file_name = file_path.name
-    exclude_filenames = filter_config.get('exclude_filenames', [])
+    exclude_filenames = _normalize_patterns(
+        filter_config.get('exclude_filenames')
+    )
     rel_str = relative_path.as_posix()
-    if _matches_file_glob(file_name, rel_str, exclude_filenames):
+    if exclude_filenames and _matches_file_glob_cached(
+        file_name, rel_str, exclude_filenames
+    ):
         return False
     suffix = file_path.suffix.lower()
     allowed_extensions = filter_config.get('allowed_extensions')
     if allowed_extensions and suffix not in allowed_extensions:
         return False
-    include_patterns = filter_config.get('include_patterns')
+    include_patterns = _normalize_patterns(filter_config.get('include_patterns'))
     if include_patterns:
-        if not _matches_file_glob(file_name, rel_str, include_patterns):
+        if not _matches_file_glob_cached(file_name, rel_str, include_patterns):
             return False
     try:
         file_size = file_path.stat().st_size
@@ -114,20 +100,29 @@ def collect_file_paths(root_folder, recursive, exclude_folders):
         return [], None
 
     file_paths = []
+    exclude_patterns = _normalize_patterns(exclude_folders)
+
+    def _folder_is_excluded(relative_path):
+        if not exclude_patterns:
+            return False
+        rel_str = relative_path.as_posix()
+        parts = tuple(relative_path.parts)
+        return _matches_folder_glob_cached(rel_str, parts, exclude_patterns)
+
     if recursive:
         for dirpath, dirnames, filenames in os.walk(root_path):
             rel_dir = Path(dirpath).relative_to(root_path)
             dirnames[:] = [
                 d
                 for d in dirnames
-                if not _matches_folder_glob(rel_dir / d, exclude_folders)
+                if not _folder_is_excluded(rel_dir / d)
             ]
             for name in filenames:
                 file_paths.append(Path(dirpath) / name)
     else:
         for entry in root_path.iterdir():
             if entry.is_dir():
-                if _matches_folder_glob(entry.relative_to(root_path), exclude_folders):
+                if _folder_is_excluded(entry.relative_to(root_path)):
                     continue
             if entry.is_file():
                 file_paths.append(entry)
@@ -151,7 +146,7 @@ def filter_file_paths(
     allowed_extensions = search_opts.get('effective_allowed_extensions') or ()
 
     exclude_conf = filter_opts.get('exclusions', {})
-    exclude_filenames = exclude_conf.get('filenames') or []
+    exclude_filenames = _normalize_patterns(exclude_conf.get('filenames'))
 
     inclusion_groups = filter_opts.get('inclusion_groups', {})
     include_patterns = set()
@@ -162,7 +157,7 @@ def filter_file_paths(
     filter_config = {
         'exclude_filenames': exclude_filenames,
         'allowed_extensions': allowed_extensions,
-        'include_patterns': include_patterns,
+        'include_patterns': _normalize_patterns(include_patterns),
         'min_size_bytes': filter_opts.get('min_size_bytes', 0),
         'max_size_bytes': filter_opts.get('max_size_bytes'),
     }
@@ -217,9 +212,11 @@ class FileProcessor:
 
         relative_path = file_path.relative_to(root_path)
         header_template = self.output_opts.get(
-            'header_template', f"{FILENAME_PLACEHOLDER}:\n```\n"
+            'header_template', f"--- {FILENAME_PLACEHOLDER} ---\n"
         )
-        footer_template = self.output_opts.get('footer_template', "\n```\n\n")
+        footer_template = self.output_opts.get(
+            'footer_template', f"\n--- end {FILENAME_PLACEHOLDER} ---\n"
+        )
 
         if header_template:
             header_text = header_template.replace(
@@ -362,7 +359,11 @@ def main():
     else:
         destination_desc = f"to '{output_path}'"
 
-    find_and_combine_files(config, output_path, dry_run=args.dry_run)
+    try:
+        find_and_combine_files(config, output_path, dry_run=args.dry_run)
+    except InvalidConfigError as exc:
+        print(exc)
+        sys.exit(1)
 
     if args.dry_run:
         print("\nDry run complete.")
