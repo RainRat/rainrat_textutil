@@ -32,14 +32,22 @@ text written before and after each file's content. The special sequence
 `{{FILENAME}}` is replaced with the file's path relative to the configured root
 folder.
 
+By default, SourceCombine writes a simple divider around each file:
+
 ```yaml
 output:
   header_template: "--- {{FILENAME}} ---\n"
   footer_template: "\n--- end {{FILENAME}} ---\n"
 ```
 
-Omit these options or use the defaults to keep the original behaviour of
-printing a filename followed by fenced code blocks.
+You can switch back to the older fenced-code-block format by overriding the
+templates in your configuration:
+
+```yaml
+output:
+  header_template: "{{FILENAME}}:\n```\n"
+  footer_template: "\n```\n\n"
+```
 
 ## Regex-based text transformations
 

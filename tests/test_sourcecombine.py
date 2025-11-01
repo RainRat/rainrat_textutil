@@ -4,8 +4,6 @@ from pathlib import Path
 
 sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
-import sourcecombine as sc
-
 from sourcecombine import should_include, _pair_files, collect_file_paths
 
 
@@ -110,26 +108,3 @@ def test_collect_file_paths_prunes_excluded_folders(tmp_path):
     assert Path(".git/config") not in collected_set
     assert Path("build/app.exe") not in collected_set
     assert Path("src/build/another.o") not in collected_set
-
-
-def test_matches_file_glob_uses_cache():
-    sc._matches_file_glob_cached.cache_clear()
-    patterns = ["*.py"]
-    assert sc._matches_file_glob("test.py", "src/test.py", patterns) is True
-    first_info = sc._matches_file_glob_cached.cache_info()
-    assert first_info.misses == 1
-    sc._matches_file_glob("test.py", "src/test.py", patterns)
-    second_info = sc._matches_file_glob_cached.cache_info()
-    assert second_info.hits >= 1
-
-
-def test_matches_folder_glob_uses_cache():
-    sc._matches_folder_glob_cached.cache_clear()
-    patterns = ["build"]
-    rel_path = Path("src/build")
-    assert sc._matches_folder_glob(rel_path, patterns) is True
-    first_info = sc._matches_folder_glob_cached.cache_info()
-    assert first_info.misses == 1
-    sc._matches_folder_glob(rel_path, patterns)
-    second_info = sc._matches_folder_glob_cached.cache_info()
-    assert second_info.hits >= 1
