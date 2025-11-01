@@ -194,6 +194,32 @@ class FileProcessor:
         self.config = config
         self.output_opts = output_opts or {}
         self.dry_run = dry_run
+        self.processing_opts = config.get('processing', {}) or {}
+
+    def _apply_in_place_groups(self, file_path, content):
+        """Return ``content`` after applying enabled in-place processing groups."""
+
+        groups = self.processing_opts.get('in_place_groups') or {}
+        if not isinstance(groups, dict):
+            return content
+
+        updated = content
+        for group_name, group_conf in groups.items():
+            if not isinstance(group_conf, dict):
+                continue
+            if not group_conf.get('enabled'):
+                continue
+            options = group_conf.get('options') or {}
+            try:
+                updated = process_content(updated, options)
+            except InvalidConfigError:
+                raise
+            except Exception as exc:  # pragma: no cover - defensive safeguard
+                raise InvalidConfigError(
+                    f"Error applying in-place group '{group_name}': {exc}"
+                ) from exc
+
+        return updated
 
     def process_and_write(self, file_path, root_path, outfile):
         """Read, process, and write a single file."""
@@ -203,8 +229,12 @@ class FileProcessor:
 
         print(f"Processing: {file_path}")
         content = read_file_best_effort(file_path)
+        updated_content = self._apply_in_place_groups(file_path, content)
+        if updated_content != content:
+            print(f"Updating in place: {file_path}")
+            file_path.write_text(updated_content, encoding='utf8')
         processed_content = process_content(
-            content, self.config.get('processing', {})
+            updated_content, self.processing_opts
         )
 
         if self.output_opts.get('add_line_numbers', False):

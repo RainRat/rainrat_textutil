@@ -1,10 +1,17 @@
+import io
 import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
-from sourcecombine import should_include, _pair_files, collect_file_paths
+from sourcecombine import (
+    FileProcessor,
+    collect_file_paths,
+    should_include,
+    _pair_files,
+)
+from utils import compact_whitespace
 
 
 def test_should_include_respects_filters(tmp_path):
@@ -108,3 +115,59 @@ def test_collect_file_paths_prunes_excluded_folders(tmp_path):
     assert Path(".git/config") not in collected_set
     assert Path("build/app.exe") not in collected_set
     assert Path("src/build/another.o") not in collected_set
+
+
+def test_in_place_groups_modify_files_and_output(tmp_path):
+    file_path = tmp_path / "sample.txt"
+    original = "line   one\n\n\nline two    \n"
+    file_path.write_text(original, encoding="utf-8")
+
+    config = {
+        "processing": {
+            "in_place_groups": {
+                "cleanup": {
+                    "enabled": True,
+                    "options": {
+                        "compact_whitespace": True,
+                    },
+                }
+            }
+        },
+        "output": {
+            "header_template": "",
+            "footer_template": "",
+        },
+    }
+
+    processor = FileProcessor(config, config["output"], dry_run=False)
+    buffer = io.StringIO()
+    processor.process_and_write(file_path, tmp_path, buffer)
+
+    expected = compact_whitespace(original)
+    assert file_path.read_text(encoding="utf-8") == expected
+    assert buffer.getvalue() == expected
+
+
+def test_in_place_groups_respect_dry_run(tmp_path):
+    file_path = tmp_path / "dry.txt"
+    original = "dry run text"
+    file_path.write_text(original, encoding="utf-8")
+
+    config = {
+        "processing": {
+            "in_place_groups": {
+                "cleanup": {
+                    "enabled": True,
+                    "options": {
+                        "compact_whitespace": True,
+                    },
+                }
+            }
+        },
+        "output": {},
+    }
+
+    processor = FileProcessor(config, config.get("output"), dry_run=True)
+    processor.process_and_write(file_path, tmp_path, None)
+
+    assert file_path.read_text(encoding="utf-8") == original

@@ -29,6 +29,9 @@ DEFAULT_CONFIG = {
         'header_template': f"--- {FILENAME_PLACEHOLDER} ---\n",
         'footer_template': f"\n--- end {FILENAME_PLACEHOLDER} ---\n",
     },
+    'processing': {
+        'in_place_groups': {},
+    },
 }
 
 
@@ -279,6 +282,15 @@ def load_and_validate_config(
             raise InvalidConfigError(
                 "'search.allowed_extensions' cannot be used when 'filters.inclusion_groups' are enabled. Please specify file types within the inclusion group patterns (e.g., 'src/**/*.py') or remove 'allowed_extensions'."
             )
+
+    processing_conf = config.get('processing')
+    if isinstance(processing_conf, dict):
+        in_place_groups = processing_conf.get('in_place_groups', {})
+        if isinstance(in_place_groups, dict):
+            for group in in_place_groups.values():
+                if isinstance(group, dict):
+                    group.setdefault('enabled', False)
+                    group.setdefault('options', {})
 
     pairing_conf = config.get('pairing', {}) or {}
     search_conf = config.get('search')
