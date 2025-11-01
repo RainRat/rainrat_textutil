@@ -28,6 +28,11 @@ processing:
     # Example: keep only code between BEGIN and END markers
     # - pattern: '(?s).*BEGIN_SNIP(.*)END_SNIP.*'
     #   replacement: '\\1'
+  in_place_groups:
+    whitespace_cleanup:
+      enabled: false
+      options:
+        compact_whitespace: true
 
 pairing:
   enabled: true

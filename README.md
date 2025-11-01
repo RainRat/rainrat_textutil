@@ -85,6 +85,31 @@ processing:
 See `example.yml`, `concat_simple.yml`, and `example_cpp_h.yml` for more configuration
 examples.
 
+### In-place processing groups
+
+When you want to permanently update the source files themselves—such as
+collapsing whitespace before committing them—you can enable
+`processing.in_place_groups`. Each named group bundles the same processing
+options used for the combined output. When a group is marked as `enabled`, its
+options are applied to the file content and the file is rewritten before the
+final output is generated.
+
+```yaml
+processing:
+  in_place_groups:
+    cleanup:
+      enabled: true
+      options:
+        compact_whitespace: true
+        regex_replacements:
+          - pattern: '\\s+$'
+            replacement: ''
+```
+
+Groups make it easy to toggle related transformations at once rather than
+enabling each regex rule individually. In-place processing is skipped when
+`--dry-run` is used.
+
 ### Filtering and Exclusion Rules
 
 Use glob patterns in `filters.exclusions.filenames` to skip specific files.
