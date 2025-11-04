@@ -97,9 +97,10 @@ def collect_file_paths(root_folder, recursive, exclude_folders):
     root_path = Path(root_folder)
     if not root_path.is_dir():
         print(f"Warning: Root folder '{root_folder}' does not exist. Skipping.")
-        return [], None
+        return [], None, 0
 
     file_paths = []
+    excluded_folder_count = 0
     exclude_patterns = _normalize_patterns(exclude_folders)
 
     def _folder_is_excluded(relative_path):
@@ -112,21 +113,26 @@ def collect_file_paths(root_folder, recursive, exclude_folders):
     if recursive:
         for dirpath, dirnames, filenames in os.walk(root_path):
             rel_dir = Path(dirpath).relative_to(root_path)
+
+            original_dir_count = len(dirnames)
             dirnames[:] = [
                 d
                 for d in dirnames
                 if not _folder_is_excluded(rel_dir / d)
             ]
+            excluded_folder_count += original_dir_count - len(dirnames)
+
             for name in filenames:
                 file_paths.append(Path(dirpath) / name)
     else:
         for entry in root_path.iterdir():
             if entry.is_dir():
                 if _folder_is_excluded(entry.relative_to(root_path)):
+                    excluded_folder_count += 1
                     continue
             if entry.is_file():
                 file_paths.append(entry)
-    return file_paths, root_path
+    return file_paths, root_path, excluded_folder_count
 
 
 def filter_file_paths(
@@ -281,6 +287,7 @@ class FileProcessor:
 
 def find_and_combine_files(config, output_path, dry_run=False):
     """Find, filter, and combine files based on the provided configuration."""
+    stats = {'total_files': 0, 'total_size_bytes': 0, 'files_by_extension': {}}
     search_opts = config.get('search', {})
     filter_opts = config.get('filters', {})
     output_opts = config.get('output', {})
@@ -300,11 +307,13 @@ def find_and_combine_files(config, output_path, dry_run=False):
 
     outfile_ctx = nullcontext() if pairing_enabled or dry_run else open(output_path, 'w', encoding='utf8')
     processor = FileProcessor(config, output_opts, dry_run=dry_run)
+    total_excluded_folders = 0
     with outfile_ctx as outfile:
         for root_folder in root_folders:
-            all_paths, root_path = collect_file_paths(
+            all_paths, root_path, excluded_count = collect_file_paths(
                 root_folder, recursive, exclude_folders
             )
+            total_excluded_folders += excluded_count
             if not all_paths:
                 continue
 
@@ -322,6 +331,15 @@ def find_and_combine_files(config, output_path, dry_run=False):
                 source_exts=source_exts,
                 header_exts=header_exts,
             )
+            if dry_run:
+                for p in filtered_paths:
+                    stats['total_files'] += 1
+                    try:
+                        stats['total_size_bytes'] += p.stat().st_size
+                    except OSError:
+                        pass
+                    ext = p.suffix.lower() or '.no_extension'
+                    stats['files_by_extension'][ext] = stats['files_by_extension'].get(ext, 0) + 1
 
             if pairing_enabled:
                 include_mismatched = pair_opts.get('include_mismatched', False)
@@ -370,6 +388,9 @@ def find_and_combine_files(config, output_path, dry_run=False):
                         root_path,
                         outfile,
                     )
+    if dry_run:
+        stats['excluded_folder_count'] = total_excluded_folders
+        return stats
 
 
 def main():
@@ -422,13 +443,28 @@ def main():
         destination_desc = f"to '{output_path}'"
 
     try:
-        find_and_combine_files(config, output_path, dry_run=args.dry_run)
+        stats = find_and_combine_files(config, output_path, dry_run=args.dry_run)
     except InvalidConfigError as exc:
         print(exc)
         sys.exit(1)
 
     if args.dry_run:
         print("\nDry run complete.")
+        if stats:
+            total_files = stats['total_files']
+            total_size_mb = stats['total_size_bytes'] / (1024 * 1024)
+            ext_summary = ", ".join(
+                f"{ext}: {count}"
+                for ext, count in sorted(stats['files_by_extension'].items())
+            )
+            excluded_folders = stats.get('excluded_folder_count', 0)
+
+            print("\n--- Dry-Run Summary ---")
+            print(f"Total files matched: {total_files}")
+            print(f"Total size: {total_size_mb:.2f} MB")
+            print(f"Files by extension: {ext_summary}")
+            print(f"Excluded folder count: {excluded_folders}")
+            print("-----------------------")
     else:
         print(f"\nDone. Combined files have been written {destination_desc}.")
 

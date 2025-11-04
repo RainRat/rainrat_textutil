@@ -152,7 +152,7 @@ def test_collect_file_paths_prunes_excluded_folders(tmp_path):
     nested_build.mkdir()
     (nested_build / "another.o").write_text("", encoding="utf-8")
 
-    collected, _ = collect_file_paths(
+    collected, _, _ = collect_file_paths(
         tmp_path,
         recursive=True,
         exclude_folders=[".git", "build"],
