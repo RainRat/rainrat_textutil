@@ -25,6 +25,7 @@ DEFAULT_CONFIG = {
     'output': {
         'file': DEFAULT_OUTPUT_FILENAME,
         'folder': None,
+        'paired_filename_template': '{{STEM}}.combined',
         'add_line_numbers': False,
         'header_template': f"--- {FILENAME_PLACEHOLDER} ---\n",
         'footer_template': f"\n--- end {FILENAME_PLACEHOLDER} ---\n",

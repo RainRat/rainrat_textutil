@@ -49,6 +49,24 @@ output:
   footer_template: "\n```\n\n"
 ```
 
+## Customizing paired output filenames
+
+When pairing is enabled, you can control the naming of the output files with
+the `output.paired_filename_template` option. The template supports three
+placeholders:
+
+- `{{STEM}}`: The base name of the file (e.g., `main` from `main.cpp`).
+- `{{SOURCE_EXT}}`: The extension of the source file (e.g., `.cpp`).
+- `{{HEADER_EXT}}`: The extension of the header file (e.g., `.h`).
+
+The default template is `'{{STEM}}.combined'`. You can customize it to match
+your project's conventions:
+
+```yaml
+output:
+  paired_filename_template: '{{STEM}}{{SOURCE_EXT}}.txt'
+```
+
 ## Regex-based text transformations
 
 The `processing.regex_replacements` option lets you apply regular-expression search/replace
