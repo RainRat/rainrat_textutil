@@ -169,6 +169,25 @@ def filter_file_paths(
     ]
 
 
+def _render_paired_filename(template, stem, source_path, header_path):
+    """Render the paired filename template with placeholders."""
+    if source_path:
+        source_ext = source_path.suffix
+    else:
+        source_ext = ''
+
+    if header_path:
+        header_ext = header_path.suffix
+    else:
+        header_ext = ''
+
+    return (
+        template.replace('{{STEM}}', stem)
+        .replace('{{SOURCE_EXT}}', source_ext)
+        .replace('{{HEADER_EXT}}', header_ext)
+    )
+
+
 def _pair_files(filtered_paths, source_exts, header_exts, include_mismatched):
     """Return a mapping of stems to paired file paths."""
 
@@ -312,12 +331,25 @@ def find_and_combine_files(config, output_path, dry_run=False):
                     header_exts,
                     include_mismatched,
                 )
+                template = output_opts.get('paired_filename_template')
                 for stem, paths in paired_paths.items():
-                    out_file = (
-                        out_folder / f"{stem}.combined"
-                        if out_folder
-                        else paths[0].with_suffix('.combined')
+                    source_exts_map = {
+                        p.suffix.lower(): p for p in paths if p.suffix.lower() in source_exts
+                    }
+                    header_exts_map = {
+                        p.suffix.lower(): p for p in paths if p.suffix.lower() in header_exts
+                    }
+                    source_path = next(iter(source_exts_map.values()), None)
+                    header_path = next(iter(header_exts_map.values()), None)
+
+                    out_filename = _render_paired_filename(
+                        template, stem, source_path, header_path
                     )
+                    if out_folder:
+                        out_file = out_folder / out_filename
+                    else:
+                        out_file = paths[0].with_name(out_filename)
+
                     if dry_run:
                         print(f"[PAIR {stem}] -> {out_file}")
                         for path in paths:

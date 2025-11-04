@@ -27,6 +27,14 @@ output:
   # to place the .combined files next to their source files.
   folder: null
 
+  # When pairing is enabled, this template determines the name of each
+  # combined output file.
+  # Available placeholders:
+  #   {{STEM}}       - The base name of the file (e.g., 'main' from 'main.cpp')
+  #   {{SOURCE_EXT}} - The extension of the source file (e.g., '.cpp')
+  #   {{HEADER_EXT}} - The extension of the header file (e.g., '.h')
+  paired_filename_template: '{{STEM}}.combined'
+
   # Add line numbers starting at 1 for each file.
   add_line_numbers: false
 

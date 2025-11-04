@@ -10,8 +10,22 @@ from sourcecombine import (
     collect_file_paths,
     should_include,
     _pair_files,
+    _render_paired_filename,
 )
 from utils import compact_whitespace
+
+
+def test_render_paired_filename():
+    template = "{{STEM}}-{{SOURCE_EXT}}-{{HEADER_EXT}}.out"
+    stem = "my_component"
+    source_path = Path("/tmp/my_component.cpp")
+    header_path = Path("/tmp/my_component.h")
+
+    rendered = _render_paired_filename(template, stem, source_path, header_path)
+    assert rendered == "my_component-.cpp-.h.out"
+
+    rendered_no_header = _render_paired_filename(template, stem, source_path, None)
+    assert rendered_no_header == "my_component-.cpp-.out"
 
 
 def test_should_include_respects_filters(tmp_path):
