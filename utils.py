@@ -139,35 +139,45 @@ def read_file_best_effort(file_path):
 def compact_whitespace(text):
     """Compact and normalize whitespace within ``text``.
 
+    This function is designed for formatting plain text and may not be suitable
+    for code, especially Python, where significant whitespace is syntactical.
+
     Transformations are applied in the following order:
 
     - Normalize Windows (CRLF) and classic Mac (CR) endings to LF.
-    - Replace runs of four consecutive spaces with a tab to preserve indentation.
-    - Trim spaces that surround tabs so mixed indentation collapses while leaving
-      at most a single trailing space when indentation is uneven.
-    - Replace mid-line tabs (those not following another tab or a newline) with
-      single spaces for readability.
-    - Trim trailing horizontal whitespace from lines and collapse multiple blank
-      lines into at most two consecutive newlines.
+    - Convert each run of four consecutive spaces to a tab character. This is
+      intended to normalize indentation but may affect other formatting.
+    - Trim spaces that surround tabs, which helps collapse mixed indentation.
+    - Replace mid-line tabs (those not at the start of a line) with single
+      spaces for readability.
+    - Trim trailing horizontal whitespace from all lines.
+    - Collapse multiple blank lines into at most two consecutive newlines.
     - Reduce any remaining long runs of spaces to at most two characters.
 
     Note: keep the regular expressions compatible with Python 3.8 for the sake
     of the packaging targets this project supports.
     """
-    # Normalize line endings and replace every four consecutive spaces with a tab.
+    # Normalize line endings
     text = text.replace('\r\n', '\n').replace('\r', '\n')
+    # Replace every 4 spaces with a tab.
     text = re.sub(r' {4}', '\t', text)
-    # Remove spaces around tabs and collapse stray tabs into spaces.
+    # Trim spaces to the left of a tab.
     text = re.sub(r' +\t', '\t', text)
+    # Trim spaces to the right of a tab that is not at the end of a line.
     text = re.sub(r'(?<=[^\n\t])\t +', '\t', text)
+    # Trim spaces to the right of a tab at the start of a line.
     text = re.sub(r'(?<=\n)\t +(?=\S)', '\t', text)
+    # Trim spaces to the right of a tab at the very start of the text.
     text = re.sub(r'^\t +(?=\S)', '\t', text)
+    # Reduce 2 or more spaces to a single space following a tab.
     text = re.sub(r'\t {2,}(?=\s|$)', '\t ', text)
+    # Replace mid-line tabs (not at start of line) with a space.
     text = re.sub(r'(?<=[^\n\t])\t', ' ', text)
-    # Strip trailing whitespace and collapse multiple blank lines.
+    # Strip trailing whitespace from all lines.
     text = re.sub(r'[ \t]+\n', '\n', text)
+    # Collapse 3 or more newlines into just 2.
     text = re.sub(r'\n{3,}', '\n\n', text)
-    # Reduce runs of spaces to at most two.
+    # Reduce runs of 3 or more spaces to just 2.
     text = re.sub(r' {3,}', '  ', text)
     return text
 
@@ -286,12 +296,53 @@ def load_and_validate_config(
 
     processing_conf = config.get('processing')
     if isinstance(processing_conf, dict):
+        # Validate regex patterns in regex_replacements
+        regex_replacements = processing_conf.get('regex_replacements', [])
+        if isinstance(regex_replacements, list):
+            for i, rule in enumerate(regex_replacements):
+                if isinstance(rule, dict) and 'pattern' in rule:
+                    validate_regex_pattern(
+                        rule['pattern'],
+                        context=f"processing.regex_replacements[{i}]"
+                    )
+
+        # Validate regex patterns in line_regex_replacements
+        line_regex_replacements = processing_conf.get('line_regex_replacements', [])
+        if isinstance(line_regex_replacements, list):
+            for i, rule in enumerate(line_regex_replacements):
+                if isinstance(rule, dict) and 'pattern' in rule:
+                    validate_regex_pattern(
+                        rule['pattern'],
+                        context=f"processing.line_regex_replacements[{i}]"
+                    )
+
         in_place_groups = processing_conf.get('in_place_groups', {})
         if isinstance(in_place_groups, dict):
-            for group in in_place_groups.values():
+            for group_name, group in in_place_groups.items():
                 if isinstance(group, dict):
                     group.setdefault('enabled', False)
                     group.setdefault('options', {})
+                    options = group.get('options', {})
+                    if isinstance(options, dict):
+                        # Validate regex_replacements in in_place_groups
+                        regex_replacements = options.get('regex_replacements', [])
+                        if isinstance(regex_replacements, list):
+                            for i, rule in enumerate(regex_replacements):
+                                if isinstance(rule, dict) and 'pattern' in rule:
+                                    validate_regex_pattern(
+                                        rule['pattern'],
+                                        context=f"in_place_groups.{group_name}.options.regex_replacements[{i}]"
+                                    )
+
+                        # Validate line_regex_replacements in in_place_groups
+                        line_regex_replacements = options.get('line_regex_replacements', [])
+                        if isinstance(line_regex_replacements, list):
+                            for i, rule in enumerate(line_regex_replacements):
+                                if isinstance(rule, dict) and 'pattern' in rule:
+                                    validate_regex_pattern(
+                                        rule['pattern'],
+                                        context=f"in_place_groups.{group_name}.options.line_regex_replacements[{i}]"
+                                    )
 
     pairing_conf = config.get('pairing', {}) or {}
     search_conf = config.get('search')
