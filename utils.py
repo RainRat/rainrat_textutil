@@ -210,6 +210,130 @@ def _replace_line_block(text, regex, replacement=None):
     return "\n".join(out_lines)
 
 
+def _validate_filters_section(config):
+    """Validate the 'filters' section of the configuration."""
+    filters = config.get('filters')
+    if not isinstance(filters, dict):
+        return
+
+    exclusions_conf = filters.get('exclusions', {})
+    if isinstance(exclusions_conf, dict):
+        filenames = exclusions_conf.get('filenames', [])
+        if isinstance(filenames, list):
+            for i, pattern in enumerate(filenames):
+                validate_glob_pattern(
+                    pattern, context=f"filters.exclusions.filenames[{i}]"
+                )
+
+    groups = filters.get('inclusion_groups', {})
+    if isinstance(groups, dict):
+        for group_name, group in groups.items():
+            if isinstance(group, dict):
+                group.setdefault('enabled', False)
+                group.setdefault('filenames', [])
+                filenames = group.get('filenames', [])
+                if isinstance(filenames, list):
+                    for i, pattern in enumerate(filenames):
+                        validate_glob_pattern(
+                            pattern,
+                            context=f"filters.inclusion_groups.{group_name}.filenames[{i}]",
+                        )
+
+    if (
+        isinstance(groups, dict)
+        and any(
+            isinstance(g, dict) and g.get('enabled') for g in groups.values()
+        )
+        and config.get('search', {}).get('allowed_extensions')
+    ):
+        raise InvalidConfigError(
+            "'search.allowed_extensions' cannot be used when 'filters.inclusion_groups' are enabled. Please specify file types within the inclusion group patterns (e.g., 'src/**/*.py') or remove 'allowed_extensions'."
+        )
+
+
+def _validate_processing_section(config):
+    """Validate the 'processing' section of the configuration."""
+    processing_conf = config.get('processing')
+    if not isinstance(processing_conf, dict):
+        return
+
+    # Validate regex patterns in regex_replacements
+    regex_replacements = processing_conf.get('regex_replacements', [])
+    if isinstance(regex_replacements, list):
+        for i, rule in enumerate(regex_replacements):
+            if isinstance(rule, dict) and 'pattern' in rule:
+                validate_regex_pattern(
+                    rule['pattern'],
+                    context=f"processing.regex_replacements[{i}]"
+                )
+
+    # Validate regex patterns in line_regex_replacements
+    line_regex_replacements = processing_conf.get('line_regex_replacements', [])
+    if isinstance(line_regex_replacements, list):
+        for i, rule in enumerate(line_regex_replacements):
+            if isinstance(rule, dict) and 'pattern' in rule:
+                validate_regex_pattern(
+                    rule['pattern'],
+                    context=f"processing.line_regex_replacements[{i}]"
+                )
+
+    in_place_groups = processing_conf.get('in_place_groups', {})
+    if isinstance(in_place_groups, dict):
+        for group_name, group in in_place_groups.items():
+            if isinstance(group, dict):
+                group.setdefault('enabled', False)
+                group.setdefault('options', {})
+                options = group.get('options', {})
+                if isinstance(options, dict):
+                    # Validate regex_replacements in in_place_groups
+                    regex_replacements = options.get('regex_replacements', [])
+                    if isinstance(regex_replacements, list):
+                        for i, rule in enumerate(regex_replacements):
+                            if isinstance(rule, dict) and 'pattern' in rule:
+                                validate_regex_pattern(
+                                    rule['pattern'],
+                                    context=f"in_place_groups.{group_name}.options.regex_replacements[{i}]"
+                                )
+
+                    # Validate line_regex_replacements in in_place_groups
+                    line_regex_replacements = options.get('line_regex_replacements', [])
+                    if isinstance(line_regex_replacements, list):
+                        for i, rule in enumerate(line_regex_replacements):
+                            if isinstance(rule, dict) and 'pattern' in rule:
+                                validate_regex_pattern(
+                                    rule['pattern'],
+                                    context=f"in_place_groups.{group_name}.options.line_regex_replacements[{i}]"
+                                )
+
+
+def _validate_pairing_section(config):
+    """Validate the 'pairing' section and its interaction with 'search'."""
+    pairing_conf = config.get('pairing', {}) or {}
+    search_conf = config.get('search')
+    if not isinstance(search_conf, dict):
+        search_conf = {}
+    config['search'] = search_conf
+
+    if pairing_conf.get('enabled'):
+        if search_conf.get('allowed_extensions'):
+            raise InvalidConfigError(
+                "'allowed_extensions' cannot be used when pairing is enabled; remove it or disable pairing."
+            )
+        source_exts = tuple(
+            e.lower() for e in (pairing_conf.get('source_extensions') or [])
+        )
+        header_exts = tuple(
+            e.lower() for e in (pairing_conf.get('header_extensions') or [])
+        )
+        effective_allowed_extensions = source_exts + header_exts
+    else:
+        effective_allowed_extensions = tuple(
+            e.lower() for e in (search_conf.get('allowed_extensions') or [])
+        )
+
+    search_conf['effective_allowed_extensions'] = effective_allowed_extensions
+
+
 def apply_line_regex_replacements(text, rules):
     """Apply line-oriented regex replacements.
 
@@ -276,119 +400,12 @@ def load_and_validate_config(
                     f"'{key}' section is missing keys: {', '.join(missing_sub)}"
                 )
 
-    filters = config.get('filters')
-    if isinstance(filters, dict):
-        exclusions_conf = filters.get('exclusions', {})
-        if isinstance(exclusions_conf, dict):
-            filenames = exclusions_conf.get('filenames', [])
-            if isinstance(filenames, list):
-                for i, pattern in enumerate(filenames):
-                    validate_glob_pattern(
-                        pattern, context=f"filters.exclusions.filenames[{i}]"
-                    )
-
-        groups = filters.get('inclusion_groups', {})
-        if isinstance(groups, dict):
-            for group_name, group in groups.items():
-                if isinstance(group, dict):
-                    group.setdefault('enabled', False)
-                    group.setdefault('filenames', [])
-                    filenames = group.get('filenames', [])
-                    if isinstance(filenames, list):
-                        for i, pattern in enumerate(filenames):
-                            validate_glob_pattern(
-                                pattern,
-                                context=f"filters.inclusion_groups.{group_name}.filenames[{i}]",
-                            )
-
-        if (
-            isinstance(groups, dict)
-            and any(
-                isinstance(g, dict) and g.get('enabled')
-                for g in groups.values()
-            )
-            and config.get('search', {}).get('allowed_extensions')
-        ):
-            raise InvalidConfigError(
-                "'search.allowed_extensions' cannot be used when 'filters.inclusion_groups' are enabled. Please specify file types within the inclusion group patterns (e.g., 'src/**/*.py') or remove 'allowed_extensions'."
-            )
-
-    processing_conf = config.get('processing')
-    if isinstance(processing_conf, dict):
-        # Validate regex patterns in regex_replacements
-        regex_replacements = processing_conf.get('regex_replacements', [])
-        if isinstance(regex_replacements, list):
-            for i, rule in enumerate(regex_replacements):
-                if isinstance(rule, dict) and 'pattern' in rule:
-                    validate_regex_pattern(
-                        rule['pattern'],
-                        context=f"processing.regex_replacements[{i}]"
-                    )
-
-        # Validate regex patterns in line_regex_replacements
-        line_regex_replacements = processing_conf.get('line_regex_replacements', [])
-        if isinstance(line_regex_replacements, list):
-            for i, rule in enumerate(line_regex_replacements):
-                if isinstance(rule, dict) and 'pattern' in rule:
-                    validate_regex_pattern(
-                        rule['pattern'],
-                        context=f"processing.line_regex_replacements[{i}]"
-                    )
-
-        in_place_groups = processing_conf.get('in_place_groups', {})
-        if isinstance(in_place_groups, dict):
-            for group_name, group in in_place_groups.items():
-                if isinstance(group, dict):
-                    group.setdefault('enabled', False)
-                    group.setdefault('options', {})
-                    options = group.get('options', {})
-                    if isinstance(options, dict):
-                        # Validate regex_replacements in in_place_groups
-                        regex_replacements = options.get('regex_replacements', [])
-                        if isinstance(regex_replacements, list):
-                            for i, rule in enumerate(regex_replacements):
-                                if isinstance(rule, dict) and 'pattern' in rule:
-                                    validate_regex_pattern(
-                                        rule['pattern'],
-                                        context=f"in_place_groups.{group_name}.options.regex_replacements[{i}]"
-                                    )
-
-                        # Validate line_regex_replacements in in_place_groups
-                        line_regex_replacements = options.get('line_regex_replacements', [])
-                        if isinstance(line_regex_replacements, list):
-                            for i, rule in enumerate(line_regex_replacements):
-                                if isinstance(rule, dict) and 'pattern' in rule:
-                                    validate_regex_pattern(
-                                        rule['pattern'],
-                                        context=f"in_place_groups.{group_name}.options.line_regex_replacements[{i}]"
-                                    )
-
-    pairing_conf = config.get('pairing', {}) or {}
-    search_conf = config.get('search')
-    if not isinstance(search_conf, dict):
-        search_conf = {}
-    config['search'] = search_conf
-
-    if pairing_conf.get('enabled'):
-        if search_conf.get('allowed_extensions'):
-            raise InvalidConfigError(
-                "'allowed_extensions' cannot be used when pairing is enabled; remove it or disable pairing."
-            )
-        source_exts = tuple(
-            e.lower() for e in (pairing_conf.get('source_extensions') or [])
-        )
-        header_exts = tuple(
-            e.lower() for e in (pairing_conf.get('header_extensions') or [])
-        )
-        effective_allowed_extensions = source_exts + header_exts
-    else:
-        effective_allowed_extensions = tuple(
-            e.lower() for e in (search_conf.get('allowed_extensions') or [])
-        )
-
-    search_conf['effective_allowed_extensions'] = effective_allowed_extensions
+    _validate_filters_section(config)
+    _validate_processing_section(config)
+    _validate_pairing_section(config)
 
     return config
+
 
 def process_content(buffer, options):
     """Process text based on a dictionary of options.
