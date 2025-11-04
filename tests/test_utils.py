@@ -196,7 +196,7 @@ def test_compact_whitespace_handles_mixed_indent_tabs_and_spaces():
     assert compact_whitespace("\t    code") == "\t\tcode"
 
 
-def test_validate_glob_pattern_warns_on_absolute_paths(capsys, tmp_path):
+def test_validate_glob_pattern_warns_on_absolute_paths(caplog, tmp_path):
     load_and_validate_config(
         _write_config(
             tmp_path,
@@ -210,11 +210,10 @@ def test_validate_glob_pattern_warns_on_absolute_paths(capsys, tmp_path):
             },
         )
     )
-    captured = capsys.readouterr()
-    assert "looks like an absolute path" in captured.out
+    assert "looks like an absolute path" in caplog.text
 
 
-def test_validate_glob_pattern_warns_on_regex_like_syntax(capsys, tmp_path):
+def test_validate_glob_pattern_warns_on_regex_like_syntax(caplog, tmp_path):
     load_and_validate_config(
         _write_config(
             tmp_path,
@@ -231,8 +230,7 @@ def test_validate_glob_pattern_warns_on_regex_like_syntax(capsys, tmp_path):
             },
         )
     )
-    captured = capsys.readouterr()
-    assert "regular expression syntax" in captured.out
+    assert "regular expression syntax" in caplog.text
 
 
 def test_validate_glob_pattern_raises_on_non_string_pattern(tmp_path):

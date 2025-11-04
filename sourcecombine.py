@@ -1,4 +1,5 @@
 import argparse
+import logging
 import sys
 import os
 import fnmatch
@@ -96,7 +97,7 @@ def collect_file_paths(root_folder, recursive, exclude_folders):
     """Return all paths in ``root_folder`` while pruning excluded folders."""
     root_path = Path(root_folder)
     if not root_path.is_dir():
-        print(f"Warning: Root folder '{root_folder}' does not exist. Skipping.")
+        logging.warning("Root folder '%s' does not exist. Skipping.", root_folder)
         return [], None, 0
 
     file_paths = []
@@ -246,14 +247,14 @@ class FileProcessor:
     def process_and_write(self, file_path, root_path, outfile):
         """Read, process, and write a single file."""
         if self.dry_run:
-            print(file_path.resolve())
+            logging.info(file_path.resolve())
             return
 
-        print(f"Processing: {file_path}")
+        logging.info("Processing: %s", file_path)
         content = read_file_best_effort(file_path)
         updated_content = self._apply_in_place_groups(file_path, content)
         if updated_content != content:
-            print(f"Updating in place: {file_path}")
+            logging.info("Updating in place: %s", file_path)
             file_path.write_text(updated_content, encoding='utf8')
         processed_content = process_content(
             updated_content, self.processing_opts
@@ -369,10 +370,10 @@ def find_and_combine_files(config, output_path, dry_run=False):
                         out_file = paths[0].with_name(out_filename)
 
                     if dry_run:
-                        print(f"[PAIR {stem}] -> {out_file}")
+                        logging.info("[PAIR %s] -> %s", stem, out_file)
                         for path in paths:
                             rel_path = path.relative_to(root_path)
-                            print(f"  - {rel_path}")
+                            logging.info("  - %s", rel_path)
                         continue
                     with open(out_file, 'w', encoding='utf8') as pair_out:
                         for file_path in paths:
@@ -412,7 +413,16 @@ def main():
         action="store_true",
         help="List files and planned outputs without writing files",
     )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Enable verbose output (DEBUG level)",
+    )
     args = parser.parse_args()
+
+    log_level = logging.DEBUG if args.verbose else logging.INFO
+    logging.basicConfig(level=log_level, format='%(levelname)s: %(message)s')
 
     try:
         nested_required = {
@@ -422,7 +432,7 @@ def main():
             args.config_file, nested_required=nested_required
         )
     except (ConfigNotFoundError, InvalidConfigError) as e:
-        print(e)
+        logging.error(e, exc_info=True)
         sys.exit(1)
 
     pairing_enabled = config.get('pairing', {}).get('enabled')
@@ -445,11 +455,11 @@ def main():
     try:
         stats = find_and_combine_files(config, output_path, dry_run=args.dry_run)
     except InvalidConfigError as exc:
-        print(exc)
+        logging.error(exc, exc_info=True)
         sys.exit(1)
 
     if args.dry_run:
-        print("\nDry run complete.")
+        logging.info("Dry run complete.")
         if stats:
             total_files = stats['total_files']
             total_size_mb = stats['total_size_bytes'] / (1024 * 1024)
@@ -459,14 +469,14 @@ def main():
             )
             excluded_folders = stats.get('excluded_folder_count', 0)
 
-            print("\n--- Dry-Run Summary ---")
-            print(f"Total files matched: {total_files}")
-            print(f"Total size: {total_size_mb:.2f} MB")
-            print(f"Files by extension: {ext_summary}")
-            print(f"Excluded folder count: {excluded_folders}")
-            print("-----------------------")
+            logging.info("--- Dry-Run Summary ---")
+            logging.info("Total files matched: %d", total_files)
+            logging.info("Total size: %.2f MB", total_size_mb)
+            logging.info("Files by extension: %s", ext_summary)
+            logging.info("Excluded folder count: %d", excluded_folders)
+            logging.info("-----------------------")
     else:
-        print(f"\nDone. Combined files have been written {destination_desc}.")
+        logging.info("Done. Combined files have been written %s.", destination_desc)
 
 
 if __name__ == "__main__":
