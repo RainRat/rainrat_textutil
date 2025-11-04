@@ -133,15 +133,12 @@ def filter_file_paths(
     file_paths,
     *,
     filter_opts,
-    pair_opts,
     search_opts,
     root_path,
+    source_exts=(),
+    header_exts=(),
 ):
     """Apply filtering rules to ``file_paths`` and return the matches."""
-
-    pairing_enabled = pair_opts.get('enabled')
-    source_exts = tuple(e.lower() for e in (pair_opts.get('source_extensions') or []))
-    header_exts = tuple(e.lower() for e in (pair_opts.get('header_extensions') or []))
 
     allowed_extensions = search_opts.get('effective_allowed_extensions') or ()
 
@@ -310,20 +307,23 @@ def find_and_combine_files(config, output_path, dry_run=False):
             )
             if not all_paths:
                 continue
+
+            source_exts = tuple(
+                e.lower() for e in (pair_opts.get('source_extensions') or [])
+            )
+            header_exts = tuple(
+                e.lower() for e in (pair_opts.get('header_extensions') or [])
+            )
             filtered_paths = filter_file_paths(
                 all_paths,
                 filter_opts=filter_opts,
-                pair_opts=pair_opts,
                 search_opts=search_opts,
                 root_path=root_path,
+                source_exts=source_exts,
+                header_exts=header_exts,
             )
+
             if pairing_enabled:
-                source_exts = tuple(
-                    e.lower() for e in (pair_opts.get('source_extensions') or [])
-                )
-                header_exts = tuple(
-                    e.lower() for e in (pair_opts.get('header_extensions') or [])
-                )
                 include_mismatched = pair_opts.get('include_mismatched', False)
                 paired_paths = _pair_files(
                     filtered_paths,

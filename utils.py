@@ -275,12 +275,28 @@ def load_and_validate_config(
 
     filters = config.get('filters')
     if isinstance(filters, dict):
+        exclusions_conf = filters.get('exclusions', {})
+        if isinstance(exclusions_conf, dict):
+            filenames = exclusions_conf.get('filenames', [])
+            if isinstance(filenames, list):
+                for i, pattern in enumerate(filenames):
+                    validate_glob_pattern(
+                        pattern, context=f"filters.exclusions.filenames[{i}]"
+                    )
+
         groups = filters.get('inclusion_groups', {})
         if isinstance(groups, dict):
-            for group in groups.values():
+            for group_name, group in groups.items():
                 if isinstance(group, dict):
                     group.setdefault('enabled', False)
                     group.setdefault('filenames', [])
+                    filenames = group.get('filenames', [])
+                    if isinstance(filenames, list):
+                        for i, pattern in enumerate(filenames):
+                            validate_glob_pattern(
+                                pattern,
+                                context=f"filters.inclusion_groups.{group_name}.filenames[{i}]",
+                            )
 
         if (
             isinstance(groups, dict)
@@ -429,6 +445,35 @@ def add_line_numbers(text):
     if text.endswith("\n"):
         numbered.append("")
     return "\n".join(numbered)
+
+
+def validate_glob_pattern(pattern, *, context="glob pattern"):
+    """Warn about potentially problematic glob patterns."""
+    if not isinstance(pattern, str):
+        raise InvalidConfigError(
+            f"Glob pattern in {context} must be a string, but got: {type(pattern).__name__}"
+        )
+
+    if pattern.startswith('/') or (len(pattern) > 1 and pattern[1] == ':'):
+        print(
+            f"Warning: Glob pattern in {context} ('{pattern}') looks like an absolute path. "
+            "Patterns are matched against relative paths and filenames. This may not work as expected."
+        )
+
+    if '(' in pattern or ')' in pattern or '+' in pattern:
+        print(
+            f"Warning: Glob pattern in {context} ('{pattern}') contains characters that may be "
+            "interpreted as regular expression syntax, but this tool uses glob patterns. "
+            "Special glob characters are *, ?, []."
+        )
+
+    if pattern.count('[') != pattern.count(']'):
+        print(
+            f"Warning: Glob pattern in {context} ('{pattern}') has mismatched brackets '[' and ']'. "
+            "This may cause unexpected matching behavior."
+        )
+
+    return pattern
 
 
 def validate_regex_pattern(pattern, *, context="regex pattern"):
