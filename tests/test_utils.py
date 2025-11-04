@@ -194,3 +194,59 @@ def test_compact_whitespace_collapses_long_space_runs():
 def test_compact_whitespace_handles_mixed_indent_tabs_and_spaces():
     assert compact_whitespace("  \t  code") == "\tcode"
     assert compact_whitespace("\t    code") == "\t\tcode"
+
+
+def test_validate_glob_pattern_warns_on_absolute_paths(capsys, tmp_path):
+    load_and_validate_config(
+        _write_config(
+            tmp_path,
+            {
+                "search": {"root_folders": ["."]},
+                "filters": {
+                    "exclusions": {
+                        "filenames": ["/abs/path/*"],
+                    },
+                },
+            },
+        )
+    )
+    captured = capsys.readouterr()
+    assert "looks like an absolute path" in captured.out
+
+
+def test_validate_glob_pattern_warns_on_regex_like_syntax(capsys, tmp_path):
+    load_and_validate_config(
+        _write_config(
+            tmp_path,
+            {
+                "search": {"root_folders": ["."]},
+                "filters": {
+                    "inclusion_groups": {
+                        "group1": {
+                            "enabled": True,
+                            "filenames": ["(a|b)+.txt"],
+                        },
+                    },
+                },
+            },
+        )
+    )
+    captured = capsys.readouterr()
+    assert "regular expression syntax" in captured.out
+
+
+def test_validate_glob_pattern_raises_on_non_string_pattern(tmp_path):
+    with pytest.raises(InvalidConfigError, match="must be a string"):
+        load_and_validate_config(
+            _write_config(
+                tmp_path,
+                {
+                    "search": {"root_folders": ["."]},
+                    "filters": {
+                        "exclusions": {
+                            "filenames": [123],
+                        },
+                    },
+                },
+            )
+        )

@@ -54,7 +54,7 @@ filters:
   # Files smaller than this (bytes) are skipped.
   min_size_bytes: 0
 
-  # Files larger than this (bytes) are skipped. Omit or set 0 for no limit.
+  # Files larger than this (bytes) are skipped. Omit, set to null, or set to 0 for no limit.
   max_size_bytes: 0
 
   # --- Inclusion Groups ---

@@ -48,6 +48,41 @@ def test_should_include_respects_filters(tmp_path):
     assert should_include(exclude_file, Path(exclude_file.name), filter_config) is False
 
 
+def test_should_include_respects_relative_path_globs(tmp_path):
+    src_dir = tmp_path / "src"
+    src_dir.mkdir()
+    main_py = src_dir / "main.py"
+    main_py.touch()
+
+    tests_dir = tmp_path / "tests"
+    tests_dir.mkdir()
+    test_main_py = tests_dir / "test_main.py"
+    test_main_py.touch()
+
+    filter_config = {
+        "exclude_filenames": ["tests/*"],
+        "allowed_extensions": (".py",),
+        "include_patterns": set(),
+        "min_size_bytes": 0,
+        "max_size_bytes": 100,
+    }
+
+    assert (
+        should_include(
+            main_py, main_py.relative_to(tmp_path), filter_config
+        )
+        is True
+    )
+    assert (
+        should_include(
+            test_main_py,
+            test_main_py.relative_to(tmp_path),
+            filter_config,
+        )
+        is False
+    )
+
+
 def test_should_include_respects_size_bounds(tmp_path):
     tiny = tmp_path / "tiny.py"
     tiny.write_text("a", encoding="utf-8")
