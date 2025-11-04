@@ -1,3 +1,4 @@
+import logging
 import re
 import unicodedata
 from pathlib import Path
@@ -46,7 +47,7 @@ class InvalidConfigError(Exception):
 
 def load_yaml_config(config_file_path):
     """Load a YAML configuration file with basic error handling."""
-    print(f"Loading configuration from: {config_file_path}")
+    logging.info("Loading configuration from: %s", config_file_path)
     try:
         with open(config_file_path, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
@@ -86,7 +87,7 @@ def read_file_best_effort(file_path):
     try:
         raw_bytes = Path(file_path).read_bytes()
     except Exception:
-        print(f"Warning: Could not read {file_path}.")
+        logging.warning("Could not read %s.", file_path)
         return ""
 
     def _score_text(text):
@@ -132,7 +133,9 @@ def read_file_best_effort(file_path):
     try:
         return _strip_bom(raw_bytes.decode('utf-8', errors='replace'))
     except Exception:
-        print(f"Warning: Could not decode {file_path} with any of the attempted encodings.")
+        logging.warning(
+            "Could not decode %s with any of the attempted encodings.", file_path
+        )
         return ""
 
 
@@ -455,22 +458,28 @@ def validate_glob_pattern(pattern, *, context="glob pattern"):
         )
 
     if pattern.startswith('/') or (len(pattern) > 1 and pattern[1] == ':'):
-        print(
-            f"Warning: Glob pattern in {context} ('{pattern}') looks like an absolute path. "
-            "Patterns are matched against relative paths and filenames. This may not work as expected."
+        logging.warning(
+            "Glob pattern in %s ('%s') looks like an absolute path. "
+            "Patterns are matched against relative paths and filenames. This may not work as expected.",
+            context,
+            pattern,
         )
 
     if '(' in pattern or ')' in pattern or '+' in pattern:
-        print(
-            f"Warning: Glob pattern in {context} ('{pattern}') contains characters that may be "
+        logging.warning(
+            "Glob pattern in %s ('%s') contains characters that may be "
             "interpreted as regular expression syntax, but this tool uses glob patterns. "
-            "Special glob characters are *, ?, []."
+            "Special glob characters are *, ?, [].",
+            context,
+            pattern,
         )
 
     if pattern.count('[') != pattern.count(']'):
-        print(
-            f"Warning: Glob pattern in {context} ('{pattern}') has mismatched brackets '[' and ']'. "
-            "This may cause unexpected matching behavior."
+        logging.warning(
+            "Glob pattern in %s ('%s') has mismatched brackets '[' and ']'. "
+            "This may cause unexpected matching behavior.",
+            context,
+            pattern,
         )
 
     return pattern
