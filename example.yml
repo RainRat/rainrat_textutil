@@ -70,6 +70,8 @@ processing:
   # If true, attempts to clean up and compact whitespace.
   # Not recommended for languages where whitespace matters (ie. Python)
   compact_whitespace: false
+  # Optional overrides to selectively enable or disable whitespace transforms.
+  compact_whitespace_groups: {}
 
   # If true, removes all C-style block comments (/* ... */). This runs *after* remove_initial_c_style_comment.
   remove_all_c_style_comments: false
@@ -100,3 +102,6 @@ processing:
       enabled: false
       options:
         compact_whitespace: true
+        # Example override: keep mid-line tabs intact.
+        compact_whitespace_groups:
+          replace_mid_line_tabs: false

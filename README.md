@@ -133,6 +133,8 @@ processing:
       enabled: true
       options:
         compact_whitespace: true
+        compact_whitespace_groups:
+          replace_mid_line_tabs: false
         regex_replacements:
           - pattern: '\\s+$'
             replacement: ''
