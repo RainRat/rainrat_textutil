@@ -80,6 +80,12 @@ filters:
 # --- Content Processing Options ---
 processing:
   compact_whitespace: false       # Compact and clean up whitespace
+  # Optional overrides to enable or disable individual whitespace transforms.
+  # Keys may be set to true, false, or null (to fall back to compact_whitespace).
+  # Supported keys: normalize_line_endings, spaces_to_tabs, trim_spaces_around_tabs,
+  # replace_mid_line_tabs, trim_trailing_whitespace, compact_blank_lines,
+  # compact_space_runs
+  compact_whitespace_groups: {}
   # If true, removes all C-style block comments (/* ... */). This runs *after* remove_initial_c_style_comment.
   remove_all_c_style_comments: false
   # If true, removes only the *first* C-style block comment if it's at the top of the file.
@@ -102,6 +108,8 @@ processing:
   #     enabled: true
   #     options:
   #       compact_whitespace: true
+  #       compact_whitespace_groups:
+  #         replace_mid_line_tabs: false
   #       regex_replacements:
   #         - pattern: '\s+$'
   #           replacement: ''

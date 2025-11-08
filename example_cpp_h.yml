@@ -18,6 +18,8 @@ filters:
 processing:
   remove_initial_c_style_comment: true
   compact_whitespace: true
+  compact_whitespace_groups:
+    replace_mid_line_tabs: false
   line_regex_replacements:
     - pattern: '^\\s*\\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$'
       replacement: '<data removed>'
@@ -33,6 +35,8 @@ processing:
       enabled: false
       options:
         compact_whitespace: true
+        compact_whitespace_groups:
+          replace_mid_line_tabs: false
 
 pairing:
   enabled: true

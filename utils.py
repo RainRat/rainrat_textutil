@@ -9,6 +9,16 @@ import yaml
 DEFAULT_OUTPUT_FILENAME = "combined_files.txt"
 FILENAME_PLACEHOLDER = "{{FILENAME}}"
 
+COMPACT_WHITESPACE_GROUPS = (
+    'normalize_line_endings',
+    'spaces_to_tabs',
+    'trim_spaces_around_tabs',
+    'replace_mid_line_tabs',
+    'trim_trailing_whitespace',
+    'compact_blank_lines',
+    'compact_space_runs',
+)
+
 DEFAULT_CONFIG = {
     'filters': {
         'exclusions': {
@@ -139,7 +149,7 @@ def read_file_best_effort(file_path):
         return ""
 
 
-def compact_whitespace(text):
+def compact_whitespace(text, *, groups=None):
     """Compact and normalize whitespace within ``text``.
 
     This function is designed for formatting plain text and may not be suitable
@@ -160,29 +170,55 @@ def compact_whitespace(text):
     Note: keep the regular expressions compatible with Python 3.8 for the sake
     of the packaging targets this project supports.
     """
-    # Normalize line endings
-    text = text.replace('\r\n', '\n').replace('\r', '\n')
-    # Replace every 4 spaces with a tab.
-    text = re.sub(r' {4}', '\t', text)
-    # Trim spaces to the left of a tab.
-    text = re.sub(r' +\t', '\t', text)
-    # Trim spaces to the right of a tab that is not at the end of a line.
-    text = re.sub(r'(?<=[^\n\t])\t +', '\t', text)
-    # Trim spaces to the right of a tab at the start of a line.
-    text = re.sub(r'(?<=\n)\t +(?=\S)', '\t', text)
-    # Trim spaces to the right of a tab at the very start of the text.
-    text = re.sub(r'^\t +(?=\S)', '\t', text)
-    # Reduce 2 or more spaces to a single space following a tab.
-    text = re.sub(r'\t {2,}(?=\s|$)', '\t ', text)
-    # Replace mid-line tabs (not at start of line) with a space.
-    text = re.sub(r'(?<=[^\n\t])\t', ' ', text)
-    # Strip trailing whitespace from all lines.
-    text = re.sub(r'[ \t]+\n', '\n', text)
-    # Collapse 3 or more newlines into just 2.
-    text = re.sub(r'\n{3,}', '\n\n', text)
-    # Reduce runs of 3 or more spaces to just 2.
-    text = re.sub(r' {3,}', '  ', text)
+    def _should_apply(key):
+        if groups is None:
+            return True
+        value = groups.get(key, True)
+        if value is None:
+            return True
+        return bool(value)
+
+    if _should_apply('normalize_line_endings'):
+        text = text.replace('\r\n', '\n').replace('\r', '\n')
+    if _should_apply('spaces_to_tabs'):
+        text = re.sub(r' {4}', '\t', text)
+    if _should_apply('trim_spaces_around_tabs'):
+        text = re.sub(r' +\t', '\t', text)
+        text = re.sub(r'(?<=[^\n\t])\t +', '\t', text)
+        text = re.sub(r'(?<=\n)\t +(?=\S)', '\t', text)
+        text = re.sub(r'^\t +(?=\S)', '\t', text)
+        text = re.sub(r'\t {2,}(?=\s|$)', '\t ', text)
+    if _should_apply('replace_mid_line_tabs'):
+        text = re.sub(r'(?<=[^\n\t])\t', ' ', text)
+    if _should_apply('trim_trailing_whitespace'):
+        text = re.sub(r'[ \t]+\n', '\n', text)
+    if _should_apply('compact_blank_lines'):
+        text = re.sub(r'\n{3,}', '\n\n', text)
+    if _should_apply('compact_space_runs'):
+        text = re.sub(r' {3,}', '  ', text)
     return text
+
+
+def _validate_compact_whitespace_groups(groups, *, context):
+    if groups is None:
+        return
+    if not isinstance(groups, dict):
+        raise InvalidConfigError(
+            f"'{context}' must be a dictionary mapping group names to booleans or null."
+        )
+
+    for key, value in groups.items():
+        if key not in COMPACT_WHITESPACE_GROUPS:
+            logging.warning(
+                "Unknown compact_whitespace_groups entry '%s' in %s; it will be ignored.",
+                key,
+                context,
+            )
+            continue
+        if value is not None and not isinstance(value, bool):
+            raise InvalidConfigError(
+                f"Values in '{context}' must be true, false, or null."
+            )
 
 def _replace_line_block(text, regex, replacement=None):
     """Collapse blocks of lines matching ``regex`` into ``replacement``.
@@ -257,6 +293,11 @@ def _validate_processing_section(config, *, source=None):
     if not isinstance(processing_conf, dict):
         return
 
+    _validate_compact_whitespace_groups(
+        processing_conf.get('compact_whitespace_groups'),
+        context='processing.compact_whitespace_groups',
+    )
+
     # Validate regex patterns in regex_replacements
     regex_replacements = processing_conf.get('regex_replacements', [])
     if isinstance(regex_replacements, list):
@@ -287,6 +328,10 @@ def _validate_processing_section(config, *, source=None):
                 group.setdefault('options', {})
                 options = group.get('options', {})
                 if isinstance(options, dict):
+                    _validate_compact_whitespace_groups(
+                        options.get('compact_whitespace_groups'),
+                        context=f"in_place_groups.{group_name}.options.compact_whitespace_groups",
+                    )
                     # Validate regex_replacements in in_place_groups
                     regex_replacements = options.get('regex_replacements', [])
                     if isinstance(regex_replacements, list):
@@ -424,6 +469,9 @@ def process_content(buffer, options):
       applied to whole lines. Consecutive blocks of matching lines collapse into a
       single ``replacement`` entry (or are removed if ``replacement`` is omitted).
     - ``compact_whitespace`` (bool)
+    - ``compact_whitespace_groups`` (dict): optional overrides that enable or disable
+      specific whitespace transformations. Supported keys are defined in
+      ``COMPACT_WHITESPACE_GROUPS``.
     """
     if not options:
         return buffer
@@ -456,8 +504,29 @@ def process_content(buffer, options):
     if line_rules:
         buffer = apply_line_regex_replacements(buffer, line_rules)
 
-    if options.get('compact_whitespace'):
-        buffer = compact_whitespace(buffer)
+    compact_enabled = bool(options.get('compact_whitespace'))
+    compact_overrides = options.get('compact_whitespace_groups')
+    resolved_groups = None
+
+    if isinstance(compact_overrides, dict):
+        resolved_groups = {key: compact_enabled for key in COMPACT_WHITESPACE_GROUPS}
+        recognized_override_present = False
+
+        for key, value in compact_overrides.items():
+            if key not in resolved_groups:
+                continue
+            recognized_override_present = True
+            if value is None:
+                continue
+            resolved_groups[key] = bool(value)
+
+        if recognized_override_present:
+            compact_enabled = any(resolved_groups.values())
+        else:
+            resolved_groups = None
+
+    if compact_enabled:
+        buffer = compact_whitespace(buffer, groups=resolved_groups)
 
     return buffer
 

@@ -217,6 +217,43 @@ def test_compact_whitespace_handles_mixed_indent_tabs_and_spaces():
     assert compact_whitespace("\t    code") == "\t\tcode"
 
 
+def test_compact_whitespace_groups_can_disable_transformations():
+    original = "Line\r\n    ind\t  ent\n\n\ntrail   "
+    overrides = {
+        "normalize_line_endings": False,
+        "spaces_to_tabs": False,
+        "trim_spaces_around_tabs": False,
+        "replace_mid_line_tabs": False,
+        "trim_trailing_whitespace": False,
+        "compact_blank_lines": False,
+        "compact_space_runs": False,
+    }
+    assert compact_whitespace(original, groups=overrides) == original
+
+
+def test_process_content_compact_whitespace_overrides_enable_specific_group():
+    text = "a   b\n\n\n"
+    options = {
+        "compact_whitespace": False,
+        "compact_whitespace_groups": {
+            "compact_space_runs": True,
+            "compact_blank_lines": True,
+        },
+    }
+    assert process_content(text, options) == "a  b\n\n"
+
+
+def test_process_content_compact_whitespace_overrides_can_disable_group():
+    text = "a\tb"
+    options = {
+        "compact_whitespace": True,
+        "compact_whitespace_groups": {
+            "replace_mid_line_tabs": False,
+        },
+    }
+    assert process_content(text, options) == text
+
+
 def test_validate_glob_pattern_warns_on_absolute_paths(caplog, tmp_path):
     load_and_validate_config(
         _write_config(
