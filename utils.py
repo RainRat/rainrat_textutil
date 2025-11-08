@@ -251,7 +251,7 @@ def _validate_filters_section(config):
         )
 
 
-def _validate_processing_section(config):
+def _validate_processing_section(config, *, source=None):
     """Validate the 'processing' section of the configuration."""
     processing_conf = config.get('processing')
     if not isinstance(processing_conf, dict):
@@ -264,7 +264,8 @@ def _validate_processing_section(config):
             if isinstance(rule, dict) and 'pattern' in rule:
                 validate_regex_pattern(
                     rule['pattern'],
-                    context=f"processing.regex_replacements[{i}]"
+                    context=f"processing.regex_replacements[{i}]",
+                    source=source,
                 )
 
     # Validate regex patterns in line_regex_replacements
@@ -274,7 +275,8 @@ def _validate_processing_section(config):
             if isinstance(rule, dict) and 'pattern' in rule:
                 validate_regex_pattern(
                     rule['pattern'],
-                    context=f"processing.line_regex_replacements[{i}]"
+                    context=f"processing.line_regex_replacements[{i}]",
+                    source=source,
                 )
 
     in_place_groups = processing_conf.get('in_place_groups', {})
@@ -292,7 +294,8 @@ def _validate_processing_section(config):
                             if isinstance(rule, dict) and 'pattern' in rule:
                                 validate_regex_pattern(
                                     rule['pattern'],
-                                    context=f"in_place_groups.{group_name}.options.regex_replacements[{i}]"
+                                    context=f"in_place_groups.{group_name}.options.regex_replacements[{i}]",
+                                    source=source,
                                 )
 
                     # Validate line_regex_replacements in in_place_groups
@@ -302,7 +305,8 @@ def _validate_processing_section(config):
                             if isinstance(rule, dict) and 'pattern' in rule:
                                 validate_regex_pattern(
                                     rule['pattern'],
-                                    context=f"in_place_groups.{group_name}.options.line_regex_replacements[{i}]"
+                                    context=f"in_place_groups.{group_name}.options.line_regex_replacements[{i}]",
+                                    source=source,
                                 )
 
 
@@ -401,7 +405,7 @@ def load_and_validate_config(
                 )
 
     _validate_filters_section(config)
-    _validate_processing_section(config)
+    _validate_processing_section(config, source=config_file_path)
     _validate_pairing_section(config)
 
     return config
@@ -502,7 +506,7 @@ def validate_glob_pattern(pattern, *, context="glob pattern"):
     return pattern
 
 
-def validate_regex_pattern(pattern, *, context="regex pattern"):
+def validate_regex_pattern(pattern, *, context="regex pattern", source=None):
     """Return a compiled regex after validating ``pattern``.
 
     Raises ``InvalidConfigError`` with a helpful message when ``pattern`` is
@@ -513,7 +517,10 @@ def validate_regex_pattern(pattern, *, context="regex pattern"):
     try:
         return re.compile(pattern)
     except re.error as exc:
+        location = f"Invalid regex pattern in {context}"
+        if source:
+            location += f" (from '{source}')"
         raise InvalidConfigError(
-            f"Invalid regex pattern in {context}: '{pattern}'. {exc}"
+            f"{location}: '{pattern}'. {exc}"
         ) from exc
 

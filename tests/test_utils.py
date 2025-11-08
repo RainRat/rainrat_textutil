@@ -164,6 +164,27 @@ def test_load_and_validate_config_preserves_user_allowed_extensions(tmp_path):
     assert config["search"]["effective_allowed_extensions"] == (".py",)
 
 
+def test_load_and_validate_config_reports_regex_context(tmp_path):
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "processing": {
+                "regex_replacements": [
+                    {"pattern": "[unterminated", "replacement": "noop"},
+                ]
+            },
+        },
+    )
+
+    with pytest.raises(InvalidConfigError) as excinfo:
+        load_and_validate_config(config_path)
+
+    message = str(excinfo.value)
+    assert "processing.regex_replacements[0]" in message
+    assert str(config_path) in message
+
+
 def test_add_line_numbers():
     assert add_line_numbers("a\nb") == "1: a\n2: b"
     assert add_line_numbers("") == ""
