@@ -96,12 +96,7 @@ processing:
   #   - pattern: '(?s).*BEGIN_SNIP(.*)END_SNIP.*'
   #     replacement: '\\1'
 
-  # Named groups of processing options that will update the source files themselves.
-  in_place_groups:
-    whitespace_cleanup:
-      enabled: false
-      options:
-        compact_whitespace: true
-        # Example override: keep mid-line tabs intact.
-        compact_whitespace_groups:
-          replace_mid_line_tabs: false
+  # Apply these processing options directly back to the source files when true.
+  apply_in_place: false
+  # Back up files using the .bak extension before rewriting them when apply_in_place is true.
+  create_backups: true

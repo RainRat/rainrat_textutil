@@ -101,18 +101,8 @@ processing:
   # regex_replacements:
   #   - pattern: '^\s*//\s*TODO:.*$'
   #     replacement: ''
-  in_place_groups: {}              # Named groups of transformations to apply back to the source files
-  # Example in-place group:
-  # in_place_groups:
-  #   cleanup:
-  #     enabled: true
-  #     options:
-  #       compact_whitespace: true
-  #       compact_whitespace_groups:
-  #         replace_mid_line_tabs: false
-  #       regex_replacements:
-  #         - pattern: '\s+$'
-  #           replacement: ''
+  apply_in_place: false            # Apply these processing rules back to the source files
+  create_backups: true             # Create .bak backups before rewriting when apply_in_place is true
 
 
 # --- Pairing Options ---

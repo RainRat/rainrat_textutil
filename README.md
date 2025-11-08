@@ -117,32 +117,25 @@ processing:
 See `example.yml`, `concat_simple.yml`, and `example_cpp_h.yml` for more configuration
 examples.
 
-### In-place processing groups
+### Applying transformations back to source files
 
-When you want to permanently update the source files themselves—such as
-collapsing whitespace before committing them—you can enable
-`processing.in_place_groups`. Each named group bundles the same processing
-options used for the combined output. When a group is marked as `enabled`, its
-options are applied to the file content and the file is rewritten before the
-final output is generated.
+To rewrite the original files with the same transformations used for the
+combined output, set `processing.apply_in_place` to `true`. When enabled, the
+file is processed and rewritten before it is included in the combined output.
+Backups with the `.bak` extension are created by default before any
+modification occurs. You can disable the backup behavior by setting
+`processing.create_backups` to `false`.
 
 ```yaml
 processing:
-  in_place_groups:
-    cleanup:
-      enabled: true
-      options:
-        compact_whitespace: true
-        compact_whitespace_groups:
-          replace_mid_line_tabs: false
-        regex_replacements:
-          - pattern: '\\s+$'
-            replacement: ''
+  apply_in_place: true
+  create_backups: false  # Optional – defaults to true when apply_in_place is enabled
+  compact_whitespace: true
 ```
 
-Groups make it easy to toggle related transformations at once rather than
-enabling each regex rule individually. In-place processing is skipped when
-`--dry-run` is used.
+In-place updates are skipped automatically when `--dry-run` is used. Previous
+configurations that relied on `processing.in_place_groups` are deprecated in
+favor of the simpler boolean flag.
 
 ### Filtering and Exclusion Rules
 

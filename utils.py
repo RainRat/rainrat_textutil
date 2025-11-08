@@ -42,7 +42,8 @@ DEFAULT_CONFIG = {
         'footer_template': f"\n--- end {FILENAME_PLACEHOLDER} ---\n",
     },
     'processing': {
-        'in_place_groups': {},
+        'apply_in_place': False,
+        'create_backups': True,
     },
 }
 
@@ -293,6 +294,18 @@ def _validate_processing_section(config, *, source=None):
     if not isinstance(processing_conf, dict):
         return
 
+    apply_in_place = processing_conf.get('apply_in_place')
+    if apply_in_place is not None and not isinstance(apply_in_place, bool):
+        raise InvalidConfigError(
+            "'processing.apply_in_place' must be a boolean value"
+        )
+
+    create_backups = processing_conf.get('create_backups')
+    if create_backups is not None and not isinstance(create_backups, bool):
+        raise InvalidConfigError(
+            "'processing.create_backups' must be a boolean value"
+        )
+
     _validate_compact_whitespace_groups(
         processing_conf.get('compact_whitespace_groups'),
         context='processing.compact_whitespace_groups',
@@ -320,39 +333,11 @@ def _validate_processing_section(config, *, source=None):
                     source=source,
                 )
 
-    in_place_groups = processing_conf.get('in_place_groups', {})
-    if isinstance(in_place_groups, dict):
-        for group_name, group in in_place_groups.items():
-            if isinstance(group, dict):
-                group.setdefault('enabled', False)
-                group.setdefault('options', {})
-                options = group.get('options', {})
-                if isinstance(options, dict):
-                    _validate_compact_whitespace_groups(
-                        options.get('compact_whitespace_groups'),
-                        context=f"in_place_groups.{group_name}.options.compact_whitespace_groups",
-                    )
-                    # Validate regex_replacements in in_place_groups
-                    regex_replacements = options.get('regex_replacements', [])
-                    if isinstance(regex_replacements, list):
-                        for i, rule in enumerate(regex_replacements):
-                            if isinstance(rule, dict) and 'pattern' in rule:
-                                validate_regex_pattern(
-                                    rule['pattern'],
-                                    context=f"in_place_groups.{group_name}.options.regex_replacements[{i}]",
-                                    source=source,
-                                )
-
-                    # Validate line_regex_replacements in in_place_groups
-                    line_regex_replacements = options.get('line_regex_replacements', [])
-                    if isinstance(line_regex_replacements, list):
-                        for i, rule in enumerate(line_regex_replacements):
-                            if isinstance(rule, dict) and 'pattern' in rule:
-                                validate_regex_pattern(
-                                    rule['pattern'],
-                                    context=f"in_place_groups.{group_name}.options.line_regex_replacements[{i}]",
-                                    source=source,
-                                )
+    if 'in_place_groups' in processing_conf:
+        raise InvalidConfigError(
+            "'processing.in_place_groups' has been deprecated. "
+            "Use 'processing.apply_in_place' instead."
+        )
 
 
 def _validate_pairing_section(config):

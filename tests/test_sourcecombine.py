@@ -196,21 +196,15 @@ def test_collect_file_paths_prunes_excluded_folders(tmp_path):
     assert Path("src/build/another.o") not in collected_set
 
 
-def test_in_place_groups_modify_files_and_output(tmp_path):
+def test_apply_in_place_updates_files_and_output(tmp_path):
     file_path = tmp_path / "sample.txt"
     original = "line   one\n\n\nline two    \n"
     file_path.write_text(original, encoding="utf-8")
 
     config = {
         "processing": {
-            "in_place_groups": {
-                "cleanup": {
-                    "enabled": True,
-                    "options": {
-                        "compact_whitespace": True,
-                    },
-                }
-            }
+            "apply_in_place": True,
+            "compact_whitespace": True,
         },
         "output": {
             "header_template": "",
@@ -227,21 +221,36 @@ def test_in_place_groups_modify_files_and_output(tmp_path):
     assert buffer.getvalue() == expected
 
 
-def test_in_place_groups_respect_dry_run(tmp_path):
+def test_apply_in_place_creates_backups_by_default(tmp_path):
+    file_path = tmp_path / "backup.txt"
+    original = "needs cleanup\t\t\n"
+    file_path.write_text(original, encoding="utf-8")
+
+    config = {
+        "processing": {
+            "apply_in_place": True,
+            "compact_whitespace": True,
+        },
+        "output": {},
+    }
+
+    processor = FileProcessor(config, config.get("output"), dry_run=False)
+    processor.process_and_write(file_path, tmp_path, io.StringIO())
+
+    backup_path = tmp_path / "backup.txt.bak"
+    assert backup_path.exists()
+    assert backup_path.read_text(encoding="utf-8") == original
+
+
+def test_apply_in_place_respects_dry_run(tmp_path):
     file_path = tmp_path / "dry.txt"
     original = "dry run text"
     file_path.write_text(original, encoding="utf-8")
 
     config = {
         "processing": {
-            "in_place_groups": {
-                "cleanup": {
-                    "enabled": True,
-                    "options": {
-                        "compact_whitespace": True,
-                    },
-                }
-            }
+            "apply_in_place": True,
+            "compact_whitespace": True,
         },
         "output": {},
     }
@@ -250,3 +259,26 @@ def test_in_place_groups_respect_dry_run(tmp_path):
     processor.process_and_write(file_path, tmp_path, None)
 
     assert file_path.read_text(encoding="utf-8") == original
+    assert not (tmp_path / "dry.txt.bak").exists()
+
+
+def test_apply_in_place_can_disable_backups(tmp_path):
+    file_path = tmp_path / "nobackup.txt"
+    file_path.write_text("content", encoding="utf-8")
+
+    config = {
+        "processing": {
+            "apply_in_place": True,
+            "create_backups": False,
+            "regex_replacements": [
+                {"pattern": "content", "replacement": "updated"}
+            ],
+        },
+        "output": {},
+    }
+
+    processor = FileProcessor(config, config.get("output"), dry_run=False)
+    processor.process_and_write(file_path, tmp_path, io.StringIO())
+
+    assert (tmp_path / "nobackup.txt.bak").exists() is False
+    assert file_path.read_text(encoding="utf-8") == "updated"
