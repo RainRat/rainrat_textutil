@@ -3,6 +3,7 @@ import logging
 import sys
 import os
 import fnmatch
+import re
 from functools import lru_cache
 from pathlib import Path
 from contextlib import nullcontext
@@ -173,8 +174,31 @@ def filter_file_paths(
     ]
 
 
-def _render_paired_filename(template, stem, source_path, header_path):
+_INVALID_SLUG_CHARS_RE = re.compile(r'[^0-9A-Za-z._-]+')
+
+
+def _slugify_relative_dir(relative_dir):
+    """Return a filesystem-safe slug for ``relative_dir`` preserving structure."""
+
+    if relative_dir in ('', '.'):  # Treat the project root specially.
+        return 'root'
+
+    parts = relative_dir.split('/')
+    slugged_parts = []
+    for part in parts:
+        cleaned = _INVALID_SLUG_CHARS_RE.sub('-', part.strip())
+        cleaned = cleaned.casefold()
+        cleaned = re.sub(r'-{2,}', '-', cleaned)
+        cleaned = cleaned.strip('-')
+        slugged_parts.append(cleaned or 'unnamed')
+    return '/'.join(slugged_parts)
+
+
+def _render_paired_filename(
+    template, stem, source_path, header_path, relative_dir=None
+):
     """Render the paired filename template with placeholders."""
+
     if source_path:
         source_ext = source_path.suffix
     else:
@@ -185,10 +209,22 @@ def _render_paired_filename(template, stem, source_path, header_path):
     else:
         header_ext = ''
 
+    if relative_dir is None:
+        dir_value = '.'
+    else:
+        if isinstance(relative_dir, Path):
+            dir_value = relative_dir.as_posix() or '.'
+        else:
+            dir_value = str(relative_dir) or '.'
+
+    dir_slug = _slugify_relative_dir(dir_value)
+
     return (
         template.replace('{{STEM}}', stem)
         .replace('{{SOURCE_EXT}}', source_ext)
         .replace('{{HEADER_EXT}}', header_ext)
+        .replace('{{DIR}}', dir_value)
+        .replace('{{DIR_SLUG}}', dir_slug)
     )
 
 
@@ -350,7 +386,10 @@ def find_and_combine_files(config, output_path, dry_run=False):
                     header_exts,
                     include_mismatched,
                 )
-                template = output_opts.get('paired_filename_template')
+                template = (
+                    output_opts.get('paired_filename_template')
+                    or '{{STEM}}.combined'
+                )
                 for stem, paths in paired_paths.items():
                     source_exts_map = {
                         p.suffix.lower(): p for p in paths if p.suffix.lower() in source_exts
@@ -361,13 +400,29 @@ def find_and_combine_files(config, output_path, dry_run=False):
                     source_path = next(iter(source_exts_map.values()), None)
                     header_path = next(iter(header_exts_map.values()), None)
 
+                    primary_path = source_path or header_path or paths[0]
+                    try:
+                        relative_dir = primary_path.relative_to(root_path).parent
+                    except ValueError:
+                        relative_dir = primary_path.parent
+
                     out_filename = _render_paired_filename(
-                        template, stem, source_path, header_path
+                        template,
+                        stem,
+                        source_path,
+                        header_path,
+                        relative_dir=relative_dir,
                     )
+                    out_path = Path(out_filename)
+                    if out_path.is_absolute():
+                        raise InvalidConfigError(
+                            "Paired filename template must produce a relative path"
+                        )
+
                     if out_folder:
-                        out_file = out_folder / out_filename
+                        out_file = out_folder / out_path
                     else:
-                        out_file = paths[0].with_name(out_filename)
+                        out_file = primary_path.parent / out_path
 
                     if dry_run:
                         logging.info("[PAIR %s] -> %s", stem, out_file)
@@ -375,6 +430,8 @@ def find_and_combine_files(config, output_path, dry_run=False):
                             rel_path = path.relative_to(root_path)
                             logging.info("  - %s", rel_path)
                         continue
+
+                    out_file.parent.mkdir(parents=True, exist_ok=True)
                     with open(out_file, 'w', encoding='utf8') as pair_out:
                         for file_path in paths:
                             processor.process_and_write(

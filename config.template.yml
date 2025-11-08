@@ -33,7 +33,12 @@ output:
   #   {{STEM}}       - The base name of the file (e.g., 'main' from 'main.cpp')
   #   {{SOURCE_EXT}} - The extension of the source file (e.g., '.cpp')
   #   {{HEADER_EXT}} - The extension of the header file (e.g., '.h')
+  #   {{DIR}}        - Relative directory using POSIX separators (or '.' for root)
+  #   {{DIR_SLUG}}   - Filesystem-safe version of {{DIR}} ('root' when DIR is '.')
   paired_filename_template: '{{STEM}}.combined'
+
+  # Example preserving directory structure in the output folder:
+  # paired_filename_template: '{{DIR_SLUG}}/{{STEM}}.combined'
 
   # Add line numbers starting at 1 for each file.
   add_line_numbers: false
