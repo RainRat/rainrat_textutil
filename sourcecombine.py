@@ -4,6 +4,7 @@ import sys
 import os
 import fnmatch
 import re
+import shutil
 from functools import lru_cache
 from pathlib import Path
 from contextlib import nullcontext
@@ -254,31 +255,26 @@ class FileProcessor:
         self.output_opts = output_opts or {}
         self.dry_run = dry_run
         self.processing_opts = config.get('processing', {}) or {}
+        self.apply_in_place = bool(self.processing_opts.get('apply_in_place'))
+        if self.apply_in_place:
+            self.create_backups = bool(
+                self.processing_opts.get('create_backups', True)
+            )
+        else:
+            self.create_backups = False
+    def _backup_file(self, file_path):
+        """Create a ``.bak`` backup for ``file_path`` if configured."""
 
-    def _apply_in_place_groups(self, file_path, content):
-        """Return ``content`` after applying enabled in-place processing groups."""
+        if not self.create_backups:
+            return
 
-        groups = self.processing_opts.get('in_place_groups') or {}
-        if not isinstance(groups, dict):
-            return content
-
-        updated = content
-        for group_name, group_conf in groups.items():
-            if not isinstance(group_conf, dict):
-                continue
-            if not group_conf.get('enabled'):
-                continue
-            options = group_conf.get('options') or {}
-            try:
-                updated = process_content(updated, options)
-            except InvalidConfigError:
-                raise
-            except Exception as exc:  # pragma: no cover - defensive safeguard
-                raise InvalidConfigError(
-                    f"Error applying in-place group '{group_name}': {exc}"
-                ) from exc
-
-        return updated
+        backup_path = Path(f"{file_path}.bak")
+        try:
+            shutil.copy2(file_path, backup_path)
+        except OSError as exc:  # pragma: no cover - defensive safeguard
+            raise InvalidConfigError(
+                f"Failed to create backup for '{file_path}': {exc}"
+            ) from exc
 
     def process_and_write(self, file_path, root_path, outfile):
         """Read, process, and write a single file."""
@@ -288,13 +284,11 @@ class FileProcessor:
 
         logging.info("Processing: %s", file_path)
         content = read_file_best_effort(file_path)
-        updated_content = self._apply_in_place_groups(file_path, content)
-        if updated_content != content:
+        processed_content = process_content(content, self.processing_opts)
+        if self.apply_in_place and processed_content != content:
             logging.info("Updating in place: %s", file_path)
-            file_path.write_text(updated_content, encoding='utf8')
-        processed_content = process_content(
-            updated_content, self.processing_opts
-        )
+            self._backup_file(file_path)
+            file_path.write_text(processed_content, encoding='utf8')
 
         if self.output_opts.get('add_line_numbers', False):
             processed_content = add_line_numbers(processed_content)
@@ -368,6 +362,10 @@ def find_and_combine_files(config, output_path, dry_run=False):
                 source_exts=source_exts,
                 header_exts=header_exts,
             )
+            if processor.create_backups:
+                filtered_paths = [
+                    p for p in filtered_paths if p.suffix.lower() != '.bak'
+                ]
             if dry_run:
                 for p in filtered_paths:
                     stats['total_files'] += 1

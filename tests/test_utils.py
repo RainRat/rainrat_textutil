@@ -185,6 +185,21 @@ def test_load_and_validate_config_reports_regex_context(tmp_path):
     assert str(config_path) in message
 
 
+def test_load_and_validate_config_rejects_in_place_groups(tmp_path):
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "processing": {
+                "in_place_groups": {},
+            },
+        },
+    )
+
+    with pytest.raises(InvalidConfigError):
+        load_and_validate_config(config_path)
+
+
 def test_add_line_numbers():
     assert add_line_numbers("a\nb") == "1: a\n2: b"
     assert add_line_numbers("") == ""
