@@ -52,12 +52,17 @@ output:
 ## Customizing paired output filenames
 
 When pairing is enabled, you can control the naming of the output files with
-the `output.paired_filename_template` option. The template supports three
-placeholders:
+the `output.paired_filename_template` option. The template supports the
+following placeholders:
 
 - `{{STEM}}`: The base name of the file (e.g., `main` from `main.cpp`).
 - `{{SOURCE_EXT}}`: The extension of the source file (e.g., `.cpp`).
 - `{{HEADER_EXT}}`: The extension of the header file (e.g., `.h`).
+- `{{DIR}}`: The file's relative directory using POSIX separators (or `.` for
+  files located directly in the root folder being processed).
+- `{{DIR_SLUG}}`: A filesystem-safe version of `{{DIR}}`, lowercased and with
+  unsafe characters converted to dashes while preserving the directory
+  structure. When `{{DIR}}` is `.`, the slug is `root`.
 
 The default template is `'{{STEM}}.combined'`. You can customize it to match
 your project's conventions:
@@ -65,6 +70,15 @@ your project's conventions:
 ```yaml
 output:
   paired_filename_template: '{{STEM}}{{SOURCE_EXT}}.txt'
+```
+
+To preserve directory structure when writing paired outputs to a folder, use
+the `{{DIR_SLUG}}` placeholder:
+
+```yaml
+output:
+  folder: './paired'
+  paired_filename_template: '{{DIR_SLUG}}/{{STEM}}.combined'
 ```
 
 ## Regex-based text transformations

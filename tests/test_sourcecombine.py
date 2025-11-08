@@ -21,11 +21,41 @@ def test_render_paired_filename():
     source_path = Path("/tmp/my_component.cpp")
     header_path = Path("/tmp/my_component.h")
 
-    rendered = _render_paired_filename(template, stem, source_path, header_path)
+    rendered = _render_paired_filename(
+        template, stem, source_path, header_path, relative_dir=Path('.')
+    )
     assert rendered == "my_component-.cpp-.h.out"
 
-    rendered_no_header = _render_paired_filename(template, stem, source_path, None)
+    rendered_no_header = _render_paired_filename(
+        template, stem, source_path, None, relative_dir=Path('.')
+    )
     assert rendered_no_header == "my_component-.cpp-.out"
+
+
+def test_render_paired_filename_includes_dir_placeholders():
+    template = "{{DIR}}|{{DIR_SLUG}}|{{STEM}}"
+    relative_dir = Path("src") / "My Dir" / "Sub.Dir"
+    source_path = Path("/project") / relative_dir / "Example.cpp"
+    header_path = Path("/project") / relative_dir / "Example.h"
+
+    rendered = _render_paired_filename(
+        template,
+        "Example",
+        source_path,
+        header_path,
+        relative_dir=relative_dir,
+    )
+    assert rendered == "src/My Dir/Sub.Dir|src/my-dir/sub.dir|Example"
+
+    root_source = Path("/project/Example.cpp")
+    root_rendered = _render_paired_filename(
+        template,
+        "RootExample",
+        root_source,
+        None,
+        relative_dir=Path('.'),
+    )
+    assert root_rendered == ".|root|RootExample"
 
 
 def test_should_include_respects_filters(tmp_path):
