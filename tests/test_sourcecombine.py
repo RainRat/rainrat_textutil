@@ -8,6 +8,7 @@ sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 from sourcecombine import (
     FileProcessor,
     collect_file_paths,
+    find_and_combine_files,
     should_include,
     _pair_files,
     _render_paired_filename,
@@ -282,3 +283,29 @@ def test_apply_in_place_can_disable_backups(tmp_path):
 
     assert (tmp_path / "nobackup.txt.bak").exists() is False
     assert file_path.read_text(encoding="utf-8") == "updated"
+
+
+def test_find_and_combine_skips_backup_files(tmp_path):
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    source_path = project_root / "notes.txt"
+    source_path.write_text("original", encoding="utf-8")
+    backup_path = project_root / "notes.txt.bak"
+    backup_path.write_text("backup", encoding="utf-8")
+
+    output_path = tmp_path / "combined.txt"
+    config = {
+        "search": {"root_folders": [os.fspath(project_root)], "recursive": True},
+        "filters": {},
+        "processing": {"apply_in_place": True},
+        "output": {
+            "file": os.fspath(output_path),
+            "header_template": "",
+            "footer_template": "",
+        },
+    }
+
+    find_and_combine_files(config, output_path, dry_run=False)
+
+    assert output_path.read_text(encoding="utf-8") == "original"
+    assert (project_root / "notes.txt.bak.bak").exists() is False

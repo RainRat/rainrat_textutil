@@ -362,6 +362,10 @@ def find_and_combine_files(config, output_path, dry_run=False):
                 source_exts=source_exts,
                 header_exts=header_exts,
             )
+            if processor.create_backups:
+                filtered_paths = [
+                    p for p in filtered_paths if p.suffix.lower() != '.bak'
+                ]
             if dry_run:
                 for p in filtered_paths:
                     stats['total_files'] += 1
