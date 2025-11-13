@@ -258,9 +258,11 @@ def _validate_filters_section(config):
         filenames = exclusions_conf.get('filenames', [])
         if isinstance(filenames, list):
             for i, pattern in enumerate(filenames):
-                validate_glob_pattern(
+                sanitized = validate_glob_pattern(
                     pattern, context=f"filters.exclusions.filenames[{i}]"
                 )
+                if sanitized != pattern:
+                    filenames[i] = sanitized
 
     groups = filters.get('inclusion_groups', {})
     if isinstance(groups, dict):
@@ -271,10 +273,17 @@ def _validate_filters_section(config):
                 filenames = group.get('filenames', [])
                 if isinstance(filenames, list):
                     for i, pattern in enumerate(filenames):
-                        validate_glob_pattern(
+                        sanitized = validate_glob_pattern(
                             pattern,
                             context=f"filters.inclusion_groups.{group_name}.filenames[{i}]",
                         )
+                        if sanitized != pattern:
+                            filenames[i] = sanitized
+
+    search_conf = config.get('search')
+    if not isinstance(search_conf, dict):
+        search_conf = {}
+        config['search'] = search_conf
 
     if (
         isinstance(groups, dict)
@@ -283,9 +292,13 @@ def _validate_filters_section(config):
         )
         and config.get('search', {}).get('allowed_extensions')
     ):
-        raise InvalidConfigError(
-            "'search.allowed_extensions' cannot be used when 'filters.inclusion_groups' are enabled. Please specify file types within the inclusion group patterns (e.g., 'src/**/*.py') or remove 'allowed_extensions'."
+        original_extensions = search_conf.pop('allowed_extensions', None)
+        logging.warning(
+            "Ignoring 'search.allowed_extensions' because one or more 'filters.inclusion_groups' are enabled. "
+            "Specify file types within inclusion group patterns instead (e.g., 'src/**/*.py')."
         )
+        if original_extensions:
+            search_conf.setdefault('ignored_allowed_extensions', original_extensions)
 
 
 def _validate_processing_section(config, *, source=None):
@@ -532,7 +545,17 @@ def validate_glob_pattern(pattern, *, context="glob pattern"):
             f"Glob pattern in {context} must be a string, but got: {type(pattern).__name__}"
         )
 
-    if pattern.startswith('/') or (len(pattern) > 1 and pattern[1] == ':'):
+    normalized = pattern
+    if '\\' in pattern:
+        normalized = pattern.replace('\\', '/')
+        normalized = re.sub(r'/+', '/', normalized)
+        logging.warning(
+            "Glob pattern in %s ('%s') uses backslashes; treating them as '/' for cross-platform matching.",
+            context,
+            pattern,
+        )
+
+    if normalized.startswith('/') or (len(normalized) > 1 and normalized[1] == ':'):
         logging.warning(
             "Glob pattern in %s ('%s') looks like an absolute path. "
             "Patterns are matched against relative paths and filenames. This may not work as expected.",
@@ -540,7 +563,7 @@ def validate_glob_pattern(pattern, *, context="glob pattern"):
             pattern,
         )
 
-    if '(' in pattern or ')' in pattern or '+' in pattern:
+    if '(' in normalized or ')' in normalized or '+' in normalized:
         logging.warning(
             "Glob pattern in %s ('%s') contains characters that may be "
             "interpreted as regular expression syntax, but this tool uses glob patterns. "
@@ -549,7 +572,7 @@ def validate_glob_pattern(pattern, *, context="glob pattern"):
             pattern,
         )
 
-    if pattern.count('[') != pattern.count(']'):
+    if normalized.count('[') != normalized.count(']'):
         logging.warning(
             "Glob pattern in %s ('%s') has mismatched brackets '[' and ']'. "
             "This may cause unexpected matching behavior.",
@@ -557,7 +580,7 @@ def validate_glob_pattern(pattern, *, context="glob pattern"):
             pattern,
         )
 
-    return pattern
+    return normalized
 
 
 def validate_regex_pattern(pattern, *, context="regex pattern", source=None):

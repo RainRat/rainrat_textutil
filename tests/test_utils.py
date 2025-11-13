@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 import textwrap
@@ -96,7 +97,9 @@ def test_load_and_validate_config_merges_defaults(tmp_path):
     assert config["output"]["file"] == DEFAULT_CONFIG["output"]["file"]
 
 
-def test_load_and_validate_config_rejects_conflicting_options(tmp_path):
+def test_load_and_validate_config_inclusion_groups_override_allowed_extensions(
+    tmp_path, caplog
+):
     config_path = _write_config(
         tmp_path,
         {
@@ -111,8 +114,14 @@ def test_load_and_validate_config_rejects_conflicting_options(tmp_path):
             },
         },
     )
-    with pytest.raises(InvalidConfigError):
-        load_and_validate_config(config_path)
+    with caplog.at_level(logging.WARNING):
+        config = load_and_validate_config(config_path)
+
+    search_conf = config["search"]
+    assert "allowed_extensions" not in search_conf
+    assert search_conf.get("ignored_allowed_extensions") == [".py"]
+    assert search_conf["effective_allowed_extensions"] == ()
+    assert "Ignoring 'search.allowed_extensions'" in caplog.text
 
     pairing_path = _write_config(
         tmp_path,
@@ -130,6 +139,30 @@ def test_load_and_validate_config_rejects_conflicting_options(tmp_path):
     )
     with pytest.raises(InvalidConfigError):
         load_and_validate_config(pairing_path)
+
+
+def test_inclusion_group_backslashes_are_normalized(tmp_path, caplog):
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "filters": {
+                "inclusion_groups": {
+                    "py": {
+                        "enabled": True,
+                        "filenames": [r"src\\**\\*.py"],
+                    }
+                }
+            },
+        },
+    )
+
+    with caplog.at_level(logging.WARNING):
+        config = load_and_validate_config(config_path)
+
+    filenames = config["filters"]["inclusion_groups"]["py"]["filenames"]
+    assert filenames == ["src/**/*.py"]
+    assert "uses backslashes" in caplog.text
 
 
 def test_load_and_validate_config_sets_allowed_extensions_when_pairing_enabled(tmp_path):
