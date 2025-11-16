@@ -20,6 +20,9 @@ COMPACT_WHITESPACE_GROUPS = (
 )
 
 DEFAULT_CONFIG = {
+    'logging': {
+        'level': 'INFO',
+    },
     'filters': {
         'exclusions': {
             'filenames': [],
