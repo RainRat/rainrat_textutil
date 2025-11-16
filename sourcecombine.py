@@ -476,9 +476,6 @@ def main():
     )
     args = parser.parse_args()
 
-    log_level = logging.DEBUG if args.verbose else logging.INFO
-    logging.basicConfig(level=log_level, format='%(levelname)s: %(message)s')
-
     try:
         nested_required = {
             'search': ['root_folders'],
@@ -489,6 +486,12 @@ def main():
     except (ConfigNotFoundError, InvalidConfigError) as e:
         logging.error(e, exc_info=True)
         sys.exit(1)
+
+    level_str = config.get('logging', {}).get('level', 'INFO')
+    if args.verbose:
+        level_str = 'DEBUG'
+    log_level = getattr(logging, level_str.upper(), logging.INFO)
+    logging.basicConfig(level=log_level, format='%(levelname)s: %(message)s')
 
     pairing_enabled = config.get('pairing', {}).get('enabled')
     output_conf = config.get('output', {})
