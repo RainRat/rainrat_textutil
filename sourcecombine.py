@@ -8,6 +8,51 @@ import shutil
 from functools import lru_cache
 from pathlib import Path
 from contextlib import nullcontext
+
+try:  # Optional dependency for progress reporting
+    from tqdm import tqdm as _tqdm
+except ImportError:  # pragma: no cover - gracefully handle missing tqdm
+    _tqdm = None
+
+
+class _SilentProgress:
+    """Fallback progress handler used when tqdm is unavailable or disabled."""
+
+    def __init__(self, iterable=None):
+        self.iterable = iterable or []
+
+    def __iter__(self):
+        yield from self.iterable
+
+    def update(self, *_args, **_kwargs):
+        return None
+
+    def close(self):
+        return None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+
+def _progress_enabled(dry_run):
+    """Return ``True`` when progress bars should be displayed."""
+
+    if dry_run:
+        return False
+    if os.getenv("CI"):
+        return False
+    return True
+
+
+def _progress_bar(iterable=None, *, enabled=True, **kwargs):
+    """Return a progress iterator/context manager with graceful fallback."""
+
+    if not enabled or _tqdm is None:
+        return _SilentProgress(iterable)
+    return _tqdm(iterable, **kwargs)
 from utils import (
     read_file_best_effort,
     process_content,
@@ -95,7 +140,7 @@ def should_include(file_path, relative_path, filter_config):
     return True
 
 
-def collect_file_paths(root_folder, recursive, exclude_folders):
+def collect_file_paths(root_folder, recursive, exclude_folders, progress=None):
     """Return all paths in ``root_folder`` while pruning excluded folders."""
     root_path = Path(root_folder)
     if not root_path.is_dir():
@@ -105,6 +150,7 @@ def collect_file_paths(root_folder, recursive, exclude_folders):
     file_paths = []
     excluded_folder_count = 0
     exclude_patterns = _normalize_patterns(exclude_folders)
+    progress = progress or _SilentProgress()
 
     def _folder_is_excluded(relative_path):
         if not exclude_patterns:
@@ -127,6 +173,7 @@ def collect_file_paths(root_folder, recursive, exclude_folders):
 
             for name in filenames:
                 file_paths.append(Path(dirpath) / name)
+                progress.update(1)
     else:
         for entry in root_path.iterdir():
             if entry.is_dir():
@@ -135,6 +182,7 @@ def collect_file_paths(root_folder, recursive, exclude_folders):
                     continue
             if entry.is_file():
                 file_paths.append(entry)
+                progress.update(1)
     return file_paths, root_path, excluded_folder_count
 
 
@@ -336,14 +384,23 @@ def find_and_combine_files(config, output_path, dry_run=False):
         if not dry_run:
             out_folder.mkdir(parents=True, exist_ok=True)
 
+    progress_enabled = _progress_enabled(dry_run)
     outfile_ctx = nullcontext() if pairing_enabled or dry_run else open(output_path, 'w', encoding='utf8')
     processor = FileProcessor(config, output_opts, dry_run=dry_run)
     total_excluded_folders = 0
     with outfile_ctx as outfile:
         for root_folder in root_folders:
-            all_paths, root_path, excluded_count = collect_file_paths(
-                root_folder, recursive, exclude_folders
+            discovery_bar = _progress_bar(
+                enabled=progress_enabled,
+                desc=f"Discovering in {root_folder}",
+                unit="file",
             )
+            try:
+                all_paths, root_path, excluded_count = collect_file_paths(
+                    root_folder, recursive, exclude_folders, progress=discovery_bar
+                )
+            finally:
+                discovery_bar.close()
             total_excluded_folders += excluded_count
             if not all_paths:
                 continue
@@ -366,6 +423,12 @@ def find_and_combine_files(config, output_path, dry_run=False):
                 filtered_paths = [
                     p for p in filtered_paths if p.suffix.lower() != '.bak'
                 ]
+            processing_bar = _progress_bar(
+                enabled=progress_enabled,
+                total=len(filtered_paths) if filtered_paths else None,
+                desc="Processing files",
+                unit="file",
+            )
             if dry_run:
                 for p in filtered_paths:
                     stats['total_files'] += 1
@@ -437,6 +500,7 @@ def find_and_combine_files(config, output_path, dry_run=False):
                                 root_path,
                                 pair_out,
                             )
+                            processing_bar.update(1)
             else:
                 for file_path in filtered_paths:
                     processor.process_and_write(
@@ -444,6 +508,8 @@ def find_and_combine_files(config, output_path, dry_run=False):
                         root_path,
                         outfile,
                     )
+                    processing_bar.update(1)
+            processing_bar.close()
     if dry_run:
         stats['excluded_folder_count'] = total_excluded_folders
         return stats
