@@ -646,9 +646,18 @@ def main():
         config = load_and_validate_config(
             args.config_file, nested_required=nested_required
         )
-    except (ConfigNotFoundError, InvalidConfigError) as e:
-        # This logging call will now work correctly
-        logging.error(e, exc_info=True)
+    except ConfigNotFoundError as e:
+        logging.error(
+            "Could not find the configuration file '%s'. "
+            "Check the filename and your current working directory: %s",
+            args.config_file,
+            Path.cwd(),
+        )
+        logging.debug("Missing configuration details:", exc_info=True)
+        sys.exit(1)
+    except InvalidConfigError as e:
+        logging.error("Invalid configuration: %s", e)
+        logging.debug("Configuration validation traceback:", exc_info=True)
         sys.exit(1)
 
     # Re-configure level based on config, *unless* -v was used.

@@ -2,6 +2,7 @@ import io
 import logging
 import os
 import sys
+import subprocess
 from pathlib import Path
 
 sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
@@ -197,6 +198,19 @@ def test_pair_files_logic(tmp_path):
     upper_hdr.write_text("", encoding="utf-8")
     mixed_case = _pair_files([upper_src, upper_hdr], (".cpp",), (".h",), include_mismatched=False)
     assert mixed_case == {"file": [upper_src, upper_hdr]}
+
+
+def test_cli_missing_config_produces_friendly_error():
+    script = Path(__file__).resolve().parent.parent / "sourcecombine.py"
+    result = subprocess.run(
+        [sys.executable, os.fspath(script), "does_not_exist.yml"],
+        text=True,
+        capture_output=True,
+    )
+
+    assert result.returncode == 1
+    assert "Could not find the configuration file 'does_not_exist.yml'" in result.stderr
+    assert "Traceback" not in result.stderr
 
 
 def test_pair_files_prefers_extension_order(tmp_path):
