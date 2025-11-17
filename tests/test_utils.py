@@ -97,8 +97,8 @@ def test_load_and_validate_config_merges_defaults(tmp_path):
     assert config["output"]["file"] == DEFAULT_CONFIG["output"]["file"]
 
 
-def test_load_and_validate_config_inclusion_groups_override_allowed_extensions(
-    tmp_path, caplog
+def test_load_and_validate_config_rejects_allowed_extensions_with_inclusion_groups(
+    tmp_path
 ):
     config_path = _write_config(
         tmp_path,
@@ -114,14 +114,11 @@ def test_load_and_validate_config_inclusion_groups_override_allowed_extensions(
             },
         },
     )
-    with caplog.at_level(logging.WARNING):
-        config = load_and_validate_config(config_path)
 
-    search_conf = config["search"]
-    assert "allowed_extensions" not in search_conf
-    assert search_conf.get("ignored_allowed_extensions") == [".py"]
-    assert search_conf["effective_allowed_extensions"] == ()
-    assert "Ignoring 'search.allowed_extensions'" in caplog.text
+    with pytest.raises(InvalidConfigError) as excinfo:
+        load_and_validate_config(config_path)
+
+    assert "mutually exclusive" in str(excinfo.value)
 
     pairing_path = _write_config(
         tmp_path,

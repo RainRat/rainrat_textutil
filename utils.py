@@ -272,13 +272,10 @@ def _validate_filters_section(config):
         )
         and config.get('search', {}).get('allowed_extensions')
     ):
-        original_extensions = search_conf.pop('allowed_extensions', None)
-        logging.warning(
-            "Ignoring 'search.allowed_extensions' because one or more 'filters.inclusion_groups' are enabled. "
-            "Specify file types within inclusion group patterns instead (e.g., 'src/**/*.py')."
+        raise InvalidConfigError(
+            "'filters.inclusion_groups' and 'search.allowed_extensions' are mutually exclusive; "
+            "specify file types in your inclusion group patterns instead (e.g., 'src/**/*.py')."
         )
-        if original_extensions:
-            search_conf.setdefault('ignored_allowed_extensions', original_extensions)
 
 
 def _validate_processing_section(config, *, source=None):

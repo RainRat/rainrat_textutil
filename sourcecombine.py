@@ -108,31 +108,44 @@ def _matches_folder_glob_cached(relative_path_str, parts, patterns):
     return False
 
 
-def should_include(file_path, relative_path, filter_config):
+def should_include(file_path, relative_path, filter_opts, search_opts):
     """Return ``True`` if ``file_path`` passes all filtering rules."""
+
     if not file_path.is_file():
         return False
+
     file_name = file_path.name
-    exclude_filenames = _normalize_patterns(
-        filter_config.get('exclude_filenames')
-    )
     rel_str = relative_path.as_posix()
-    if exclude_filenames and _matches_file_glob_cached(
-        file_name, rel_str, exclude_filenames
+
+    exclusions = filter_opts.get('exclusions') or {}
+    exclusion_filenames = _normalize_patterns(exclusions.get('filenames'))
+    if exclusion_filenames and _matches_file_glob_cached(
+        file_name, rel_str, exclusion_filenames
     ):
         return False
+
+    allowed_extensions = search_opts.get('effective_allowed_extensions') or ()
     suffix = file_path.suffix.lower()
-    allowed_extensions = filter_config.get('allowed_extensions')
     if allowed_extensions and suffix not in allowed_extensions:
         return False
-    include_patterns = _normalize_patterns(filter_config.get('include_patterns'))
-    if include_patterns:
-        if not _matches_file_glob_cached(file_name, rel_str, include_patterns):
-            return False
+
+    include_patterns = set()
+    for group_conf in (filter_opts.get('inclusion_groups') or {}).values():
+        if isinstance(group_conf, dict) and group_conf.get('enabled'):
+            include_patterns.update(group_conf.get('filenames') or [])
+
+    normalized_includes = _normalize_patterns(include_patterns)
+    if normalized_includes and not _matches_file_glob_cached(
+        file_name, rel_str, normalized_includes
+    ):
+        return False
+
     try:
         file_size = file_path.stat().st_size
-        min_size = filter_config.get('min_size_bytes', 0)
-        max_size = filter_config.get('max_size_bytes') or float('inf')
+        min_size = filter_opts.get('min_size_bytes', 0)
+        max_size = filter_opts.get('max_size_bytes')
+        if max_size in (None, 0):
+            max_size = float('inf')
         if not (min_size <= file_size <= max_size):
             return False
     except OSError:
@@ -143,7 +156,15 @@ def should_include(file_path, relative_path, filter_config):
 def collect_file_paths(root_folder, recursive, exclude_folders, progress=None):
     """Return all paths in ``root_folder`` while pruning excluded folders."""
     root_path = Path(root_folder)
-    if not root_path.is_dir():
+    try:
+        is_directory = root_path.is_dir()
+    except OSError as exc:
+        logging.warning(
+            "Unable to access root folder '%s': %s. Skipping.", root_folder, exc
+        )
+        return [], None, 0
+
+    if not is_directory:
         logging.warning("Root folder '%s' does not exist. Skipping.", root_folder)
         return [], None, 0
 
@@ -161,29 +182,43 @@ def collect_file_paths(root_folder, recursive, exclude_folders, progress=None):
         return _matches_folder_glob_cached(rel_str, parts, exclude_patterns)
 
     if recursive:
-        for dirpath, dirnames, filenames in os.walk(root_path):
-            rel_dir = Path(dirpath).relative_to(root_path)
+        try:
+            for dirpath, dirnames, filenames in os.walk(root_path):
+                rel_dir = Path(dirpath).relative_to(root_path)
 
-            original_dir_count = len(dirnames)
-            dirnames[:] = [
-                d
-                for d in dirnames
-                if not _folder_is_excluded(rel_dir / d)
-            ]
-            excluded_folder_count += original_dir_count - len(dirnames)
+                original_dir_count = len(dirnames)
+                dirnames[:] = [
+                    d
+                    for d in dirnames
+                    if not _folder_is_excluded(rel_dir / d)
+                ]
+                excluded_folder_count += original_dir_count - len(dirnames)
 
-            for name in filenames:
-                file_paths.append(Path(dirpath) / name)
-                progress.update(1)
+                for name in filenames:
+                    file_paths.append(Path(dirpath) / name)
+                    progress.update(1)
+        except OSError as exc:
+            logging.warning(
+                "Error while traversing '%s': %s. Partial results returned.",
+                root_folder,
+                exc,
+            )
     else:
-        for entry in root_path.iterdir():
-            if entry.is_dir():
-                if _folder_is_excluded(entry.relative_to(root_path)):
-                    excluded_folder_count += 1
-                    continue
-            if entry.is_file():
-                file_paths.append(entry)
-                progress.update(1)
+        try:
+            for entry in root_path.iterdir():
+                if entry.is_dir():
+                    if _folder_is_excluded(entry.relative_to(root_path)):
+                        excluded_folder_count += 1
+                        continue
+                if entry.is_file():
+                    file_paths.append(entry)
+                    progress.update(1)
+        except OSError as exc:
+            logging.warning(
+                "Error while listing '%s': %s. Partial results returned.",
+                root_folder,
+                exc,
+            )
     return file_paths, root_path, excluded_folder_count
 
 
@@ -197,30 +232,15 @@ def filter_file_paths(
     header_exts=(),
 ):
     """Apply filtering rules to ``file_paths`` and return the matches."""
-
-    allowed_extensions = search_opts.get('effective_allowed_extensions') or ()
-
-    exclude_conf = filter_opts.get('exclusions', {})
-    exclude_filenames = _normalize_patterns(exclude_conf.get('filenames'))
-
-    inclusion_groups = filter_opts.get('inclusion_groups', {})
-    include_patterns = set()
-    for group_conf in inclusion_groups.values():
-        if group_conf.get('enabled'):
-            include_patterns.update(group_conf.get('filenames') or [])
-
-    filter_config = {
-        'exclude_filenames': exclude_filenames,
-        'allowed_extensions': allowed_extensions,
-        'include_patterns': _normalize_patterns(include_patterns),
-        'min_size_bytes': filter_opts.get('min_size_bytes', 0),
-        'max_size_bytes': filter_opts.get('max_size_bytes'),
-    }
-
     return [
         p
         for p in file_paths
-        if should_include(p, p.relative_to(root_path), filter_config)
+        if should_include(
+            p,
+            p.relative_to(root_path),
+            filter_opts,
+            search_opts,
+        )
     ]
 
 
