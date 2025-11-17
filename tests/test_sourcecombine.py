@@ -11,30 +11,14 @@ from sourcecombine import (
     find_and_combine_files,
     should_include,
     _pair_files,
+    _process_paired_files,
     _render_paired_filename,
 )
 from utils import compact_whitespace
 
 
-def test_render_paired_filename():
-    template = "{{STEM}}-{{SOURCE_EXT}}-{{HEADER_EXT}}.out"
-    stem = "my_component"
-    source_path = Path("/tmp/my_component.cpp")
-    header_path = Path("/tmp/my_component.h")
-
-    rendered = _render_paired_filename(
-        template, stem, source_path, header_path, relative_dir=Path('.')
-    )
-    assert rendered == "my_component-.cpp-.h.out"
-
-    rendered_no_header = _render_paired_filename(
-        template, stem, source_path, None, relative_dir=Path('.')
-    )
-    assert rendered_no_header == "my_component-.cpp-.out"
-
-
-def test_render_paired_filename_includes_dir_placeholders():
-    template = "{{DIR}}|{{DIR_SLUG}}|{{STEM}}"
+def test_render_paired_filename_placeholders():
+    template = "{{DIR}}|{{DIR_SLUG}}|{{STEM}}{{SOURCE_EXT}}{{HEADER_EXT}}"
     relative_dir = Path("src") / "My Dir" / "Sub.Dir"
     source_path = Path("/project") / relative_dir / "Example.cpp"
     header_path = Path("/project") / relative_dir / "Example.h"
@@ -46,7 +30,7 @@ def test_render_paired_filename_includes_dir_placeholders():
         header_path,
         relative_dir=relative_dir,
     )
-    assert rendered == "src/My Dir/Sub.Dir|src/my-dir/sub.dir|Example"
+    assert rendered == "src/My Dir/Sub.Dir|src/my-dir/sub.dir|Example.cpp.h"
 
     root_source = Path("/project/Example.cpp")
     root_rendered = _render_paired_filename(
@@ -56,7 +40,24 @@ def test_render_paired_filename_includes_dir_placeholders():
         None,
         relative_dir=Path('.'),
     )
-    assert root_rendered == ".|root|RootExample"
+    assert root_rendered == ".|root|RootExample.cpp"
+
+
+def test_render_paired_filename_windows_dirs():
+    template = "{{DIR}}|{{DIR_SLUG}}|{{STEM}}{{SOURCE_EXT}}{{HEADER_EXT}}"
+    relative_dir = "src\\My Dir\\Sub.Dir"
+    source_path = Path("C:/project/src/My Dir/Sub.Dir/Example.cpp")
+    header_path = Path("C:/project/src/My Dir/Sub.Dir/Example.hpp")
+
+    rendered = _render_paired_filename(
+        template,
+        "Example",
+        source_path,
+        header_path,
+        relative_dir=relative_dir,
+    )
+
+    assert rendered == "src/My Dir/Sub.Dir|src/my-dir/sub.dir|Example.cpp.hpp"
 
 
 def test_should_include_respects_filters(tmp_path):
@@ -163,6 +164,59 @@ def test_pair_files_logic(tmp_path):
     upper_hdr.write_text("", encoding="utf-8")
     mixed_case = _pair_files([upper_src, upper_hdr], (".cpp",), (".h",), include_mismatched=False)
     assert mixed_case == {"file": [upper_src, upper_hdr]}
+
+
+def test_pair_files_prefers_extension_order(tmp_path):
+    base = tmp_path
+    src_cpp = base / "file.cpp"
+    src_cc = base / "file.cc"
+    hdr_h = base / "file.h"
+    hdr_hpp = base / "file.hpp"
+
+    for path in (src_cpp, src_cc, hdr_h, hdr_hpp):
+        path.write_text("", encoding="utf-8")
+
+    result = _pair_files(
+        [hdr_h, src_cc, src_cpp, hdr_hpp],
+        (".cpp", ".cc"),
+        (".hpp", ".h"),
+        include_mismatched=False,
+    )
+
+    assert result == {"file": [src_cpp, hdr_hpp]}
+
+
+def test_process_paired_files_writes_outputs(tmp_path):
+    root = tmp_path / "project"
+    src_dir = root / "src"
+    src_dir.mkdir(parents=True)
+
+    source_path = src_dir / "example.cpp"
+    header_path = src_dir / "example.hpp"
+    source_path.write_text("src", encoding="utf-8")
+    header_path.write_text("hdr", encoding="utf-8")
+
+    config = {"processing": {}, "output": {"header_template": "", "footer_template": ""}}
+    processor = FileProcessor(config, config["output"], dry_run=False)
+
+    pairs = {"example": [source_path, header_path]}
+    out_folder = root / "out"
+
+    _process_paired_files(
+        pairs,
+        template="{{DIR_SLUG}}/{{STEM}}{{SOURCE_EXT}}{{HEADER_EXT}}.out",
+        source_exts=(".cpp",),
+        header_exts=(".hpp",),
+        root_path=root,
+        out_folder=out_folder,
+        processor=processor,
+        processing_bar=None,
+        dry_run=False,
+    )
+
+    output_file = out_folder / "src/example.cpp.hpp.out"
+    assert output_file.exists()
+    assert output_file.read_text(encoding="utf-8") == "srchdr"
 
 
 def test_collect_file_paths_prunes_excluded_folders(tmp_path):
