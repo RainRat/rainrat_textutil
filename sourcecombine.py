@@ -296,7 +296,20 @@ def _pair_files(filtered_paths, source_exts, header_exts, include_mismatched):
 
 
 class FileProcessor:
-    """Process files according to configuration and write them to an output."""
+    """Process files according to configuration and write them to an output.
+
+    Parameters
+    ----------
+    config : dict
+        Parsed configuration mapping containing ``processing`` and output
+        settings used to drive file handling.
+    output_opts : dict
+        Options that control how processed content is emitted, including
+        header/footer templates and whether to include line numbers.
+    dry_run : bool, optional
+        When ``True``, only log the files that would be processed without
+        performing any writes.
+    """
 
     def __init__(self, config, output_opts, dry_run=False):
         self.config = config
@@ -311,7 +324,13 @@ class FileProcessor:
         else:
             self.create_backups = False
     def _backup_file(self, file_path):
-        """Create a ``.bak`` backup for ``file_path`` if configured."""
+        """Create a ``.bak`` backup for ``file_path`` when backups are enabled.
+
+        The backup mirrors the original file using :func:`shutil.copy2` to
+        preserve metadata. If ``create_backups`` is ``False`` no action is
+        taken. Failures to copy raise :class:`InvalidConfigError` so callers
+        can halt processing before overwriting the original content.
+        """
 
         if not self.create_backups:
             return

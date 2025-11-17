@@ -1,8 +1,8 @@
 import logging
 import re
-import unicodedata
 from pathlib import Path
 
+from charset_normalizer import from_bytes
 import yaml
 
 
@@ -79,7 +79,12 @@ def load_yaml_config(config_file_path):
 
 
 def read_file_best_effort(file_path):
-    """Attempt to read a file trying several encodings."""
+    """Attempt to read a file trying several encodings.
+
+    The function first attempts UTF-8 with BOM handling, then relies on
+    ``charset-normalizer`` to identify a likely encoding before falling back to
+    a permissive UTF-8 decode with replacements.
+    """
 
     def _strip_bom(text):
         return text.lstrip('\ufeff')
@@ -93,64 +98,29 @@ def read_file_best_effort(file_path):
         raise
 
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            return _strip_bom(f.read())
-    except UnicodeError:
-        pass
-
-    try:
         raw_bytes = Path(file_path).read_bytes()
+    except FileNotFoundError:
+        raise
     except Exception:
         logging.warning("Could not read %s.", file_path)
         return ""
 
-    def _score_text(text):
-        score = 0.0
-        for ch in text:
-            category = unicodedata.category(ch)
-            if category.startswith('L'):
-                score += 2.0
-            elif category.startswith('N'):
-                score += 1.5
-            elif category.startswith('Z'):
-                score += 1.0
-            elif category.startswith('P'):
-                score += 0.2
-            elif category == 'Co':
-                score -= 2.0
-            elif category.startswith('C'):
-                score -= 1.5
-        return score
-
-    scored_candidates = []
-    candidate_encodings = (
-        'utf-16',
-        'utf-16-le',
-        'utf-16-be',
-        'cp1252',
-        'latin-1',
-    )
-
-    for index, encoding in enumerate(candidate_encodings):
+    best_guess = from_bytes(raw_bytes).best()
+    if best_guess and best_guess.encoding:
         try:
-            decoded = _strip_bom(raw_bytes.decode(encoding))
-        except UnicodeError:
-            continue
-        score = _score_text(decoded)
-        normalized = score / max(len(decoded), 1)
-        scored_candidates.append((normalized, score, -index, decoded))
+            return _strip_bom(
+                raw_bytes.decode(best_guess.encoding, errors='replace')
+            )
+        except LookupError:
+            logging.warning(
+                "Detected encoding '%s' is not supported.", best_guess.encoding
+            )
 
-    if scored_candidates:
-        scored_candidates.sort(reverse=True)
-        return scored_candidates[0][3]
-
-    try:
-        return _strip_bom(raw_bytes.decode('utf-8', errors='replace'))
-    except Exception:
-        logging.warning(
-            "Could not decode %s with any of the attempted encodings.", file_path
-        )
-        return ""
+    logging.warning(
+        "Could not detect encoding for %s; decoding with UTF-8 replacements.",
+        file_path,
+    )
+    return _strip_bom(raw_bytes.decode('utf-8', errors='replace'))
 
 
 def compact_whitespace(text, *, groups=None):
