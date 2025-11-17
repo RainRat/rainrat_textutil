@@ -40,6 +40,8 @@ class _SilentProgress:
 def _progress_enabled(dry_run):
     """Return ``True`` when progress bars should be displayed."""
 
+    if logging.getLogger().getEffectiveLevel() <= logging.DEBUG:
+        return False
     if dry_run:
         return False
     if os.getenv("CI"):
@@ -457,7 +459,7 @@ class FileProcessor:
             logging.info(file_path.resolve())
             return
 
-        logging.info("Processing: %s", file_path)
+        logging.debug("Processing: %s", file_path)
         content = read_file_best_effort(file_path)
         processed_content = process_content(content, self.processing_opts)
         if self.apply_in_place and processed_content != content:
@@ -521,6 +523,7 @@ def find_and_combine_files(config, output_path, dry_run=False):
                 enabled=progress_enabled,
                 desc=f"Discovering in {root_folder}",
                 unit="file",
+                leave=False,
             )
             try:
                 all_paths, root_path, excluded_count = collect_file_paths(
@@ -664,6 +667,10 @@ def main():
     else:
         destination_desc = f"to '{output_path}'"
 
+    mode_desc = "Pairing" if pairing_enabled else "Single File"
+    logging.info("SourceCombine starting. Mode: %s", mode_desc)
+    logging.info("Output: Writing %s", destination_desc)
+
     try:
         stats = find_and_combine_files(config, output_path, dry_run=args.dry_run)
     except InvalidConfigError as exc:
@@ -688,7 +695,7 @@ def main():
             logging.info("Excluded folder count: %d", excluded_folders)
             logging.info("-----------------------")
     else:
-        logging.info("Done. Combined files have been written %s.", destination_desc)
+        logging.info("Done.")
 
 
 if __name__ == "__main__":
