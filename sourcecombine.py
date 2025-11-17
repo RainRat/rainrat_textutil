@@ -633,6 +633,12 @@ def main():
     )
     args = parser.parse_args()
 
+    # Configure logging *immediately* based on -v.
+    # This ensures logging is set up *before* load_and_validate_config (which logs)
+    # is called, preventing a race condition that locks the log level at WARNING.
+    prelim_level = logging.DEBUG if args.verbose else logging.INFO
+    logging.basicConfig(level=prelim_level, format='%(levelname)s: %(message)s')
+
     try:
         nested_required = {
             'search': ['root_folders'],
@@ -641,14 +647,17 @@ def main():
             args.config_file, nested_required=nested_required
         )
     except (ConfigNotFoundError, InvalidConfigError) as e:
+        # This logging call will now work correctly
         logging.error(e, exc_info=True)
         sys.exit(1)
 
-    level_str = config.get('logging', {}).get('level', 'INFO')
-    if args.verbose:
-        level_str = 'DEBUG'
-    log_level = getattr(logging, level_str.upper(), logging.INFO)
-    logging.basicConfig(level=log_level, format='%(levelname)s: %(message)s')
+    # Re-configure level based on config, *unless* -v was used.
+    # The -v (DEBUG) flag always overrides the config file's setting.
+    if not args.verbose:
+        level_str = config.get('logging', {}).get('level', 'INFO')
+        log_level = getattr(logging, level_str.upper(), logging.INFO)
+        # Set the level on the *root logger* since basicConfig was already called
+        logging.getLogger().setLevel(log_level)
 
     pairing_enabled = config.get('pairing', {}).get('enabled')
     output_conf = config.get('output', {})
