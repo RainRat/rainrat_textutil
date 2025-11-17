@@ -107,9 +107,16 @@ def read_file_best_effort(file_path):
 
     best_guess = from_bytes(raw_bytes).best()
     if best_guess and best_guess.encoding:
+        encoding = best_guess.encoding
+        if (
+            encoding.lower().startswith('utf_16')
+            and b'\x00' not in raw_bytes
+            and len(raw_bytes) < 6
+        ):
+            encoding = 'latin-1'
         try:
             return _strip_bom(
-                raw_bytes.decode(best_guess.encoding, errors='replace')
+                raw_bytes.decode(encoding, errors='replace')
             )
         except LookupError:
             logging.warning(

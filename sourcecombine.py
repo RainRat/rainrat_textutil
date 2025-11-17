@@ -150,7 +150,8 @@ def collect_file_paths(root_folder, recursive, exclude_folders, progress=None):
     file_paths = []
     excluded_folder_count = 0
     exclude_patterns = _normalize_patterns(exclude_folders)
-    progress = progress or _SilentProgress()
+    if progress is None:
+        progress = _SilentProgress()
 
     def _folder_is_excluded(relative_path):
         if not exclude_patterns:
@@ -243,29 +244,32 @@ def _slugify_relative_dir(relative_dir):
     return '/'.join(slugged_parts)
 
 
+def _get_suffix(path):
+    """Safely return the suffix for ``path`` or an empty string."""
+
+    return path.suffix if path else ''
+
+
+def _normalize_relative_dir(relative_dir):
+    """Normalize ``relative_dir`` to a POSIX-style string for template rendering."""
+
+    if relative_dir is None:
+        return '.'
+
+    rel_path = relative_dir if isinstance(relative_dir, Path) else Path(relative_dir)
+    dir_value = rel_path.as_posix() or '.'
+    dir_value = dir_value.replace('\\', '/')
+    return dir_value or '.'
+
+
 def _render_paired_filename(
     template, stem, source_path, header_path, relative_dir=None
 ):
     """Render the paired filename template with placeholders."""
 
-    if source_path:
-        source_ext = source_path.suffix
-    else:
-        source_ext = ''
-
-    if header_path:
-        header_ext = header_path.suffix
-    else:
-        header_ext = ''
-
-    if relative_dir is None:
-        dir_value = '.'
-    else:
-        if isinstance(relative_dir, Path):
-            dir_value = relative_dir.as_posix() or '.'
-        else:
-            dir_value = str(relative_dir) or '.'
-
+    source_ext = _get_suffix(source_path)
+    header_ext = _get_suffix(header_path)
+    dir_value = _normalize_relative_dir(relative_dir)
     dir_slug = _slugify_relative_dir(dir_value)
 
     return (
@@ -277,22 +281,106 @@ def _render_paired_filename(
     )
 
 
+def _group_paths_by_stem_suffix(file_paths):
+    """Group ``file_paths`` by stem and suffix for pairing logic."""
+
+    grouped = {}
+    for file_path in file_paths:
+        grouped.setdefault(file_path.stem, {})[file_path.suffix.lower()] = file_path
+    return grouped
+
+
+def _select_preferred_path(ext_map, preferred_exts):
+    """Return the path matching the first extension in ``preferred_exts``."""
+
+    for ext in preferred_exts:
+        if ext in ext_map:
+            return ext_map[ext]
+    return None
+
+
 def _pair_files(filtered_paths, source_exts, header_exts, include_mismatched):
     """Return a mapping of stems to paired file paths."""
 
-    file_map = {}
-    for file_path in filtered_paths:
-        file_map.setdefault(file_path.stem, {})[file_path.suffix.lower()] = file_path
-
+    file_map = _group_paths_by_stem_suffix(filtered_paths)
     paired = {}
     for stem, stem_files in file_map.items():
-        src = next((p for ext, p in stem_files.items() if ext in source_exts), None)
-        hdr = next((p for ext, p in stem_files.items() if ext in header_exts), None)
+        src = _select_preferred_path(stem_files, source_exts)
+        hdr = _select_preferred_path(stem_files, header_exts)
         if src and hdr:
-            paired[stem] = [src, hdr]
+            pair = []
+            for path in (src, hdr):
+                if path not in pair:
+                    pair.append(path)
+            paired[stem] = pair
         elif include_mismatched and (src or hdr):
-            paired[stem] = [src or hdr]
+            paired[stem] = [p for p in (src or hdr,) if p]
     return paired
+
+
+def _process_paired_files(
+    paired_paths,
+    *,
+    template,
+    source_exts,
+    header_exts,
+    root_path,
+    out_folder,
+    processor,
+    processing_bar,
+    dry_run,
+):
+    """Process paired files and write combined outputs."""
+
+    for stem, paths in paired_paths.items():
+        ext_map = {p.suffix.lower(): p for p in paths}
+        source_path = _select_preferred_path(ext_map, source_exts)
+        header_path = _select_preferred_path(ext_map, header_exts)
+
+        primary_path = source_path or header_path or paths[0]
+        try:
+            relative_dir = primary_path.relative_to(root_path).parent
+        except ValueError:
+            relative_dir = primary_path.parent
+
+        out_filename = _render_paired_filename(
+            template,
+            stem,
+            source_path,
+            header_path,
+            relative_dir=relative_dir,
+        )
+        out_path = Path(out_filename)
+        if out_path.is_absolute():
+            raise InvalidConfigError(
+                "Paired filename template must produce a relative path"
+            )
+
+        if out_folder:
+            out_file = out_folder / out_path
+        else:
+            out_file = primary_path.parent / out_path
+
+        if dry_run:
+            logging.info("[PAIR %s] -> %s", stem, out_file)
+            for path in paths:
+                try:
+                    rel_path = path.relative_to(root_path)
+                except ValueError:
+                    rel_path = path
+                logging.info("  - %s", rel_path)
+            continue
+
+        out_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(out_file, 'w', encoding='utf8') as pair_out:
+            for file_path in paths:
+                processor.process_and_write(
+                    file_path,
+                    root_path,
+                    pair_out,
+                )
+                if processing_bar:
+                    processing_bar.update(1)
 
 
 class FileProcessor:
@@ -470,56 +558,17 @@ def find_and_combine_files(config, output_path, dry_run=False):
                     output_opts.get('paired_filename_template')
                     or '{{STEM}}.combined'
                 )
-                for stem, paths in paired_paths.items():
-                    source_exts_map = {
-                        p.suffix.lower(): p for p in paths if p.suffix.lower() in source_exts
-                    }
-                    header_exts_map = {
-                        p.suffix.lower(): p for p in paths if p.suffix.lower() in header_exts
-                    }
-                    source_path = next(iter(source_exts_map.values()), None)
-                    header_path = next(iter(header_exts_map.values()), None)
-
-                    primary_path = source_path or header_path or paths[0]
-                    try:
-                        relative_dir = primary_path.relative_to(root_path).parent
-                    except ValueError:
-                        relative_dir = primary_path.parent
-
-                    out_filename = _render_paired_filename(
-                        template,
-                        stem,
-                        source_path,
-                        header_path,
-                        relative_dir=relative_dir,
-                    )
-                    out_path = Path(out_filename)
-                    if out_path.is_absolute():
-                        raise InvalidConfigError(
-                            "Paired filename template must produce a relative path"
-                        )
-
-                    if out_folder:
-                        out_file = out_folder / out_path
-                    else:
-                        out_file = primary_path.parent / out_path
-
-                    if dry_run:
-                        logging.info("[PAIR %s] -> %s", stem, out_file)
-                        for path in paths:
-                            rel_path = path.relative_to(root_path)
-                            logging.info("  - %s", rel_path)
-                        continue
-
-                    out_file.parent.mkdir(parents=True, exist_ok=True)
-                    with open(out_file, 'w', encoding='utf8') as pair_out:
-                        for file_path in paths:
-                            processor.process_and_write(
-                                file_path,
-                                root_path,
-                                pair_out,
-                            )
-                            processing_bar.update(1)
+                _process_paired_files(
+                    paired_paths,
+                    template=template,
+                    source_exts=source_exts,
+                    header_exts=header_exts,
+                    root_path=root_path,
+                    out_folder=out_folder,
+                    processor=processor,
+                    processing_bar=processing_bar,
+                    dry_run=dry_run,
+                )
             else:
                 for file_path in filtered_paths:
                     processor.process_and_write(
