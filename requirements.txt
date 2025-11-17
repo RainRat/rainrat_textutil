@@ -1,3 +1,5 @@
 PyYAML>=6.0
 # Progress bar support
 tqdm>=4.66.0
+# Encoding detection
+charset-normalizer>=3.0.0
