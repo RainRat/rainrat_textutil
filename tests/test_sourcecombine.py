@@ -1,10 +1,12 @@
 import io
+import logging
 import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
+import sourcecombine
 from sourcecombine import (
     FileProcessor,
     collect_file_paths,
@@ -68,16 +70,26 @@ def test_should_include_respects_filters(tmp_path):
     exclude_file = root / "skip.tmp"
     exclude_file.write_text("data", encoding="utf-8")
 
-    filter_config = {
-        "exclude_filenames": ["*.tmp"],
-        "allowed_extensions": (".py",),
-        "include_patterns": {"*.py"},
+    filter_opts = {
+        "exclusions": {"filenames": ["*.tmp"]},
+        "inclusion_groups": {"py": {"enabled": True, "filenames": ["*.py"]}},
         "min_size_bytes": 0,
         "max_size_bytes": 100,
     }
+    search_opts = {"effective_allowed_extensions": (".py",)}
 
-    assert should_include(include_file, Path(include_file.name), filter_config) is True
-    assert should_include(exclude_file, Path(exclude_file.name), filter_config) is False
+    assert (
+        should_include(
+            include_file, Path(include_file.name), filter_opts, search_opts
+        )
+        is True
+    )
+    assert (
+        should_include(
+            exclude_file, Path(exclude_file.name), filter_opts, search_opts
+        )
+        is False
+    )
 
 
 def test_should_include_respects_relative_path_globs(tmp_path):
@@ -91,17 +103,17 @@ def test_should_include_respects_relative_path_globs(tmp_path):
     test_main_py = tests_dir / "test_main.py"
     test_main_py.touch()
 
-    filter_config = {
-        "exclude_filenames": ["tests/*"],
-        "allowed_extensions": (".py",),
-        "include_patterns": set(),
+    filter_opts = {
+        "exclusions": {"filenames": ["tests/*"]},
+        "inclusion_groups": {},
         "min_size_bytes": 0,
         "max_size_bytes": 100,
     }
+    search_opts = {"effective_allowed_extensions": (".py",)}
 
     assert (
         should_include(
-            main_py, main_py.relative_to(tmp_path), filter_config
+            main_py, main_py.relative_to(tmp_path), filter_opts, search_opts
         )
         is True
     )
@@ -109,7 +121,8 @@ def test_should_include_respects_relative_path_globs(tmp_path):
         should_include(
             test_main_py,
             test_main_py.relative_to(tmp_path),
-            filter_config,
+            filter_opts,
+            search_opts,
         )
         is False
     )
@@ -121,20 +134,40 @@ def test_should_include_respects_size_bounds(tmp_path):
     big = tmp_path / "big.py"
     big.write_text("x" * 10, encoding="utf-8")
 
-    filter_config = {
-        "exclude_filenames": [],
-        "allowed_extensions": (".py",),
-        "include_patterns": set(),
+    filter_opts = {
+        "exclusions": {"filenames": []},
+        "inclusion_groups": {},
         "min_size_bytes": 2,
         "max_size_bytes": 5,
     }
+    search_opts = {"effective_allowed_extensions": (".py",)}
 
-    assert should_include(tiny, Path(tiny.name), filter_config) is False
-    assert should_include(big, Path(big.name), filter_config) is False
+    assert (
+        should_include(tiny, Path(tiny.name), filter_opts, search_opts) is False
+    )
+    assert should_include(big, Path(big.name), filter_opts, search_opts) is False
 
     just_right = tmp_path / "ok.py"
     just_right.write_text("ok", encoding="utf-8")
-    assert should_include(just_right, Path(just_right.name), filter_config) is True
+    assert (
+        should_include(just_right, Path(just_right.name), filter_opts, search_opts)
+        is True
+    )
+
+
+def test_should_include_treats_zero_max_size_as_unlimited(tmp_path):
+    big = tmp_path / "big.py"
+    big.write_text("x" * 100, encoding="utf-8")
+
+    filter_opts = {
+        "exclusions": {"filenames": []},
+        "inclusion_groups": {},
+        "min_size_bytes": 0,
+        "max_size_bytes": 0,
+    }
+    search_opts = {"effective_allowed_extensions": (".py",)}
+
+    assert should_include(big, Path(big.name), filter_opts, search_opts) is True
 
 
 def test_pair_files_logic(tmp_path):
@@ -249,6 +282,27 @@ def test_collect_file_paths_prunes_excluded_folders(tmp_path):
     assert Path(".git/config") not in collected_set
     assert Path("build/app.exe") not in collected_set
     assert Path("src/build/another.o") not in collected_set
+
+
+def test_collect_file_paths_handles_oserror(monkeypatch, tmp_path, caplog):
+    root_dir = tmp_path / "root"
+    root_dir.mkdir()
+    (root_dir / "keep.txt").write_text("", encoding="utf-8")
+
+    def _raise_os_error(*_args, **_kwargs):
+        raise OSError("permission denied")
+
+    monkeypatch.setattr(sourcecombine.os, "walk", _raise_os_error)
+
+    with caplog.at_level(logging.WARNING):
+        collected, root_path, excluded_count = collect_file_paths(
+            root_dir, recursive=True, exclude_folders=[]
+        )
+
+    assert collected == []
+    assert root_path == root_dir
+    assert excluded_count == 0
+    assert "Error while traversing" in caplog.text
 
 
 def test_apply_in_place_updates_files_and_output(tmp_path):
