@@ -54,6 +54,11 @@ output:
   # or an empty string to omit the footer/separator.
   footer_template: "\n--- end {{FILENAME}} ---\n"
 
+  # Optional placeholder to write when a file is skipped because it exceeds
+  # filters.max_size_bytes. The string may use the {{FILENAME}} placeholder.
+  # Only applies when pairing is disabled.
+  max_size_placeholder: null
+
 # --- File Filtering ---
 filters:
   # Files smaller than this (bytes) are skipped.

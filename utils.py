@@ -43,6 +43,7 @@ DEFAULT_CONFIG = {
         'add_line_numbers': False,
         'header_template': f"--- {FILENAME_PLACEHOLDER} ---\n",
         'footer_template': f"\n--- end {FILENAME_PLACEHOLDER} ---\n",
+        'max_size_placeholder': None,
     },
     'processing': {
         'apply_in_place': False,
@@ -358,6 +359,20 @@ def _validate_pairing_section(config):
     search_conf['effective_allowed_extensions'] = effective_allowed_extensions
 
 
+def _validate_output_section(config):
+    """Validate the 'output' section of the configuration."""
+
+    output_conf = config.get('output')
+    if not isinstance(output_conf, dict):
+        return
+
+    placeholder = output_conf.get('max_size_placeholder')
+    if placeholder is not None and not isinstance(placeholder, str):
+        raise InvalidConfigError(
+            "'output.max_size_placeholder' must be a string or null."
+        )
+
+
 def apply_line_regex_replacements(text, rules):
     """Apply line-oriented regex replacements.
 
@@ -427,6 +442,7 @@ def load_and_validate_config(
     _validate_filters_section(config)
     _validate_processing_section(config, source=config_file_path)
     _validate_pairing_section(config)
+    _validate_output_section(config)
 
     return config
 
