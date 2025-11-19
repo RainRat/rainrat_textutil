@@ -148,6 +148,13 @@ checked against every directory name in the path, so a single entry like
 `'build'` will exclude both `./build` and nested folders such as
 `./src/app/build`.
 
+When `filters.max_size_bytes` is set to a positive number, files that exceed
+the limit are skipped. To leave a marker in the combined output for those
+omitted files, set `output.max_size_placeholder` to a string such as
+`"[SKIPPED {{FILENAME}}]"`. The `{{FILENAME}}` placeholder is replaced with the
+file's path relative to the root folder. Placeholders are written only when
+pairing is disabled.
+
 ### Inclusion Groups
 
 Enable selective opt-in filtering by configuring `filters.inclusion_groups`.

@@ -110,11 +110,23 @@ def _matches_folder_glob_cached(relative_path_str, parts, patterns):
     return False
 
 
-def should_include(file_path, relative_path, filter_opts, search_opts):
-    """Return ``True`` if ``file_path`` passes all filtering rules."""
+def should_include(
+    file_path,
+    relative_path,
+    filter_opts,
+    search_opts,
+    *,
+    return_reason=False,
+):
+    """Return ``True`` if ``file_path`` passes all filtering rules.
+
+    When ``return_reason`` is ``True``, a tuple of ``(bool, reason)`` is
+    returned, where ``reason`` is ``'too_large'`` when the file exceeds
+    ``max_size_bytes`` and ``None`` otherwise.
+    """
 
     if not file_path.is_file():
-        return False
+        return (False, 'not_file') if return_reason else False
 
     file_name = file_path.name
     rel_str = relative_path.as_posix()
@@ -124,12 +136,12 @@ def should_include(file_path, relative_path, filter_opts, search_opts):
     if exclusion_filenames and _matches_file_glob_cached(
         file_name, rel_str, exclusion_filenames
     ):
-        return False
+        return (False, 'excluded') if return_reason else False
 
     allowed_extensions = search_opts.get('effective_allowed_extensions') or ()
     suffix = file_path.suffix.lower()
     if allowed_extensions and suffix not in allowed_extensions:
-        return False
+        return (False, 'extension') if return_reason else False
 
     include_patterns = set()
     for group_conf in (filter_opts.get('inclusion_groups') or {}).values():
@@ -140,7 +152,7 @@ def should_include(file_path, relative_path, filter_opts, search_opts):
     if normalized_includes and not _matches_file_glob_cached(
         file_name, rel_str, normalized_includes
     ):
-        return False
+        return (False, 'not_included') if return_reason else False
 
     try:
         file_size = file_path.stat().st_size
@@ -149,10 +161,11 @@ def should_include(file_path, relative_path, filter_opts, search_opts):
         if max_size in (None, 0):
             max_size = float('inf')
         if not (min_size <= file_size <= max_size):
-            return False
+            reason = 'too_small' if file_size < min_size else 'too_large'
+            return (False, reason) if return_reason else False
     except OSError:
-        return False
-    return True
+        return (False, 'stat_error') if return_reason else False
+    return (True, None) if return_reason else True
 
 
 def collect_file_paths(root_folder, recursive, exclude_folders, progress=None):
@@ -232,18 +245,40 @@ def filter_file_paths(
     root_path,
     source_exts=(),
     header_exts=(),
+    record_size_exclusions=False,
 ):
-    """Apply filtering rules to ``file_paths`` and return the matches."""
-    return [
-        p
-        for p in file_paths
-        if should_include(
-            p,
-            p.relative_to(root_path),
-            filter_opts,
-            search_opts,
-        )
-    ]
+    """Apply filtering rules to ``file_paths`` and return the matches.
+
+    When ``record_size_exclusions`` is ``True`` an additional list of paths
+    excluded for exceeding ``max_size_bytes`` is returned.
+    """
+    filtered = []
+    size_excluded = []
+    for p in file_paths:
+        if record_size_exclusions:
+            include, reason = should_include(
+                p,
+                p.relative_to(root_path),
+                filter_opts,
+                search_opts,
+                return_reason=True,
+            )
+        else:
+            include = should_include(
+                p,
+                p.relative_to(root_path),
+                filter_opts,
+                search_opts,
+            )
+            reason = None
+        if include:
+            filtered.append(p)
+        elif record_size_exclusions and reason == 'too_large':
+            size_excluded.append(p)
+
+    if record_size_exclusions:
+        return filtered, size_excluded
+    return filtered
 
 
 _INVALID_SLUG_CHARS_RE = re.compile(r'[^0-9A-Za-z._-]+')
@@ -433,6 +468,30 @@ class FileProcessor:
             )
         else:
             self.create_backups = False
+
+    def _write_with_templates(self, outfile, content, relative_path):
+        """Write ``content`` with configured header/footer templates."""
+
+        header_template = self.output_opts.get(
+            'header_template', f"--- {FILENAME_PLACEHOLDER} ---\n"
+        )
+        footer_template = self.output_opts.get(
+            'footer_template', f"\n--- end {FILENAME_PLACEHOLDER} ---\n"
+        )
+
+        if header_template:
+            header_text = header_template.replace(
+                FILENAME_PLACEHOLDER, str(relative_path)
+            )
+            outfile.write(header_text)
+
+        outfile.write(content)
+
+        if footer_template:
+            footer_text = footer_template.replace(
+                FILENAME_PLACEHOLDER, str(relative_path)
+            )
+            outfile.write(footer_text)
     def _backup_file(self, file_path):
         """Create a ``.bak`` backup for ``file_path`` when backups are enabled.
 
@@ -471,26 +530,21 @@ class FileProcessor:
             processed_content = add_line_numbers(processed_content)
 
         relative_path = file_path.relative_to(root_path)
-        header_template = self.output_opts.get(
-            'header_template', f"--- {FILENAME_PLACEHOLDER} ---\n"
-        )
-        footer_template = self.output_opts.get(
-            'footer_template', f"\n--- end {FILENAME_PLACEHOLDER} ---\n"
-        )
+        self._write_with_templates(outfile, processed_content, relative_path)
 
-        if header_template:
-            header_text = header_template.replace(
-                FILENAME_PLACEHOLDER, str(relative_path)
-            )
-            outfile.write(header_text)
+    def write_max_size_placeholder(self, file_path, root_path, outfile):
+        """Write the placeholder for files skipped for exceeding max size."""
 
-        outfile.write(processed_content)
+        if self.dry_run:
+            return
 
-        if footer_template:
-            footer_text = footer_template.replace(
-                FILENAME_PLACEHOLDER, str(relative_path)
-            )
-            outfile.write(footer_text)
+        placeholder = self.output_opts.get('max_size_placeholder')
+        if not placeholder:
+            return
+
+        relative_path = file_path.relative_to(root_path)
+        rendered = placeholder.replace(FILENAME_PLACEHOLDER, str(relative_path))
+        self._write_with_templates(outfile, rendered, relative_path)
 
 
 def find_and_combine_files(config, output_path, dry_run=False):
@@ -541,21 +595,38 @@ def find_and_combine_files(config, output_path, dry_run=False):
             header_exts = tuple(
                 e.lower() for e in (pair_opts.get('header_extensions') or [])
             )
-            filtered_paths = filter_file_paths(
+            record_size_exclusions = bool(
+                output_opts.get('max_size_placeholder')
+            ) and not pairing_enabled and not dry_run
+
+            filtered_result = filter_file_paths(
                 all_paths,
                 filter_opts=filter_opts,
                 search_opts=search_opts,
                 root_path=root_path,
                 source_exts=source_exts,
                 header_exts=header_exts,
+                record_size_exclusions=record_size_exclusions,
             )
+            if record_size_exclusions:
+                filtered_paths, size_excluded = filtered_result
+            else:
+                filtered_paths = filtered_result
+                size_excluded = []
             if processor.create_backups:
                 filtered_paths = [
                     p for p in filtered_paths if p.suffix.lower() != '.bak'
                 ]
+                size_excluded = [
+                    p for p in size_excluded if p.suffix.lower() != '.bak'
+                ]
             processing_bar = _progress_bar(
                 enabled=progress_enabled,
-                total=len(filtered_paths) if filtered_paths else None,
+                total=(
+                    len(filtered_paths) + len(size_excluded)
+                    if (filtered_paths or size_excluded)
+                    else None
+                ),
                 desc="Processing files",
                 unit="file",
             )
@@ -593,12 +664,28 @@ def find_and_combine_files(config, output_path, dry_run=False):
                     dry_run=dry_run,
                 )
             else:
-                for file_path in filtered_paths:
-                    processor.process_and_write(
-                        file_path,
-                        root_path,
-                        outfile,
-                    )
+                if record_size_exclusions:
+                    filtered_set = set(filtered_paths)
+                    size_excluded_set = set(size_excluded)
+                    ordered_paths = [
+                        p
+                        for p in all_paths
+                        if p in filtered_set or p in size_excluded_set
+                    ]
+                else:
+                    ordered_paths = filtered_paths
+
+                for file_path in ordered_paths:
+                    if record_size_exclusions and file_path in size_excluded_set:
+                        processor.write_max_size_placeholder(
+                            file_path, root_path, outfile
+                        )
+                    else:
+                        processor.process_and_write(
+                            file_path,
+                            root_path,
+                            outfile,
+                        )
                     processing_bar.update(1)
             processing_bar.close()
     if dry_run:

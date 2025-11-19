@@ -171,6 +171,34 @@ def test_should_include_treats_zero_max_size_as_unlimited(tmp_path):
     assert should_include(big, Path(big.name), filter_opts, search_opts) is True
 
 
+def test_max_size_placeholder_writes_entry(tmp_path):
+    project_root = tmp_path / "proj"
+    project_root.mkdir()
+    small = project_root / "small.txt"
+    small.write_text("ok", encoding="utf-8")
+    big = project_root / "big.txt"
+    big.write_text("x" * 10, encoding="utf-8")
+
+    output_path = tmp_path / "out.txt"
+    config = {
+        "search": {"root_folders": [os.fspath(project_root)], "recursive": True},
+        "filters": {"max_size_bytes": 5},
+        "processing": {},
+        "output": {
+            "file": os.fspath(output_path),
+            "header_template": "",
+            "footer_template": "",
+            "max_size_placeholder": "[SKIPPED {{FILENAME}}]",
+        },
+    }
+
+    find_and_combine_files(config, output_path, dry_run=False)
+
+    content = output_path.read_text(encoding="utf-8")
+    assert "[SKIPPED big.txt]" in content
+    assert "ok" in content
+
+
 def test_pair_files_logic(tmp_path):
     base = tmp_path
     src = base / "file.cpp"
