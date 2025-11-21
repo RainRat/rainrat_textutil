@@ -74,7 +74,25 @@ def load_yaml_config(config_file_path):
             f"Configuration file not found at '{config_file_path}'."
         ) from e
     except yaml.YAMLError as e:
-        raise InvalidConfigError(f"Error parsing YAML file: {e}") from e
+        mark = getattr(e, 'problem_mark', None)
+        location = ""
+        if mark:
+            location = f" at line {mark.line + 1}, column {mark.column + 1}"
+
+        problem = getattr(e, 'problem', None) or str(e)
+        context = getattr(e, 'context', None)
+        details = f"{context}: {problem}" if context else problem
+
+        hint = None
+        if isinstance(e, yaml.scanner.ScannerError) and context:
+            if 'quoted scalar' in context:
+                hint = "Check for missing closing quotes in your YAML file."
+
+        message = f"Error parsing YAML file{location}: {details}"
+        if hint:
+            message = f"{message} ({hint})"
+
+        raise InvalidConfigError(message) from e
     except ValueError as e:
         raise InvalidConfigError(str(e)) from e
 
