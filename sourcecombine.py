@@ -677,6 +677,13 @@ def find_and_combine_files(config, output_path, dry_run=False):
 
                 for file_path in ordered_paths:
                     if record_size_exclusions and file_path in size_excluded_set:
+                        try:
+                            rel_path = file_path.relative_to(root_path)
+                        except ValueError:
+                            rel_path = file_path
+                        logging.debug(
+                            "File exceeds max size; writing placeholder: %s", rel_path
+                        )
                         processor.write_max_size_placeholder(
                             file_path, root_path, outfile
                         )
