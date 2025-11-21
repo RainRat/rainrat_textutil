@@ -199,6 +199,36 @@ def test_max_size_placeholder_writes_entry(tmp_path):
     assert "ok" in content
 
 
+def test_verbose_logs_when_placeholder_written(tmp_path, caplog):
+    project_root = tmp_path / "proj"
+    project_root.mkdir()
+    project_root.joinpath("small.txt").write_text("ok", encoding="utf-8")
+    big_file = project_root / "big.txt"
+    big_file.write_text("x" * 10, encoding="utf-8")
+
+    output_path = tmp_path / "out.txt"
+    config = {
+        "search": {"root_folders": [os.fspath(project_root)], "recursive": True},
+        "filters": {"max_size_bytes": 5},
+        "processing": {},
+        "output": {
+            "file": os.fspath(output_path),
+            "header_template": "",
+            "footer_template": "",
+            "max_size_placeholder": "[SKIPPED {{FILENAME}}]",
+        },
+    }
+
+    with caplog.at_level(logging.DEBUG):
+        find_and_combine_files(config, output_path, dry_run=False)
+
+    assert any(
+        "File exceeds max size; writing placeholder" in record.message
+        and "big.txt" in record.message
+        for record in caplog.records
+    )
+
+
 def test_pair_files_logic(tmp_path):
     base = tmp_path
     src = base / "file.cpp"
