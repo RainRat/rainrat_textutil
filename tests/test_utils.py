@@ -215,6 +215,21 @@ def test_load_and_validate_config_reports_regex_context(tmp_path):
     assert str(config_path) in message
 
 
+def test_load_and_validate_config_reports_unterminated_quote(tmp_path):
+    config_path = tmp_path / "config.yml"
+    config_path.write_text(
+        'search:\n  root_folders: ["./src]\n',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(InvalidConfigError) as excinfo:
+        load_and_validate_config(config_path)
+
+    message = str(excinfo.value)
+    assert "line" in message
+    assert "closing quotes" in message
+
+
 def test_load_and_validate_config_rejects_in_place_groups(tmp_path):
     config_path = _write_config(
         tmp_path,
