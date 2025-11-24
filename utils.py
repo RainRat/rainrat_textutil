@@ -252,6 +252,20 @@ def _validate_filters_section(config):
     if not isinstance(filters, dict):
         return
 
+    min_size = filters.get('min_size_bytes')
+    if min_size is not None:
+        if not isinstance(min_size, int) or min_size < 0:
+            raise InvalidConfigError(
+                "filters.min_size_bytes must be a non-negative integer"
+            )
+
+    max_size = filters.get('max_size_bytes')
+    if max_size is not None:
+        if not isinstance(max_size, int) or max_size < 0:
+            raise InvalidConfigError(
+                "filters.max_size_bytes must be a non-negative integer"
+            )
+
     exclusions_conf = filters.get('exclusions', {})
     if isinstance(exclusions_conf, dict):
         filenames = exclusions_conf.get('filenames', [])
@@ -384,10 +398,36 @@ def _validate_output_section(config):
     if not isinstance(output_conf, dict):
         return
 
+    file_name = output_conf.get('file')
+    if file_name is not None and not isinstance(file_name, str):
+        raise InvalidConfigError("'output.file' must be a string or null.")
+
+    folder = output_conf.get('folder')
+    if folder is not None and not isinstance(folder, str):
+        raise InvalidConfigError("'output.folder' must be a string or null.")
+
+    header_template = output_conf.get('header_template')
+    if header_template is not None and not isinstance(header_template, str):
+        raise InvalidConfigError(
+            "'output.header_template' must be a string or null."
+        )
+
+    footer_template = output_conf.get('footer_template')
+    if footer_template is not None and not isinstance(footer_template, str):
+        raise InvalidConfigError(
+            "'output.footer_template' must be a string or null."
+        )
+
     placeholder = output_conf.get('max_size_placeholder')
     if placeholder is not None and not isinstance(placeholder, str):
         raise InvalidConfigError(
             "'output.max_size_placeholder' must be a string or null."
+        )
+
+    if placeholder and FILENAME_PLACEHOLDER not in placeholder:
+        logging.warning(
+            "'output.max_size_placeholder' is set but does not include the %s placeholder",
+            FILENAME_PLACEHOLDER,
         )
 
 
