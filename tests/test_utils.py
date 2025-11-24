@@ -215,6 +215,27 @@ def test_load_and_validate_config_reports_regex_context(tmp_path):
     assert str(config_path) in message
 
 
+def test_load_and_validate_config_reports_line_regex_context(tmp_path):
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "processing": {
+                "line_regex_replacements": [
+                    {"pattern": "[unterminated"},
+                ]
+            },
+        },
+    )
+
+    with pytest.raises(InvalidConfigError) as excinfo:
+        load_and_validate_config(config_path)
+
+    message = str(excinfo.value)
+    assert "processing.line_regex_replacements[0]" in message
+    assert str(config_path) in message
+
+
 def test_load_and_validate_config_reports_unterminated_quote(tmp_path):
     config_path = tmp_path / "config.yml"
     config_path.write_text(
@@ -244,6 +265,65 @@ def test_load_and_validate_config_rejects_in_place_groups(tmp_path):
     with pytest.raises(InvalidConfigError):
         load_and_validate_config(config_path)
 
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("min_size_bytes", "10KB"),
+        ("min_size_bytes", -1),
+        ("max_size_bytes", "10KB"),
+        ("max_size_bytes", -1),
+    ],
+)
+def test_load_and_validate_config_rejects_invalid_size_filters(tmp_path, field, value):
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "filters": {field: value},
+        },
+    )
+
+    with pytest.raises(InvalidConfigError) as excinfo:
+        load_and_validate_config(config_path)
+
+    message = str(excinfo.value)
+    assert f"filters.{field}" in message
+    assert "non-negative integer" in message
+
+
+@pytest.mark.parametrize(
+    "field",
+    ["header_template", "footer_template", "max_size_placeholder"],
+)
+def test_load_and_validate_config_rejects_non_string_output_templates(tmp_path, field):
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "output": {field: 123},
+        },
+    )
+
+    with pytest.raises(InvalidConfigError) as excinfo:
+        load_and_validate_config(config_path)
+
+    assert f"output.{field}" in str(excinfo.value)
+
+
+def test_load_and_validate_config_warns_on_placeholder_missing_filename(tmp_path, caplog):
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "output": {"max_size_placeholder": "File is too large"},
+        },
+    )
+
+    with caplog.at_level(logging.WARNING):
+        load_and_validate_config(config_path)
+
+    assert "does not include the {{FILENAME}} placeholder" in caplog.text
 
 def test_add_line_numbers():
     assert add_line_numbers("a\nb") == "1: a\n2: b"
