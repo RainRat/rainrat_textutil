@@ -1,13 +1,15 @@
 import argparse
-import logging
-import sys
-import os
+from contextlib import nullcontext
 import fnmatch
+import io
+import logging
+import os
 import re
 import shutil
+import sys
 from functools import lru_cache
 from pathlib import Path
-from contextlib import nullcontext
+
 
 try:  # Optional dependency for progress reporting
     from tqdm import tqdm as _tqdm
@@ -547,7 +549,7 @@ class FileProcessor:
         self._write_with_templates(outfile, rendered, relative_path)
 
 
-def find_and_combine_files(config, output_path, dry_run=False):
+def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
     """Find, filter, and combine files based on the provided configuration."""
     stats = {'total_files': 0, 'total_size_bytes': 0, 'files_by_extension': {}}
     search_opts = config.get('search', {})
@@ -561,6 +563,9 @@ def find_and_combine_files(config, output_path, dry_run=False):
     root_folders = search_opts.get('root_folders') or []
     recursive = search_opts.get('recursive', True)
 
+    if clipboard and pairing_enabled:
+        raise InvalidConfigError("Clipboard mode is only available when pairing is disabled.")
+
     out_folder = None
     if pairing_enabled and output_path:
         out_folder = Path(output_path)
@@ -568,7 +573,12 @@ def find_and_combine_files(config, output_path, dry_run=False):
             out_folder.mkdir(parents=True, exist_ok=True)
 
     progress_enabled = _progress_enabled(dry_run)
-    outfile_ctx = nullcontext() if pairing_enabled or dry_run else open(output_path, 'w', encoding='utf8')
+    clipboard_buffer = io.StringIO() if clipboard else None
+    outfile_ctx = (
+        nullcontext(clipboard_buffer)
+        if pairing_enabled or dry_run or clipboard
+        else open(output_path, 'w', encoding='utf8')
+    )
     processor = FileProcessor(config, output_opts, dry_run=dry_run)
     total_excluded_folders = 0
     with outfile_ctx as outfile:
@@ -699,6 +709,13 @@ def find_and_combine_files(config, output_path, dry_run=False):
         stats['excluded_folder_count'] = total_excluded_folders
         return stats
 
+    if clipboard and clipboard_buffer is not None:
+        import pyperclip
+
+        combined_output = clipboard_buffer.getvalue()
+        pyperclip.copy(combined_output)
+        logging.info("Copied combined output to clipboard.")
+
 
 def main():
     """Main function to parse arguments and run the tool."""
@@ -724,6 +741,12 @@ def main():
         "--verbose",
         action="store_true",
         help="Enable verbose output (DEBUG level)",
+    )
+    parser.add_argument(
+        "--clipboard",
+        "-c",
+        action="store_true",
+        help="Copy combined output to the system clipboard instead of a file",
     )
     args = parser.parse_args()
 
@@ -770,7 +793,9 @@ def main():
         output_path = output_conf.get('file', DEFAULT_OUTPUT_FILENAME)
 
     # Determine output description before the main loop
-    if pairing_enabled:
+    if args.clipboard:
+        destination_desc = "to clipboard"
+    elif pairing_enabled:
         destination_desc = (
             "alongside their source files"
             if output_path is None
@@ -784,7 +809,12 @@ def main():
     logging.info("Output: Writing %s", destination_desc)
 
     try:
-        stats = find_and_combine_files(config, output_path, dry_run=args.dry_run)
+        stats = find_and_combine_files(
+            config,
+            output_path,
+            dry_run=args.dry_run,
+            clipboard=args.clipboard,
+        )
     except InvalidConfigError as exc:
         logging.error(exc, exc_info=True)
         sys.exit(1)

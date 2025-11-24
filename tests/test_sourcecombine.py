@@ -3,9 +3,15 @@ import logging
 import os
 import sys
 import subprocess
+import types
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+
+pyperclip_stub = types.SimpleNamespace(copy=lambda _text: None, paste=lambda: None)
+sys.modules.setdefault("pyperclip", pyperclip_stub)
 
 import sourcecombine
 from sourcecombine import (
@@ -197,6 +203,52 @@ def test_max_size_placeholder_writes_entry(tmp_path):
     content = output_path.read_text(encoding="utf-8")
     assert "[SKIPPED big.txt]" in content
     assert "ok" in content
+
+
+def test_clipboard_mode_copies_output(monkeypatch, tmp_path):
+    project_root = tmp_path / "proj"
+    project_root.mkdir()
+    sample = project_root / "sample.txt"
+    sample.write_text("copied", encoding="utf-8")
+
+    output_path = tmp_path / "unused.txt"
+    config = {
+        "search": {"root_folders": [os.fspath(project_root)], "recursive": True},
+        "filters": {},
+        "processing": {},
+        "output": {"file": os.fspath(output_path), "header_template": "", "footer_template": ""},
+    }
+
+    copied = {}
+
+    def _fake_copy(text):
+        copied["text"] = text
+
+    monkeypatch.setattr(sys.modules["pyperclip"], "copy", _fake_copy)
+
+    find_and_combine_files(config, output_path, dry_run=False, clipboard=True)
+
+    assert copied["text"] == "copied"
+    assert not output_path.exists()
+
+
+def test_clipboard_mode_rejects_pairing(tmp_path):
+    project_root = tmp_path / "proj"
+    project_root.mkdir()
+    (project_root / "one.cpp").write_text("one", encoding="utf-8")
+    (project_root / "one.hpp").write_text("two", encoding="utf-8")
+
+    output_path = tmp_path / "paired"
+    config = {
+        "search": {"root_folders": [os.fspath(project_root)], "recursive": True},
+        "filters": {},
+        "processing": {},
+        "pairing": {"enabled": True, "source_extensions": [".cpp"], "header_extensions": [".hpp"]},
+        "output": {"folder": os.fspath(output_path)},
+    }
+
+    with pytest.raises(sourcecombine.InvalidConfigError):
+        find_and_combine_files(config, output_path, dry_run=False, clipboard=True)
 
 
 def test_verbose_logs_when_placeholder_written(tmp_path, caplog):

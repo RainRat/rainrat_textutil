@@ -3,3 +3,5 @@ PyYAML>=6.0
 tqdm>=4.66.0
 # Encoding detection
 charset-normalizer>=3.0.0
+# Clipboard support
+pyperclip>=1.8.2
