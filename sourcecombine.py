@@ -685,6 +685,10 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
                 else:
                     ordered_paths = filtered_paths
 
+                global_header = output_opts.get('global_header_template')
+                if global_header:
+                    outfile.write(global_header)
+
                 for file_path in ordered_paths:
                     if record_size_exclusions and file_path in size_excluded_set:
                         try:
@@ -704,6 +708,11 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
                             outfile,
                         )
                     processing_bar.update(1)
+
+                global_footer = output_opts.get('global_footer_template')
+                if global_footer:
+                    outfile.write(global_footer)
+
             processing_bar.close()
     if dry_run:
         stats['excluded_folder_count'] = total_excluded_folders

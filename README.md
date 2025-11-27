@@ -49,6 +49,20 @@ output:
   footer_template: "\n```\n\n"
 ```
 
+## Global Header and Footer
+
+You can add a custom header at the beginning and a footer at the end of the
+entire combined file using `output.global_header_template` and
+`output.global_footer_template`. These options are useful for adding license
+information, project descriptions, or wrapping the output in a specific format
+(like XML or JSON). These options only apply when pairing is disabled.
+
+```yaml
+output:
+  global_header_template: "# Project Source Code\n\n"
+  global_footer_template: "\n# End of Project Source Code\n"
+```
+
 ## Customizing paired output filenames
 
 When pairing is enabled, you can control the naming of the output files with

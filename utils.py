@@ -43,6 +43,8 @@ DEFAULT_CONFIG = {
         'add_line_numbers': False,
         'header_template': f"--- {FILENAME_PLACEHOLDER} ---\n",
         'footer_template': f"\n--- end {FILENAME_PLACEHOLDER} ---\n",
+        'global_header_template': None,
+        'global_footer_template': None,
         'max_size_placeholder': None,
     },
     'processing': {
@@ -416,6 +418,18 @@ def _validate_output_section(config):
     if footer_template is not None and not isinstance(footer_template, str):
         raise InvalidConfigError(
             "'output.footer_template' must be a string or null."
+        )
+
+    global_header_template = output_conf.get('global_header_template')
+    if global_header_template is not None and not isinstance(global_header_template, str):
+        raise InvalidConfigError(
+            "'output.global_header_template' must be a string or null."
+        )
+
+    global_footer_template = output_conf.get('global_footer_template')
+    if global_footer_template is not None and not isinstance(global_footer_template, str):
+        raise InvalidConfigError(
+            "'output.global_footer_template' must be a string or null."
         )
 
     placeholder = output_conf.get('max_size_placeholder')
