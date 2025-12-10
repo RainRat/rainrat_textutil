@@ -652,7 +652,7 @@ def validate_glob_pattern(pattern, *, context="glob pattern"):
             pattern,
         )
 
-    if normalized.startswith('/') or (len(normalized) > 1 and normalized[1] == ':'):
+    if Path(normalized).is_absolute():
         logging.warning(
             "Glob pattern in %s ('%s') looks like an absolute path. "
             "Patterns are matched against relative paths and filenames. This may not work as expected.",
