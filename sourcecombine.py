@@ -1,4 +1,5 @@
 import argparse
+from typing import Any, Mapping
 from contextlib import nullcontext
 import fnmatch
 import io
@@ -115,13 +116,13 @@ def _matches_folder_glob_cached(relative_path_str, parts, patterns):
 
 
 def should_include(
-    file_path,
-    relative_path,
-    filter_opts,
-    search_opts,
+    file_path: Path,
+    relative_path: PurePath,
+    filter_opts: Mapping[str, Any],
+    search_opts: Mapping[str, Any],
     *,
-    return_reason=False,
-):
+    return_reason: bool = False,
+) -> bool | tuple[bool, str | None]:
     """Return ``True`` if ``file_path`` passes all filtering rules.
 
     When ``return_reason`` is ``True``, a tuple of ``(bool, reason)`` is
@@ -330,8 +331,12 @@ def _normalize_relative_dir(relative_dir: PurePath | None):
 
 
 def _render_paired_filename(
-    template, stem, source_path, header_path, relative_dir=None
-):
+    template: str,
+    stem: str,
+    source_path: Path | None,
+    header_path: Path | None,
+    relative_dir: PurePath | None = None,
+) -> str:
     """Render the paired filename template with placeholders."""
 
     source_ext = _get_suffix(source_path)
@@ -549,6 +554,9 @@ class FileProcessor:
         else:
             self.create_backups = False
 
+    def _make_bar(self, **kwargs):
+        return _progress_bar(enabled=_progress_enabled(self.dry_run), **kwargs)
+
     def _write_with_templates(self, outfile, content, relative_path):
         """Write ``content`` with configured header/footer templates."""
 
@@ -658,7 +666,6 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
         if not dry_run:
             out_folder.mkdir(parents=True, exist_ok=True)
 
-    progress_enabled = _progress_enabled(dry_run)
     clipboard_buffer = io.StringIO() if clipboard else None
     outfile_ctx = (
         nullcontext(clipboard_buffer)
@@ -674,8 +681,7 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
             outfile.write(global_header)
 
         for root_folder in root_folders:
-            discovery_bar = _progress_bar(
-                enabled=progress_enabled,
+            discovery_bar = processor._make_bar(
                 desc=f"Discovering in {root_folder}",
                 unit="file",
                 leave=False,
@@ -720,8 +726,7 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
                 size_excluded = [
                     p for p in size_excluded if p.suffix.lower() != '.bak'
                 ]
-            processing_bar = _progress_bar(
-                enabled=progress_enabled,
+            processing_bar = processor._make_bar(
                 total=(
                     len(filtered_paths) + len(size_excluded)
                     if (filtered_paths or size_excluded)
