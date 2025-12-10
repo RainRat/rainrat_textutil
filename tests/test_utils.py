@@ -80,6 +80,17 @@ def test_read_file_best_effort_handles_various_encodings(tmp_path):
     assert read_file_best_effort(cjk_file) == cjk_text
 
 
+def test_read_file_best_effort_handles_utf16_edge_cases(tmp_path):
+    bom_only = tmp_path / "utf16_bom_only.txt"
+    bom_only.write_bytes(b"\xff\xfe")
+
+    without_bom = tmp_path / "utf16_no_bom.txt"
+    without_bom.write_bytes("A".encode("utf-16-le"))
+
+    assert read_file_best_effort(bom_only) == ""
+    assert read_file_best_effort(without_bom) == "A"
+
+
 def _write_config(tmp_path: Path, data: dict) -> Path:
     path = tmp_path / "config.yml"
     path.write_text(yaml.safe_dump(data), encoding="utf-8")
@@ -192,6 +203,19 @@ def test_load_and_validate_config_preserves_user_allowed_extensions(tmp_path):
     config = load_and_validate_config(config_path)
     assert config["search"]["allowed_extensions"] == [".Py"]
     assert config["search"]["effective_allowed_extensions"] == (".py",)
+
+
+def test_load_and_validate_config_rejects_non_boolean_skip_binary(tmp_path):
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "filters": {"skip_binary": "yes"},
+        },
+    )
+
+    with pytest.raises(InvalidConfigError):
+        load_and_validate_config(config_path)
 
 
 def test_load_and_validate_config_reports_regex_context(tmp_path):

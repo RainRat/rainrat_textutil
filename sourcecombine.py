@@ -67,6 +67,7 @@ from utils import (
     InvalidConfigError,
     FILENAME_PLACEHOLDER,
     DEFAULT_OUTPUT_FILENAME,
+    _looks_binary,
 )
 
 
@@ -156,6 +157,10 @@ def should_include(
         file_name, rel_str, normalized_includes
     ):
         return (False, 'not_included') if return_reason else False
+
+    if filter_opts.get('skip_binary'):
+        if _looks_binary(file_path):
+            return (False, 'binary') if return_reason else False
 
     try:
         file_size = file_path.stat().st_size
