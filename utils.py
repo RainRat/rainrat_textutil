@@ -1,6 +1,7 @@
 import logging
 import re
 from pathlib import Path
+from typing import Any, Mapping, Sequence
 
 from charset_normalizer import from_bytes
 import yaml
@@ -498,11 +499,11 @@ def apply_line_regex_replacements(text, rules):
 
 
 def load_and_validate_config(
-    config_file_path,
-    required_keys=None,
-    defaults=DEFAULT_CONFIG,
-    nested_required=None,
-):
+    config_file_path: str | Path,
+    required_keys: Sequence[str] | None = None,
+    defaults: Mapping[str, Any] = DEFAULT_CONFIG,
+    nested_required: Mapping[str, Sequence[str]] | None = None,
+) -> dict:
     """Load a YAML config file and enforce required keys and defaults.
 
     ``defaults`` may contain nested dictionaries, which are merged recursively
@@ -551,7 +552,7 @@ def load_and_validate_config(
     return config
 
 
-def process_content(buffer, options):
+def process_content(buffer: str, options: Mapping[str, Any]) -> str:
     """Process text based on a dictionary of options.
 
     Supported options include:
