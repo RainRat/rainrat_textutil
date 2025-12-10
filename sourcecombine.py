@@ -8,7 +8,7 @@ import re
 import shutil
 import sys
 from functools import lru_cache
-from pathlib import Path
+from pathlib import Path, PurePath
 
 
 try:  # Optional dependency for progress reporting
@@ -71,7 +71,7 @@ from utils import (
 )
 
 
-@lru_cache(maxsize=None)
+@lru_cache(maxsize=4096)
 def _casefold_pattern(pattern):
     return pattern.casefold()
 
@@ -91,7 +91,7 @@ def _normalize_patterns(patterns):
     return tuple(patterns)
 
 
-@lru_cache(maxsize=None)
+@lru_cache(maxsize=4096)
 def _matches_file_glob_cached(file_name, relative_path_str, patterns):
     if not patterns:
         return False
@@ -102,7 +102,7 @@ def _matches_file_glob_cached(file_name, relative_path_str, patterns):
     )
 
 
-@lru_cache(maxsize=None)
+@lru_cache(maxsize=4096)
 def _matches_folder_glob_cached(relative_path_str, parts, patterns):
     if not patterns:
         return False
@@ -252,6 +252,7 @@ def filter_file_paths(
     search_opts,
     root_path,
     record_size_exclusions=False,
+    create_backups=False,
 ):
     """Apply filtering rules to ``file_paths`` and return the matches.
 
@@ -261,6 +262,8 @@ def filter_file_paths(
     filtered = []
     size_excluded = []
     for p in file_paths:
+        if p.suffix.lower() == '.bak' and create_backups:
+            continue
         if record_size_exclusions:
             include, reason = should_include(
                 p,
@@ -313,15 +316,16 @@ def _get_suffix(path):
     return path.suffix if path else ''
 
 
-def _normalize_relative_dir(relative_dir):
+def _normalize_relative_dir(relative_dir: PurePath | None):
     """Normalize ``relative_dir`` to a POSIX-style string for template rendering."""
 
     if relative_dir is None:
         return '.'
 
-    rel_path = relative_dir if isinstance(relative_dir, Path) else Path(relative_dir)
-    dir_value = rel_path.as_posix() or '.'
-    dir_value = dir_value.replace('\\', '/')
+    if not isinstance(relative_dir, PurePath):
+        raise TypeError("relative_dir must be a pathlib.PurePath or None")
+
+    dir_value = relative_dir.as_posix() or '.'
     return dir_value or '.'
 
 
@@ -652,6 +656,7 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
                 search_opts=search_opts,
                 root_path=root_path,
                 record_size_exclusions=record_size_exclusions,
+                create_backups=processor.create_backups,
             )
             if record_size_exclusions:
                 filtered_paths, size_excluded = filtered_result

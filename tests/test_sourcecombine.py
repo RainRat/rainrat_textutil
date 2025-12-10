@@ -4,7 +4,7 @@ import os
 import sys
 import subprocess
 import types
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 import pytest
 
@@ -82,7 +82,7 @@ def test_render_paired_filename_placeholders():
 
 def test_render_paired_filename_windows_dirs():
     template = "{{DIR}}|{{DIR_SLUG}}|{{STEM}}{{SOURCE_EXT}}{{HEADER_EXT}}"
-    relative_dir = "src\\My Dir\\Sub.Dir"
+    relative_dir = PureWindowsPath("src\\My Dir\\Sub.Dir")
     source_path = Path("C:/project/src/My Dir/Sub.Dir/Example.cpp")
     header_path = Path("C:/project/src/My Dir/Sub.Dir/Example.hpp")
 
