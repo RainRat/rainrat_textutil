@@ -279,6 +279,23 @@ def test_clipboard_mode_rejects_pairing(tmp_path):
         find_and_combine_files(config, output_path, dry_run=False, clipboard=True)
 
 
+def test_output_file_required_without_pairing_or_clipboard(tmp_path):
+    project_root = tmp_path / "proj"
+    project_root.mkdir()
+    (project_root / "one.txt").write_text("data", encoding="utf-8")
+
+    config = {
+        "search": {"root_folders": [os.fspath(project_root)], "recursive": True},
+        "filters": {},
+        "processing": {},
+        "pairing": {"enabled": False},
+        "output": {"file": None, "header_template": "", "footer_template": ""},
+    }
+
+    with pytest.raises(sourcecombine.InvalidConfigError):
+        find_and_combine_files(config, output_path=None, dry_run=False, clipboard=False)
+
+
 def test_verbose_logs_when_placeholder_written(tmp_path, caplog):
     project_root = tmp_path / "proj"
     project_root.mkdir()
