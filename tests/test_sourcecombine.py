@@ -7,6 +7,7 @@ import types
 from pathlib import Path, PureWindowsPath
 
 import pytest
+import yaml
 
 sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
@@ -774,3 +775,71 @@ def test_find_and_combine_skips_backup_files(tmp_path):
 
     assert output_path.read_text(encoding="utf-8") == "original"
     assert (project_root / "notes.txt.bak.bak").exists() is False
+
+
+def test_main_overrides_output_file(monkeypatch, tmp_path):
+    root_folder = tmp_path / "root"
+    root_folder.mkdir()
+    config_path = tmp_path / "config.yml"
+    override_output = tmp_path / "override.txt"
+    config_path.write_text(
+        yaml.safe_dump(
+            {
+                "search": {"root_folders": [os.fspath(root_folder)]},
+                "pairing": {"enabled": False},
+                "output": {"file": os.fspath(tmp_path / "config_output.txt")},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    captured = {}
+
+    def fake_find_and_combine_files(cfg, output_path, **_kwargs):
+        captured["config_output"] = cfg["output"].copy()
+        captured["output_path"] = output_path
+        return {}
+
+    monkeypatch.setattr(sourcecombine, "find_and_combine_files", fake_find_and_combine_files)
+    monkeypatch.setattr(
+        sys, "argv", ["prog", os.fspath(config_path), "--output", os.fspath(override_output)]
+    )
+
+    sourcecombine.main()
+
+    assert captured["output_path"] == os.fspath(override_output)
+    assert captured["config_output"]["file"] == os.fspath(override_output)
+
+
+def test_main_overrides_output_folder_in_pairing_mode(monkeypatch, tmp_path):
+    root_folder = tmp_path / "root"
+    root_folder.mkdir()
+    config_path = tmp_path / "config.yml"
+    override_output = tmp_path / "paired_outputs"
+    config_path.write_text(
+        yaml.safe_dump(
+            {
+                "search": {"root_folders": [os.fspath(root_folder)]},
+                "pairing": {"enabled": True},
+                "output": {"folder": os.fspath(tmp_path / "config_outputs")},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    captured = {}
+
+    def fake_find_and_combine_files(cfg, output_path, **_kwargs):
+        captured["config_output"] = cfg["output"].copy()
+        captured["output_path"] = output_path
+        return {}
+
+    monkeypatch.setattr(sourcecombine, "find_and_combine_files", fake_find_and_combine_files)
+    monkeypatch.setattr(
+        sys, "argv", ["prog", os.fspath(config_path), "--output", os.fspath(override_output)]
+    )
+
+    sourcecombine.main()
+
+    assert captured["output_path"] == os.fspath(override_output)
+    assert captured["config_output"]["folder"] == os.fspath(override_output)

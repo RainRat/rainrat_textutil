@@ -853,6 +853,11 @@ def main():
         action="store_true",
         help="Copy combined output to the system clipboard instead of a file",
     )
+    parser.add_argument(
+        "--output",
+        "-o",
+        help="Override output file or folder from config",
+    )
     args = parser.parse_args()
 
     # Configure logging *immediately* based on -v.
@@ -890,8 +895,18 @@ def main():
         # Set the level on the *root logger* since basicConfig was already called
         logging.getLogger().setLevel(log_level)
 
-    pairing_enabled = config.get('pairing', {}).get('enabled')
-    output_conf = config.get('output', {})
+    pairing_conf = config.get('pairing') or {}
+    output_conf = config.get('output') or {}
+    config['pairing'] = pairing_conf
+    config['output'] = output_conf
+
+    if args.output:
+        if pairing_conf.get('enabled'):
+            output_conf['folder'] = args.output
+        else:
+            output_conf['file'] = args.output
+
+    pairing_enabled = pairing_conf.get('enabled')
     if pairing_enabled:
         output_path = output_conf.get('folder')
     else:
