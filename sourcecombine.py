@@ -246,8 +246,6 @@ def filter_file_paths(
     filter_opts,
     search_opts,
     root_path,
-    source_exts=(),
-    header_exts=(),
     record_size_exclusions=False,
 ):
     """Apply filtering rules to ``file_paths`` and return the matches.
@@ -389,9 +387,13 @@ def _process_paired_files(
     processor,
     processing_bar,
     dry_run,
+    size_excluded=None,
+    global_header=None,
+    global_footer=None,
 ):
     """Process paired files and write combined outputs."""
 
+    size_excluded_set = set(size_excluded or [])
     for stem, paths in paired_paths.items():
         ext_map = {p.suffix.lower(): p for p in paths}
         source_path = _select_preferred_path(ext_map, source_exts)
@@ -433,14 +435,25 @@ def _process_paired_files(
 
         out_file.parent.mkdir(parents=True, exist_ok=True)
         with open(out_file, 'w', encoding='utf8') as pair_out:
-            for file_path in paths:
-                processor.process_and_write(
-                    file_path,
-                    root_path,
-                    pair_out,
-                )
+            if global_header:
+                pair_out.write(global_header)
+
+            if primary_path in size_excluded_set:
+                processor.write_max_size_placeholder(primary_path, root_path, pair_out)
                 if processing_bar:
-                    processing_bar.update(1)
+                    processing_bar.update(len(paths))
+            else:
+                for file_path in paths:
+                    processor.process_and_write(
+                        file_path,
+                        root_path,
+                        pair_out,
+                    )
+                    if processing_bar:
+                        processing_bar.update(1)
+
+            if global_footer:
+                pair_out.write(global_footer)
 
 
 class FileProcessor:
@@ -591,6 +604,11 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
     processor = FileProcessor(config, output_opts, dry_run=dry_run)
     total_excluded_folders = 0
     with outfile_ctx as outfile:
+        global_header = output_opts.get('global_header_template')
+        global_footer = output_opts.get('global_footer_template')
+        if not pairing_enabled and not dry_run and global_header:
+            outfile.write(global_header)
+
         for root_folder in root_folders:
             discovery_bar = _progress_bar(
                 enabled=progress_enabled,
@@ -616,15 +634,13 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
             )
             record_size_exclusions = bool(
                 output_opts.get('max_size_placeholder')
-            ) and not pairing_enabled and not dry_run
+            ) and not dry_run
 
             filtered_result = filter_file_paths(
                 all_paths,
                 filter_opts=filter_opts,
                 search_opts=search_opts,
                 root_path=root_path,
-                source_exts=source_exts,
-                header_exts=header_exts,
                 record_size_exclusions=record_size_exclusions,
             )
             if record_size_exclusions:
@@ -661,8 +677,11 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
 
             if pairing_enabled:
                 include_mismatched = pair_opts.get('include_mismatched', False)
+                pairing_inputs = filtered_paths
+                if record_size_exclusions:
+                    pairing_inputs = [*filtered_paths, *size_excluded]
                 paired_paths = _pair_files(
-                    filtered_paths,
+                    pairing_inputs,
                     source_exts,
                     header_exts,
                     include_mismatched,
@@ -681,6 +700,9 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
                     processor=processor,
                     processing_bar=processing_bar,
                     dry_run=dry_run,
+                    size_excluded=size_excluded,
+                    global_header=global_header,
+                    global_footer=global_footer,
                 )
             else:
                 if record_size_exclusions:
@@ -693,10 +715,6 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
                     ]
                 else:
                     ordered_paths = filtered_paths
-
-                global_header = output_opts.get('global_header_template')
-                if global_header:
-                    outfile.write(global_header)
 
                 for file_path in ordered_paths:
                     if record_size_exclusions and file_path in size_excluded_set:
@@ -718,11 +736,9 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
                         )
                     processing_bar.update(1)
 
-                global_footer = output_opts.get('global_footer_template')
-                if global_footer:
-                    outfile.write(global_footer)
-
             processing_bar.close()
+        if not pairing_enabled and not dry_run and global_footer:
+            outfile.write(global_footer)
     if dry_run:
         stats['excluded_folder_count'] = total_excluded_folders
         return stats

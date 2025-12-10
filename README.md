@@ -55,7 +55,9 @@ You can add a custom header at the beginning and a footer at the end of the
 entire combined file using `output.global_header_template` and
 `output.global_footer_template`. These options are useful for adding license
 information, project descriptions, or wrapping the output in a specific format
-(like XML or JSON). These options only apply when pairing is disabled.
+(like XML or JSON). The templates are written once around the combined output
+even when multiple `search.root_folders` are provided, and they also apply when
+pairing is enabled (one header and one footer per paired output file).
 
 ```yaml
 output:
@@ -166,8 +168,9 @@ When `filters.max_size_bytes` is set to a positive number, files that exceed
 the limit are skipped. To leave a marker in the combined output for those
 omitted files, set `output.max_size_placeholder` to a string such as
 `"[SKIPPED {{FILENAME}}]"`. The `{{FILENAME}}` placeholder is replaced with the
-file's path relative to the root folder. Placeholders are written only when
-pairing is disabled.
+file's path relative to the root folder. The placeholder is written for
+oversized files whether pairing is enabled or not; in pairing mode, it replaces
+the output for pairs whose primary file exceeds the limit.
 
 ### Inclusion Groups
 
