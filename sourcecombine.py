@@ -444,11 +444,16 @@ def _process_paired_files(
                     processing_bar.update(len(paths))
             else:
                 for file_path in paths:
-                    processor.process_and_write(
-                        file_path,
-                        root_path,
-                        pair_out,
-                    )
+                    if file_path in size_excluded_set:
+                        processor.write_max_size_placeholder(
+                            file_path, root_path, pair_out
+                        )
+                    else:
+                        processor.process_and_write(
+                            file_path,
+                            root_path,
+                            pair_out,
+                        )
                     if processing_bar:
                         processing_bar.update(1)
 
