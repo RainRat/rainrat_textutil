@@ -14,12 +14,20 @@ like all your files you need to refer to presented compactly.
 ## CLI usage
 
 ```bash
-python sourcecombine.py CONFIG_FILE [--dry-run]
+python sourcecombine.py CONFIG_FILE [--dry-run] [--verbose] [--clipboard]
 ```
 
 Combine files into one output or pair source and header files into separate
-outputs based on the options in `CONFIG_FILE`. Use `--dry-run` to preview the
-files and destination paths without writing any output.
+outputs based on the options in `CONFIG_FILE`.
+
+- `--dry-run` / `-d`: list matched files and planned outputs; do not write files.
+- `--verbose` / `-v`: enable DEBUG logging.
+- `--clipboard` / `-c`: write combined output to the clipboard instead of a file
+  (available only when `pairing.enabled` is `false`).
+
+Use `--dry-run` to preview the files and destination paths without writing any
+output. Clipboard mode is rejected when pairing is enabled to avoid ambiguity
+over which combined file should be copied.
 
 When pairing is enabled and `output.folder` is omitted, each resulting
 `.combined` file is written alongside its source files. Specify

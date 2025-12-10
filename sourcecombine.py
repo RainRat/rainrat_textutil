@@ -339,21 +339,52 @@ def _render_paired_filename(
     dir_value = _normalize_relative_dir(relative_dir)
     dir_slug = _slugify_relative_dir(dir_value)
 
-    return (
-        template.replace('{{STEM}}', stem)
-        .replace('{{SOURCE_EXT}}', source_ext)
-        .replace('{{HEADER_EXT}}', header_ext)
-        .replace('{{DIR}}', dir_value)
-        .replace('{{DIR_SLUG}}', dir_slug)
-    )
+    placeholders = {
+        'STEM': stem,
+        'SOURCE_EXT': source_ext,
+        'HEADER_EXT': header_ext,
+        'DIR': dir_value,
+        'DIR_SLUG': dir_slug,
+    }
+
+    def _to_format_placeholder(match):
+        name = match.group(1)
+        if name not in placeholders:
+            raise ValueError(
+                f"Unknown placeholder '{{{{{name}}}}}' in paired filename template"
+            )
+        return '{' + name + '}'
+
+    format_template = re.sub(r"{{(\w+)}}", _to_format_placeholder, template)
+
+    try:
+        rendered = format_template.format(**placeholders)
+    except KeyError as exc:  # pragma: no cover - defensive guard
+        missing = exc.args[0]
+        raise ValueError(
+            f"Missing value for placeholder '{{{{{missing}}}}}' in paired filename template"
+        ) from exc
+
+    return rendered
 
 
-def _group_paths_by_stem_suffix(file_paths):
+def _path_without_suffix(file_path, root_path):
+    try:
+        relative = file_path.relative_to(root_path)
+    except ValueError:
+        relative = file_path
+    return relative.with_suffix("")
+
+
+def _group_paths_by_stem_suffix(file_paths, *, root_path):
     """Group ``file_paths`` by stem and suffix for pairing logic."""
 
     grouped = {}
     for file_path in file_paths:
-        grouped.setdefault(file_path.stem, {})[file_path.suffix.lower()] = file_path
+        stem = _path_without_suffix(file_path, root_path).name
+        grouped.setdefault(stem, {}).setdefault(file_path.suffix.lower(), []).append(
+            file_path
+        )
     return grouped
 
 
@@ -362,16 +393,21 @@ def _select_preferred_path(ext_map, preferred_exts):
 
     for ext in preferred_exts:
         if ext in ext_map:
-            return ext_map[ext]
+            candidates = ext_map[ext]
+            if isinstance(candidates, list):
+                if len(candidates) == 1:
+                    return candidates[0]
+                return None
+            return candidates
     return None
 
 
-def _pair_files(filtered_paths, source_exts, header_exts, include_mismatched):
+def _pair_files(filtered_paths, source_exts, header_exts, include_mismatched, *, root_path):
     """Return a mapping of stems to paired file paths."""
 
-    file_map = _group_paths_by_stem_suffix(filtered_paths)
+    file_map = _group_paths_by_stem_suffix(filtered_paths, root_path=root_path)
     paired = {}
-    for stem, stem_files in file_map.items():
+    for pairing_key, stem_files in file_map.items():
         src = _select_preferred_path(stem_files, source_exts)
         hdr = _select_preferred_path(stem_files, header_exts)
         if src and hdr:
@@ -379,9 +415,13 @@ def _pair_files(filtered_paths, source_exts, header_exts, include_mismatched):
             for path in (src, hdr):
                 if path not in pair:
                     pair.append(path)
-            paired[stem] = pair
+            pair_key = _path_without_suffix(src or hdr, root_path)
+            paired[pair_key] = pair
         elif include_mismatched and (src or hdr):
-            paired[stem] = [p for p in (src or hdr,) if p]
+            lone = [p for p in (src or hdr,) if p]
+            if lone:
+                pair_key = _path_without_suffix(lone[0], root_path)
+                paired[pair_key] = lone
     return paired
 
 
@@ -403,7 +443,8 @@ def _process_paired_files(
     """Process paired files and write combined outputs."""
 
     size_excluded_set = set(size_excluded or [])
-    for stem, paths in paired_paths.items():
+    for pairing_key, paths in paired_paths.items():
+        stem = Path(pairing_key).name
         ext_map = {p.suffix.lower(): p for p in paths}
         source_path = _select_preferred_path(ext_map, source_exts)
         header_path = _select_preferred_path(ext_map, header_exts)
@@ -700,6 +741,7 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
                     source_exts,
                     header_exts,
                     include_mismatched,
+                    root_path=root_path,
                 )
                 template = (
                     output_opts.get('paired_filename_template')
