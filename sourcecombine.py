@@ -57,6 +57,7 @@ def _progress_bar(iterable=None, *, enabled=True, **kwargs):
     if not enabled or _tqdm is None:
         return _SilentProgress(iterable)
     return _tqdm(iterable, **kwargs)
+import utils
 from utils import (
     read_file_best_effort,
     process_content,
@@ -474,14 +475,17 @@ class FileProcessor:
     def _write_with_templates(self, outfile, content, relative_path):
         """Write ``content`` with configured header/footer templates."""
 
-        header_template = self.output_opts.get(
-            'header_template', f"--- {FILENAME_PLACEHOLDER} ---\n"
-        )
-        footer_template = self.output_opts.get(
-            'footer_template', f"\n--- end {FILENAME_PLACEHOLDER} ---\n"
-        )
+        if 'header_template' in self.output_opts:
+            header_template = self.output_opts.get('header_template')
+        else:
+            header_template = utils.DEFAULT_CONFIG['output']['header_template']
 
-        if header_template:
+        if 'footer_template' in self.output_opts:
+            footer_template = self.output_opts.get('footer_template')
+        else:
+            footer_template = utils.DEFAULT_CONFIG['output']['footer_template']
+
+        if header_template not in (None, ""):
             header_text = header_template.replace(
                 FILENAME_PLACEHOLDER, str(relative_path)
             )
@@ -489,7 +493,7 @@ class FileProcessor:
 
         outfile.write(content)
 
-        if footer_template:
+        if footer_template not in (None, ""):
             footer_text = footer_template.replace(
                 FILENAME_PLACEHOLDER, str(relative_path)
             )
@@ -565,6 +569,11 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
 
     if clipboard and pairing_enabled:
         raise InvalidConfigError("Clipboard mode is only available when pairing is disabled.")
+
+    if not pairing_enabled and not dry_run and not clipboard and output_path is None:
+        raise InvalidConfigError(
+            "'output.file' must be set when pairing is disabled and clipboard mode is off."
+        )
 
     out_folder = None
     if pairing_enabled and output_path:
