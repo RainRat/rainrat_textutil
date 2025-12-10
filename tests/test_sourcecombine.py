@@ -21,9 +21,37 @@ from sourcecombine import (
     should_include,
     _pair_files,
     _process_paired_files,
+    _progress_enabled,
     _render_paired_filename,
 )
 from utils import compact_whitespace
+
+
+def test_progress_enabled_behavior(monkeypatch, caplog):
+    monkeypatch.delenv("CI", raising=False)
+
+    with caplog.at_level(logging.INFO):
+        assert _progress_enabled(False) is True
+
+    with caplog.at_level(logging.DEBUG):
+        assert _progress_enabled(False) is False
+
+
+def test_progress_disabled_for_dry_run(monkeypatch, caplog):
+    monkeypatch.delenv("CI", raising=False)
+
+    with caplog.at_level(logging.INFO):
+        assert _progress_enabled(True) is False
+
+    with caplog.at_level(logging.DEBUG):
+        assert _progress_enabled(True) is False
+
+
+def test_progress_disabled_in_ci(monkeypatch, caplog):
+    monkeypatch.setenv("CI", "1")
+
+    with caplog.at_level(logging.INFO):
+        assert _progress_enabled(False) is False
 
 
 def test_render_paired_filename_placeholders():
@@ -376,6 +404,54 @@ def test_process_paired_files_writes_outputs(tmp_path):
     assert output_file.read_text(encoding="utf-8") == "srchdr"
 
 
+def test_collect_file_paths_counts_exclusions_correctly(tmp_path):
+    root = tmp_path / "project"
+    root.mkdir()
+
+    (root / "keep.txt").write_text("", encoding="utf-8")
+
+    build_dir = root / "build"
+    build_dir.mkdir()
+    (build_dir / "skip.bin").write_text("", encoding="utf-8")
+
+    src_dir = root / "src"
+    src_dir.mkdir()
+    (src_dir / "include.py").write_text("", encoding="utf-8")
+
+    nested_build = src_dir / "build"
+    nested_build.mkdir()
+    (nested_build / "ignored.o").write_text("", encoding="utf-8")
+
+    git_dir = root / ".git"
+    git_dir.mkdir()
+    (git_dir / "config").write_text("", encoding="utf-8")
+
+    recursive_collected, _, recursive_excluded = collect_file_paths(
+        root,
+        recursive=True,
+        exclude_folders=["build", ".git"],
+    )
+
+    assert recursive_excluded == 3
+    recursive_set = {path.relative_to(root) for path in recursive_collected}
+    assert Path("keep.txt") in recursive_set
+    assert Path("src/include.py") in recursive_set
+    assert Path("build/skip.bin") not in recursive_set
+    assert Path("src/build/ignored.o") not in recursive_set
+    assert Path(".git/config") not in recursive_set
+
+    nonrecursive_collected, _, nonrecursive_excluded = collect_file_paths(
+        root,
+        recursive=False,
+        exclude_folders=["build", ".git"],
+    )
+
+    assert nonrecursive_excluded == 2
+    assert {path.relative_to(root) for path in nonrecursive_collected} == {
+        Path("keep.txt")
+    }
+
+
 def test_collect_file_paths_prunes_excluded_folders(tmp_path):
     (tmp_path / "root.txt").write_text("", encoding="utf-8")
     src_dir = tmp_path / "src"
@@ -452,6 +528,35 @@ def test_apply_in_place_updates_files_and_output(tmp_path):
     expected = compact_whitespace(original)
     assert file_path.read_text(encoding="utf-8") == expected
     assert buffer.getvalue() == expected
+
+
+def test_apply_in_place_without_backups(tmp_path):
+    file_path = tmp_path / "nobackups.txt"
+    original = "line with   gaps"
+    file_path.write_text(original, encoding="utf-8")
+
+    output_path = tmp_path / "combined.txt"
+    config = {
+        "search": {"root_folders": [os.fspath(tmp_path)], "recursive": True},
+        "filters": {},
+        "processing": {
+            "apply_in_place": True,
+            "compact_whitespace": True,
+            "create_backups": False,
+        },
+        "output": {
+            "file": os.fspath(output_path),
+            "header_template": "",
+            "footer_template": "",
+        },
+    }
+
+    find_and_combine_files(config, output_path, dry_run=False)
+
+    expected = compact_whitespace(original)
+    assert file_path.read_text(encoding="utf-8") == expected
+    assert output_path.read_text(encoding="utf-8") == expected
+    assert not (tmp_path / "nobackups.txt.bak").exists()
 
 
 def test_apply_in_place_creates_backups_by_default(tmp_path):
