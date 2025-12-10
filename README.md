@@ -172,6 +172,9 @@ file's path relative to the root folder. The placeholder is written for
 oversized files whether pairing is enabled or not; in pairing mode, it replaces
 the output for pairs whose primary file exceeds the limit.
 
+Set `filters.skip_binary` to `true` to ignore files that look like binary data
+(for example, executables or images) even when they match your other filters.
+
 ### Inclusion Groups
 
 Enable selective opt-in filtering by configuring `filters.inclusion_groups`.

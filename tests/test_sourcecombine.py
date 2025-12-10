@@ -190,6 +190,26 @@ def test_should_include_respects_size_bounds(tmp_path):
     )
 
 
+def test_should_include_skips_binary_when_requested(tmp_path):
+    binary = tmp_path / "blob.bin"
+    binary.write_bytes(b"\x00\x01binary data")
+
+    text_file = tmp_path / "note.txt"
+    text_file.write_text("hello", encoding="utf-8")
+
+    filter_opts = {
+        "skip_binary": True,
+        "exclusions": {"filenames": []},
+        "inclusion_groups": {},
+        "min_size_bytes": 0,
+        "max_size_bytes": 0,
+    }
+    search_opts = {"effective_allowed_extensions": (".bin", ".txt")}
+
+    assert should_include(binary, Path(binary.name), filter_opts, search_opts) is False
+    assert should_include(text_file, Path(text_file.name), filter_opts, search_opts) is True
+
+
 def test_should_include_treats_zero_max_size_as_unlimited(tmp_path):
     big = tmp_path / "big.py"
     big.write_text("x" * 100, encoding="utf-8")

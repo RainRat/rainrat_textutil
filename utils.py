@@ -24,6 +24,7 @@ DEFAULT_CONFIG = {
         'level': 'INFO',
     },
     'filters': {
+        'skip_binary': False,
         'exclusions': {
             'filenames': [],
             'folders': [],
@@ -112,7 +113,10 @@ def read_file_best_effort(file_path):
 
     try:
         with open(file_path, 'r', encoding='utf-8-sig') as f:
-            return _strip_bom(f.read())
+            text = f.read()
+            if '\x00' in text:
+                raise UnicodeError("Detected NUL bytes; retrying with alternate encodings")
+            return text
     except UnicodeError:
         pass
     except FileNotFoundError:
@@ -129,12 +133,15 @@ def read_file_best_effort(file_path):
     best_guess = from_bytes(raw_bytes).best()
     if best_guess and best_guess.encoding:
         encoding = best_guess.encoding
-        if (
-            encoding.lower().startswith('utf_16')
-            and b'\x00' not in raw_bytes
-            and len(raw_bytes) < 6
-        ):
-            encoding = 'latin-1'
+        if encoding.lower().startswith('utf_16'):
+            has_bom = raw_bytes.startswith((b'\xff\xfe', b'\xfe\xff'))
+            has_nulls = b'\x00' in raw_bytes
+            if not has_bom:
+                if not has_nulls and len(raw_bytes) < 6:
+                    # Guard against spurious UTF-16 guesses on very small files
+                    encoding = 'latin-1'
+                else:
+                    encoding = 'utf-16'
         try:
             return _strip_bom(
                 raw_bytes.decode(encoding, errors='replace')
@@ -149,6 +156,27 @@ def read_file_best_effort(file_path):
         file_path,
     )
     return _strip_bom(raw_bytes.decode('utf-8', errors='replace'))
+
+
+def _looks_binary(path: Path, sample_size: int = 4096) -> bool:
+    """Return ``True`` when ``path`` appears to contain binary data."""
+
+    try:
+        sample = Path(path).read_bytes()[:sample_size]
+    except OSError:
+        return False
+
+    if not sample:
+        return False
+
+    if b'\x00' in sample:
+        return True
+
+    allowed_control_bytes = {9, 10, 12, 13}
+    non_text_control = sum(
+        1 for byte in sample if byte < 0x20 and byte not in allowed_control_bytes
+    )
+    return (non_text_control / len(sample)) > 0.30
 
 
 def compact_whitespace(text, *, groups=None):
@@ -267,6 +295,10 @@ def _validate_filters_section(config):
             raise InvalidConfigError(
                 "filters.max_size_bytes must be a non-negative integer"
             )
+
+    skip_binary = filters.get('skip_binary')
+    if skip_binary is not None and not isinstance(skip_binary, bool):
+        raise InvalidConfigError("filters.skip_binary must be a boolean value")
 
     exclusions_conf = filters.get('exclusions', {})
     if isinstance(exclusions_conf, dict):
