@@ -381,7 +381,16 @@ def _group_paths_by_stem_suffix(file_paths, *, root_path):
 
     grouped = {}
     for file_path in file_paths:
-        stem = _path_without_suffix(file_path, root_path).name
+        try:
+            relative = file_path.relative_to(root_path)
+        except ValueError:
+            relative = None
+
+        stem_path = (relative or file_path).with_suffix("")
+        if relative is not None and len(stem_path.parts) > 1:
+            stem_path = Path(*stem_path.parts[1:])
+
+        stem = stem_path
         grouped.setdefault(stem, {}).setdefault(file_path.suffix.lower(), []).append(
             file_path
         )

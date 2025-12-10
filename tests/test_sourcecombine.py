@@ -446,7 +446,7 @@ def test_pair_files_respects_relative_directories(tmp_path):
         root_path=root,
     )
 
-    assert result == {}
+    assert result == {Path("src/feature/main"): [feature_src, feature_hdr]}
 
 
 def test_pair_files_pairs_unique_cross_directory_files(tmp_path):
@@ -471,6 +471,32 @@ def test_pair_files_pairs_unique_cross_directory_files(tmp_path):
     )
 
     assert result == {Path("src/utils"): [source, header]}
+
+
+def test_pair_files_handles_colliding_names_in_separate_modules(tmp_path):
+    root = tmp_path
+
+    foo_src = root / "src" / "foo" / "util.cpp"
+    foo_hdr = root / "include" / "foo" / "util.h"
+    bar_src = root / "src" / "bar" / "util.cpp"
+    bar_hdr = root / "include" / "bar" / "util.h"
+
+    for path in (foo_src, foo_hdr, bar_src, bar_hdr):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("", encoding="utf-8")
+
+    result = _pair_files(
+        [foo_src, foo_hdr, bar_src, bar_hdr],
+        (".cpp",),
+        (".h",),
+        include_mismatched=False,
+        root_path=root,
+    )
+
+    assert result == {
+        Path("src/foo/util"): [foo_src, foo_hdr],
+        Path("src/bar/util"): [bar_src, bar_hdr],
+    }
 
 
 def test_process_paired_files_writes_outputs(tmp_path):
