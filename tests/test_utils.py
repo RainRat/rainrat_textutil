@@ -318,9 +318,17 @@ def test_load_and_validate_config_rejects_invalid_size_filters(tmp_path, field, 
 
 @pytest.mark.parametrize(
     "field",
-    ["header_template", "footer_template", "max_size_placeholder"],
+    [
+        "file",
+        "folder",
+        "header_template",
+        "footer_template",
+        "global_header_template",
+        "global_footer_template",
+        "max_size_placeholder",
+    ],
 )
-def test_load_and_validate_config_rejects_non_string_output_templates(tmp_path, field):
+def test_load_and_validate_config_rejects_non_string_output_fields(tmp_path, field):
     config_path = _write_config(
         tmp_path,
         {

@@ -433,43 +433,22 @@ def _validate_output_section(config):
     if not isinstance(output_conf, dict):
         return
 
-    file_name = output_conf.get('file')
-    if file_name is not None and not isinstance(file_name, str):
-        raise InvalidConfigError("'output.file' must be a string or null.")
+    string_fields = [
+        'file',
+        'folder',
+        'header_template',
+        'footer_template',
+        'global_header_template',
+        'global_footer_template',
+        'max_size_placeholder',
+    ]
 
-    folder = output_conf.get('folder')
-    if folder is not None and not isinstance(folder, str):
-        raise InvalidConfigError("'output.folder' must be a string or null.")
-
-    header_template = output_conf.get('header_template')
-    if header_template is not None and not isinstance(header_template, str):
-        raise InvalidConfigError(
-            "'output.header_template' must be a string or null."
-        )
-
-    footer_template = output_conf.get('footer_template')
-    if footer_template is not None and not isinstance(footer_template, str):
-        raise InvalidConfigError(
-            "'output.footer_template' must be a string or null."
-        )
-
-    global_header_template = output_conf.get('global_header_template')
-    if global_header_template is not None and not isinstance(global_header_template, str):
-        raise InvalidConfigError(
-            "'output.global_header_template' must be a string or null."
-        )
-
-    global_footer_template = output_conf.get('global_footer_template')
-    if global_footer_template is not None and not isinstance(global_footer_template, str):
-        raise InvalidConfigError(
-            "'output.global_footer_template' must be a string or null."
-        )
+    for field in string_fields:
+        value = output_conf.get(field)
+        if value is not None and not isinstance(value, str):
+            raise InvalidConfigError(f"'output.{field}' must be a string or null.")
 
     placeholder = output_conf.get('max_size_placeholder')
-    if placeholder is not None and not isinstance(placeholder, str):
-        raise InvalidConfigError(
-            "'output.max_size_placeholder' must be a string or null."
-        )
 
     if placeholder and FILENAME_PLACEHOLDER not in placeholder:
         logging.warning(
