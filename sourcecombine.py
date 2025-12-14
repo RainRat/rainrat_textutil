@@ -317,31 +317,18 @@ def _get_suffix(path):
     return path.suffix if path else ''
 
 
-def _normalize_relative_dir(relative_dir: PurePath | None):
-    """Normalize ``relative_dir`` to a POSIX-style string for template rendering."""
-
-    if relative_dir is None:
-        return '.'
-
-    if not isinstance(relative_dir, PurePath):
-        raise TypeError("relative_dir must be a pathlib.PurePath or None")
-
-    dir_value = relative_dir.as_posix() or '.'
-    return dir_value or '.'
-
-
 def _render_paired_filename(
     template: str,
     stem: str,
     source_path: Path | None,
     header_path: Path | None,
-    relative_dir: PurePath | None = None,
+    relative_dir: PurePath,
 ) -> str:
     """Render the paired filename template with placeholders."""
 
     source_ext = _get_suffix(source_path)
     header_ext = _get_suffix(header_path)
-    dir_value = _normalize_relative_dir(relative_dir)
+    dir_value = relative_dir.as_posix()
     dir_slug = _slugify_relative_dir(dir_value)
 
     placeholders = {
