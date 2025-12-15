@@ -87,8 +87,6 @@ def _normalize_patterns(patterns):
         return ()
     if isinstance(patterns, set):
         return tuple(sorted(patterns))
-    if isinstance(patterns, (list, tuple)):
-        return tuple(patterns)
     return tuple(patterns)
 
 
