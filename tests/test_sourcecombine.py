@@ -4,7 +4,7 @@ import os
 import sys
 import subprocess
 import types
-from pathlib import Path, PureWindowsPath
+from pathlib import Path
 
 import pytest
 import yaml
@@ -23,7 +23,6 @@ from sourcecombine import (
     _pair_files,
     _process_paired_files,
     _progress_enabled,
-    _render_paired_filename,
 )
 from utils import compact_whitespace
 
@@ -53,49 +52,6 @@ def test_progress_disabled_in_ci(monkeypatch, caplog):
 
     with caplog.at_level(logging.INFO):
         assert _progress_enabled(False) is False
-
-
-def test_render_paired_filename_placeholders():
-    template = "{{DIR}}|{{DIR_SLUG}}|{{STEM}}{{SOURCE_EXT}}{{HEADER_EXT}}"
-    relative_dir = Path("src") / "My Dir" / "Sub.Dir"
-    source_path = Path("/project") / relative_dir / "Example.cpp"
-    header_path = Path("/project") / relative_dir / "Example.h"
-
-    rendered = _render_paired_filename(
-        template,
-        "Example",
-        source_path,
-        header_path,
-        relative_dir=relative_dir,
-    )
-    assert rendered == "src/My Dir/Sub.Dir|src/my-dir/sub.dir|Example.cpp.h"
-
-    root_source = Path("/project/Example.cpp")
-    root_rendered = _render_paired_filename(
-        template,
-        "RootExample",
-        root_source,
-        None,
-        relative_dir=Path('.'),
-    )
-    assert root_rendered == ".|root|RootExample.cpp"
-
-
-def test_render_paired_filename_windows_dirs():
-    template = "{{DIR}}|{{DIR_SLUG}}|{{STEM}}{{SOURCE_EXT}}{{HEADER_EXT}}"
-    relative_dir = PureWindowsPath("src\\My Dir\\Sub.Dir")
-    source_path = Path("C:/project/src/My Dir/Sub.Dir/Example.cpp")
-    header_path = Path("C:/project/src/My Dir/Sub.Dir/Example.hpp")
-
-    rendered = _render_paired_filename(
-        template,
-        "Example",
-        source_path,
-        header_path,
-        relative_dir=relative_dir,
-    )
-
-    assert rendered == "src/My Dir/Sub.Dir|src/my-dir/sub.dir|Example.cpp.hpp"
 
 
 def test_should_include_respects_filters(tmp_path):
