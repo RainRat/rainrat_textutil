@@ -545,15 +545,12 @@ class FileProcessor:
     def _write_with_templates(self, outfile, content, relative_path):
         """Write ``content`` with configured header/footer templates."""
 
-        if 'header_template' in self.output_opts:
-            header_template = self.output_opts.get('header_template')
-        else:
-            header_template = utils.DEFAULT_CONFIG['output']['header_template']
-
-        if 'footer_template' in self.output_opts:
-            footer_template = self.output_opts.get('footer_template')
-        else:
-            footer_template = utils.DEFAULT_CONFIG['output']['footer_template']
+        header_template = self.output_opts.get(
+            'header_template', utils.DEFAULT_CONFIG['output']['header_template']
+        )
+        footer_template = self.output_opts.get(
+            'footer_template', utils.DEFAULT_CONFIG['output']['footer_template']
+        )
 
         if header_template not in (None, ""):
             header_text = header_template.replace(

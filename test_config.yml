@@ -1,0 +1,5 @@
+
+search:
+  root_folders: ['.']
+output:
+  header_template: null
