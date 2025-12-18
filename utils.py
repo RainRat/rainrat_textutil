@@ -163,7 +163,8 @@ def _looks_binary(path: Path, sample_size: int = 4096) -> bool:
     """Return ``True`` when ``path`` appears to contain binary data."""
 
     try:
-        sample = Path(path).read_bytes()[:sample_size]
+        with open(path, 'rb') as f:
+            sample = f.read(sample_size)
     except OSError:
         return False
 
