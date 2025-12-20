@@ -109,9 +109,6 @@ def read_file_best_effort(file_path):
     a permissive UTF-8 decode with replacements.
     """
 
-    def _strip_bom(text):
-        return text.lstrip('\ufeff')
-
     try:
         with open(file_path, 'r', encoding='utf-8-sig') as f:
             text = f.read()
@@ -144,9 +141,7 @@ def read_file_best_effort(file_path):
                 else:
                     encoding = 'utf-16'
         try:
-            return _strip_bom(
-                raw_bytes.decode(encoding, errors='replace')
-            )
+            return raw_bytes.decode(encoding, errors='replace').lstrip('\ufeff')
         except LookupError:
             logging.warning(
                 "Detected encoding '%s' is not supported.", best_guess.encoding
@@ -156,7 +151,7 @@ def read_file_best_effort(file_path):
         "Could not detect encoding for %s; decoding with UTF-8 replacements.",
         file_path,
     )
-    return _strip_bom(raw_bytes.decode('utf-8', errors='replace'))
+    return raw_bytes.decode('utf-8', errors='replace').lstrip('\ufeff')
 
 
 def _looks_binary(path: Path, sample_size: int = 4096) -> bool:
