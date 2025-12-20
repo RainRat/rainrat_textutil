@@ -134,7 +134,7 @@ def read_file_best_effort(file_path):
     best_guess = from_bytes(raw_bytes).best()
     if best_guess and best_guess.encoding:
         encoding = best_guess.encoding
-        if encoding.lower().startswith('utf_16'):
+        if encoding.lower().replace('-', '_').startswith('utf_16'):
             has_bom = raw_bytes.startswith((b'\xff\xfe', b'\xfe\xff'))
             has_nulls = b'\x00' in raw_bytes
             if not has_bom:
