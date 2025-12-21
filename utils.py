@@ -117,8 +117,6 @@ def read_file_best_effort(file_path):
             return text
     except UnicodeError:
         pass
-    except FileNotFoundError:
-        raise
 
     try:
         raw_bytes = Path(file_path).read_bytes()
