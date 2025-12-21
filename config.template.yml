@@ -55,16 +55,15 @@ output:
   footer_template: "\n--- end {{FILENAME}} ---\n"
 
   # Template written at the very beginning of the combined output file.
-  # Only applies when pairing is disabled.
+  # In pairing mode, this is written to the start of each paired output file.
   global_header_template: null
 
   # Template written at the very end of the combined output file.
-  # Only applies when pairing is disabled.
+  # In pairing mode, this is written to the end of each paired output file.
   global_footer_template: null
 
   # Optional placeholder to write when a file is skipped because it exceeds
   # filters.max_size_bytes. The string may use the {{FILENAME}} placeholder.
-  # Only applies when pairing is disabled.
   max_size_placeholder: null
 
 # --- File Filtering ---
