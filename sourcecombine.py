@@ -393,11 +393,9 @@ def _select_preferred_path(ext_map, preferred_exts):
     for ext in preferred_exts:
         if ext in ext_map:
             candidates = ext_map[ext]
-            if isinstance(candidates, list):
-                if len(candidates) == 1:
-                    return candidates[0]
-                return None
-            return candidates
+            if len(candidates) == 1:
+                return candidates[0]
+            return None
     return None
 
 
@@ -444,7 +442,7 @@ def _process_paired_files(
     size_excluded_set = set(size_excluded or [])
     for pairing_key, paths in paired_paths.items():
         stem = Path(pairing_key).name
-        ext_map = {p.suffix.lower(): p for p in paths}
+        ext_map = {p.suffix.lower(): [p] for p in paths}
         source_path = _select_preferred_path(ext_map, source_exts)
         header_path = _select_preferred_path(ext_map, header_exts)
 
