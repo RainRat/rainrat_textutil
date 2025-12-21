@@ -2,6 +2,15 @@
 
 Currently this repo contains only SourceCombine, but new tools will be added.
 
+## Installation
+
+1. Install Python 3 (3.8 or newer).
+2. Install the required libraries:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
 ## SourceCombine
 
 A simple file-combining utility driven by YAML configuration files.
