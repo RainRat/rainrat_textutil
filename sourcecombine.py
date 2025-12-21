@@ -349,7 +349,7 @@ def _render_paired_filename(
 
     try:
         rendered = format_template.format(**placeholders)
-    except KeyError as exc:  # pragma: no cover - defensive guard
+    except KeyError as exc:
         missing = exc.args[0]
         raise ValueError(
             f"Missing value for placeholder '{{{{{missing}}}}}' in paired filename template"
