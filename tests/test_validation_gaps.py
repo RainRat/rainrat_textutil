@@ -78,3 +78,35 @@ def test_apply_line_regex_replacements_block_at_eof():
     # The function should detect the end of the block at EOF and append the replacement.
     result = apply_line_regex_replacements(text, rules)
     assert result == "line1\nreplaced"
+
+def test_validate_regex_replacements_invalid_regex(tmp_path):
+    """Ensure InvalidConfigError is raised for invalid regex in regex_replacements."""
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "processing": {
+                "regex_replacements": [
+                    {"pattern": "[invalid_regex", "replacement": "test"}
+                ]
+            }
+        }
+    )
+    with pytest.raises(InvalidConfigError, match="Invalid regex pattern in processing.regex_replacements\\[0\\]"):
+        load_and_validate_config(config_path)
+
+def test_validate_line_regex_replacements_invalid_regex(tmp_path):
+    """Ensure InvalidConfigError is raised for invalid regex in line_regex_replacements."""
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "processing": {
+                "line_regex_replacements": [
+                    {"pattern": "(unclosed group", "replacement": "test"}
+                ]
+            }
+        }
+    )
+    with pytest.raises(InvalidConfigError, match="Invalid regex pattern in processing.line_regex_replacements\\[0\\]"):
+        load_and_validate_config(config_path)

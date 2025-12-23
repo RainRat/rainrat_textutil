@@ -245,6 +245,19 @@ def _validate_compact_whitespace_groups(groups, *, context):
                 f"Values in '{context}' must be true, false, or null."
             )
 
+
+def _validate_regex_list(rules, context_prefix, source):
+    """Validate a list of regex replacement rules."""
+    if isinstance(rules, list):
+        for i, rule in enumerate(rules):
+            if isinstance(rule, dict) and 'pattern' in rule:
+                validate_regex_pattern(
+                    rule['pattern'],
+                    context=f"{context_prefix}[{i}]",
+                    source=source,
+                )
+
+
 def _replace_line_block(text, regex, replacement=None):
     """Collapse blocks of lines matching ``regex`` into ``replacement``.
 
@@ -366,26 +379,18 @@ def _validate_processing_section(config, *, source=None):
     )
 
     # Validate regex patterns in regex_replacements
-    regex_replacements = processing_conf.get('regex_replacements', [])
-    if isinstance(regex_replacements, list):
-        for i, rule in enumerate(regex_replacements):
-            if isinstance(rule, dict) and 'pattern' in rule:
-                validate_regex_pattern(
-                    rule['pattern'],
-                    context=f"processing.regex_replacements[{i}]",
-                    source=source,
-                )
+    _validate_regex_list(
+        processing_conf.get('regex_replacements'),
+        "processing.regex_replacements",
+        source,
+    )
 
     # Validate regex patterns in line_regex_replacements
-    line_regex_replacements = processing_conf.get('line_regex_replacements', [])
-    if isinstance(line_regex_replacements, list):
-        for i, rule in enumerate(line_regex_replacements):
-            if isinstance(rule, dict) and 'pattern' in rule:
-                validate_regex_pattern(
-                    rule['pattern'],
-                    context=f"processing.line_regex_replacements[{i}]",
-                    source=source,
-                )
+    _validate_regex_list(
+        processing_conf.get('line_regex_replacements'),
+        "processing.line_regex_replacements",
+        source,
+    )
 
     if 'in_place_groups' in processing_conf:
         raise InvalidConfigError(
