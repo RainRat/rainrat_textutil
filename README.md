@@ -1,47 +1,55 @@
-# RainRat's Text Utilities
+# SourceCombine
 
-Currently this repo contains only SourceCombine, but new tools will be added.
+**SourceCombine** is a flexible command-line tool for merging multiple text files into a single output or organized pairs. It uses a YAML configuration file to define rules for file discovery, filtering, and text processing.
+
+Whether you are preparing files for printing, creating context for Large Language Models (LLMs), or simply want a compact archive of your code, SourceCombine streamlines the process.
+
+## Common Use Cases
+
+*   **LLM Context:** Combine your entire project's source code into a single file to provide comprehensive context for AI assistants.
+*   **Code Archiving:** Create a snapshot of your source files for documentation or backup purposes.
+*   **Code Reviews:** Aggregate dispersed files into one document to easily review or print them.
+*   **Preprocessing:** Apply regex replacements or strip comments across multiple files in bulk.
+*   **C/C++ Pairing:** Automatically pair source files (`.cpp`) with their headers (`.h`) for organized distribution.
 
 ## Installation
 
-1. Install Python 3 (3.8 or newer).
-2. Install the required libraries:
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/RainRat/TextUtilities.git
+    cd TextUtilities
+    ```
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+2.  **Install Python 3** (version 3.8 or newer).
 
-## SourceCombine
+3.  **Install required libraries:**
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-A simple file-combining utility driven by YAML configuration files.
-It can collect source files from multiple directories, apply filtering and text-processing
-rules, and output a single consolidated text file or paired files.
+## Usage
 
-Whether you are preparing files for printing, for providing to an LLM, or just
-like all your files you need to refer to presented compactly.
-
-## CLI usage
+Run the script from the command line, providing a YAML configuration file:
 
 ```bash
 python sourcecombine.py CONFIG_FILE [--output OUTPUT] [--dry-run] [--verbose] [--clipboard]
 ```
 
-Combine files into one output or pair source and header files into separate
-outputs based on the options in `CONFIG_FILE`.
+### Options
 
-- `--output` / `-o`: override the configured output path.
-- `--dry-run` / `-d`: list matched files and planned outputs; do not write files.
-- `--verbose` / `-v`: enable DEBUG logging.
-- `--clipboard` / `-c`: write combined output to the clipboard instead of a file
-  (available only when `pairing.enabled` is `false`).
+*   `--output` / `-o`: Override the output path specified in the configuration.
+*   `--dry-run` / `-d`: List matched files and planned outputs without writing any files. Useful for previewing changes.
+*   `--verbose` / `-v`: Enable verbose output (DEBUG level) to troubleshoot configuration issues.
+*   `--clipboard` / `-c`: Copy the combined output directly to the clipboard instead of writing to a file.
+    *   *Note: Clipboard mode is not available when file pairing is enabled.*
 
-Use `--dry-run` to preview the files and destination paths without writing any
-output. Clipboard mode is rejected when pairing is enabled to avoid ambiguity
-over which combined file should be copied.
+### Example
 
-When pairing is enabled and `output.folder` is omitted, each resulting
-`.combined` file is written alongside its source files. Specify
-`output.folder` (or use `-o`) to collect them in a separate directory.
+```bash
+python sourcecombine.py my_config.yml --dry-run
+```
+
+This command will simulate the process defined in `my_config.yml` and show you exactly which files would be included and where they would be written.
 
 ## Customizing file boundaries
 
