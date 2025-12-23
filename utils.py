@@ -271,6 +271,19 @@ def _replace_line_block(text, regex, replacement=None):
     return "\n".join(out_lines)
 
 
+def _validate_glob_list(filenames, context_prefix):
+    """Validate and sanitize a list of glob patterns in place."""
+    if not isinstance(filenames, list):
+        return
+
+    for i, pattern in enumerate(filenames):
+        sanitized = validate_glob_pattern(
+            pattern, context=f"{context_prefix}[{i}]"
+        )
+        if sanitized != pattern:
+            filenames[i] = sanitized
+
+
 def _validate_filters_section(config):
     """Validate the 'filters' section of the configuration."""
     filters = config.get('filters')
@@ -298,13 +311,7 @@ def _validate_filters_section(config):
     exclusions_conf = filters.get('exclusions', {})
     if isinstance(exclusions_conf, dict):
         filenames = exclusions_conf.get('filenames', [])
-        if isinstance(filenames, list):
-            for i, pattern in enumerate(filenames):
-                sanitized = validate_glob_pattern(
-                    pattern, context=f"filters.exclusions.filenames[{i}]"
-                )
-                if sanitized != pattern:
-                    filenames[i] = sanitized
+        _validate_glob_list(filenames, "filters.exclusions.filenames")
 
     groups = filters.get('inclusion_groups', {})
     if isinstance(groups, dict):
@@ -313,14 +320,9 @@ def _validate_filters_section(config):
                 group.setdefault('enabled', False)
                 group.setdefault('filenames', [])
                 filenames = group.get('filenames', [])
-                if isinstance(filenames, list):
-                    for i, pattern in enumerate(filenames):
-                        sanitized = validate_glob_pattern(
-                            pattern,
-                            context=f"filters.inclusion_groups.{group_name}.filenames[{i}]",
-                        )
-                        if sanitized != pattern:
-                            filenames[i] = sanitized
+                _validate_glob_list(
+                    filenames, f"filters.inclusion_groups.{group_name}.filenames"
+                )
 
     search_conf = config.get('search')
     if not isinstance(search_conf, dict):
