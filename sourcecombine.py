@@ -309,12 +309,6 @@ def _slugify_relative_dir(relative_dir):
     return '/'.join(slugged_parts)
 
 
-def _get_suffix(path):
-    """Safely return the suffix for ``path`` or an empty string."""
-
-    return path.suffix if path else ''
-
-
 def _render_paired_filename(
     template: str,
     stem: str,
@@ -324,8 +318,8 @@ def _render_paired_filename(
 ) -> str:
     """Render the paired filename template with placeholders."""
 
-    source_ext = _get_suffix(source_path)
-    header_ext = _get_suffix(header_path)
+    source_ext = source_path.suffix if source_path else ''
+    header_ext = header_path.suffix if header_path else ''
     dir_value = relative_dir.as_posix()
     dir_slug = _slugify_relative_dir(dir_value)
 
