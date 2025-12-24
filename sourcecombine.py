@@ -813,7 +813,8 @@ def main():
     )
     parser.add_argument(
         "config_file",
-        help="Path to the YAML configuration file (e.g., config.yml).",
+        nargs="?",
+        help="Path to the YAML configuration file (e.g., config.yml). Optional if a default config exists.",
     )
     parser.add_argument(
         "--dry-run",
@@ -846,18 +847,34 @@ def main():
     prelim_level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(level=prelim_level, format='%(levelname)s: %(message)s')
 
+    config_path = args.config_file
+    if not config_path:
+        # Auto-discovery
+        defaults = ['sourcecombine.yml', 'sourcecombine.yaml', 'config.yml', 'config.yaml']
+        for default in defaults:
+            if Path(default).is_file():
+                config_path = default
+                logging.info("Auto-discovered config file: %s", config_path)
+                break
+
+        if not config_path:
+            parser.error(
+                "No config file specified and no default config found in current directory "
+                f"(checked: {', '.join(defaults)})."
+            )
+
     try:
         nested_required = {
             'search': ['root_folders'],
         }
         config = load_and_validate_config(
-            args.config_file, nested_required=nested_required
+            config_path, nested_required=nested_required
         )
     except ConfigNotFoundError as e:
         logging.error(
             "Could not find the configuration file '%s'. "
             "Check the filename and your current working directory: %s",
-            args.config_file,
+            config_path,
             Path.cwd(),
         )
         logging.debug("Missing configuration details:", exc_info=True)
