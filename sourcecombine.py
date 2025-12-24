@@ -820,24 +820,24 @@ def main():
         "--dry-run",
         "-d",
         action="store_true",
-        help="List files and planned outputs without writing files",
+        help="Preview the file list and output paths without making any changes.",
     )
     parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
-        help="Enable verbose output (DEBUG level)",
+        help="Show detailed debug logs to help troubleshoot configuration issues.",
     )
     parser.add_argument(
         "--clipboard",
         "-c",
         action="store_true",
-        help="Copy combined output to the system clipboard instead of a file",
+        help="Copy the combined result directly to your clipboard (Single File mode only).",
     )
     parser.add_argument(
         "--output",
         "-o",
-        help="Override output file or folder from config",
+        help="Save the result to a specific file or folder, overriding the configuration.",
     )
     args = parser.parse_args()
 
