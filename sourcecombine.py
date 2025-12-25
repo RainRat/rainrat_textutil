@@ -833,6 +833,11 @@ def main():
         "-o",
         help="Save the result to a specific file or folder, overriding the configuration.",
     )
+    parser.add_argument(
+        "--init",
+        action="store_true",
+        help="Generate a default configuration file (sourcecombine.yml) in the current directory.",
+    )
     args = parser.parse_args()
 
     # Configure logging *immediately* based on -v.
@@ -840,6 +845,33 @@ def main():
     # is called, preventing a race condition that locks the log level at WARNING.
     prelim_level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(level=prelim_level, format='%(levelname)s: %(message)s')
+
+    if args.init:
+        target_config = Path("sourcecombine.yml")
+        if target_config.exists():
+            logging.error("Config file '%s' already exists. Aborting init.", target_config)
+            sys.exit(1)
+
+        template_path = Path(__file__).resolve().parent / "config.template.yml"
+        if template_path.exists():
+            try:
+                shutil.copy2(template_path, target_config)
+                logging.info("Created default configuration at %s", target_config.resolve())
+            except OSError as exc:
+                logging.error("Failed to copy template: %s", exc)
+                sys.exit(1)
+        else:
+            logging.warning("Template not found at %s; creating minimal config.", template_path)
+            try:
+                with open(target_config, 'w', encoding='utf-8') as f:
+                    import yaml
+                    f.write("# Default SourceCombine Configuration\n")
+                    yaml.dump(utils.DEFAULT_CONFIG, f, sort_keys=False)
+                logging.info("Created minimal configuration at %s", target_config.resolve())
+            except OSError as exc:
+                logging.error("Failed to write config: %s", exc)
+                sys.exit(1)
+        sys.exit(0)
 
     config_path = args.config_file
     if not config_path:
