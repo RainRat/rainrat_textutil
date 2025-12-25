@@ -59,7 +59,7 @@ def test_process_content_applies_all_options(tmp_path):
         "compact_whitespace": True,
     }
     result = process_content(text, options)
-    assert result == "first\n\nline 2"
+    assert result == "first\n\nline 2\n"
 
 
 def test_read_file_best_effort_handles_various_encodings(tmp_path):

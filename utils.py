@@ -281,7 +281,11 @@ def _replace_line_block(text, regex, replacement=None):
     if in_block:
         if replacement is not None:
             out_lines.append(replacement)
-    return "\n".join(out_lines)
+
+    result = "\n".join(out_lines)
+    if text.endswith("\n"):
+        result += "\n"
+    return result
 
 
 def _validate_glob_list(filenames, context_prefix):
