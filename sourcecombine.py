@@ -800,38 +800,37 @@ def main():
     """Main function to parse arguments and run the tool."""
     parser = argparse.ArgumentParser(
         description=(
-            "Combine files into one output or pair source/header files into "
-            "separate outputs based on a YAML configuration. Use --dry-run "
-            "to preview the files and destinations without writing them."
+            "Combine source code files into a single document or organized pairs. "
+            "Great for LLM context, documentation, or code review."
         )
     )
     parser.add_argument(
         "config_file",
         nargs="?",
-        help="Path to the YAML configuration file (e.g., config.yml). Optional if a default config exists.",
+        help="The YAML file with your settings (e.g., config.yml). If skipped, we'll look for default files like 'sourcecombine.yml'.",
     )
     parser.add_argument(
         "--dry-run",
         "-d",
         action="store_true",
-        help="Preview the file list and output paths without making any changes.",
+        help="See what files will be processed without actually writing anything.",
     )
     parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
-        help="Show detailed debug logs to help troubleshoot configuration issues.",
+        help="Show extra details to help solve problems.",
     )
     parser.add_argument(
         "--clipboard",
         "-c",
         action="store_true",
-        help="Copy the combined result directly to your clipboard (Single File mode only).",
+        help="Copy the result to your clipboard instead of saving to a file. (Single-file mode only)",
     )
     parser.add_argument(
         "--output",
         "-o",
-        help="Save the result to a specific file or folder, overriding the configuration.",
+        help="Save to a specific file or folder, ignoring the setting in your config file.",
     )
     parser.add_argument(
         "--init",
