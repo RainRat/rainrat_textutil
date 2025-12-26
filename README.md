@@ -42,6 +42,7 @@ python sourcecombine.py CONFIG_FILE [--output OUTPUT] [--dry-run] [--verbose] [-
 *   `--verbose` / `-v`: Enable verbose output (DEBUG level) to troubleshoot configuration issues.
 *   `--clipboard` / `-c`: Copy the combined output directly to the clipboard instead of writing to a file.
     *   *Note: Clipboard mode is not available when file pairing is enabled.*
+*   `--init`: Generate a default configuration file (`sourcecombine.yml`) in the current directory.
 
 ### Example
 
