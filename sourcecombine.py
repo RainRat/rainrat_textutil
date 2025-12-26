@@ -572,7 +572,7 @@ class FileProcessor:
         backup_path = Path(f"{file_path}.bak")
         try:
             shutil.copy2(file_path, backup_path)
-        except OSError as exc:  # pragma: no cover - defensive safeguard
+        except OSError as exc:
             raise InvalidConfigError(
                 f"Failed to create backup for '{file_path}': {exc}"
             ) from exc
