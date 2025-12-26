@@ -64,6 +64,7 @@ from utils import (
     process_content,
     load_and_validate_config,
     add_line_numbers,
+    estimate_tokens,
     ConfigNotFoundError,
     InvalidConfigError,
     FILENAME_PLACEHOLDER,
@@ -578,10 +579,16 @@ class FileProcessor:
             ) from exc
 
     def process_and_write(self, file_path, root_path, outfile):
-        """Read, process, and write a single file."""
+        """Read, process, and write a single file.
+
+        Returns
+        -------
+        tuple[int, bool]
+            A tuple containing (token_count, is_approximate) for the written content.
+        """
         if self.dry_run:
             logging.info(file_path.resolve())
-            return
+            return 0, True
 
         logging.debug("Processing: %s", file_path)
         content = read_file_best_effort(file_path)
@@ -597,24 +604,41 @@ class FileProcessor:
         relative_path = file_path.relative_to(root_path)
         self._write_with_templates(outfile, processed_content, relative_path)
 
+        # Estimate tokens on the final processed content
+        return estimate_tokens(processed_content)
+
     def write_max_size_placeholder(self, file_path, root_path, outfile):
-        """Write the placeholder for files skipped for exceeding max size."""
+        """Write the placeholder for files skipped for exceeding max size.
+
+        Returns
+        -------
+        tuple[int, bool]
+            A tuple containing (token_count, is_approximate) for the placeholder.
+        """
 
         if self.dry_run:
-            return
+            return 0, True
 
         placeholder = self.output_opts.get('max_size_placeholder')
         if not placeholder:
-            return
+            return 0, True
 
         relative_path = file_path.relative_to(root_path)
         rendered = placeholder.replace(FILENAME_PLACEHOLDER, str(relative_path))
         self._write_with_templates(outfile, rendered, relative_path)
 
+        return estimate_tokens(rendered)
+
 
 def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
     """Find, filter, and combine files based on the provided configuration."""
-    stats = {'total_files': 0, 'total_size_bytes': 0, 'files_by_extension': {}}
+    stats = {
+        'total_files': 0,
+        'total_size_bytes': 0,
+        'files_by_extension': {},
+        'total_tokens': 0,
+        'token_count_is_approx': False
+    }
     search_opts = config.get('search', {})
     filter_opts = config.get('filters', {})
     output_opts = config.get('output', {})
@@ -709,15 +733,14 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
                 desc="Processing files",
                 unit="file",
             )
-            if dry_run:
-                for p in filtered_paths:
-                    stats['total_files'] += 1
-                    try:
-                        stats['total_size_bytes'] += p.stat().st_size
-                    except OSError:
-                        pass
-                    ext = p.suffix.lower() or '.no_extension'
-                    stats['files_by_extension'][ext] = stats['files_by_extension'].get(ext, 0) + 1
+            for p in filtered_paths:
+                stats['total_files'] += 1
+                try:
+                    stats['total_size_bytes'] += p.stat().st_size
+                except OSError:
+                    pass
+                ext = p.suffix.lower() or '.no_extension'
+                stats['files_by_extension'][ext] = stats['files_by_extension'].get(ext, 0) + 1
 
             if pairing_enabled:
                 include_mismatched = pair_opts.get('include_mismatched', False)
@@ -762,6 +785,8 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
                     ordered_paths = filtered_paths
 
                 for file_path in ordered_paths:
+                    token_count = 0
+                    is_approx = True
                     if record_size_exclusions and file_path in size_excluded_set:
                         try:
                             rel_path = file_path.relative_to(root_path)
@@ -770,23 +795,27 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
                         logging.debug(
                             "File exceeds max size; writing placeholder: %s", rel_path
                         )
-                        processor.write_max_size_placeholder(
+                        token_count, is_approx = processor.write_max_size_placeholder(
                             file_path, root_path, outfile
                         )
                     else:
-                        processor.process_and_write(
+                        token_count, is_approx = processor.process_and_write(
                             file_path,
                             root_path,
                             outfile,
                         )
+
+                    if not dry_run:
+                        stats['total_tokens'] += token_count
+                        if is_approx:
+                            stats['token_count_is_approx'] = True
+
                     processing_bar.update(1)
 
             processing_bar.close()
         if not pairing_enabled and not dry_run and global_footer:
             outfile.write(global_footer)
-    if dry_run:
-        stats['excluded_folder_count'] = total_excluded_folders
-        return stats
+    stats['excluded_folder_count'] = total_excluded_folders
 
     if clipboard and clipboard_buffer is not None:
         import pyperclip
@@ -794,6 +823,8 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
         combined_output = clipboard_buffer.getvalue()
         pyperclip.copy(combined_output)
         logging.info("Copied combined output to clipboard.")
+
+    return stats
 
 
 def main():
@@ -963,23 +994,35 @@ def main():
 
     if args.dry_run:
         logging.info("Dry run complete.")
-        if stats:
-            total_files = stats['total_files']
-            total_size_mb = stats['total_size_bytes'] / (1024 * 1024)
-            ext_summary = ", ".join(
-                f"{ext}: {count}"
-                for ext, count in sorted(stats['files_by_extension'].items())
-            )
-            excluded_folders = stats.get('excluded_folder_count', 0)
-
-            logging.info("--- Dry-Run Summary ---")
-            logging.info("Total files matched: %d", total_files)
-            logging.info("Total size: %.2f MB", total_size_mb)
-            logging.info("Files by extension: %s", ext_summary)
-            logging.info("Excluded folder count: %d", excluded_folders)
-            logging.info("-----------------------")
     else:
         logging.info("Done.")
+
+    if stats:
+        total_files = stats['total_files']
+        total_size_mb = stats['total_size_bytes'] / (1024 * 1024)
+        ext_summary = ", ".join(
+            f"{ext}: {count}"
+            for ext, count in sorted(stats['files_by_extension'].items())
+        )
+        excluded_folders = stats.get('excluded_folder_count', 0)
+
+        summary_title = "Dry-Run Summary" if args.dry_run else "Execution Summary"
+        logging.info("--- %s ---", summary_title)
+        logging.info("Total files matched: %d", total_files)
+        logging.info("Total size: %.2f MB", total_size_mb)
+
+        # Only show token counts for single-file mode where we calculated them
+        if not pairing_enabled and not args.dry_run:
+            token_count = stats.get('total_tokens', 0)
+            is_approx = stats.get('token_count_is_approx', False)
+            approx_indicator = "~" if is_approx else ""
+            logging.info("Token count: %s%d", approx_indicator, token_count)
+            if is_approx:
+                logging.info("(Install 'tiktoken' for accurate counts)")
+
+        logging.info("Files by extension: %s", ext_summary)
+        logging.info("Excluded folder count: %d", excluded_folders)
+        logging.info("-" * len(f"--- {summary_title} ---"))
 
 
 if __name__ == "__main__":
