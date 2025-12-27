@@ -830,39 +830,51 @@ def main():
             "Great for LLM context, documentation, or code review."
         )
     )
+
+    # Positional arguments (standard)
     parser.add_argument(
         "config_file",
         nargs="?",
         help="The YAML file with your settings (e.g., config.yml). If skipped, we'll look for default files like 'sourcecombine.yml'.",
     )
-    parser.add_argument(
-        "--dry-run",
-        "-d",
+
+    # Configuration Group
+    config_group = parser.add_argument_group("Configuration")
+    config_group.add_argument(
+        "--init",
         action="store_true",
-        help="See what files will be processed without actually writing anything.",
+        help="Generate a default configuration file (sourcecombine.yml) in the current directory.",
     )
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="store_true",
-        help="Show extra details to help solve problems.",
+
+    # Output Options Group
+    output_group = parser.add_argument_group("Output Options")
+    output_group.add_argument(
+        "--output",
+        "-o",
+        help="Save to a specific file or folder, ignoring the setting in your config file.",
     )
-    parser.add_argument(
+    output_group.add_argument(
         "--clipboard",
         "-c",
         action="store_true",
         help="Copy the result to your clipboard instead of saving to a file. (Single-file mode only)",
     )
-    parser.add_argument(
-        "--output",
-        "-o",
-        help="Save to a specific file or folder, ignoring the setting in your config file.",
-    )
-    parser.add_argument(
-        "--init",
+
+    # Runtime Options Group
+    runtime_group = parser.add_argument_group("Runtime Options")
+    runtime_group.add_argument(
+        "--dry-run",
+        "-d",
         action="store_true",
-        help="Generate a default configuration file (sourcecombine.yml) in the current directory.",
+        help="See what files will be processed without actually writing anything.",
     )
+    runtime_group.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Show extra details to help solve problems.",
+    )
+
     args = parser.parse_args()
 
     # Configure logging *immediately* based on -v.
