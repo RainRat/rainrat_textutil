@@ -1014,22 +1014,26 @@ def main():
         excluded_folders = stats.get('excluded_folder_count', 0)
 
         summary_title = "Dry-Run Summary" if args.dry_run else "Execution Summary"
-        logging.info("--- %s ---", summary_title)
-        logging.info("Total files matched: %d", total_files)
-        logging.info("Total size: %.2f MB", total_size_mb)
+
+        print(f"\n--- {summary_title} ---", file=sys.stderr)
+        print(f"  Total Files:      {total_files}", file=sys.stderr)
+        print(f"  Total Size:       {total_size_mb:.2f} MB", file=sys.stderr)
 
         # Only show token counts for single-file mode where we calculated them
         if not pairing_enabled and not args.dry_run:
             token_count = stats.get('total_tokens', 0)
             is_approx = stats.get('token_count_is_approx', False)
             approx_indicator = "~" if is_approx else ""
-            logging.info("Token count: %s%d", approx_indicator, token_count)
+            print(f"  Token Count:      {approx_indicator}{token_count}", file=sys.stderr)
             if is_approx:
-                logging.info("(Install 'tiktoken' for accurate counts)")
+                print("    (Install 'tiktoken' for accurate counts)", file=sys.stderr)
 
-        logging.info("Files by extension: %s", ext_summary)
-        logging.info("Excluded folder count: %d", excluded_folders)
-        logging.info("-" * len(f"--- {summary_title} ---"))
+        if ext_summary:
+            print(f"  Extensions:       {ext_summary}", file=sys.stderr)
+
+        if excluded_folders > 0:
+            print(f"  Excluded Folders: {excluded_folders}", file=sys.stderr)
+        print("-" * (len(summary_title) + 8), file=sys.stderr)
 
 
 if __name__ == "__main__":
