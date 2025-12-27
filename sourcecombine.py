@@ -8,6 +8,7 @@ import os
 import re
 import shutil
 import sys
+import json
 from functools import lru_cache
 from pathlib import Path, PurePath
 
@@ -573,7 +574,7 @@ class FileProcessor:
                 f"Failed to create backup for '{file_path}': {exc}"
             ) from exc
 
-    def process_and_write(self, file_path, root_path, outfile):
+    def process_and_write(self, file_path, root_path, outfile, output_format='text'):
         """Read, process, and write a single file.
 
         Returns
@@ -593,16 +594,23 @@ class FileProcessor:
             self._backup_file(file_path)
             file_path.write_text(processed_content, encoding='utf8')
 
-        if self.output_opts.get('add_line_numbers', False):
-            processed_content = add_line_numbers(processed_content)
-
         relative_path = file_path.relative_to(root_path)
-        self._write_with_templates(outfile, processed_content, relative_path)
+
+        if output_format == 'json':
+            entry = {
+                "path": relative_path.as_posix(),
+                "content": processed_content
+            }
+            json.dump(entry, outfile)
+        else:
+            if self.output_opts.get('add_line_numbers', False):
+                processed_content = add_line_numbers(processed_content)
+            self._write_with_templates(outfile, processed_content, relative_path)
 
         # Estimate tokens on the final processed content
         return estimate_tokens(processed_content)
 
-    def write_max_size_placeholder(self, file_path, root_path, outfile):
+    def write_max_size_placeholder(self, file_path, root_path, outfile, output_format='text'):
         """Write the placeholder for files skipped for exceeding max size.
 
         Returns
@@ -620,12 +628,20 @@ class FileProcessor:
 
         relative_path = file_path.relative_to(root_path)
         rendered = placeholder.replace(FILENAME_PLACEHOLDER, str(relative_path))
-        self._write_with_templates(outfile, rendered, relative_path)
+
+        if output_format == 'json':
+            entry = {
+                "path": relative_path.as_posix(),
+                "content": rendered
+            }
+            json.dump(entry, outfile)
+        else:
+            self._write_with_templates(outfile, rendered, relative_path)
 
         return estimate_tokens(rendered)
 
 
-def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
+def find_and_combine_files(config, output_path, dry_run=False, clipboard=False, output_format='text'):
     """Find, filter, and combine files based on the provided configuration."""
     stats = {
         'total_files': 0,
@@ -647,6 +663,9 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
 
     if clipboard and pairing_enabled:
         raise InvalidConfigError("Clipboard mode is only available when pairing is disabled.")
+
+    if output_format == 'json' and pairing_enabled:
+        raise InvalidConfigError("JSON format is not compatible with paired output.")
 
     if not pairing_enabled and not dry_run and not clipboard and output_path is None:
         raise InvalidConfigError(
@@ -670,8 +689,15 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
     with outfile_ctx as outfile:
         global_header = output_opts.get('global_header_template')
         global_footer = output_opts.get('global_footer_template')
-        if not pairing_enabled and not dry_run and global_header:
+
+        # Only write global headers for text output
+        if not pairing_enabled and not dry_run and global_header and output_format == 'text':
             outfile.write(global_header)
+
+        if not pairing_enabled and not dry_run and output_format == 'json':
+            outfile.write('[')
+
+        first_item = True
 
         for root_folder in root_folders:
             discovery_bar = processor._make_bar(
@@ -780,6 +806,11 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
                     ordered_paths = filtered_paths
 
                 for file_path in ordered_paths:
+                    if output_format == 'json' and not dry_run:
+                        if not first_item:
+                            outfile.write(',')
+                        first_item = False
+
                     token_count = 0
                     is_approx = True
                     if record_size_exclusions and file_path in size_excluded_set:
@@ -791,13 +822,14 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
                             "File exceeds max size; writing placeholder: %s", rel_path
                         )
                         token_count, is_approx = processor.write_max_size_placeholder(
-                            file_path, root_path, outfile
+                            file_path, root_path, outfile, output_format=output_format
                         )
                     else:
                         token_count, is_approx = processor.process_and_write(
                             file_path,
                             root_path,
                             outfile,
+                            output_format=output_format
                         )
 
                     if not dry_run:
@@ -808,8 +840,14 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False):
                     processing_bar.update(1)
 
             processing_bar.close()
-        if not pairing_enabled and not dry_run and global_footer:
+
+        # Write global footer only for text output
+        if not pairing_enabled and not dry_run and global_footer and output_format == 'text':
             outfile.write(global_footer)
+
+        if not pairing_enabled and not dry_run and output_format == 'json':
+            outfile.write(']')
+
     stats['excluded_folder_count'] = total_excluded_folders
 
     if clipboard and clipboard_buffer is not None:
@@ -858,6 +896,13 @@ def main():
         "-c",
         action="store_true",
         help="Copy the result to your clipboard instead of saving to a file. (Single-file mode only)",
+    )
+    output_group.add_argument(
+        "--format",
+        "-f",
+        choices=["text", "json"],
+        default="text",
+        help="Choose the output format. 'json' produces a JSON array of file objects. (Single-file mode only)",
     )
 
     # Runtime Options Group
@@ -994,6 +1039,7 @@ def main():
             output_path,
             dry_run=args.dry_run,
             clipboard=args.clipboard,
+            output_format=args.format,
         )
     except InvalidConfigError as exc:
         logging.error(exc, exc_info=True)
