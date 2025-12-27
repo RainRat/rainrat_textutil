@@ -73,14 +73,9 @@ from utils import (
 )
 
 
-@lru_cache(maxsize=4096)
-def _casefold_pattern(pattern):
-    return pattern.casefold()
-
-
 def _fnmatch_casefold(name, pattern):
     """Case-insensitive ``fnmatch`` using Unicode casefolding."""
-    return fnmatch.fnmatchcase(name.casefold(), _casefold_pattern(pattern))
+    return fnmatch.fnmatchcase(name.casefold(), pattern.casefold())
 
 
 def _normalize_patterns(patterns):
