@@ -115,21 +115,20 @@ def read_file_best_effort(file_path):
     """
 
     try:
-        with open(file_path, 'r', encoding='utf-8-sig') as f:
-            text = f.read()
-            if '\x00' in text:
-                raise UnicodeError("Detected NUL bytes; retrying with alternate encodings")
-            return text
-    except UnicodeError:
-        pass
-
-    try:
         raw_bytes = Path(file_path).read_bytes()
     except FileNotFoundError:
         raise
     except Exception:
         logging.warning("Could not read %s.", file_path)
         return ""
+
+    try:
+        text = raw_bytes.decode('utf-8-sig')
+        if '\x00' in text:
+            raise UnicodeError("Detected NUL bytes; retrying with alternate encodings")
+        return text
+    except UnicodeError:
+        pass
 
     best_guess = from_bytes(raw_bytes).best()
     if best_guess and best_guess.encoding:
