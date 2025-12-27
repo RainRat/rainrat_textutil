@@ -14,17 +14,33 @@ Whether you are preparing files for printing, creating context for Large Languag
 
 ## Installation
 
-1.  **Clone the repository:**
+1.  **Check your Python version:**
+    SourceCombine requires Python 3.8 or newer. Open your terminal or command prompt and run:
+    ```bash
+    python --version
+    ```
+
+2.  **Get the code:**
+    Clone the repository or download the ZIP file.
     ```bash
     git clone https://github.com/RainRat/TextUtilities.git
     cd TextUtilities
     ```
 
-2.  **Install Python 3** (version 3.8 or newer).
-
-3.  **Install required libraries:**
+3.  **Install dependencies:**
+    This tool uses a few external libraries. Install them using `pip`:
     ```bash
     pip install -r requirements.txt
+    ```
+    *Note: For accurate token counting, you can also install `tiktoken`:*
+    ```bash
+    pip install tiktoken
+    ```
+
+4.  **Verify the installation:**
+    Run the help command to make sure everything is set up correctly:
+    ```bash
+    python sourcecombine.py --help
     ```
 
 ## Usage
