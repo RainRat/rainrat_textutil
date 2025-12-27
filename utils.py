@@ -6,6 +6,11 @@ from typing import Any, Mapping, Sequence
 from charset_normalizer import from_bytes
 import yaml
 
+try:  # Optional dependency for accurate token counting
+    import tiktoken
+except ImportError:
+    tiktoken = None
+
 
 DEFAULT_OUTPUT_FILENAME = "combined_files.txt"
 FILENAME_PLACEHOLDER = "{{FILENAME}}"
@@ -683,3 +688,18 @@ def validate_regex_pattern(pattern, *, context="regex pattern", source=None):
             f"{location}: '{pattern}'. {exc}"
         ) from exc
 
+
+def estimate_tokens(text: str, encoding_name: str = "cl100k_base") -> tuple[int, bool]:
+    """Estimate the number of tokens in the text.
+
+    Returns a tuple of (token_count, is_approximate).
+    """
+    if tiktoken:
+        try:
+            encoding = tiktoken.get_encoding(encoding_name)
+            return len(encoding.encode(text, disallowed_special=())), False
+        except Exception:
+            pass
+
+    # Approx: 1 token ~= 4 chars
+    return len(text) // 4, True
