@@ -118,7 +118,7 @@ def read_file_best_effort(file_path):
         raw_bytes = Path(file_path).read_bytes()
     except FileNotFoundError:
         raise
-    except Exception:
+    except OSError:
         logging.warning("Could not read %s.", file_path)
         return ""
 
