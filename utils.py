@@ -486,26 +486,25 @@ def apply_line_regex_replacements(text, rules):
     return text
 
 
-def load_and_validate_config(
-    config_file_path: str | Path,
+def validate_config(
+    config: dict,
     required_keys: Sequence[str] | None = None,
     defaults: Mapping[str, Any] = DEFAULT_CONFIG,
     nested_required: Mapping[str, Sequence[str]] | None = None,
-) -> dict:
-    """Load a YAML config file and enforce required keys and defaults.
+    source: str | Path | None = None,
+) -> None:
+    """Validate a configuration dictionary and apply defaults in-place.
 
-    ``defaults`` may contain nested dictionaries, which are merged recursively
-    into the loaded configuration. The canonical defaults are provided by
-    ``DEFAULT_CONFIG`` but may be overridden or extended via the ``defaults``
-    parameter.
+    This function performs the same validation steps as
+    :func:`load_and_validate_config` but operates on a dictionary instead of a
+    file path.
     """
-    config = load_yaml_config(config_file_path)
 
     if required_keys:
         missing_keys = [key for key in required_keys if key not in config]
         if missing_keys:
             raise InvalidConfigError(
-                f"Config file is missing required keys: {', '.join(missing_keys)}"
+                f"Config is missing required keys: {', '.join(missing_keys)}"
             )
 
     if defaults:
@@ -533,10 +532,32 @@ def load_and_validate_config(
                 )
 
     _validate_filters_section(config)
-    _validate_processing_section(config, source=config_file_path)
+    _validate_processing_section(config, source=source)
     _validate_pairing_section(config)
     _validate_output_section(config)
 
+
+def load_and_validate_config(
+    config_file_path: str | Path,
+    required_keys: Sequence[str] | None = None,
+    defaults: Mapping[str, Any] = DEFAULT_CONFIG,
+    nested_required: Mapping[str, Sequence[str]] | None = None,
+) -> dict:
+    """Load a YAML config file and enforce required keys and defaults.
+
+    ``defaults`` may contain nested dictionaries, which are merged recursively
+    into the loaded configuration. The canonical defaults are provided by
+    ``DEFAULT_CONFIG`` but may be overridden or extended via the ``defaults``
+    parameter.
+    """
+    config = load_yaml_config(config_file_path)
+    validate_config(
+        config,
+        required_keys=required_keys,
+        defaults=defaults,
+        nested_required=nested_required,
+        source=config_file_path,
+    )
     return config
 
 
