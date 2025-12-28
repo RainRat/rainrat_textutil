@@ -883,6 +883,18 @@ def main():
         action="store_true",
         help="Generate a default configuration file (sourcecombine.yml) in the current directory.",
     )
+    config_group.add_argument(
+        "--exclude-file",
+        action="append",
+        default=[],
+        help="Exclude a file (glob pattern). Can be used multiple times. Overrides/appends to config.",
+    )
+    config_group.add_argument(
+        "--exclude-folder",
+        action="append",
+        default=[],
+        help="Exclude a folder (glob pattern). Can be used multiple times. Overrides/appends to config.",
+    )
 
     # Output Options Group
     output_group = parser.add_argument_group("Output Options")
@@ -999,6 +1011,26 @@ def main():
         log_level = getattr(logging, level_str.upper(), logging.INFO)
         # Set the level on the *root logger* since basicConfig was already called
         logging.getLogger().setLevel(log_level)
+
+    # Inject CLI exclusions into config
+    if args.exclude_file or args.exclude_folder:
+        filters = config.setdefault('filters', {})
+        exclusions = filters.setdefault('exclusions', {})
+
+        if args.exclude_file:
+            filenames = exclusions.setdefault('filenames', [])
+            for pattern in args.exclude_file:
+                # Validate/sanitize the pattern
+                sanitized = utils.validate_glob_pattern(pattern, context="CLI --exclude-file")
+                filenames.append(sanitized)
+            logging.debug("Added CLI file exclusions: %s", args.exclude_file)
+
+        if args.exclude_folder:
+            folders = exclusions.setdefault('folders', [])
+            for pattern in args.exclude_folder:
+                sanitized = utils.validate_glob_pattern(pattern, context="CLI --exclude-folder")
+                folders.append(sanitized)
+            logging.debug("Added CLI folder exclusions: %s", args.exclude_folder)
 
     pairing_conf = config.get('pairing') or {}
     output_conf = config.get('output') or {}
