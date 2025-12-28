@@ -1,0 +1,128 @@
+# ================================================================
+# Comprehensive configuration template for the File Combiner Tool
+# Lists every available option with default values and explanations.
+# ================================================================
+
+# --- Search Parameters ---
+search:
+  # Paths to scan for files.
+  # Replace with one or more folders on your system.
+  root_folders:
+    - '/path/to/project'
+
+  # Search folders recursively.
+  recursive: true
+
+  # Only include files with these extensions. Leave empty to include all.
+  # NOTE: This option cannot be used if `pairing.enabled` is true or
+  # if any `inclusion_groups` are enabled.
+  allowed_extensions: []
+
+# --- Output Configuration ---
+output:
+  # When pairing is disabled, all content is written to this file.
+  file: 'combined_files.txt'
+
+  # When pairing is enabled, each pair is written to this folder. Omit or set to null
+  # to place the .combined files next to their source files.
+  folder: null
+
+  # When pairing is enabled, this template determines the name of each
+  # combined output file.
+  # Available placeholders:
+  #   {{STEM}}       - The base name of the file (e.g., 'main' from 'main.cpp')
+  #   {{SOURCE_EXT}} - The extension of the source file (e.g., '.cpp')
+  #   {{HEADER_EXT}} - The extension of the header file (e.g., '.h')
+  #   {{DIR}}        - Relative directory using POSIX separators (or '.' for root)
+  #   {{DIR_SLUG}}   - Filesystem-safe version of {{DIR}} ('root' when DIR is '.')
+  paired_filename_template: '{{STEM}}.combined'
+
+  # Example preserving directory structure in the output folder:
+  # paired_filename_template: '{{DIR_SLUG}}/{{STEM}}.combined'
+
+  # Add line numbers starting at 1 for each file.
+  add_line_numbers: false
+
+  # Template written before each file's content.
+  # The special sequence "{{FILENAME}}" is replaced with the file's
+  # path relative to the root folder. Set to null or an empty string
+  # to omit the header.
+  header_template: "--- {{FILENAME}} ---\n"
+
+  # Template written after each file's content.
+  # "{{FILENAME}}" is replaced with the file's relative path. Set to null
+  # or an empty string to omit the footer/separator.
+  footer_template: "\n--- end {{FILENAME}} ---\n"
+
+  # Template written at the very beginning of the combined output file.
+  # In pairing mode, this is written to the start of each paired output file.
+  global_header_template: null
+
+  # Template written at the very end of the combined output file.
+  # In pairing mode, this is written to the end of each paired output file.
+  global_footer_template: null
+
+  # Optional placeholder to write when a file is skipped because it exceeds
+  # filters.max_size_bytes. The string may use the {{FILENAME}} placeholder.
+  max_size_placeholder: null
+
+# --- File Filtering ---
+filters:
+  # Files smaller than this (bytes) are skipped.
+  min_size_bytes: 0
+
+  # Files larger than this (bytes) are skipped. Omit, set to null, or set to 0 for no limit (0 is treated as unlimited).
+  max_size_bytes: 0
+
+  # If true, skip files that appear to contain binary data (e.g., executables, images).
+  skip_binary: false
+
+  # --- Inclusion Groups ---
+  # Enable specific groups to only include listed filenames or glob patterns.
+  # Mutually exclusive with ``search.allowed_extensions``; specify file types within the patterns instead.
+  inclusion_groups:
+    example_group:
+      enabled: false
+      filenames: []
+
+  # --- Exclusion Rules ---
+  exclusions:
+    filenames: []      # Skip files matching glob patterns (e.g., '*.log', 'tests/*').
+    # Exclude folders if any directory name in the path matches one of these
+    # patterns (e.g., 'build' excludes ./build and ./src/app/build). Case-insensitive.
+    folders: []
+
+# --- Content Processing Options ---
+processing:
+  compact_whitespace: false       # Compact and clean up whitespace
+  # Optional overrides to enable or disable individual whitespace transforms.
+  # Keys may be set to true, false, or null (to fall back to compact_whitespace).
+  # Supported keys: normalize_line_endings, spaces_to_tabs, trim_spaces_around_tabs,
+  # replace_mid_line_tabs, trim_trailing_whitespace, compact_blank_lines,
+  # compact_space_runs
+  compact_whitespace_groups: {}
+  # If true, removes all C-style block comments (/* ... */). This runs *after* remove_initial_c_style_comment.
+  remove_all_c_style_comments: false
+  # If true, removes only the *first* C-style block comment if it's at the top of the file.
+  # This runs *first* and also strips leading whitespace after the comment.
+  remove_initial_c_style_comment: false
+  line_regex_replacements: []      # Collapse blocks of lines matching regexes
+  # Example line rule:
+  # line_regex_replacements:
+  #   - pattern: '^\s*\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$'
+  #     replacement: '<data removed>'
+  regex_replacements: []           # List of regex find/replace rules
+  # Example rule:
+  # regex_replacements:
+  #   - pattern: '^\s*//\s*TODO:.*$'
+  #     replacement: ''
+  apply_in_place: false            # Apply these processing rules back to the source files
+  create_backups: true             # Create .bak backups before rewriting when apply_in_place is true
+
+
+# --- Pairing Options ---
+pairing:
+  enabled: false
+  include_mismatched: false         # Include files without a pair
+  source_extensions: []             # e.g., ['.cpp', '.c']
+  header_extensions: []             # e.g., ['.h', '.hpp']

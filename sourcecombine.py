@@ -873,7 +873,7 @@ def main():
     parser.add_argument(
         "config_file",
         nargs="?",
-        help="The YAML file with your settings (e.g., config.yml). If skipped, we'll look for default files like 'sourcecombine.yml'.",
+        help="The path to your YAML configuration file. If omitted, the tool searches for defaults like 'sourcecombine.yml'.",
     )
 
     # Configuration Group
@@ -889,20 +889,20 @@ def main():
     output_group.add_argument(
         "--output",
         "-o",
-        help="Save to a specific file or folder, ignoring the setting in your config file.",
+        help="Save the result to a specific file or folder. This overrides the path in your configuration file.",
     )
     output_group.add_argument(
         "--clipboard",
         "-c",
         action="store_true",
-        help="Copy the result to your clipboard instead of saving to a file. (Single-file mode only)",
+        help="Copy the combined text to the clipboard instead of creating a file. (Only works in single-file mode)",
     )
     output_group.add_argument(
         "--format",
         "-f",
         choices=["text", "json"],
         default="text",
-        help="Choose the output format. 'json' produces a JSON array of file objects. (Single-file mode only)",
+        help="Select the output format. Use 'json' to get a structured array of file objects. (Only works in single-file mode)",
     )
 
     # Runtime Options Group
@@ -911,13 +911,13 @@ def main():
         "--dry-run",
         "-d",
         action="store_true",
-        help="See what files will be processed without actually writing anything.",
+        help="Simulate the process to see which files will be included, without writing any output.",
     )
     runtime_group.add_argument(
         "-v",
         "--verbose",
         action="store_true",
-        help="Show extra details to help solve problems.",
+        help="Display detailed status messages to help troubleshoot issues.",
     )
 
     args = parser.parse_args()
@@ -967,8 +967,8 @@ def main():
 
         if not config_path:
             parser.error(
-                "No config file specified and no default config found in current directory "
-                f"(checked: {', '.join(defaults)})."
+                "Could not find a configuration file. Please provide one or ensure 'sourcecombine.yml' "
+                "exists in the current directory."
             )
 
     try:
