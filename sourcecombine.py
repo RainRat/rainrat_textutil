@@ -64,6 +64,7 @@ from utils import (
     read_file_best_effort,
     process_content,
     load_and_validate_config,
+    validate_config,
     add_line_numbers,
     estimate_tokens,
     ConfigNotFoundError,
@@ -71,6 +72,7 @@ from utils import (
     FILENAME_PLACEHOLDER,
     DEFAULT_OUTPUT_FILENAME,
     _looks_binary,
+    DEFAULT_CONFIG,
 )
 
 
@@ -873,7 +875,7 @@ def main():
     parser.add_argument(
         "config_file",
         nargs="?",
-        help="The YAML file with your settings (e.g., config.yml). If skipped, we'll look for default files like 'sourcecombine.yml'.",
+        help="The YAML file with your settings (e.g., config.yml) OR a directory path to scan using defaults.",
     )
 
     # Configuration Group
@@ -968,41 +970,60 @@ def main():
         sys.exit(0)
 
     config_path = args.config_file
-    if not config_path:
-        # Auto-discovery
-        defaults = ['sourcecombine.yml', 'sourcecombine.yaml', 'config.yml', 'config.yaml']
-        for default in defaults:
-            if Path(default).is_file():
-                config_path = default
-                logging.info("Auto-discovered config file: %s", config_path)
-                break
+    config = None
+    nested_required = {
+        'search': ['root_folders'],
+    }
 
-        if not config_path:
-            parser.error(
-                "No config file specified and no default config found in current directory "
-                f"(checked: {', '.join(defaults)})."
+    if config_path and Path(config_path).is_dir():
+        # Directory mode: Construct config in-memory
+        logging.info("Using directory '%s' as root with default settings.", config_path)
+        config = {'search': {'root_folders': [config_path]}}
+        try:
+            validate_config(
+                config,
+                defaults=DEFAULT_CONFIG,
+                nested_required=nested_required,
+                source="<directory-arg>"
             )
+        except InvalidConfigError as e:
+            logging.error("Invalid configuration: %s", e)
+            logging.debug("Configuration validation traceback:", exc_info=True)
+            sys.exit(1)
+    else:
+        # Config file mode (explicit or auto-discovered)
+        if not config_path:
+            # Auto-discovery
+            defaults = ['sourcecombine.yml', 'sourcecombine.yaml', 'config.yml', 'config.yaml']
+            for default in defaults:
+                if Path(default).is_file():
+                    config_path = default
+                    logging.info("Auto-discovered config file: %s", config_path)
+                    break
 
-    try:
-        nested_required = {
-            'search': ['root_folders'],
-        }
-        config = load_and_validate_config(
-            config_path, nested_required=nested_required
-        )
-    except ConfigNotFoundError as e:
-        logging.error(
-            "Could not find the configuration file '%s'. "
-            "Check the filename and your current working directory: %s",
-            config_path,
-            Path.cwd(),
-        )
-        logging.debug("Missing configuration details:", exc_info=True)
-        sys.exit(1)
-    except InvalidConfigError as e:
-        logging.error("Invalid configuration: %s", e)
-        logging.debug("Configuration validation traceback:", exc_info=True)
-        sys.exit(1)
+            if not config_path:
+                parser.error(
+                    "No config file specified, no directory provided, and no default config found "
+                    f"(checked: {', '.join(defaults)})."
+                )
+
+        try:
+            config = load_and_validate_config(
+                config_path, nested_required=nested_required
+            )
+        except ConfigNotFoundError as e:
+            logging.error(
+                "Could not find the configuration file '%s'. "
+                "Check the filename and your current working directory: %s",
+                config_path,
+                Path.cwd(),
+            )
+            logging.debug("Missing configuration details:", exc_info=True)
+            sys.exit(1)
+        except InvalidConfigError as e:
+            logging.error("Invalid configuration: %s", e)
+            logging.debug("Configuration validation traceback:", exc_info=True)
+            sys.exit(1)
 
     # Re-configure level based on config, *unless* -v was used.
     # The -v (DEBUG) flag always overrides the config file's setting.
