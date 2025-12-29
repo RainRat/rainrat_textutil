@@ -15,40 +15,55 @@ Whether you are preparing files for printing, creating context for Large Languag
 ## Installation
 
 1.  **Check your Python version:**
-    SourceCombine requires Python 3.8 or newer. Open your terminal or command prompt and run:
+    SourceCombine requires Python 3.8 or newer.
     ```bash
     python --version
     ```
 
 2.  **Get the code:**
-    Clone the repository or download the ZIP file.
+    Clone the repository and enter the directory:
     ```bash
     git clone https://github.com/RainRat/TextUtilities.git
     cd TextUtilities
     ```
 
 3.  **Install dependencies:**
-    This tool uses a few external libraries. Install them using `pip`:
+    Install the required libraries:
     ```bash
     pip install -r requirements.txt
     ```
-    *Note: For accurate token counting, you can also install `tiktoken`:*
+    *(Optional) For accurate token counting, also install `tiktoken`:*
     ```bash
     pip install tiktoken
     ```
 
-4.  **Verify the installation:**
-    Run the help command to make sure everything is set up correctly:
+4.  **Verify installation:**
+    Check that the tool runs:
     ```bash
     python sourcecombine.py --help
     ```
 
+## Quick Start
+
+1.  **Generate a default configuration:**
+    Run this command in the folder you want to process (or where you want to store the config):
+    ```bash
+    python sourcecombine.py --init
+    ```
+    This creates a `sourcecombine.yml` file with default settings.
+
+2.  **Run the tool:**
+    ```bash
+    python sourcecombine.py sourcecombine.yml
+    ```
+    By default, this combines files from the current directory into `combined_files.txt`.
+
 ## Usage
 
-Run the script from the command line, providing a YAML configuration file:
+Run the script from the command line. You can pass a configuration file or a directory path.
 
 ```bash
-python sourcecombine.py CONFIG_FILE [--output OUTPUT] [--dry-run] [--verbose] [--clipboard]
+python sourcecombine.py [CONFIG_FILE_OR_DIRECTORY] [OPTIONS]
 ```
 
 ### Options
@@ -59,14 +74,28 @@ python sourcecombine.py CONFIG_FILE [--output OUTPUT] [--dry-run] [--verbose] [-
 *   `--clipboard` / `-c`: Copy the combined output directly to the clipboard instead of writing to a file.
     *   *Note: Clipboard mode is not available when file pairing is enabled.*
 *   `--init`: Generate a default configuration file (`sourcecombine.yml`) in the current directory.
+*   `--exclude-file`: Exclude specific files (e.g., `--exclude-file "secret.txt"`). Can be used multiple times.
+*   `--exclude-folder`: Exclude specific folders (e.g., `--exclude-folder "build"`). Can be used multiple times.
 
-### Example
+### Examples
 
+**Simulate a run:**
+See exactly which files would be included without writing anything:
 ```bash
 python sourcecombine.py my_config.yml --dry-run
 ```
 
-This command will simulate the process defined in `my_config.yml` and show you exactly which files would be included and where they would be written.
+**Run on a specific directory without a config file:**
+Use default settings to combine files in `src/`:
+```bash
+python sourcecombine.py src/
+```
+
+**Copy output to clipboard:**
+Combine files defined in `config.yml` and copy the result:
+```bash
+python sourcecombine.py config.yml --clipboard
+```
 
 ## Customizing file boundaries
 
