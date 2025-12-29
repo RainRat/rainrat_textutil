@@ -133,19 +133,24 @@ def test_auto_discovery_success(temp_cwd, mock_argv, caplog):
     assert "Auto-discovered config file: config.yaml" in caplog.text
     mock_combine.assert_called_once()
 
-def test_auto_discovery_failure(temp_cwd, mock_argv, caplog):
-    """Test that main exits if no config file is specified or found."""
+def test_cwd_fallback(temp_cwd, mock_argv, caplog):
+    """Test that main falls back to CWD if no config file is found."""
     # Ensure no default files exist
 
-    # We need to capture stderr because parser.error prints to stderr and exits
-    # argparse usually calls sys.exit(2) on error
+    caplog.set_level(logging.INFO)
 
-    with mock_argv([]):
-        with pytest.raises(SystemExit) as excinfo:
+    # Mock find_and_combine_files to avoid actual processing
+    with patch('sourcecombine.find_and_combine_files') as mock_combine:
+        mock_combine.return_value = {}
+        with mock_argv([]):
             main()
 
-    # Exit code 2 is standard for argparse errors
-    assert excinfo.value.code == 2
+    assert "No config file found" in caplog.text
+    assert "Scanning current directory '.' with default settings" in caplog.text
+    mock_combine.assert_called_once()
+    # Verify the config passed has root_folders set to ['.']
+    args, _ = mock_combine.call_args
+    assert args[0]['search']['root_folders'] == ['.']
 
 def test_explicit_config_not_found(temp_cwd, mock_argv, caplog):
     """Test that main exits if specified config file is missing."""
