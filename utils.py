@@ -252,14 +252,22 @@ def _validate_compact_whitespace_groups(groups, *, context):
 
 def _validate_regex_list(rules, context_prefix, source):
     """Validate a list of regex replacement rules."""
-    if isinstance(rules, list):
-        for i, rule in enumerate(rules):
-            if isinstance(rule, dict) and 'pattern' in rule:
-                validate_regex_pattern(
-                    rule['pattern'],
-                    context=f"{context_prefix}[{i}]",
-                    source=source,
-                )
+    if rules is None:
+        return
+    if not isinstance(rules, list):
+        raise InvalidConfigError(f"'{context_prefix}' must be a list.")
+
+    for i, rule in enumerate(rules):
+        if not isinstance(rule, dict):
+            raise InvalidConfigError(
+                f"Item {i} in '{context_prefix}' must be a dictionary."
+            )
+        if 'pattern' in rule:
+            validate_regex_pattern(
+                rule['pattern'],
+                context=f"{context_prefix}[{i}]",
+                source=source,
+            )
 
 
 def _replace_line_block(text, regex, replacement=None):
