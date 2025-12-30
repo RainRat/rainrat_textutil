@@ -1166,40 +1166,92 @@ def main():
         logging.info("Done.")
 
     if stats:
-        total_files = stats['total_files']
-        total_size_mb = stats['total_size_bytes'] / (1024 * 1024)
-        ext_summary = ", ".join(
-            f"{ext}: {count}"
-            for ext, count in sorted(stats['files_by_extension'].items())
-        )
-        excluded_folders = stats.get('excluded_folder_count', 0)
+        _print_execution_summary(stats, args, pairing_enabled)
 
-        if args.dry_run:
-            summary_title = "Dry-Run Summary"
-        elif args.estimate_tokens:
-            summary_title = "Token Estimation Summary"
-        else:
-            summary_title = "Execution Summary"
 
-        print(f"\n--- {summary_title} ---", file=sys.stderr)
-        print(f"  Total Files:      {total_files}", file=sys.stderr)
-        print(f"  Total Size:       {total_size_mb:.2f} MB", file=sys.stderr)
+def _print_execution_summary(stats, args, pairing_enabled):
+    """Print a formatted summary of the execution to stderr."""
 
-        # Show token counts for single-file mode OR if estimate_tokens was requested
-        if not pairing_enabled and (not args.dry_run or args.estimate_tokens):
-            token_count = stats.get('total_tokens', 0)
-            is_approx = stats.get('token_count_is_approx', False)
-            approx_indicator = "~" if is_approx else ""
-            print(f"  Token Count:      {approx_indicator}{token_count}", file=sys.stderr)
-            if is_approx:
-                print("    (Install 'tiktoken' for accurate counts)", file=sys.stderr)
+    # Check for TTY and NO_COLOR environment variable
+    use_color = sys.stderr.isatty() and not os.getenv("NO_COLOR")
 
-        if ext_summary:
-            print(f"  Extensions:       {ext_summary}", file=sys.stderr)
+    def color(text, code):
+        return f"\033[{code}m{text}\033[0m" if use_color else text
 
-        if excluded_folders > 0:
-            print(f"  Excluded Folders: {excluded_folders}", file=sys.stderr)
-        print("-" * (len(summary_title) + 8), file=sys.stderr)
+    # Color codes
+    BOLD = "1"
+    CYAN = "96"
+    GREEN = "92"
+    YELLOW = "93"
+    DIM = "2"
+
+    total_files = stats['total_files']
+    total_size_mb = stats['total_size_bytes'] / (1024 * 1024)
+    excluded_folders = stats.get('excluded_folder_count', 0)
+
+    if args.dry_run:
+        summary_title = "Dry-Run Summary"
+    elif args.estimate_tokens:
+        summary_title = "Token Estimation Summary"
+    else:
+        summary_title = "Execution Summary"
+
+    # Header
+    print(f"\n{color('---', DIM)} {color(summary_title, BOLD + ';' + CYAN)} {color('---', DIM)}", file=sys.stderr)
+
+    # Key Metrics
+    # Use fixed width for labels to align values
+    print(f"  {color('Total Files', BOLD):<18} : {color(str(total_files), GREEN)}", file=sys.stderr)
+    print(f"  {color('Total Size', BOLD):<18} : {color(f'{total_size_mb:.2f} MB', GREEN)}", file=sys.stderr)
+
+    # Token Counts
+    if not pairing_enabled and (not args.dry_run or args.estimate_tokens):
+        token_count = stats.get('total_tokens', 0)
+        is_approx = stats.get('token_count_is_approx', False)
+
+        count_str = str(token_count)
+        if is_approx:
+            count_str = f"~{token_count}"
+
+        print(f"  {color('Token Count', BOLD):<18} : {color(count_str, GREEN)}", file=sys.stderr)
+
+        if is_approx:
+            print(f"    {color('(Install tiktoken for accurate counts)', YELLOW)}", file=sys.stderr)
+
+    # Extensions Breakdown
+    files_by_ext = stats.get('files_by_extension', {})
+    if files_by_ext:
+        print(f"\n  {color('File Types:', BOLD)}", file=sys.stderr)
+
+        # Format extensions in columns
+        sorted_exts = sorted(files_by_ext.items(), key=lambda x: (-x[1], x[0]))  # Sort by count desc, then name
+
+        # Simple column formatting
+        # We want:   .py: 10    .js: 5
+        # Calculate max width of ".ext: count"
+        items = [f"{ext}: {count}" for ext, count in sorted_exts]
+        if items:
+            max_len = max(len(item) for item in items) + 4  # spacing
+            # Determine columns based on terminal width (default 80 if not TTY)
+            try:
+                term_width = os.get_terminal_size(sys.stderr.fileno()).columns
+            except (OSError, AttributeError):
+                term_width = 80
+
+            # Indent is 4 spaces
+            avail_width = max(term_width - 4, 20)
+            cols = max(1, avail_width // max_len)
+
+            for i in range(0, len(items), cols):
+                row_items = items[i:i + cols]
+                row_str = "".join(item.ljust(max_len) for item in row_items)
+                print(f"    {row_str}", file=sys.stderr)
+
+    # Exclusions
+    if excluded_folders > 0:
+        print(f"\n  {color('Excluded Folders', BOLD):<18} : {excluded_folders}", file=sys.stderr)
+
+    print(color("-" * (len(summary_title) + 8), DIM), file=sys.stderr)
 
 
 if __name__ == "__main__":
