@@ -19,6 +19,21 @@ except ImportError:  # pragma: no cover - gracefully handle missing tqdm
     _tqdm = None
 
 
+class _DevNull:
+    """A file-like object that discards all writes."""
+    def write(self, *args, **kwargs):
+        pass
+
+    def flush(self):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+
 class _SilentProgress:
     """Fallback progress handler used when tqdm is unavailable or disabled."""
 
@@ -426,6 +441,7 @@ def _process_paired_files(
     processor,
     processing_bar,
     dry_run,
+    estimate_tokens=False,
     size_excluded=None,
     global_header=None,
     global_footer=None,
@@ -473,9 +489,14 @@ def _process_paired_files(
                 logging.info("  - %s", rel_path)
             continue
 
-        out_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(out_file, 'w', encoding='utf8') as pair_out:
-            if global_header:
+        if estimate_tokens:
+            pair_out_ctx = _DevNull()
+        else:
+            out_file.parent.mkdir(parents=True, exist_ok=True)
+            pair_out_ctx = open(out_file, 'w', encoding='utf8')
+
+        with pair_out_ctx as pair_out:
+            if global_header and not estimate_tokens:
                 pair_out.write(global_header)
 
             if primary_path in size_excluded_set:
@@ -497,7 +518,7 @@ def _process_paired_files(
                     if processing_bar:
                         processing_bar.update(1)
 
-            if global_footer:
+            if global_footer and not estimate_tokens:
                 pair_out.write(global_footer)
 
 
@@ -517,10 +538,11 @@ class FileProcessor:
         performing any writes.
     """
 
-    def __init__(self, config, output_opts, dry_run=False):
+    def __init__(self, config, output_opts, dry_run=False, estimate_tokens=False):
         self.config = config
         self.output_opts = output_opts or {}
         self.dry_run = dry_run
+        self.estimate_tokens = estimate_tokens
         self.processing_opts = config.get('processing', {}) or {}
         self.apply_in_place = bool(self.processing_opts.get('apply_in_place'))
         if self.apply_in_place:
@@ -591,23 +613,24 @@ class FileProcessor:
         logging.debug("Processing: %s", file_path)
         content = read_file_best_effort(file_path)
         processed_content = process_content(content, self.processing_opts)
-        if self.apply_in_place and processed_content != content:
+        if self.apply_in_place and processed_content != content and not self.estimate_tokens:
             logging.info("Updating in place: %s", file_path)
             self._backup_file(file_path)
             file_path.write_text(processed_content, encoding='utf8')
 
         relative_path = file_path.relative_to(root_path)
 
-        if output_format == 'json':
-            entry = {
-                "path": relative_path.as_posix(),
-                "content": processed_content
-            }
-            json.dump(entry, outfile)
-        else:
-            if self.output_opts.get('add_line_numbers', False):
-                processed_content = add_line_numbers(processed_content)
-            self._write_with_templates(outfile, processed_content, relative_path)
+        if not self.estimate_tokens:
+            if output_format == 'json':
+                entry = {
+                    "path": relative_path.as_posix(),
+                    "content": processed_content
+                }
+                json.dump(entry, outfile)
+            else:
+                if self.output_opts.get('add_line_numbers', False):
+                    processed_content = add_line_numbers(processed_content)
+                self._write_with_templates(outfile, processed_content, relative_path)
 
         # Estimate tokens on the final processed content
         return estimate_tokens(processed_content)
@@ -631,19 +654,20 @@ class FileProcessor:
         relative_path = file_path.relative_to(root_path)
         rendered = placeholder.replace(FILENAME_PLACEHOLDER, str(relative_path))
 
-        if output_format == 'json':
-            entry = {
-                "path": relative_path.as_posix(),
-                "content": rendered
-            }
-            json.dump(entry, outfile)
-        else:
-            self._write_with_templates(outfile, rendered, relative_path)
+        if not self.estimate_tokens:
+            if output_format == 'json':
+                entry = {
+                    "path": relative_path.as_posix(),
+                    "content": rendered
+                }
+                json.dump(entry, outfile)
+            else:
+                self._write_with_templates(outfile, rendered, relative_path)
 
         return estimate_tokens(rendered)
 
 
-def find_and_combine_files(config, output_path, dry_run=False, clipboard=False, output_format='text'):
+def find_and_combine_files(config, output_path, dry_run=False, clipboard=False, output_format='text', estimate_tokens=False):
     """Find, filter, and combine files based on the provided configuration."""
     stats = {
         'total_files': 0,
@@ -669,7 +693,7 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False, 
     if output_format == 'json' and pairing_enabled:
         raise InvalidConfigError("JSON format is not compatible with paired output.")
 
-    if not pairing_enabled and not dry_run and not clipboard and output_path is None:
+    if not pairing_enabled and not dry_run and not estimate_tokens and not clipboard and output_path is None:
         raise InvalidConfigError(
             "'output.file' must be set when pairing is disabled and clipboard mode is off."
         )
@@ -677,26 +701,34 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False, 
     out_folder = None
     if pairing_enabled and output_path:
         out_folder = Path(output_path)
-        if not dry_run:
+        if not dry_run and not estimate_tokens:
             out_folder.mkdir(parents=True, exist_ok=True)
 
     clipboard_buffer = io.StringIO() if clipboard else None
-    outfile_ctx = (
-        nullcontext(clipboard_buffer)
-        if pairing_enabled or dry_run or clipboard
-        else open(output_path, 'w', encoding='utf8')
-    )
-    processor = FileProcessor(config, output_opts, dry_run=dry_run)
+
+    if estimate_tokens:
+        outfile_ctx = _DevNull()
+    else:
+        outfile_ctx = (
+            nullcontext(clipboard_buffer)
+            if pairing_enabled or dry_run or clipboard
+            else open(output_path, 'w', encoding='utf8')
+        )
+
+    # We only want true dry-run behavior (skipping reading) if we are NOT estimating tokens.
+    processor_dry_run = dry_run and not estimate_tokens
+    processor = FileProcessor(config, output_opts, dry_run=processor_dry_run, estimate_tokens=estimate_tokens)
+
     total_excluded_folders = 0
     with outfile_ctx as outfile:
         global_header = output_opts.get('global_header_template')
         global_footer = output_opts.get('global_footer_template')
 
         # Only write global headers for text output
-        if not pairing_enabled and not dry_run and global_header and output_format == 'text':
+        if not pairing_enabled and not dry_run and not estimate_tokens and global_header and output_format == 'text':
             outfile.write(global_header)
 
-        if not pairing_enabled and not dry_run and output_format == 'json':
+        if not pairing_enabled and not dry_run and not estimate_tokens and output_format == 'json':
             outfile.write('[')
 
         first_item = True
@@ -791,6 +823,7 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False, 
                     processor=processor,
                     processing_bar=processing_bar,
                     dry_run=dry_run,
+                    estimate_tokens=estimate_tokens,
                     size_excluded=size_excluded,
                     global_header=global_header,
                     global_footer=global_footer,
@@ -808,7 +841,7 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False, 
                     ordered_paths = filtered_paths
 
                 for file_path in ordered_paths:
-                    if output_format == 'json' and not dry_run:
+                    if output_format == 'json' and not dry_run and not estimate_tokens:
                         if not first_item:
                             outfile.write(',')
                         first_item = False
@@ -834,7 +867,7 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False, 
                             output_format=output_format
                         )
 
-                    if not dry_run:
+                    if not dry_run or estimate_tokens:
                         stats['total_tokens'] += token_count
                         if is_approx:
                             stats['token_count_is_approx'] = True
@@ -844,10 +877,10 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False, 
             processing_bar.close()
 
         # Write global footer only for text output
-        if not pairing_enabled and not dry_run and global_footer and output_format == 'text':
+        if not pairing_enabled and not dry_run and not estimate_tokens and global_footer and output_format == 'text':
             outfile.write(global_footer)
 
-        if not pairing_enabled and not dry_run and output_format == 'json':
+        if not pairing_enabled and not dry_run and not estimate_tokens and output_format == 'json':
             outfile.write(']')
 
     stats['excluded_folder_count'] = total_excluded_folders
@@ -926,6 +959,12 @@ def main():
         "-d",
         action="store_true",
         help="See what files will be processed without actually writing anything.",
+    )
+    runtime_group.add_argument(
+        "--estimate-tokens",
+        "-e",
+        action="store_true",
+        help="Calculate token counts without writing output files (slower than dry-run).",
     )
     runtime_group.add_argument(
         "-v",
@@ -1084,7 +1123,10 @@ def main():
 
     mode_desc = "Pairing" if pairing_enabled else "Single File"
     logging.info("SourceCombine starting. Mode: %s", mode_desc)
-    logging.info("Output: Writing %s", destination_desc)
+    if args.estimate_tokens:
+        logging.info("Output: Token estimation only (no files will be written)")
+    else:
+        logging.info("Output: Writing %s", destination_desc)
 
     try:
         stats = find_and_combine_files(
@@ -1093,6 +1135,7 @@ def main():
             dry_run=args.dry_run,
             clipboard=args.clipboard,
             output_format=args.format,
+            estimate_tokens=args.estimate_tokens,
         )
     except InvalidConfigError as exc:
         logging.error(exc, exc_info=True)
@@ -1112,14 +1155,19 @@ def main():
         )
         excluded_folders = stats.get('excluded_folder_count', 0)
 
-        summary_title = "Dry-Run Summary" if args.dry_run else "Execution Summary"
+        if args.dry_run:
+            summary_title = "Dry-Run Summary"
+        elif args.estimate_tokens:
+            summary_title = "Token Estimation Summary"
+        else:
+            summary_title = "Execution Summary"
 
         print(f"\n--- {summary_title} ---", file=sys.stderr)
         print(f"  Total Files:      {total_files}", file=sys.stderr)
         print(f"  Total Size:       {total_size_mb:.2f} MB", file=sys.stderr)
 
-        # Only show token counts for single-file mode where we calculated them
-        if not pairing_enabled and not args.dry_run:
+        # Show token counts for single-file mode OR if estimate_tokens was requested
+        if not pairing_enabled and (not args.dry_run or args.estimate_tokens):
             token_count = stats.get('total_tokens', 0)
             is_approx = stats.get('token_count_is_approx', False)
             approx_indicator = "~" if is_approx else ""
