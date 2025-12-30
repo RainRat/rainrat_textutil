@@ -403,7 +403,7 @@ def _select_preferred_path(ext_map, preferred_exts):
             candidates = ext_map[ext]
             if len(candidates) == 1:
                 return candidates[0]
-            return None
+            continue
     return None
 
 
