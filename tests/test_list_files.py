@@ -1,0 +1,87 @@
+import pytest
+import logging
+from unittest.mock import patch, MagicMock
+import sys
+from io import StringIO
+import sourcecombine
+from sourcecombine import main
+import yaml
+
+def test_dry_run_output(capsys, caplog, tmp_path):
+    # This test verifies that logging actually works as expected in pytest environment
+    # using caplog fixture.
+
+    (tmp_path / "test_file.txt").write_text("content")
+
+    # Run with --dry-run
+    with patch.object(sys, 'argv', ["sourcecombine.py", str(tmp_path), "--dry-run"]):
+        try:
+            main()
+        except SystemExit:
+            pass
+
+    # capsys catches print() to stdout/stderr
+    captured = capsys.readouterr()
+    # caplog catches logging
+
+    # We expect the summary to be in stderr
+    assert "Dry-Run Summary" in captured.err
+
+    # We expect the filename to be logged at INFO level
+    # Since pytest intercepts logging, we check caplog
+    assert "test_file.txt" in caplog.text
+
+def test_list_files_proposal(capsys, tmp_path):
+    # This test verifies the new --list-files feature
+
+    (tmp_path / "test_file.txt").write_text("content")
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src/other.py").write_text("print('hello')")
+
+    # Run with --list-files
+    with patch.object(sys, 'argv', ["sourcecombine.py", str(tmp_path), "--list-files"]):
+        try:
+            main()
+        except SystemExit:
+            pass
+
+    captured = capsys.readouterr()
+
+    # stdout should contain the filenames
+    assert "test_file.txt" in captured.out
+    assert "src/other.py" in captured.out
+
+    # stderr should contain the summary
+    assert "File List Summary" in captured.err
+
+    # stdout should NOT contain log info
+    assert "SourceCombine starting" not in captured.out
+    assert "Output: Listing files only" not in captured.out
+
+def test_list_files_excludes_size(capsys, tmp_path):
+    # Create a config that excludes large files
+    (tmp_path / "large.txt").write_text("A" * 1000)
+    (tmp_path / "small.txt").write_text("A")
+
+    config = {
+        'search': {'root_folders': [str(tmp_path)]},
+        'filters': {'max_size_bytes': 10},
+        'output': {'max_size_placeholder': '[SKIPPED]'}
+    }
+
+    config_file = tmp_path / "config.yml"
+    with open(config_file, 'w') as f:
+        yaml.dump(config, f)
+
+    # Run with --list-files.
+    # Current implementation: It SHOULD include "large.txt" because a placeholder is written (so it's "processed").
+
+    with patch.object(sys, 'argv', ["sourcecombine.py", str(config_file), "--list-files"]):
+        try:
+            main()
+        except SystemExit:
+            pass
+
+    captured = capsys.readouterr()
+    assert "large.txt" in captured.out
+    assert "small.txt" in captured.out

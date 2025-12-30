@@ -667,7 +667,15 @@ class FileProcessor:
         return estimate_tokens(rendered)
 
 
-def find_and_combine_files(config, output_path, dry_run=False, clipboard=False, output_format='text', estimate_tokens=False):
+def find_and_combine_files(
+    config,
+    output_path,
+    dry_run=False,
+    clipboard=False,
+    output_format='text',
+    estimate_tokens=False,
+    list_files=False,
+):
     """Find, filter, and combine files based on the provided configuration."""
     stats = {
         'total_files': 0,
@@ -693,7 +701,7 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False, 
     if output_format == 'json' and pairing_enabled:
         raise InvalidConfigError("JSON format is not compatible with paired output.")
 
-    if not pairing_enabled and not dry_run and not estimate_tokens and not clipboard and output_path is None:
+    if not pairing_enabled and not dry_run and not estimate_tokens and not clipboard and not list_files and output_path is None:
         raise InvalidConfigError(
             "'output.file' must be set when pairing is disabled and clipboard mode is off."
         )
@@ -701,12 +709,12 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False, 
     out_folder = None
     if pairing_enabled and output_path:
         out_folder = Path(output_path)
-        if not dry_run and not estimate_tokens:
+        if not dry_run and not estimate_tokens and not list_files:
             out_folder.mkdir(parents=True, exist_ok=True)
 
     clipboard_buffer = io.StringIO() if clipboard else None
 
-    if estimate_tokens:
+    if estimate_tokens or list_files:
         outfile_ctx = _DevNull()
     else:
         outfile_ctx = (
@@ -716,7 +724,7 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False, 
         )
 
     # We only want true dry-run behavior (skipping reading) if we are NOT estimating tokens.
-    processor_dry_run = dry_run and not estimate_tokens
+    processor_dry_run = (dry_run and not estimate_tokens) or list_files
     processor = FileProcessor(config, output_opts, dry_run=processor_dry_run, estimate_tokens=estimate_tokens)
 
     total_excluded_folders = 0
@@ -725,10 +733,10 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False, 
         global_footer = output_opts.get('global_footer_template')
 
         # Only write global headers for text output
-        if not pairing_enabled and not dry_run and not estimate_tokens and global_header and output_format == 'text':
+        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and global_header and output_format == 'text':
             outfile.write(global_header)
 
-        if not pairing_enabled and not dry_run and not estimate_tokens and output_format == 'json':
+        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and output_format == 'json':
             outfile.write('[')
 
         first_item = True
@@ -779,6 +787,52 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False, 
                 size_excluded = [
                     p for p in size_excluded if p.suffix.lower() != '.bak'
                 ]
+
+            if list_files:
+                paths_to_list = []
+                if pairing_enabled:
+                    include_mismatched = pair_opts.get('include_mismatched', False)
+                    # Use both filtered and size_excluded for pairing listing
+                    pairing_inputs = [*filtered_paths, *size_excluded] if record_size_exclusions else filtered_paths
+
+                    paired_paths = _pair_files(
+                        pairing_inputs,
+                        source_exts,
+                        header_exts,
+                        include_mismatched,
+                        root_path=root_path,
+                    )
+                    unique_paths = set()
+                    for paths in paired_paths.values():
+                        unique_paths.update(paths)
+                    paths_to_list = sorted(unique_paths)
+                else:
+                    paths_to_list = filtered_paths
+                    if record_size_exclusions and size_excluded:
+                        filtered_set = set(filtered_paths)
+                        size_excluded_set = set(size_excluded)
+                        paths_to_list = [
+                            p
+                            for p in all_paths
+                            if p in filtered_set or p in size_excluded_set
+                        ]
+
+                for p in paths_to_list:
+                    stats['total_files'] += 1
+                    try:
+                        stats['total_size_bytes'] += p.stat().st_size
+                    except OSError:
+                        pass
+                    ext = p.suffix.lower() or '.no_extension'
+                    stats['files_by_extension'][ext] = stats['files_by_extension'].get(ext, 0) + 1
+
+                    # Print relative path if possible for cleaner output
+                    try:
+                        print(p.relative_to(root_path) if p.is_absolute() else p)
+                    except ValueError:
+                        print(p)
+                continue
+
             processing_bar = processor._make_bar(
                 total=(
                     len(filtered_paths) + len(size_excluded)
@@ -877,10 +931,10 @@ def find_and_combine_files(config, output_path, dry_run=False, clipboard=False, 
             processing_bar.close()
 
         # Write global footer only for text output
-        if not pairing_enabled and not dry_run and not estimate_tokens and global_footer and output_format == 'text':
+        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and global_footer and output_format == 'text':
             outfile.write(global_footer)
 
-        if not pairing_enabled and not dry_run and not estimate_tokens and output_format == 'json':
+        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and output_format == 'json':
             outfile.write(']')
 
     stats['excluded_folder_count'] = total_excluded_folders
@@ -971,6 +1025,11 @@ def main():
         "--verbose",
         action="store_true",
         help="Show extra details to help solve problems.",
+    )
+    runtime_group.add_argument(
+        "--list-files",
+        action="store_true",
+        help="List the files that would be processed to stdout (one per line) and exit.",
     )
 
     args = parser.parse_args()
@@ -1142,7 +1201,10 @@ def main():
 
     mode_desc = "Pairing" if pairing_enabled else "Single File"
     logging.info("SourceCombine starting. Mode: %s", mode_desc)
-    if args.estimate_tokens:
+
+    if args.list_files:
+        logging.info("Output: Listing files only (no files will be written)")
+    elif args.estimate_tokens:
         logging.info("Output: Token estimation only (no files will be written)")
     else:
         logging.info("Output: Writing %s", destination_desc)
@@ -1155,6 +1217,7 @@ def main():
             clipboard=args.clipboard,
             output_format=args.format,
             estimate_tokens=args.estimate_tokens,
+            list_files=args.list_files,
         )
     except InvalidConfigError as exc:
         logging.error(exc, exc_info=True)
@@ -1178,6 +1241,8 @@ def main():
             summary_title = "Dry-Run Summary"
         elif args.estimate_tokens:
             summary_title = "Token Estimation Summary"
+        elif args.list_files:
+            summary_title = "File List Summary"
         else:
             summary_title = "Execution Summary"
 
@@ -1186,7 +1251,7 @@ def main():
         print(f"  Total Size:       {total_size_mb:.2f} MB", file=sys.stderr)
 
         # Show token counts for single-file mode OR if estimate_tokens was requested
-        if not pairing_enabled and (not args.dry_run or args.estimate_tokens):
+        if not pairing_enabled and (not args.dry_run or args.estimate_tokens) and not args.list_files:
             token_count = stats.get('total_tokens', 0)
             is_approx = stats.get('token_count_is_approx', False)
             approx_indicator = "~" if is_approx else ""
