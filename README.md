@@ -73,6 +73,10 @@ python sourcecombine.py [CONFIG_FILE_OR_DIRECTORY] [OPTIONS]
 *   `--verbose` / `-v`: Enable verbose output (DEBUG level) to troubleshoot configuration issues.
 *   `--clipboard` / `-c`: Copy the combined output directly to the clipboard instead of writing to a file.
     *   *Note: Clipboard mode is not available when file pairing is enabled.*
+*   `--format` / `-f`: Choose the output format (`text` or `json`).
+    *   *Note: JSON format produces an array of file objects and is available in single-file mode only.*
+*   `--estimate-tokens` / `-e`: Calculate token counts without writing output files.
+    *   *Note: Slower than a regular dry-run as it processes content.*
 *   `--init`: Generate a default configuration file (`sourcecombine.yml`) in the current directory.
 *   `--exclude-file`: Exclude specific files (e.g., `--exclude-file "secret.txt"`). Can be used multiple times.
 *   `--exclude-folder`: Exclude specific folders (e.g., `--exclude-folder "build"`). Can be used multiple times.
