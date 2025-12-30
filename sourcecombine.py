@@ -1041,28 +1041,47 @@ def main():
                     break
 
             if not config_path:
-                parser.error(
-                    "No config file specified, no directory provided, and no default config found "
-                    f"(checked: {', '.join(defaults)})."
+                # Fallback to current directory if no config found
+                logging.info(
+                    "No config file found (checked: %s). Scanning current directory '.' with default settings.",
+                    ", ".join(defaults),
                 )
+                config_path = "."
+                # Redirect flow to directory mode logic
+                # Since we are modifying config_path to '.', we need to handle it
+                # similar to the 'directory mode' block above, but we are already past it.
+                # So we construct the config here.
+                config = {'search': {'root_folders': [config_path]}}
+                try:
+                    validate_config(
+                        config,
+                        defaults=DEFAULT_CONFIG,
+                        nested_required=nested_required,
+                        source="<default-cwd>"
+                    )
+                except InvalidConfigError as e:
+                    logging.error("Invalid configuration: %s", e)
+                    logging.debug("Configuration validation traceback:", exc_info=True)
+                    sys.exit(1)
 
-        try:
-            config = load_and_validate_config(
-                config_path, nested_required=nested_required
-            )
-        except ConfigNotFoundError as e:
-            logging.error(
-                "Could not find the configuration file '%s'. "
-                "Check the filename and your current working directory: %s",
-                config_path,
-                Path.cwd(),
-            )
-            logging.debug("Missing configuration details:", exc_info=True)
-            sys.exit(1)
-        except InvalidConfigError as e:
-            logging.error("Invalid configuration: %s", e)
-            logging.debug("Configuration validation traceback:", exc_info=True)
-            sys.exit(1)
+        if config is None:
+            try:
+                config = load_and_validate_config(
+                    config_path, nested_required=nested_required
+                )
+            except ConfigNotFoundError as e:
+                logging.error(
+                    "Could not find the configuration file '%s'. "
+                    "Check the filename and your current working directory: %s",
+                    config_path,
+                    Path.cwd(),
+                )
+                logging.debug("Missing configuration details:", exc_info=True)
+                sys.exit(1)
+            except InvalidConfigError as e:
+                logging.error("Invalid configuration: %s", e)
+                logging.debug("Configuration validation traceback:", exc_info=True)
+                sys.exit(1)
 
     # Re-configure level based on config, *unless* -v was used.
     # The -v (DEBUG) flag always overrides the config file's setting.
