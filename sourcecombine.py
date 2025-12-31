@@ -9,6 +9,7 @@ import re
 import shutil
 import sys
 import json
+import textwrap
 from functools import lru_cache
 from pathlib import Path, PurePath
 
@@ -1229,42 +1230,89 @@ def main():
         logging.info("Done.")
 
     if stats:
-        total_files = stats['total_files']
-        total_size_mb = stats['total_size_bytes'] / (1024 * 1024)
-        ext_summary = ", ".join(
+        _print_execution_summary(stats, args, pairing_enabled)
+
+
+def _print_execution_summary(stats, args, pairing_enabled):
+    """Print a formatted summary of the execution statistics to stderr."""
+
+    total_files = stats['total_files']
+    total_size_mb = stats['total_size_bytes'] / (1024 * 1024)
+    excluded_folders = stats.get('excluded_folder_count', 0)
+
+    # ANSI color codes (if supported)
+    bold = "\033[1m"
+    reset = "\033[0m"
+    dim = "\033[90m"
+
+    use_color = sys.stderr.isatty() and not os.getenv("NO_COLOR")
+    if not use_color:
+        bold = reset = dim = ""
+
+    if args.dry_run:
+        summary_title = "Dry-Run Summary"
+    elif args.estimate_tokens:
+        summary_title = "Token Estimation Summary"
+    elif args.list_files:
+        summary_title = "File List Summary"
+    else:
+        summary_title = "Execution Summary"
+
+    # Header
+    print(f"\n{bold}--- {summary_title} ---{reset}", file=sys.stderr)
+
+    # Core Stats
+    print(f"  {bold}Total Files:{reset}      {total_files}", file=sys.stderr)
+    print(f"  {bold}Total Size:{reset}       {total_size_mb:.2f} MB", file=sys.stderr)
+
+    # Token Counts
+    # Show token counts for single-file mode OR if estimate_tokens was requested
+    if not pairing_enabled and (not args.dry_run or args.estimate_tokens) and not args.list_files:
+        token_count = stats.get('total_tokens', 0)
+        is_approx = stats.get('token_count_is_approx', False)
+        approx_indicator = "~" if is_approx else ""
+        print(
+            f"  {bold}Token Count:{reset}      {approx_indicator}{token_count}",
+            file=sys.stderr,
+        )
+        if is_approx:
+            print(
+                f"    {dim}(Install 'tiktoken' for accurate counts){reset}",
+                file=sys.stderr,
+            )
+
+    # Extensions Grid
+    if stats['files_by_extension']:
+        ext_list = [
             f"{ext}: {count}"
             for ext, count in sorted(stats['files_by_extension'].items())
-        )
-        excluded_folders = stats.get('excluded_folder_count', 0)
+        ]
 
-        if args.dry_run:
-            summary_title = "Dry-Run Summary"
-        elif args.estimate_tokens:
-            summary_title = "Token Estimation Summary"
-        elif args.list_files:
-            summary_title = "File List Summary"
-        else:
-            summary_title = "Execution Summary"
+        # We need to handle colors carefully with textwrap.
+        # Since textwrap counts escape codes as characters, we'll wrap the plain text first.
+        # We print the label first, then the wrapped list.
 
-        print(f"\n--- {summary_title} ---", file=sys.stderr)
-        print(f"  Total Files:      {total_files}", file=sys.stderr)
-        print(f"  Total Size:       {total_size_mb:.2f} MB", file=sys.stderr)
+        prefix = f"  {bold}Extensions:{reset}       "
 
-        # Show token counts for single-file mode OR if estimate_tokens was requested
-        if not pairing_enabled and (not args.dry_run or args.estimate_tokens) and not args.list_files:
-            token_count = stats.get('total_tokens', 0)
-            is_approx = stats.get('token_count_is_approx', False)
-            approx_indicator = "~" if is_approx else ""
-            print(f"  Token Count:      {approx_indicator}{token_count}", file=sys.stderr)
-            if is_approx:
-                print("    (Install 'tiktoken' for accurate counts)", file=sys.stderr)
+        # Re-implementation for clean wrapping:
+        # 1. Join all items.
+        # 2. Wrap.
+        # 3. Print first line with label, subsequent lines with indentation.
 
-        if ext_summary:
-            print(f"  Extensions:       {ext_summary}", file=sys.stderr)
+        plain_ext_text = ", ".join(ext_list)
+        wrapped_lines = textwrap.wrap(plain_ext_text, width=60) # 60 chars for value column
 
-        if excluded_folders > 0:
-            print(f"  Excluded Folders: {excluded_folders}", file=sys.stderr)
-        print("-" * (len(summary_title) + 8), file=sys.stderr)
+        if wrapped_lines:
+            print(f"{prefix}{wrapped_lines[0]}", file=sys.stderr)
+            for line in wrapped_lines[1:]:
+                print(f"{' ' * 20}{line}", file=sys.stderr)
+
+    # Excluded Folders
+    if excluded_folders > 0:
+        print(f"  {bold}Excluded Folders:{reset} {excluded_folders}", file=sys.stderr)
+
+    # Footer
+    print(f"{dim}{'-' * (len(summary_title) + 8)}{reset}", file=sys.stderr)
 
 
 if __name__ == "__main__":
