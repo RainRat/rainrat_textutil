@@ -27,7 +27,25 @@ Whether you are preparing files for printing, creating context for Large Languag
     cd TextUtilities
     ```
 
-3.  **Install dependencies:**
+3.  **Set up a virtual environment (Recommended):**
+    Create and activate a virtual environment to keep dependencies isolated:
+    *   **Windows (Command Prompt):**
+        ```bash
+        python -m venv venv
+        venv\Scripts\activate
+        ```
+    *   **Windows (PowerShell):**
+        ```bash
+        python -m venv venv
+        .\venv\Scripts\Activate.ps1
+        ```
+    *   **macOS/Linux:**
+        ```bash
+        python3 -m venv venv
+        source venv/bin/activate
+        ```
+
+4.  **Install dependencies:**
     Install the required libraries:
     ```bash
     pip install -r requirements.txt
@@ -37,7 +55,7 @@ Whether you are preparing files for printing, creating context for Large Languag
     pip install tiktoken
     ```
 
-4.  **Verify installation:**
+5.  **Verify installation:**
     Check that the tool runs:
     ```bash
     python sourcecombine.py --help
@@ -283,3 +301,14 @@ Using double quotes would require escaping each backslash (`"C:\\Users\\Guest"`)
   regex-based processing.
 - `example_cpp_h.yml`: demonstrates pairing C/C++ source files with their
   corresponding headers.
+
+## Troubleshooting
+
+**"Command not found" or "Module not found" errors:**
+Ensure you have activated your virtual environment (Step 3 in Installation) and installed the dependencies.
+
+**Permission errors:**
+If you encounter permission denied errors, check that you have read access to the files you are trying to combine and write access to the output location.
+
+**Encoding issues:**
+SourceCombine attempts to detect file encoding, but specialized files might cause issues. Try converting them to UTF-8 if problems persist.
