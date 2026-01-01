@@ -76,7 +76,7 @@ def load_yaml_config(config_file_path):
         with open(config_file_path, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
             if config is None:
-                raise ValueError("Configuration file is empty or invalid.")
+                raise InvalidConfigError("Configuration file is empty or invalid.")
             return config
     except FileNotFoundError as e:
         raise ConfigNotFoundError(
@@ -102,8 +102,6 @@ def load_yaml_config(config_file_path):
             message = f"{message} ({hint})"
 
         raise InvalidConfigError(message) from e
-    except ValueError as e:
-        raise InvalidConfigError(str(e)) from e
 
 
 def read_file_best_effort(file_path):
