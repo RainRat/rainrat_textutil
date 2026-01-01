@@ -645,6 +645,7 @@ class FileProcessor:
         """
 
         if self.dry_run:
+            logging.info(file_path.resolve())
             return 0, True
 
         placeholder = self.output_opts.get('max_size_placeholder')
@@ -763,9 +764,7 @@ def find_and_combine_files(
             header_exts = tuple(
                 e.lower() for e in (pair_opts.get('header_extensions') or [])
             )
-            record_size_exclusions = bool(
-                output_opts.get('max_size_placeholder')
-            ) and not dry_run
+            record_size_exclusions = bool(output_opts.get('max_size_placeholder'))
 
             filtered_result = filter_file_paths(
                 all_paths,
