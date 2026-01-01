@@ -91,8 +91,8 @@ python sourcecombine.py [CONFIG_FILE_OR_DIRECTORY] [OPTIONS]
 *   `--verbose` / `-v`: Enable verbose output (DEBUG level) to troubleshoot configuration issues.
 *   `--clipboard` / `-c`: Copy the combined output directly to the clipboard instead of writing to a file.
     *   *Note: Clipboard mode is not available when file pairing is enabled.*
-*   `--format` / `-f`: Choose the output format (`text` or `json`).
-    *   *Note: JSON format produces an array of file objects and is available in single-file mode only.*
+*   `--format` / `-f`: Choose the output format (`text`, `json`, or `markdown`).
+    *   *Note: JSON format produces an array of file objects and is available in single-file mode only. Markdown format automatically sets header/footer templates to use Markdown code blocks.*
 *   `--estimate-tokens` / `-e`: Calculate token counts without writing output files.
     *   *Note: Slower than a regular dry-run as it processes content.*
 *   `--init`: Generate a default configuration file (`sourcecombine.yml`) in the current directory.
@@ -124,7 +124,7 @@ python sourcecombine.py config.yml --clipboard
 The `output.header_template` and `output.footer_template` options control the
 text written before and after each file's content. The special sequence
 `{{FILENAME}}` is replaced with the file's path relative to the configured root
-folder.
+folder, and `{{EXT}}` is replaced with the file's extension (without the dot).
 
 By default, SourceCombine writes a simple divider around each file:
 
