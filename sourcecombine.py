@@ -699,6 +699,9 @@ def find_and_combine_files(
     if clipboard and pairing_enabled:
         raise InvalidConfigError("Clipboard mode is only available when pairing is disabled.")
 
+    if output_path == '-' and pairing_enabled:
+        raise InvalidConfigError("Stdout output is not available in pairing mode.")
+
     if output_format == 'json' and pairing_enabled:
         raise InvalidConfigError("JSON format is not compatible with paired output.")
 
@@ -717,12 +720,12 @@ def find_and_combine_files(
 
     if estimate_tokens or list_files:
         outfile_ctx = _DevNull()
+    elif pairing_enabled or dry_run or clipboard:
+        outfile_ctx = nullcontext(clipboard_buffer)
+    elif output_path == '-':
+        outfile_ctx = nullcontext(sys.stdout)
     else:
-        outfile_ctx = (
-            nullcontext(clipboard_buffer)
-            if pairing_enabled or dry_run or clipboard
-            else open(output_path, 'w', encoding='utf8')
-        )
+        outfile_ctx = open(output_path, 'w', encoding='utf8')
 
     # We only want true dry-run behavior (skipping reading) if we are NOT estimating tokens.
     processor_dry_run = (dry_run and not estimate_tokens) or list_files
@@ -1189,6 +1192,8 @@ def main():
     # Determine output description before the main loop
     if args.clipboard:
         destination_desc = "to clipboard"
+    elif output_path == '-':
+        destination_desc = "to stdout"
     elif pairing_enabled:
         destination_desc = (
             "alongside their source files"
