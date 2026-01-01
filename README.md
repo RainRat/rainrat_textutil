@@ -26,9 +26,10 @@ Whether you are preparing files for printing, creating context for Large Languag
     git clone https://github.com/RainRat/TextUtilities.git
     cd TextUtilities
     ```
+    *Alternatively, [download the ZIP file](https://github.com/RainRat/TextUtilities/archive/refs/heads/main.zip) and extract it.*
 
 3.  **Set up a virtual environment (Recommended):**
-    Create and activate a virtual environment to keep dependencies isolated:
+    This keeps the tool's libraries separate from your other Python projects.
     *   **Windows (Command Prompt):**
         ```bash
         python -m venv venv
@@ -45,8 +46,8 @@ Whether you are preparing files for printing, creating context for Large Languag
         source venv/bin/activate
         ```
 
-4.  **Install dependencies:**
-    Install the required libraries:
+4.  **Install libraries:**
+    Install the necessary software libraries:
     ```bash
     pip install -r requirements.txt
     ```
