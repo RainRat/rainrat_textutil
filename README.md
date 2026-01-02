@@ -15,30 +15,25 @@ Whether you are preparing files for printing, creating context for Large Languag
 ## Installation
 
 1.  **Check your Python version:**
-    SourceCombine requires Python 3.8 or newer.
+    Make sure you have Python 3.8 or newer.
     ```bash
     python --version
     ```
 
 2.  **Get the code:**
-    Clone the repository and enter the directory:
+    Clone the repository and enter the folder:
     ```bash
     git clone https://github.com/RainRat/TextUtilities.git
     cd TextUtilities
     ```
-    *Alternatively, [download the ZIP file](https://github.com/RainRat/TextUtilities/archive/refs/heads/main.zip) and extract it.*
+    *Or [download the ZIP file](https://github.com/RainRat/TextUtilities/archive/refs/heads/main.zip) and extract it.*
 
-3.  **Set up a virtual environment (Recommended):**
-    This keeps the tool's libraries separate from your other Python projects.
-    *   **Windows (Command Prompt):**
+3.  **Set up a virtual environment:**
+    This keeps your project clean.
+    *   **Windows:**
         ```bash
         python -m venv venv
         venv\Scripts\activate
-        ```
-    *   **Windows (PowerShell):**
-        ```bash
-        python -m venv venv
-        .\venv\Scripts\Activate.ps1
         ```
     *   **macOS/Linux:**
         ```bash
@@ -46,40 +41,36 @@ Whether you are preparing files for printing, creating context for Large Languag
         source venv/bin/activate
         ```
 
-4.  **Install libraries:**
-    Install the necessary software libraries:
+4.  **Install dependencies:**
     ```bash
     pip install -r requirements.txt
     ```
-    *(Optional) For accurate token counting, also install `tiktoken`:*
+    *(Optional) Install `tiktoken` for accurate token counting:*
     ```bash
     pip install tiktoken
     ```
 
-5.  **Verify installation:**
-    Check that the tool runs:
+5.  **Verify it works:**
     ```bash
     python sourcecombine.py --help
     ```
 
 ## Quick Start
 
-1.  **Generate a default configuration:**
-    Run this command in the folder you want to process (or where you want to store the config):
+1.  **Create a config file:**
     ```bash
     python sourcecombine.py --init
     ```
-    This creates a `sourcecombine.yml` file with default settings.
 
 2.  **Run the tool:**
     ```bash
     python sourcecombine.py sourcecombine.yml
     ```
-    By default, this combines files from the current directory into `combined_files.txt`.
+    This combines files from the current directory into `combined_files.txt`.
 
 ## Usage
 
-Run the script from the command line. You can pass a configuration file or a directory path.
+Run the script with a config file or a directory path.
 
 ```bash
 python sourcecombine.py [CONFIG_FILE_OR_DIRECTORY] [OPTIONS]
@@ -87,18 +78,15 @@ python sourcecombine.py [CONFIG_FILE_OR_DIRECTORY] [OPTIONS]
 
 ### Options
 
-*   `--output` / `-o`: Override the output path specified in the configuration.
-*   `--dry-run` / `-d`: List matched files and planned outputs without writing any files. Useful for previewing changes.
-*   `--verbose` / `-v`: Enable verbose output (DEBUG level) to troubleshoot configuration issues.
-*   `--clipboard` / `-c`: Copy the combined output directly to the clipboard instead of writing to a file.
-    *   *Note: Clipboard mode is not available when file pairing is enabled.*
-*   `--format` / `-f`: Choose the output format (`text`, `json`, or `markdown`).
-    *   *Note: JSON format produces an array of file objects and is available in single-file mode only. Markdown format automatically sets header/footer templates to use Markdown code blocks.*
-*   `--estimate-tokens` / `-e`: Calculate token counts without writing output files.
-    *   *Note: Slower than a regular dry-run as it processes content.*
-*   `--init`: Generate a default configuration file (`sourcecombine.yml`) in the current directory.
-*   `--exclude-file`: Exclude specific files (e.g., `--exclude-file "secret.txt"`). Can be used multiple times.
-*   `--exclude-folder`: Exclude specific folders (e.g., `--exclude-folder "build"`). Can be used multiple times.
+*   `--output` / `-o`: Save to a specific file or folder, overriding your config.
+*   `--dry-run` / `-d`: Preview the files to be processed without writing any changes.
+*   `--verbose` / `-v`: Show detailed logs for troubleshooting.
+*   `--clipboard` / `-c`: Copy the result to your clipboard instead of a file. (Single-file mode only)
+*   `--format` / `-f`: Select the output format: `text`, `json`, or `markdown`. (Single-file mode only)
+*   `--estimate-tokens` / `-e`: Count tokens without writing files.
+*   `--init`: Create a starter config file (`sourcecombine.yml`) here.
+*   `--exclude-file`: Skip a specific file (e.g., `--exclude-file "secret.txt"`).
+*   `--exclude-folder`: Skip a specific folder (e.g., `--exclude-folder "build"`).
 
 ### Examples
 
@@ -122,12 +110,12 @@ python sourcecombine.py config.yml --clipboard
 
 ## Customizing file boundaries
 
-The `output.header_template` and `output.footer_template` options control the
-text written before and after each file's content. The special sequence
-`{{FILENAME}}` is replaced with the file's path relative to the configured root
-folder, and `{{EXT}}` is replaced with the file's extension (without the dot).
+You can change what appears before and after each file using `output.header_template` and `output.footer_template`.
 
-By default, SourceCombine writes a simple divider around each file:
+*   `{{FILENAME}}`: The file path (e.g., `src/main.py`).
+*   `{{EXT}}`: The file extension (e.g., `py`).
+
+Default dividers:
 
 ```yaml
 output:
