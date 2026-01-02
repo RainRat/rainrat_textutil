@@ -570,6 +570,9 @@ class FileProcessor:
             header_text = header_template.replace(
                 FILENAME_PLACEHOLDER, str(relative_path)
             )
+            header_text = header_text.replace(
+                "{{EXT}}", relative_path.suffix.lstrip(".") or ""
+            )
             outfile.write(header_text)
 
         outfile.write(content)
@@ -577,6 +580,9 @@ class FileProcessor:
         if footer_template not in (None, ""):
             footer_text = footer_template.replace(
                 FILENAME_PLACEHOLDER, str(relative_path)
+            )
+            footer_text = footer_text.replace(
+                "{{EXT}}", relative_path.suffix.lstrip(".") or ""
             )
             outfile.write(footer_text)
     def _backup_file(self, file_path):
@@ -705,6 +711,21 @@ def find_and_combine_files(
 
     if output_format == 'json' and pairing_enabled:
         raise InvalidConfigError("JSON format is not compatible with paired output.")
+
+    # Apply default Markdown templates if requested and not overridden
+    if output_format == 'markdown':
+        default_header = utils.DEFAULT_CONFIG['output']['header_template']
+        default_footer = utils.DEFAULT_CONFIG['output']['footer_template']
+
+        current_header = output_opts.get('header_template')
+        current_footer = output_opts.get('footer_template')
+
+        # If current matches default (or is None/empty/missing), override with Markdown defaults
+        if not current_header or current_header == default_header:
+            output_opts['header_template'] = "## {{FILENAME}}\n\n```{{EXT}}\n"
+
+        if not current_footer or current_footer == default_footer:
+            output_opts['footer_template'] = "\n```\n\n"
 
     if not pairing_enabled and not dry_run and not estimate_tokens and not clipboard and not list_files and output_path is None:
         raise InvalidConfigError(
@@ -1008,7 +1029,7 @@ def main():
     output_group.add_argument(
         "--format",
         "-f",
-        choices=["text", "json"],
+        choices=["text", "json", "markdown"],
         default="text",
         help="Choose the output format. 'json' produces a JSON array of file objects. (Single-file mode only)",
     )
