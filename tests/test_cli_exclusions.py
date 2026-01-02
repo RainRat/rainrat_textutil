@@ -114,3 +114,29 @@ def test_cli_exclusions_create_filters_section(temp_cwd, mock_argv):
         assert 'filters' in config_passed
         assert 'exclusions' in config_passed['filters']
         assert '*.tmp' in config_passed['filters']['exclusions']['filenames']
+
+def test_cli_short_exclusions(temp_cwd, mock_argv):
+    """Test that short CLI exclusion flags (-x, -X) work and merge with long flags."""
+    config_file = temp_cwd / "config.yml"
+    with open(config_file, 'w') as f:
+        yaml.dump({'search': {'root_folders': ['.']}}, f)
+
+    with patch('sourcecombine.find_and_combine_files') as mock_combine:
+        mock_combine.return_value = {}
+
+        args = [
+            str(config_file),
+            '-x', 'short_file.py',
+            '-X', 'short_folder',
+            '--exclude-file', 'long_file.py'
+        ]
+
+        with mock_argv(args):
+            main()
+
+        config_passed = mock_combine.call_args[0][0]
+        exclusions = config_passed['filters']['exclusions']
+
+        assert 'short_file.py' in exclusions['filenames']
+        assert 'long_file.py' in exclusions['filenames']
+        assert 'short_folder' in exclusions['folders']

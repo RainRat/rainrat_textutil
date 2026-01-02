@@ -977,12 +977,16 @@ def main():
     )
     config_group.add_argument(
         "--exclude-file",
+        "-x",
+        dest="exclude_file",
         action="append",
         default=[],
         help="Exclude a file (glob pattern). Can be used multiple times. Overrides/appends to config.",
     )
     config_group.add_argument(
         "--exclude-folder",
+        "-X",
+        dest="exclude_folder",
         action="append",
         default=[],
         help="Exclude a folder (glob pattern). Can be used multiple times. Overrides/appends to config.",
