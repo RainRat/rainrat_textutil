@@ -523,6 +523,16 @@ def _process_paired_files(
                 pair_out.write(global_footer)
 
 
+def _update_file_stats(stats, file_path):
+    stats['total_files'] += 1
+    try:
+        stats['total_size_bytes'] += file_path.stat().st_size
+    except OSError:
+        pass
+    ext = file_path.suffix.lower() or '.no_extension'
+    stats['files_by_extension'][ext] = stats['files_by_extension'].get(ext, 0) + 1
+
+
 class FileProcessor:
     """Process files according to configuration and write them to an output.
 
@@ -842,13 +852,7 @@ def find_and_combine_files(
                         ]
 
                 for p in paths_to_list:
-                    stats['total_files'] += 1
-                    try:
-                        stats['total_size_bytes'] += p.stat().st_size
-                    except OSError:
-                        pass
-                    ext = p.suffix.lower() or '.no_extension'
-                    stats['files_by_extension'][ext] = stats['files_by_extension'].get(ext, 0) + 1
+                    _update_file_stats(stats, p)
 
                     # Print relative path if possible for cleaner output
                     try:
@@ -867,13 +871,7 @@ def find_and_combine_files(
                 unit="file",
             )
             for p in filtered_paths:
-                stats['total_files'] += 1
-                try:
-                    stats['total_size_bytes'] += p.stat().st_size
-                except OSError:
-                    pass
-                ext = p.suffix.lower() or '.no_extension'
-                stats['files_by_extension'][ext] = stats['files_by_extension'].get(ext, 0) + 1
+                _update_file_stats(stats, p)
 
             if pairing_enabled:
                 include_mismatched = pair_opts.get('include_mismatched', False)
