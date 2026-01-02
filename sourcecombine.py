@@ -977,8 +977,8 @@ def main():
     """Main function to parse arguments and run the tool."""
     parser = argparse.ArgumentParser(
         description=(
-            "Combine source code files into a single document or organized pairs. "
-            "Great for LLM context, documentation, or code review."
+            "Combine your source code into one file or matched pairs. "
+            "Perfect for AI context, documentation, or code reviews."
         )
     )
 
@@ -986,7 +986,7 @@ def main():
     parser.add_argument(
         "config_file",
         nargs="?",
-        help="The YAML file with your settings (e.g., config.yml) OR a directory path to scan using defaults.",
+        help="Your configuration file (e.g., config.yml) or a directory to scan.",
     )
 
     # Configuration Group
@@ -994,7 +994,7 @@ def main():
     config_group.add_argument(
         "--init",
         action="store_true",
-        help="Generate a default configuration file (sourcecombine.yml) in the current directory.",
+        help="Create a starter config file (sourcecombine.yml) here.",
     )
     config_group.add_argument(
         "--exclude-file",
@@ -1002,7 +1002,7 @@ def main():
         dest="exclude_file",
         action="append",
         default=[],
-        help="Exclude a file (glob pattern). Can be used multiple times. Overrides/appends to config.",
+        help="Skip a specific file (e.g., 'secret.txt'). You can use this multiple times.",
     )
     config_group.add_argument(
         "--exclude-folder",
@@ -1010,7 +1010,7 @@ def main():
         dest="exclude_folder",
         action="append",
         default=[],
-        help="Exclude a folder (glob pattern). Can be used multiple times. Overrides/appends to config.",
+        help="Skip a specific folder (e.g., 'build'). You can use this multiple times.",
     )
 
     # Output Options Group
@@ -1018,20 +1018,20 @@ def main():
     output_group.add_argument(
         "--output",
         "-o",
-        help="Save to a specific file or folder, ignoring the setting in your config file.",
+        help="Save the result to a specific file or folder, overriding your config.",
     )
     output_group.add_argument(
         "--clipboard",
         "-c",
         action="store_true",
-        help="Copy the result to your clipboard instead of saving to a file. (Single-file mode only)",
+        help="Copy the result to your clipboard instead of a file. (Single-file mode only)",
     )
     output_group.add_argument(
         "--format",
         "-f",
         choices=["text", "json", "markdown"],
         default="text",
-        help="Choose the output format. 'json' produces a JSON array of file objects. (Single-file mode only)",
+        help="Select the output format: text, json, or markdown. (Single-file mode only)",
     )
 
     # Runtime Options Group
@@ -1040,24 +1040,24 @@ def main():
         "--dry-run",
         "-d",
         action="store_true",
-        help="See what files will be processed without actually writing anything.",
+        help="Preview the files to be processed without writing any changes.",
     )
     runtime_group.add_argument(
         "--estimate-tokens",
         "-e",
         action="store_true",
-        help="Calculate token counts without writing output files (slower than dry-run).",
+        help="Count tokens without writing files (slower than a preview).",
     )
     runtime_group.add_argument(
         "-v",
         "--verbose",
         action="store_true",
-        help="Show extra details to help solve problems.",
+        help="Show detailed logs for troubleshooting.",
     )
     runtime_group.add_argument(
         "--list-files",
         action="store_true",
-        help="List the files that would be processed to stdout (one per line) and exit.",
+        help="Print a list of selected files and exit.",
     )
 
     args = parser.parse_args()
