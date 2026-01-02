@@ -43,6 +43,10 @@ output:
   # Add line numbers starting at 1 for each file.
   add_line_numbers: false
 
+  # Include a Table of Contents at the beginning of the combined file.
+  # (Ignored in pairing mode and JSON format)
+  table_of_contents: false
+
   # Template written before each file's content.
   # The special sequence "{{FILENAME}}" is replaced with the file's
   # path relative to the root folder. Set to null or an empty string

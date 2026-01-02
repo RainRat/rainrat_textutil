@@ -675,6 +675,51 @@ class FileProcessor:
         return estimate_tokens(rendered)
 
 
+def _generate_table_of_contents(files, output_format='text'):
+    """Generate a Table of Contents string for the provided files.
+
+    files: List of (Path, Path) tuples representing (file_path, root_path).
+    """
+    if not files:
+        return ""
+
+    toc_lines = []
+
+    if output_format == 'markdown':
+        toc_lines.append("## Table of Contents")
+        for file_path, root_path in files:
+            try:
+                rel_path = file_path.relative_to(root_path)
+            except ValueError:
+                rel_path = file_path
+
+            # Create a basic anchor link. Note: This assumes standard GitHub-style
+            # slugification (lowercase, spaces to dashes, remove punctuation).
+            # It matches the default Markdown header template: "## {{FILENAME}}"
+
+            # Actually, standard GitHub slugify is:
+            # 1. Lowercase
+            # 2. Remove chars that are not a-z, 0-9, space, hyphen, underscore
+            # 3. Replace spaces with hyphens
+            # Let's try to be close to that.
+            slug = re.sub(r'[^a-z0-9 _-]', '', str(rel_path).lower()).replace(' ', '-')
+
+            toc_lines.append(f"- [{rel_path}](#{slug})")
+        toc_lines.append("")
+
+    else: # text
+        toc_lines.append("Table of Contents:")
+        for file_path, root_path in files:
+            try:
+                rel_path = file_path.relative_to(root_path)
+            except ValueError:
+                rel_path = file_path
+            toc_lines.append(f"- {rel_path}")
+        toc_lines.append("\n" + "-" * 20 + "\n")
+
+    return "\n".join(toc_lines)
+
+
 def find_and_combine_files(
     config,
     output_path,
@@ -754,6 +799,11 @@ def find_and_combine_files(
     processor = FileProcessor(config, output_opts, dry_run=processor_dry_run, estimate_tokens=estimate_tokens)
 
     total_excluded_folders = 0
+
+    # Store all items to process for single-file mode to enable global TOC
+    # List of (file_path, root_path, is_size_excluded)
+    all_single_mode_items = []
+
     with outfile_ctx as outfile:
         global_header = output_opts.get('global_header_template')
         global_footer = output_opts.get('global_footer_template')
@@ -857,15 +907,7 @@ def find_and_combine_files(
                         print(p)
                 continue
 
-            processing_bar = processor._make_bar(
-                total=(
-                    len(filtered_paths) + len(size_excluded)
-                    if (filtered_paths or size_excluded)
-                    else None
-                ),
-                desc="Processing files",
-                unit="file",
-            )
+            # Update stats
             for p in filtered_paths:
                 stats['total_files'] += 1
                 try:
@@ -876,6 +918,17 @@ def find_and_combine_files(
                 stats['files_by_extension'][ext] = stats['files_by_extension'].get(ext, 0) + 1
 
             if pairing_enabled:
+                # Process pairing immediately per root folder
+                processing_bar = processor._make_bar(
+                    total=(
+                        len(filtered_paths) + len(size_excluded)
+                        if (filtered_paths or size_excluded)
+                        else None
+                    ),
+                    desc="Processing files",
+                    unit="file",
+                )
+
                 include_mismatched = pair_opts.get('include_mismatched', False)
                 pairing_inputs = filtered_paths
                 if record_size_exclusions:
@@ -906,7 +959,9 @@ def find_and_combine_files(
                     global_header=global_header,
                     global_footer=global_footer,
                 )
+                processing_bar.close()
             else:
+                # Accumulate for single-file mode
                 if record_size_exclusions:
                     filtered_set = set(filtered_paths)
                     size_excluded_set = set(size_excluded)
@@ -919,38 +974,128 @@ def find_and_combine_files(
                     ordered_paths = filtered_paths
 
                 for file_path in ordered_paths:
-                    if output_format == 'json' and not dry_run and not estimate_tokens:
-                        if not first_item:
-                            outfile.write(',')
-                        first_item = False
-
-                    token_count = 0
-                    is_approx = True
+                    is_excluded_by_size = False
                     if record_size_exclusions and file_path in size_excluded_set:
-                        try:
-                            rel_path = file_path.relative_to(root_path)
-                        except ValueError:
-                            rel_path = file_path
-                        logging.debug(
-                            "File exceeds max size; writing placeholder: %s", rel_path
-                        )
-                        token_count, is_approx = processor.write_max_size_placeholder(
-                            file_path, root_path, outfile, output_format=output_format
-                        )
-                    else:
-                        token_count, is_approx = processor.process_and_write(
-                            file_path,
-                            root_path,
-                            outfile,
-                            output_format=output_format
-                        )
+                        is_excluded_by_size = True
 
-                    if not dry_run or estimate_tokens:
-                        stats['total_tokens'] += token_count
-                        if is_approx:
-                            stats['token_count_is_approx'] = True
+                    all_single_mode_items.append((file_path, root_path, is_excluded_by_size))
 
-                    processing_bar.update(1)
+        # End of root_folder loop
+
+        # Process Single File Mode items (including TOC)
+        if not pairing_enabled and not list_files:
+            if output_opts.get('table_of_contents') and output_format in ('text', 'markdown'):
+                # Generate TOC
+                # Only include files that are not size-excluded for the TOC?
+                # Or include them all? Usually TOC lists what's in the document.
+                # If size-excluded files get a placeholder, they are "in" the document.
+                toc_files = [(p, r) for p, r, _ in all_single_mode_items]
+                toc_content = _generate_table_of_contents(toc_files, output_format)
+
+                if estimate_tokens:
+                    # Count tokens for TOC
+                    token_count, is_approx = utils.estimate_tokens(toc_content)
+                    stats['total_tokens'] += token_count
+                    if is_approx:
+                        stats['token_count_is_approx'] = True
+                # No 'elif not dry_run' here because outfile_ctx handles dry_run/estimate_tokens as needed (mostly)
+                # But wait, outfile_ctx is _DevNull if estimate_tokens is True.
+                # If dry_run is True and estimate_tokens is False, outfile_ctx is nullcontext(clipboard_buffer).
+                # Wait, if dry_run=True, we shouldn't write to outfile unless it's the clipboard buffer?
+                # The logic for outfile_ctx setup:
+                # if estimate_tokens or list_files: _DevNull()
+                # elif pairing_enabled or dry_run or clipboard: nullcontext(clipboard_buffer)
+                #
+                # So if dry_run=True, we write to clipboard_buffer (which is discarded unless clipboard=True).
+                # So writing is safe.
+                #
+                # However, the previous logic was:
+                # elif not dry_run: outfile.write(toc_content)
+                #
+                # If I remove `elif not dry_run`, then in dry_run mode we write to the buffer.
+                # Is that desired?
+                # In dry_run mode, usually we just log.
+                # But here we are inside `with outfile_ctx as outfile`.
+                # If dry_run=True, outfile is a buffer or _DevNull.
+                # Writing to it is fine?
+                #
+                # BUT, wait. `processor_dry_run` is set to True if `(dry_run and not estimate_tokens) or list_files`.
+                # `processor.process_and_write` checks `self.dry_run`.
+                # `find_and_combine_files` does manual writes for global header/footer.
+                #
+                # Let's look at global header write:
+                # if not pairing_enabled and not dry_run ... outfile.write(global_header)
+                # So global header is skipped on dry_run.
+                #
+                # So TOC should probably also be skipped on dry_run?
+                # `dry_run` usually implies "don't touch disk".
+                # But if we are outputting to stdout or clipboard, dry-run stops that?
+                #
+                # `sourcecombine.py` logic:
+                # if dry_run: logging.info("Dry run complete.")
+                #
+                # If I want to verify token counting, `estimate_tokens` calls `estimate_tokens()`.
+                # The issue was `estimate_tokens(toc_content)`.
+                # `estimate_tokens` is imported from utils.
+                # `estimate_tokens` variable shadows the function name?
+                # Ah! The argument name is `estimate_tokens` (boolean).
+                # AND the function imported is `estimate_tokens`.
+                # This is the bug!
+
+                # I need to rename the usage of the function or the variable.
+                # The variable `estimate_tokens` (bool) shadows the function `estimate_tokens`.
+
+                # I will use `utils.estimate_tokens(toc_content)`.
+
+                if estimate_tokens:
+                    # Count tokens for TOC
+                    token_count, is_approx = utils.estimate_tokens(toc_content)
+                    stats['total_tokens'] += token_count
+                    if is_approx:
+                        stats['token_count_is_approx'] = True
+                elif not dry_run:
+                    outfile.write(toc_content)
+
+            processing_bar = processor._make_bar(
+                total=len(all_single_mode_items),
+                desc="Processing files",
+                unit="file",
+            )
+
+            for file_path, root_path, is_excluded_by_size in all_single_mode_items:
+                if output_format == 'json' and not dry_run and not estimate_tokens:
+                    if not first_item:
+                        outfile.write(',')
+                    first_item = False
+
+                token_count = 0
+                is_approx = True
+
+                if is_excluded_by_size:
+                    try:
+                        rel_path = file_path.relative_to(root_path)
+                    except ValueError:
+                        rel_path = file_path
+                    logging.debug(
+                        "File exceeds max size; writing placeholder: %s", rel_path
+                    )
+                    token_count, is_approx = processor.write_max_size_placeholder(
+                        file_path, root_path, outfile, output_format=output_format
+                    )
+                else:
+                    token_count, is_approx = processor.process_and_write(
+                        file_path,
+                        root_path,
+                        outfile,
+                        output_format=output_format
+                    )
+
+                if not dry_run or estimate_tokens:
+                    stats['total_tokens'] += token_count
+                    if is_approx:
+                        stats['token_count_is_approx'] = True
+
+                processing_bar.update(1)
 
             processing_bar.close()
 
@@ -1032,6 +1177,11 @@ def main():
         choices=["text", "json", "markdown"],
         default="text",
         help="Choose the output format. 'json' produces a JSON array of file objects. (Single-file mode only)",
+    )
+    output_group.add_argument(
+        "--toc",
+        action="store_true",
+        help="Include a Table of Contents at the top of the output file. (Single-file text/markdown mode only)",
     )
 
     # Runtime Options Group
@@ -1208,6 +1358,9 @@ def main():
             output_conf['folder'] = args.output
         else:
             output_conf['file'] = args.output
+
+    if args.toc:
+        output_conf['table_of_contents'] = True
 
     pairing_enabled = pairing_conf.get('enabled')
     if pairing_enabled:
