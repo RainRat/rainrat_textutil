@@ -1122,13 +1122,32 @@ def main():
         description=(
             "Combine source code files into a single document or organized pairs. "
             "Great for LLM context, documentation, or code review."
-        )
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=textwrap.dedent("""
+            Examples:
+              # Combine current directory to 'combined_files.txt'
+              python sourcecombine.py
+
+              # Combine a specific folder
+              python sourcecombine.py src/
+
+              # Copy to clipboard (great for LLM pasting)
+              python sourcecombine.py src/ -c
+
+              # Estimate tokens without writing files
+              python sourcecombine.py -e
+
+              # Exclude 'tests' folder and all *.json files
+              python sourcecombine.py -X tests -x "*.json"
+        """),
     )
 
     # Positional arguments (standard)
     parser.add_argument(
         "config_file",
         nargs="?",
+        metavar="TARGET",
         help="The YAML file with your settings (e.g., config.yml) OR a directory path to scan using defaults.",
     )
 
