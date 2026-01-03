@@ -1,3 +1,4 @@
+import copy
 import logging
 import re
 from pathlib import Path
@@ -526,7 +527,7 @@ def validate_config(
                     if isinstance(node, dict):
                         apply_defaults(node, value)
                 else:
-                    cfg.setdefault(key, value)
+                    cfg.setdefault(key, copy.deepcopy(value))
 
         apply_defaults(config, defaults)
 

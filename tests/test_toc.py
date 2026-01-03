@@ -1,3 +1,4 @@
+import copy
 import pytest
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -8,7 +9,7 @@ from utils import DEFAULT_CONFIG
 
 @pytest.fixture
 def toc_config(tmp_path):
-    config = DEFAULT_CONFIG.copy()
+    config = copy.deepcopy(DEFAULT_CONFIG)
     config['search'] = {'root_folders': [str(tmp_path)]}
     config['output'] = DEFAULT_CONFIG['output'].copy()
     config['output']['table_of_contents'] = True
