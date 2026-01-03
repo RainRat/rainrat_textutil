@@ -1,3 +1,4 @@
+import copy
 import logging
 import re
 from pathlib import Path
@@ -526,7 +527,9 @@ def validate_config(
                     if isinstance(node, dict):
                         apply_defaults(node, value)
                 else:
-                    cfg.setdefault(key, value)
+                    # Use deepcopy to prevent shared references to mutable defaults (lists/dicts)
+                    # polluting the global DEFAULT_CONFIG when 'cfg' is modified later.
+                    cfg.setdefault(key, copy.deepcopy(value))
 
         apply_defaults(config, defaults)
 

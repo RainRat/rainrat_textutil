@@ -6,11 +6,11 @@ import logging
 from sourcecombine import find_and_combine_files, _generate_table_of_contents
 from utils import DEFAULT_CONFIG
 
+import copy
 @pytest.fixture
 def toc_config(tmp_path):
-    config = DEFAULT_CONFIG.copy()
+    config = copy.deepcopy(DEFAULT_CONFIG)
     config['search'] = {'root_folders': [str(tmp_path)]}
-    config['output'] = DEFAULT_CONFIG['output'].copy()
     config['output']['table_of_contents'] = True
     config['output']['file'] = str(tmp_path / "output.txt")
     return config
@@ -94,6 +94,9 @@ def test_toc_ignored_in_pairing_mode(tmp_path, toc_config):
     # Verification: No output file should be created at 'output.file' location
     # because pairing writes to 'out_folder'
     assert not Path(toc_config['output']['file']).exists()
+
+    # Reset pairing for other tests if config is reused (it is a fixture, but safer to be sure)
+    toc_config['pairing']['enabled'] = False
 
 def test_toc_estimate_tokens(tmp_path, toc_config):
     (tmp_path / "a.txt").write_text("content a")
