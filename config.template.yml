@@ -91,10 +91,39 @@ filters:
 
   # --- Exclusion Rules ---
   exclusions:
-    filenames: []      # Skip files matching glob patterns (e.g., '*.log', 'tests/*').
+    # Skip files matching glob patterns.
+    # Defaults include: *.pyc, .DS_Store, Thumbs.db, .coverage, .tox, .nox
+    filenames:
+      - '*.pyc'
+      - '*.pyo'
+      - '*.pyd'
+      - '.DS_Store'
+      - 'Thumbs.db'
+      - '.coverage'
+      - '.tox'
+      - '.nox'
+
     # Exclude folders if any directory name in the path matches one of these
-    # patterns (e.g., 'build' excludes ./build and ./src/app/build). Case-insensitive.
-    folders: []
+    # patterns. Case-insensitive.
+    # Defaults include: .git, __pycache__, node_modules, .venv, dist, build, etc.
+    folders:
+      - '.git'
+      - '.svn'
+      - '.hg'
+      - '.cvs'
+      - '.idea'
+      - '.vscode'
+      - '__pycache__'
+      - 'node_modules'
+      - 'venv'
+      - '.venv'
+      - 'env'
+      - '.env'
+      - 'dist'
+      - 'build'
+      - 'target'
+      - 'egg-info'
+      - '.egg-info'
 
 # --- Content Processing Options ---
 processing:
