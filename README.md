@@ -98,8 +98,8 @@ python sourcecombine.py [CONFIG_FILE_OR_DIRECTORY] [OPTIONS]
 *   `--estimate-tokens` / `-e`: Calculate token counts without writing output files.
     *   *Note: Slower than a regular dry-run as it processes content.*
 *   `--init`: Generate a default configuration file (`sourcecombine.yml`) in the current directory.
-*   `--exclude-file`: Exclude specific files (e.g., `--exclude-file "secret.txt"`). Can be used multiple times.
-*   `--exclude-folder`: Exclude specific folders (e.g., `--exclude-folder "build"`). Can be used multiple times.
+*   `--exclude-file` / `-x`: Exclude specific files (e.g., `-x "secret.txt"`). Can be used multiple times.
+*   `--exclude-folder` / `-X`: Exclude specific folders (e.g., `-X "build"`). Can be used multiple times.
 
 ### Examples
 
