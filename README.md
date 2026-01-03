@@ -94,6 +94,7 @@ python sourcecombine.py [CONFIG_FILE_OR_DIRECTORY] [OPTIONS]
     *   *Note: Clipboard mode is not available when file pairing is enabled.*
 *   `--format` / `-f`: Choose the output format (`text`, `json`, or `markdown`).
     *   *Note: JSON format produces an array of file objects and is available in single-file mode only. Markdown format automatically sets header/footer templates to use Markdown code blocks.*
+*   `--toc`: Include a Table of Contents at the beginning of the output file. (Single-file mode only).
 *   `--estimate-tokens` / `-e`: Calculate token counts without writing output files.
     *   *Note: Slower than a regular dry-run as it processes content.*
 *   `--init`: Generate a default configuration file (`sourcecombine.yml`) in the current directory.
@@ -119,6 +120,24 @@ Combine files defined in `config.yml` and copy the result:
 ```bash
 python sourcecombine.py config.yml --clipboard
 ```
+
+## Table of Contents
+
+For large combined files, you can enable a Table of Contents (TOC) at the top of the output.
+This is particularly useful when outputting to Markdown or Text formats.
+
+**CLI:**
+```bash
+python sourcecombine.py --toc
+```
+
+**Configuration:**
+```yaml
+output:
+  table_of_contents: true
+```
+
+The TOC lists all included files. In Markdown mode (`--format markdown`), it generates links to each file section (assuming standard header anchors).
 
 ## Customizing file boundaries
 
