@@ -85,3 +85,81 @@ def test_list_files_excludes_size(capsys, tmp_path):
     captured = capsys.readouterr()
     assert "large.txt" in captured.out
     assert "small.txt" in captured.out
+
+def test_list_files_with_pairing(capsys, tmp_path):
+    """Verify --list-files works correctly when pairing is enabled."""
+
+    # Setup files for pairing
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src/foo.c").write_text("c code")
+    (tmp_path / "src/foo.h").write_text("h code")
+    (tmp_path / "src/bar.c").write_text("c code only")
+
+    # Create config with pairing enabled
+    config = {
+        'search': {'root_folders': [str(tmp_path)]},
+        'pairing': {
+            'enabled': True,
+            'source_extensions': ['.c'],
+            'header_extensions': ['.h'],
+            'include_mismatched': True
+        }
+    }
+
+    config_file = tmp_path / "config.yml"
+    with open(config_file, 'w') as f:
+        yaml.dump(config, f)
+
+    # Run with --list-files
+    with patch.object(sys, 'argv', ["sourcecombine.py", str(config_file), "--list-files"]):
+        try:
+            main()
+        except SystemExit:
+            pass
+
+    captured = capsys.readouterr()
+
+    # With pairing enabled, --list-files should list the *source* files that make up the pairs
+    # The current implementation in sourcecombine.py:822 (in find_and_combine_files)
+    # calls _pair_files and then collects unique paths.
+
+    assert "src/foo.c" in captured.out
+    assert "src/foo.h" in captured.out
+    assert "src/bar.c" in captured.out
+
+    # Verify summary title
+    assert "File List Summary" in captured.err
+
+def test_list_files_with_pairing_mismatched_disabled(capsys, tmp_path):
+    """Verify --list-files respects include_mismatched=False."""
+
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src/foo.c").write_text("c code")
+    (tmp_path / "src/foo.h").write_text("h code")
+    (tmp_path / "src/bar.c").write_text("c code only")
+
+    config = {
+        'search': {'root_folders': [str(tmp_path)]},
+        'pairing': {
+            'enabled': True,
+            'source_extensions': ['.c'],
+            'header_extensions': ['.h'],
+            'include_mismatched': False
+        }
+    }
+
+    config_file = tmp_path / "config.yml"
+    with open(config_file, 'w') as f:
+        yaml.dump(config, f)
+
+    with patch.object(sys, 'argv', ["sourcecombine.py", str(config_file), "--list-files"]):
+        try:
+            main()
+        except SystemExit:
+            pass
+
+    captured = capsys.readouterr()
+
+    assert "src/foo.c" in captured.out
+    assert "src/foo.h" in captured.out
+    assert "src/bar.c" not in captured.out
