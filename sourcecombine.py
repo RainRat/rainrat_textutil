@@ -320,6 +320,12 @@ def _slugify_relative_dir(relative_dir):
         cleaned = cleaned.casefold()
         cleaned = re.sub(r'-{2,}', '-', cleaned)
         cleaned = cleaned.strip('-')
+
+        if cleaned == '.':
+            cleaned = 'dot'
+        elif cleaned == '..':
+            cleaned = 'dot-dot'
+
         slugged_parts.append(cleaned or 'unnamed')
     return '/'.join(slugged_parts)
 
