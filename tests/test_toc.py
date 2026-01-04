@@ -1,3 +1,4 @@
+import copy
 import pytest
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -7,7 +8,6 @@ from sourcecombine import find_and_combine_files, _generate_table_of_contents
 from utils import DEFAULT_CONFIG
 
 import copy
-
 @pytest.fixture
 def toc_config(tmp_path):
     config = copy.deepcopy(DEFAULT_CONFIG)
@@ -95,6 +95,9 @@ def test_toc_ignored_in_pairing_mode(tmp_path, toc_config):
     # Verification: No output file should be created at 'output.file' location
     # because pairing writes to 'out_folder'
     assert not Path(toc_config['output']['file']).exists()
+
+    # Reset pairing for other tests if config is reused (it is a fixture, but safer to be sure)
+    toc_config['pairing']['enabled'] = False
 
 def test_toc_estimate_tokens(tmp_path, toc_config):
     (tmp_path / "a.txt").write_text("content a")

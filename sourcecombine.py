@@ -320,6 +320,12 @@ def _slugify_relative_dir(relative_dir):
         cleaned = cleaned.casefold()
         cleaned = re.sub(r'-{2,}', '-', cleaned)
         cleaned = cleaned.strip('-')
+
+        if cleaned == '.':
+            cleaned = 'dot'
+        elif cleaned == '..':
+            cleaned = 'dot-dot'
+
         slugged_parts.append(cleaned or 'unnamed')
     return '/'.join(slugged_parts)
 
@@ -738,6 +744,7 @@ def find_and_combine_files(
     output_format='text',
     estimate_tokens=False,
     list_files=False,
+    explicit_files=None,
 ):
     """Find, filter, and combine files based on the provided configuration."""
     stats = {
@@ -827,21 +834,30 @@ def find_and_combine_files(
 
         first_item = True
 
-        for root_folder in root_folders:
-            discovery_bar = processor._make_bar(
-                desc=f"Discovering in {root_folder}",
-                unit="file",
-                leave=False,
-            )
-            try:
-                all_paths, root_path, excluded_count = collect_file_paths(
-                    root_folder, recursive, exclude_folders, progress=discovery_bar
+        iteration_targets = []
+        if explicit_files:
+            # Bypass discovery: process specific files relative to CWD
+            # (root_path, all_paths, excluded_folder_count)
+            iteration_targets.append((Path.cwd(), explicit_files, 0))
+        else:
+            # Perform standard discovery
+            for root_folder in root_folders:
+                discovery_bar = processor._make_bar(
+                    desc=f"Discovering in {root_folder}",
+                    unit="file",
+                    leave=False,
                 )
-            finally:
-                discovery_bar.close()
+                try:
+                    paths, root, excluded = collect_file_paths(
+                        root_folder, recursive, exclude_folders, progress=discovery_bar
+                    )
+                finally:
+                    discovery_bar.close()
+                if paths:
+                    iteration_targets.append((root, paths, excluded))
+
+        for root_path, all_paths, excluded_count in iteration_targets:
             total_excluded_folders += excluded_count
-            if not all_paths:
-                continue
 
             source_exts = tuple(
                 e.lower() for e in (pair_opts.get('source_extensions') or [])
@@ -1171,6 +1187,10 @@ def main():
         action="store_true",
         help="List the files that would be processed to stdout (one per line) and exit.",
     )
+    runtime_group.add_argument(
+        "--files-from",
+        help="Read list of files to process from this file (or '-' for stdin). Overrides root_folders discovery.",
+    )
 
     args = parser.parse_args()
 
@@ -1179,6 +1199,10 @@ def main():
     # is called, preventing a race condition that locks the log level at WARNING.
     prelim_level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(level=prelim_level, format='%(levelname)s: %(message)s')
+
+    if args.files_from and args.init:
+        logging.error("Cannot use --init with --files-from.")
+        sys.exit(1)
 
     if args.init:
         target_config = Path("sourcecombine.yml")
@@ -1212,6 +1236,11 @@ def main():
     nested_required = {
         'search': ['root_folders'],
     }
+
+    # If --files-from is present, we don't strictly require root_folders
+    # because we are bypassing discovery.
+    if args.files_from:
+        nested_required = {}
 
     if config_path and Path(config_path).is_dir():
         # Directory mode: Construct config in-memory
@@ -1269,14 +1298,26 @@ def main():
                     config_path, nested_required=nested_required
                 )
             except ConfigNotFoundError as e:
-                logging.error(
-                    "Could not find the configuration file '%s'. "
-                    "Check the filename and your current working directory: %s",
-                    config_path,
-                    Path.cwd(),
-                )
-                logging.debug("Missing configuration details:", exc_info=True)
-                sys.exit(1)
+                # If using --files-from and no config specified, we can optionally proceed with defaults?
+                # But typically find_and_combine_files needs *some* config structure.
+                # If explicit config path was given, it must exist.
+                # If it was auto-discovery failure...
+                if args.files_from and not args.config_file:
+                     # If we failed to auto-discover config, but we have files-from,
+                     # we can fallback to default config.
+                     logging.info("No config found, using defaults with --files-from.")
+                     config = utils.DEFAULT_CONFIG.copy()
+                     # Ensure search section exists even if empty
+                     config.setdefault('search', {})
+                else:
+                    logging.error(
+                        "Could not find the configuration file '%s'. "
+                        "Check the filename and your current working directory: %s",
+                        config_path,
+                        Path.cwd(),
+                    )
+                    logging.debug("Missing configuration details:", exc_info=True)
+                    sys.exit(1)
             except InvalidConfigError as e:
                 logging.error("Invalid configuration: %s", e)
                 logging.debug("Configuration validation traceback:", exc_info=True)
@@ -1324,6 +1365,38 @@ def main():
     if args.toc:
         output_conf['table_of_contents'] = True
 
+    explicit_files = None
+    if args.files_from:
+        explicit_files = []
+        try:
+            if args.files_from == '-':
+                # stdin is already open, but we need to ensure we read it line by line
+                # without closing it if it's reused (though here we just consume it).
+                # Using sys.stdin directly.
+                input_source = sys.stdin
+                source_name = "stdin"
+            else:
+                input_source = open(args.files_from, 'r', encoding='utf-8')
+                source_name = args.files_from
+
+            if source_name != "stdin":
+                with input_source as f:
+                    for line in f:
+                        line = line.strip()
+                        if line:
+                            explicit_files.append(Path(line).resolve())
+            else:
+                for line in input_source:
+                    line = line.strip()
+                    if line:
+                        explicit_files.append(Path(line).resolve())
+
+            logging.info("Read %d file paths from %s.", len(explicit_files), source_name)
+
+        except OSError as e:
+            logging.error("Failed to read file list from '%s': %s", args.files_from, e)
+            sys.exit(1)
+
     pairing_enabled = pairing_conf.get('enabled')
     if pairing_enabled:
         output_path = output_conf.get('folder')
@@ -1363,6 +1436,7 @@ def main():
             output_format=args.format,
             estimate_tokens=args.estimate_tokens,
             list_files=args.list_files,
+            explicit_files=explicit_files,
         )
     except InvalidConfigError as exc:
         logging.error(exc, exc_info=True)
