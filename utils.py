@@ -313,8 +313,10 @@ def _replace_line_block(text, regex, replacement=None):
 
 def _validate_glob_list(filenames, context_prefix):
     """Validate and sanitize a list of glob patterns in place."""
-    if not isinstance(filenames, list):
+    if filenames is None:
         return
+    if not isinstance(filenames, list):
+        raise InvalidConfigError(f"'{context_prefix}' must be a list.")
 
     for i, pattern in enumerate(filenames):
         sanitized = validate_glob_pattern(
