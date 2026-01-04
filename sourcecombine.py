@@ -1501,29 +1501,33 @@ def _print_execution_summary(stats, args, pairing_enabled):
 
     # Extensions Grid
     if stats['files_by_extension']:
-        ext_list = [
-            f"{ext}: {count}"
-            for ext, count in sorted(stats['files_by_extension'].items())
-        ]
+        # Sort by count desc, then alpha
+        sorted_exts = sorted(
+            stats['files_by_extension'].items(),
+            key=lambda item: (-item[1], item[0])
+        )
 
-        # We need to handle colors carefully with textwrap.
-        # Since textwrap counts escape codes as characters, we'll wrap the plain text first.
-        # We print the label first, then the wrapped list.
+        items = [f"{ext}: {count}" for ext, count in sorted_exts]
+        max_len = max(len(s) for s in items) + 3  # +3 for spacing
 
-        prefix = f"  {bold}Extensions:{reset}       "
+        # Determine available width
+        term_width = 80
+        if sys.stderr.isatty():
+            try:
+                term_width = shutil.get_terminal_size((80, 20)).columns
+            except Exception:
+                pass
 
-        # Re-implementation for clean wrapping:
-        # 1. Join all items.
-        # 2. Wrap.
-        # 3. Print first line with label, subsequent lines with indentation.
+        # Indent is 4
+        avail_width = max(40, term_width - 4)
+        cols = max(1, avail_width // max_len)
 
-        plain_ext_text = ", ".join(ext_list)
-        wrapped_lines = textwrap.wrap(plain_ext_text, width=60) # 60 chars for value column
+        print(f"  {bold}Extensions:{reset}", file=sys.stderr)
 
-        if wrapped_lines:
-            print(f"{prefix}{wrapped_lines[0]}", file=sys.stderr)
-            for line in wrapped_lines[1:]:
-                print(f"{' ' * 20}{line}", file=sys.stderr)
+        for i in range(0, len(items), cols):
+            chunk = items[i:i + cols]
+            line_str = "".join(f"{item:<{max_len}}" for item in chunk)
+            print(f"    {line_str.rstrip()}", file=sys.stderr)
 
     # Excluded Folders
     if excluded_folders > 0:
