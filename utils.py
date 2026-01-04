@@ -33,8 +33,19 @@ DEFAULT_CONFIG = {
     'filters': {
         'skip_binary': False,
         'exclusions': {
-            'filenames': [],
-            'folders': [],
+            'filenames': [
+                '*.pyc', '*.pyo', '*.pyd',
+                '.DS_Store', 'Thumbs.db',
+                '.coverage', '.tox', '.nox',
+            ],
+            'folders': [
+                '.git', '.svn', '.hg', '.cvs',
+                '.idea', '.vscode',
+                '__pycache__', 'node_modules',
+                'venv', '.venv', 'env', '.env',
+                'dist', 'build', 'target',
+                'egg-info', '.egg-info',
+            ],
         },
         'inclusion_groups': {},
     },

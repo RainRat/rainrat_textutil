@@ -1012,61 +1012,6 @@ def find_and_combine_files(
                     stats['total_tokens'] += token_count
                     if is_approx:
                         stats['token_count_is_approx'] = True
-                # No 'elif not dry_run' here because outfile_ctx handles dry_run/estimate_tokens as needed (mostly)
-                # But wait, outfile_ctx is _DevNull if estimate_tokens is True.
-                # If dry_run is True and estimate_tokens is False, outfile_ctx is nullcontext(clipboard_buffer).
-                # Wait, if dry_run=True, we shouldn't write to outfile unless it's the clipboard buffer?
-                # The logic for outfile_ctx setup:
-                # if estimate_tokens or list_files: _DevNull()
-                # elif pairing_enabled or dry_run or clipboard: nullcontext(clipboard_buffer)
-                #
-                # So if dry_run=True, we write to clipboard_buffer (which is discarded unless clipboard=True).
-                # So writing is safe.
-                #
-                # However, the previous logic was:
-                # elif not dry_run: outfile.write(toc_content)
-                #
-                # If I remove `elif not dry_run`, then in dry_run mode we write to the buffer.
-                # Is that desired?
-                # In dry_run mode, usually we just log.
-                # But here we are inside `with outfile_ctx as outfile`.
-                # If dry_run=True, outfile is a buffer or _DevNull.
-                # Writing to it is fine?
-                #
-                # BUT, wait. `processor_dry_run` is set to True if `(dry_run and not estimate_tokens) or list_files`.
-                # `processor.process_and_write` checks `self.dry_run`.
-                # `find_and_combine_files` does manual writes for global header/footer.
-                #
-                # Let's look at global header write:
-                # if not pairing_enabled and not dry_run ... outfile.write(global_header)
-                # So global header is skipped on dry_run.
-                #
-                # So TOC should probably also be skipped on dry_run?
-                # `dry_run` usually implies "don't touch disk".
-                # But if we are outputting to stdout or clipboard, dry-run stops that?
-                #
-                # `sourcecombine.py` logic:
-                # if dry_run: logging.info("Dry run complete.")
-                #
-                # If I want to verify token counting, `estimate_tokens` calls `estimate_tokens()`.
-                # The issue was `estimate_tokens(toc_content)`.
-                # `estimate_tokens` is imported from utils.
-                # `estimate_tokens` variable shadows the function name?
-                # Ah! The argument name is `estimate_tokens` (boolean).
-                # AND the function imported is `estimate_tokens`.
-                # This is the bug!
-
-                # I need to rename the usage of the function or the variable.
-                # The variable `estimate_tokens` (bool) shadows the function `estimate_tokens`.
-
-                # I will use `utils.estimate_tokens(toc_content)`.
-
-                if estimate_tokens:
-                    # Count tokens for TOC
-                    token_count, is_approx = utils.estimate_tokens(toc_content)
-                    stats['total_tokens'] += token_count
-                    if is_approx:
-                        stats['token_count_is_approx'] = True
                 elif not dry_run:
                     outfile.write(toc_content)
 
