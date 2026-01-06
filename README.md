@@ -97,6 +97,8 @@ python sourcecombine.py [CONFIG_FILE_OR_DIRECTORY] [OPTIONS]
 *   `--toc`: Include a Table of Contents at the beginning of the output file. (Single-file mode only).
 *   `--estimate-tokens` / `-e`: Calculate token counts without writing output files.
     *   *Note: Slower than a regular dry-run as it processes content.*
+*   `--list-files`: Print a list of files that would be processed to the console and exit.
+*   `--files-from`: Read a list of files to process from a text file (or `-` for stdin). Overrides normal folder scanning.
 *   `--init`: Generate a default configuration file (`sourcecombine.yml`) in the current directory.
 *   `--exclude-file` / `-x`: Exclude specific files (e.g., `-x "secret.txt"`). Can be used multiple times.
 *   `--exclude-folder` / `-X`: Exclude specific folders (e.g., `-X "build"`). Can be used multiple times.
