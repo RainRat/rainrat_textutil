@@ -46,8 +46,8 @@ def test_summary_printing(monkeypatch, capsys):
     # Check wrapping (heuristic: check if .yml is on a new line or far right)
     # The list is long, so it should wrap.
     # We can check that the output contains the indent for the second line
-    # "                    " (20 spaces)
-    assert "\n                    " in stderr
+    # The new grid layout uses 4 spaces indentation for the lines.
+    assert "\n    " in stderr
 
 def test_summary_printing_dry_run(monkeypatch, capsys):
     stats = {
