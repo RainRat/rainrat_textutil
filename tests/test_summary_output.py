@@ -23,6 +23,7 @@ def test_summary_printing(monkeypatch, capsys):
     args.dry_run = False
     args.estimate_tokens = False
     args.list_files = False
+    args.tree = False
 
     # Mock stderr to capture output (capsys works too but let's be explicit if needed)
     # Actually capsys captures sys.stderr
@@ -60,6 +61,7 @@ def test_summary_printing_dry_run(monkeypatch, capsys):
     args.dry_run = True
     args.estimate_tokens = False
     args.list_files = False
+    args.tree = False
 
     monkeypatch.setenv("NO_COLOR", "1")
 

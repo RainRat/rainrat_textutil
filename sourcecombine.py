@@ -691,6 +691,44 @@ class FileProcessor:
         return estimate_tokens(rendered)
 
 
+def _print_tree(paths, root_path):
+    """Print a tree structure of file paths."""
+    # Convert to relative paths
+    try:
+        rel_paths = [p.relative_to(root_path) for p in paths]
+    except ValueError:
+        # Fallback if any path is not relative to root (should ideally not happen)
+        rel_paths = paths
+
+    # Build the tree dictionary
+    # { 'folder': { 'subfolder': { 'file.txt': None } } }
+    tree = {}
+    for p in rel_paths:
+        parts = p.parts
+        current = tree
+        for part in parts:
+            if part not in current:
+                current[part] = {}
+            current = current[part]
+
+    def _print_node(node, prefix=""):
+        items = sorted(node.keys())
+        for i, item in enumerate(items):
+            is_last = i == len(items) - 1
+            connector = "└── " if is_last else "├── "
+            print(f"{prefix}{connector}{item}")
+
+            # If the item has children (it's a directory), recurse
+            children = node[item]
+            if children:
+                extension = "    " if is_last else "│   "
+                _print_node(children, prefix + extension)
+
+    # Print the root directory name first
+    print(f"{root_path.name}/")
+    _print_node(tree)
+
+
 def _generate_table_of_contents(files, output_format='text'):
     """Generate a Table of Contents string for the provided files.
 
@@ -744,6 +782,7 @@ def find_and_combine_files(
     output_format='text',
     estimate_tokens=False,
     list_files=False,
+    tree_view=False,
     explicit_files=None,
 ):
     """Find, filter, and combine files based on the provided configuration."""
@@ -802,7 +841,7 @@ def find_and_combine_files(
 
     clipboard_buffer = io.StringIO() if clipboard else None
 
-    if estimate_tokens or list_files:
+    if estimate_tokens or list_files or tree_view:
         outfile_ctx = _DevNull()
     elif pairing_enabled or dry_run or clipboard:
         outfile_ctx = nullcontext(clipboard_buffer)
@@ -812,7 +851,7 @@ def find_and_combine_files(
         outfile_ctx = open(output_path, 'w', encoding='utf8')
 
     # We only want true dry-run behavior (skipping reading) if we are NOT estimating tokens.
-    processor_dry_run = (dry_run and not estimate_tokens) or list_files
+    processor_dry_run = (dry_run and not estimate_tokens) or list_files or tree_view
     processor = FileProcessor(config, output_opts, dry_run=processor_dry_run, estimate_tokens=estimate_tokens)
 
     total_excluded_folders = 0
@@ -826,10 +865,10 @@ def find_and_combine_files(
         global_footer = output_opts.get('global_footer_template')
 
         # Only write global headers for text output
-        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and global_header and output_format == 'text':
+        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and global_header and output_format == 'text':
             outfile.write(global_header)
 
-        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and output_format == 'json':
+        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and output_format == 'json':
             outfile.write('[')
 
         first_item = True
@@ -888,7 +927,7 @@ def find_and_combine_files(
                     p for p in size_excluded if p.suffix.lower() != '.bak'
                 ]
 
-            if list_files:
+            if list_files or tree_view:
                 paths_to_list = []
                 if pairing_enabled:
                     include_mismatched = pair_opts.get('include_mismatched', False)
@@ -917,14 +956,19 @@ def find_and_combine_files(
                             if p in filtered_set or p in size_excluded_set
                         ]
 
+                # Update stats for listed files
                 for p in paths_to_list:
                     _update_file_stats(stats, p)
 
-                    # Print relative path if possible for cleaner output
-                    try:
-                        print(p.relative_to(root_path) if p.is_absolute() else p)
-                    except ValueError:
-                        print(p)
+                if tree_view:
+                    _print_tree(paths_to_list, root_path)
+                else:
+                    for p in paths_to_list:
+                        # Print relative path if possible for cleaner output
+                        try:
+                            print(p.relative_to(root_path) if p.is_absolute() else p)
+                        except ValueError:
+                            print(p)
                 continue
 
             # Update stats
@@ -997,7 +1041,7 @@ def find_and_combine_files(
         # End of root_folder loop
 
         # Process Single File Mode items (including TOC)
-        if not pairing_enabled and not list_files:
+        if not pairing_enabled and not list_files and not tree_view:
             if output_opts.get('table_of_contents') and output_format in ('text', 'markdown'):
                 # Generate TOC
                 # Only include files that are not size-excluded for the TOC?
@@ -1059,10 +1103,10 @@ def find_and_combine_files(
             processing_bar.close()
 
         # Write global footer only for text output
-        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and global_footer and output_format == 'text':
+        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and global_footer and output_format == 'text':
             outfile.write(global_footer)
 
-        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and output_format == 'json':
+        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and output_format == 'json':
             outfile.write(']')
 
     stats['excluded_folder_count'] = total_excluded_folders
@@ -1186,6 +1230,11 @@ def main():
         "--list-files",
         action="store_true",
         help="List the files that would be processed to stdout (one per line) and exit.",
+    )
+    runtime_group.add_argument(
+        "--tree",
+        action="store_true",
+        help="List the files that would be processed in a tree structure and exit.",
     )
     runtime_group.add_argument(
         "--files-from",
@@ -1422,6 +1471,8 @@ def main():
 
     if args.list_files:
         logging.info("Output: Listing files only (no files will be written)")
+    elif args.tree:
+        logging.info("Output: Showing file tree (no files will be written)")
     elif args.estimate_tokens:
         logging.info("Output: Token estimation only (no files will be written)")
     else:
@@ -1436,6 +1487,7 @@ def main():
             output_format=args.format,
             estimate_tokens=args.estimate_tokens,
             list_files=args.list_files,
+            tree_view=args.tree,
             explicit_files=explicit_files,
         )
     except InvalidConfigError as exc:
@@ -1473,6 +1525,8 @@ def _print_execution_summary(stats, args, pairing_enabled):
         summary_title = "Token Estimation Summary"
     elif args.list_files:
         summary_title = "File List Summary"
+    elif args.tree:
+        summary_title = "Tree View Summary"
     else:
         summary_title = "Execution Summary"
 
@@ -1485,7 +1539,7 @@ def _print_execution_summary(stats, args, pairing_enabled):
 
     # Token Counts
     # Show token counts for single-file mode OR if estimate_tokens was requested
-    if not pairing_enabled and (not args.dry_run or args.estimate_tokens) and not args.list_files:
+    if not pairing_enabled and (not args.dry_run or args.estimate_tokens) and not args.list_files and not args.tree:
         token_count = stats.get('total_tokens', 0)
         is_approx = stats.get('token_count_is_approx', False)
         approx_indicator = "~" if is_approx else ""
