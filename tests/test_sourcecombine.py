@@ -414,7 +414,7 @@ def test_collect_file_paths_handles_oserror(monkeypatch, tmp_path, caplog):
     assert collected == []
     assert root_path == root_dir
     assert excluded_count == 0
-    assert "Error while traversing" in caplog.text
+    assert "An error occurred while scanning" in caplog.text
 
 
 def test_apply_in_place_updates_files_and_output(tmp_path):

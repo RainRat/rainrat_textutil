@@ -23,7 +23,7 @@ def test_collect_file_paths_root_does_not_exist(caplog):
     assert collected == []
     assert root_path is None
     assert excluded == 0
-    assert f"Root folder '{non_existent_path}' does not exist" in caplog.text
+    assert f"The folder '{non_existent_path}' was not found" in caplog.text
 
 def test_collect_file_paths_root_access_error(monkeypatch, caplog):
     """Test that collect_file_paths handles OSError when checking root folder."""
@@ -48,7 +48,7 @@ def test_collect_file_paths_root_access_error(monkeypatch, caplog):
     assert collected == []
     assert root_path is None
     assert excluded == 0
-    assert f"Unable to access root folder '{root_folder}'" in caplog.text
+    assert f"Could not access the folder '{root_folder}'" in caplog.text
     assert "Simulated Access Denied" in caplog.text
 
 def test_should_include_stat_error():
