@@ -1494,10 +1494,16 @@ def main():
         logging.error(exc, exc_info=True)
         sys.exit(1)
 
+    # Success/Completion Feedback
+    use_color = sys.stderr.isatty() and not os.getenv("NO_COLOR")
+    green = "\033[32m" if use_color else ""
+    yellow = "\033[33m" if use_color else ""
+    reset = "\033[0m" if use_color else ""
+
     if args.dry_run:
-        logging.info("Dry run complete.")
+        logging.info(f"{yellow}Dry run complete.{reset}")
     else:
-        logging.info("Done.")
+        logging.info(f"{green}Success!{reset} Combined files {destination_desc}")
 
     if stats:
         _print_execution_summary(stats, args, pairing_enabled)
@@ -1514,24 +1520,32 @@ def _print_execution_summary(stats, args, pairing_enabled):
     bold = "\033[1m"
     reset = "\033[0m"
     dim = "\033[90m"
+    green = "\033[32m"
+    yellow = "\033[33m"
+    cyan = "\033[36m"
 
     use_color = sys.stderr.isatty() and not os.getenv("NO_COLOR")
     if not use_color:
-        bold = reset = dim = ""
+        bold = reset = dim = green = yellow = cyan = ""
 
     if args.dry_run:
         summary_title = "Dry-Run Summary"
+        title_color = yellow
     elif args.estimate_tokens:
         summary_title = "Token Estimation Summary"
+        title_color = cyan
     elif args.list_files:
         summary_title = "File List Summary"
+        title_color = cyan
     elif args.tree:
         summary_title = "Tree View Summary"
+        title_color = cyan
     else:
         summary_title = "Execution Summary"
+        title_color = green
 
     # Header
-    print(f"\n{bold}--- {summary_title} ---{reset}", file=sys.stderr)
+    print(f"\n{title_color}{bold}=== {summary_title} ==={reset}", file=sys.stderr)
 
     # Core Stats
     print(f"  {bold}Total Files:{reset}      {total_files}", file=sys.stderr)
@@ -1561,8 +1575,13 @@ def _print_execution_summary(stats, args, pairing_enabled):
             key=lambda item: (-item[1], item[0])
         )
 
-        items = [f"{ext}: {count}" for ext, count in sorted_exts]
-        max_len = max(len(s) for s in items) + 3  # +3 for spacing
+        items = [f"{cyan}{ext}{reset}: {count}" for ext, count in sorted_exts]
+        # max_len needs to account for ANSI codes if we were calculating strictly,
+        # but since we want to align the visible text, we should use a helper or
+        # just add the length of ANSI codes if they are present.
+        # Actually, let's keep it simple and just use the raw string for length calculation.
+        raw_items = [f"{ext}: {count}" for ext, count in sorted_exts]
+        max_len = max(len(s) for s in raw_items) + 3  # +3 for spacing
 
         # Determine available width
         term_width = 80
@@ -1580,15 +1599,19 @@ def _print_execution_summary(stats, args, pairing_enabled):
 
         for i in range(0, len(items), cols):
             chunk = items[i:i + cols]
-            line_str = "".join(f"{item:<{max_len}}" for item in chunk)
-            print(f"    {line_str.rstrip()}", file=sys.stderr)
+            raw_chunk = raw_items[i:i + cols]
+            line_parts = []
+            for item, raw_item in zip(chunk, raw_chunk):
+                padding = " " * (max_len - len(raw_item))
+                line_parts.append(item + padding)
+            print(f"    {''.join(line_parts).rstrip()}", file=sys.stderr)
 
     # Excluded Folders
     if excluded_folders > 0:
         print(f"  {bold}Excluded Folders:{reset} {excluded_folders}", file=sys.stderr)
 
     # Footer
-    print(f"{dim}{'-' * (len(summary_title) + 8)}{reset}", file=sys.stderr)
+    print(f"{title_color}{'=' * (len(summary_title) + 8)}{reset}", file=sys.stderr)
 
 
 if __name__ == "__main__":
