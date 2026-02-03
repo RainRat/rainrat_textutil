@@ -1179,6 +1179,13 @@ def main():
         default=[],
         help="Exclude a folder (glob pattern). Can be used multiple times. Overrides/appends to config.",
     )
+    config_group.add_argument(
+        "--include",
+        "-i",
+        action="append",
+        default=[],
+        help="Include only files matching this glob pattern. Can be used multiple times. Overrides/appends to config.",
+    )
 
     # Output Options Group
     output_group = parser.add_argument_group("Output Options")
@@ -1382,11 +1389,18 @@ def main():
 
     # Inject CLI exclusions into config
     if args.exclude_file or args.exclude_folder:
-        filters = config.setdefault('filters', {})
-        exclusions = filters.setdefault('exclusions', {})
+        if not isinstance(config.get('filters'), dict):
+            config['filters'] = {}
+        filters = config['filters']
+
+        if not isinstance(filters.get('exclusions'), dict):
+            filters['exclusions'] = {}
+        exclusions = filters['exclusions']
 
         if args.exclude_file:
-            filenames = exclusions.setdefault('filenames', [])
+            if not isinstance(exclusions.get('filenames'), list):
+                exclusions['filenames'] = []
+            filenames = exclusions['filenames']
             for pattern in args.exclude_file:
                 # Validate/sanitize the pattern
                 sanitized = utils.validate_glob_pattern(pattern, context="CLI --exclude-file")
@@ -1394,11 +1408,32 @@ def main():
             logging.debug("Added CLI file exclusions: %s", args.exclude_file)
 
         if args.exclude_folder:
-            folders = exclusions.setdefault('folders', [])
+            if not isinstance(exclusions.get('folders'), list):
+                exclusions['folders'] = []
+            folders = exclusions['folders']
             for pattern in args.exclude_folder:
                 sanitized = utils.validate_glob_pattern(pattern, context="CLI --exclude-folder")
                 folders.append(sanitized)
             logging.debug("Added CLI folder exclusions: %s", args.exclude_folder)
+
+    # Inject CLI inclusions into config
+    if args.include:
+        # Ensure filters exists and is a dictionary
+        if not isinstance(config.get('filters'), dict):
+            config['filters'] = {}
+        filters = config['filters']
+
+        # Ensure inclusion_groups exists and is a dictionary
+        if not isinstance(filters.get('inclusion_groups'), dict):
+            filters['inclusion_groups'] = {}
+        groups = filters['inclusion_groups']
+
+        # Create a unique group for CLI inclusions and enable it
+        groups['_cli_includes'] = {
+            'enabled': True,
+            'filenames': [utils.validate_glob_pattern(p, context="CLI --include") for p in args.include]
+        }
+        logging.debug("Added CLI file inclusions: %s", args.include)
 
     pairing_conf = config.get('pairing') or {}
     output_conf = config.get('output') or {}
