@@ -36,7 +36,7 @@ def test_summary_printing(monkeypatch, capsys):
     captured = capsys.readouterr()
     stderr = captured.err
 
-    assert "Execution Summary" in stderr
+    assert "=== Execution Summary ===" in stderr
     assert "Total Files:      123" in stderr
     assert "Total Size:       1.50 MB" in stderr
     assert "Extensions:" in stderr
@@ -70,7 +70,7 @@ def test_summary_printing_dry_run(monkeypatch, capsys):
     captured = capsys.readouterr()
     stderr = captured.err
 
-    assert "Dry-Run Summary" in stderr
+    assert "=== Dry-Run Summary ===" in stderr
     assert "Total Files:      0" in stderr
     # Token count should NOT appear in dry run unless requested (but logic says: not dry_run or estimate_tokens)
     # Wait, check logic: `if not pairing_enabled and (not args.dry_run or args.estimate_tokens)`
