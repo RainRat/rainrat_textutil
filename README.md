@@ -100,6 +100,7 @@ python sourcecombine.py [CONFIG_FILE_OR_DIRECTORY] [OPTIONS]
 *   `--list-files`: Print a list of files that would be processed to the console and exit.
 *   `--files-from`: Read a list of files to process from a text file (or `-` for stdin). Overrides normal folder scanning.
 *   `--init`: Generate a default configuration file (`sourcecombine.yml`) in the current directory.
+*   `--include` / `-i`: Include only files matching a specific pattern (e.g., `-i "*.py"`). Can be used multiple times.
 *   `--exclude-file` / `-x`: Exclude specific files (e.g., `-x "secret.txt"`). Can be used multiple times.
 *   `--exclude-folder` / `-X`: Exclude specific folders (e.g., `-X "build"`). Can be used multiple times.
 
@@ -131,6 +132,11 @@ This is particularly useful when outputting to Markdown or Text formats.
 **CLI:**
 ```bash
 python sourcecombine.py --toc
+```
+
+**Include only Python and Markdown files:**
+```bash
+python sourcecombine.py src/ -i "*.py" -i "*.md"
 ```
 
 **Configuration:**
