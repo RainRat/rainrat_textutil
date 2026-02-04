@@ -45,8 +45,8 @@ def test_find_and_combine_skips_non_existent_root_folder(tmp_path, caplog):
     with caplog.at_level(logging.WARNING):
         find_and_combine_files(config, output_path, dry_run=False)
 
-    assert "Root folder" in caplog.text
-    assert "does not exist" in caplog.text
+    assert "The folder" in caplog.text
+    assert "was not found" in caplog.text
     assert output_path.exists()
 
 def test_silent_progress_implementation():

@@ -197,12 +197,12 @@ def collect_file_paths(root_folder, recursive, exclude_folders, progress=None):
         is_directory = root_path.is_dir()
     except OSError as exc:
         logging.warning(
-            "Unable to access root folder '%s': %s. Skipping.", root_folder, exc
+            "Could not access the folder '%s': %s. Skipping.", root_folder, exc
         )
         return [], None, 0
 
     if not is_directory:
-        logging.warning("Root folder '%s' does not exist. Skipping.", root_folder)
+        logging.warning("The folder '%s' was not found. Skipping.", root_folder)
         return [], None, 0
 
     file_paths = []
@@ -236,7 +236,7 @@ def collect_file_paths(root_folder, recursive, exclude_folders, progress=None):
                     progress.update(1)
         except OSError as exc:
             logging.warning(
-                "Error while traversing '%s': %s. Partial results returned.",
+                "An error occurred while scanning '%s': %s. Some files may be missing from the output.",
                 root_folder,
                 exc,
             )
@@ -1125,35 +1125,35 @@ def main():
     """Main function to parse arguments and run the tool."""
     parser = argparse.ArgumentParser(
         description=(
-            "Combine source code files into a single document or organized pairs. "
-            "Great for LLM context, documentation, or code review."
+            "Combine multiple source files into one document or organized pairs. "
+            "This tool is useful for creating AI context, documentation, or code reviews."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=textwrap.dedent("""
             Examples:
-              # Combine current directory to 'combined_files.txt'
+              # Combine files in the current folder into 'combined_files.txt'
               python sourcecombine.py
 
-              # Combine a specific folder
+              # Combine files from a specific folder
               python sourcecombine.py src/
 
-              # Copy to clipboard (great for LLM pasting)
+              # Copy the result to your clipboard
               python sourcecombine.py src/ -c
 
-              # Estimate tokens without writing files
+              # Estimate how many tokens the output will use
               python sourcecombine.py -e
 
-              # Exclude 'tests' folder and all *.json files
+              # Skip the 'tests' folder and all '.json' files
               python sourcecombine.py -X tests -x "*.json"
         """),
     )
 
-    # Positional arguments (standard)
+    # Positional arguments
     parser.add_argument(
         "config_file",
         nargs="?",
         metavar="TARGET",
-        help="The YAML file with your settings (e.g., config.yml) OR a directory path to scan using defaults.",
+        help="A configuration file (like 'config.yml') OR a folder to scan.",
     )
 
     # Configuration Group
@@ -1161,7 +1161,7 @@ def main():
     config_group.add_argument(
         "--init",
         action="store_true",
-        help="Generate a default configuration file (sourcecombine.yml) in the current directory.",
+        help="Create a starter 'sourcecombine.yml' file in the current folder.",
     )
     config_group.add_argument(
         "--exclude-file",
@@ -1169,7 +1169,7 @@ def main():
         dest="exclude_file",
         action="append",
         default=[],
-        help="Exclude a file (glob pattern). Can be used multiple times. Overrides/appends to config.",
+        help="Skip files that match this pattern (e.g., '*.log'). Use multiple times to skip more.",
     )
     config_group.add_argument(
         "--exclude-folder",
@@ -1177,7 +1177,7 @@ def main():
         dest="exclude_folder",
         action="append",
         default=[],
-        help="Exclude a folder (glob pattern). Can be used multiple times. Overrides/appends to config.",
+        help="Skip folders that match this pattern (e.g., 'build'). Use multiple times to skip more.",
     )
     config_group.add_argument(
         "--include",
@@ -1192,25 +1192,28 @@ def main():
     output_group.add_argument(
         "--output",
         "-o",
-        help="Save to a specific file or folder, ignoring the setting in your config file.",
+        help="Set the output file or folder. This overrides your configuration file.",
     )
     output_group.add_argument(
         "--clipboard",
         "-c",
         action="store_true",
-        help="Copy the result to your clipboard instead of saving to a file. (Single-file mode only)",
+        help="Copy the result to your clipboard instead of saving a file. (Single-file mode only)",
     )
     output_group.add_argument(
         "--format",
         "-f",
         choices=["text", "json", "markdown"],
         default="text",
-        help="Choose the output format. 'json' produces a JSON array of file objects. (Single-file mode only)",
+        help=(
+            "Choose the output format. 'json' creates a list of file contents. "
+            "'markdown' automatically adds code blocks. (Single-file mode only)"
+        ),
     )
     output_group.add_argument(
         "--toc",
         action="store_true",
-        help="Include a Table of Contents at the top of the output file. (Single-file text/markdown mode only)",
+        help="Add a Table of Contents to the start of the output. (Works for 'text' and 'markdown' formats in single-file mode only)",
     )
 
     # Runtime Options Group
@@ -1219,33 +1222,33 @@ def main():
         "--dry-run",
         "-d",
         action="store_true",
-        help="See what files will be processed without actually writing anything.",
+        help="Show which files would be included without creating any files.",
     )
     runtime_group.add_argument(
         "--estimate-tokens",
         "-e",
         action="store_true",
-        help="Calculate token counts without writing output files (slower than dry-run).",
+        help="Estimate token usage. This is slower because it must read the file contents.",
     )
     runtime_group.add_argument(
         "-v",
         "--verbose",
         action="store_true",
-        help="Show extra details to help solve problems.",
+        help="Show extra details to help with troubleshooting.",
     )
     runtime_group.add_argument(
         "--list-files",
         action="store_true",
-        help="List the files that would be processed to stdout (one per line) and exit.",
+        help="Print a list of all files that would be included and then stop.",
     )
     runtime_group.add_argument(
         "--tree",
         action="store_true",
-        help="List the files that would be processed in a tree structure and exit.",
+        help="Show a visual tree of all files that would be included and then stop.",
     )
     runtime_group.add_argument(
         "--files-from",
-        help="Read list of files to process from this file (or '-' for stdin). Overrides root_folders discovery.",
+        help="Read a list of files from a text file (use '-' for console). This skips folder scanning.",
     )
 
     args = parser.parse_args()
@@ -1257,13 +1260,13 @@ def main():
     logging.basicConfig(level=prelim_level, format='%(levelname)s: %(message)s')
 
     if args.files_from and args.init:
-        logging.error("Cannot use --init with --files-from.")
+        logging.error("You cannot use --init and --files-from at the same time.")
         sys.exit(1)
 
     if args.init:
         target_config = Path("sourcecombine.yml")
         if target_config.exists():
-            logging.error("Config file '%s' already exists. Aborting init.", target_config)
+            logging.error("The configuration file '%s' already exists. Stopping.", target_config)
             sys.exit(1)
 
         template_path = Path(__file__).resolve().parent / "config.template.yml"
@@ -1272,18 +1275,18 @@ def main():
                 shutil.copy2(template_path, target_config)
                 logging.info("Created default configuration at %s", target_config.resolve())
             except OSError as exc:
-                logging.error("Failed to copy template: %s", exc)
+                logging.error("Could not copy the template file: %s", exc)
                 sys.exit(1)
         else:
-            logging.warning("Template not found at %s; creating minimal config.", template_path)
+            logging.warning("Template not found at %s; creating a simple configuration.", template_path)
             try:
                 with open(target_config, 'w', encoding='utf-8') as f:
                     import yaml
                     f.write("# Default SourceCombine Configuration\n")
                     yaml.dump(utils.DEFAULT_CONFIG, f, sort_keys=False)
-                logging.info("Created minimal configuration at %s", target_config.resolve())
+                logging.info("Created a simple configuration at %s", target_config.resolve())
             except OSError as exc:
-                logging.error("Failed to write config: %s", exc)
+                logging.error("Could not write the configuration file: %s", exc)
                 sys.exit(1)
         sys.exit(0)
 
@@ -1310,7 +1313,7 @@ def main():
                 source="<directory-arg>"
             )
         except InvalidConfigError as e:
-            logging.error("Invalid configuration: %s", e)
+            logging.error("The configuration is not valid: %s", e)
             logging.debug("Configuration validation traceback:", exc_info=True)
             sys.exit(1)
     else:
@@ -1344,7 +1347,7 @@ def main():
                         source="<default-cwd>"
                     )
                 except InvalidConfigError as e:
-                    logging.error("Invalid configuration: %s", e)
+                    logging.error("The configuration is not valid: %s", e)
                     logging.debug("Configuration validation traceback:", exc_info=True)
                     sys.exit(1)
 
@@ -1359,23 +1362,23 @@ def main():
                 # If explicit config path was given, it must exist.
                 # If it was auto-discovery failure...
                 if args.files_from and not args.config_file:
-                     # If we failed to auto-discover config, but we have files-from,
-                     # we can fallback to default config.
-                     logging.info("No config found, using defaults with --files-from.")
-                     config = utils.DEFAULT_CONFIG.copy()
-                     # Ensure search section exists even if empty
-                     config.setdefault('search', {})
+                    # If we failed to auto-discover config, but we have files-from,
+                    # we can fallback to default config.
+                    logging.info("No configuration found. Using default settings with --files-from.")
+                    config = utils.DEFAULT_CONFIG.copy()
+                    # Ensure search section exists even if empty
+                    config.setdefault('search', {})
                 else:
                     logging.error(
                         "Could not find the configuration file '%s'. "
-                        "Check the filename and your current working directory: %s",
+                        "Check the file name and make sure you are in the right folder: %s",
                         config_path,
                         Path.cwd(),
                     )
                     logging.debug("Missing configuration details:", exc_info=True)
                     sys.exit(1)
             except InvalidConfigError as e:
-                logging.error("Invalid configuration: %s", e)
+                logging.error("The configuration is not valid: %s", e)
                 logging.debug("Configuration validation traceback:", exc_info=True)
                 sys.exit(1)
 

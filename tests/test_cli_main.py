@@ -88,7 +88,7 @@ def test_init_creates_minimal_config_if_template_missing(temp_cwd, mock_argv, ca
     assert excinfo.value.code == 0
     assert (temp_cwd / "sourcecombine.yml").exists()
     assert "Template not found" in caplog.text
-    assert "Created minimal configuration" in caplog.text
+    assert "Created a simple configuration" in caplog.text
 
     # Verify content is minimal default
     content = (temp_cwd / "sourcecombine.yml").read_text(encoding="utf-8")
@@ -110,7 +110,7 @@ def test_init_fails_to_write_config(temp_cwd, mock_argv, caplog):
                     main()
 
     assert excinfo.value.code == 1
-    assert "Failed to write config" in caplog.text
+    assert "Could not write the configuration file" in caplog.text
 
 def test_auto_discovery_success(temp_cwd, mock_argv, caplog):
     """Test that main finds a default config file when none is specified."""
@@ -175,7 +175,7 @@ def test_invalid_config_structure(temp_cwd, mock_argv, caplog):
             main()
 
     assert excinfo.value.code == 1
-    assert "Invalid configuration" in caplog.text
+    assert "The configuration is not valid" in caplog.text
 
 def test_invalid_config_validation(temp_cwd, mock_argv, caplog):
     """Test that main exits if config fails validation (e.g. missing required keys)."""
@@ -190,4 +190,4 @@ def test_invalid_config_validation(temp_cwd, mock_argv, caplog):
             main()
 
     assert excinfo.value.code == 1
-    assert "Invalid configuration" in caplog.text
+    assert "The configuration is not valid" in caplog.text
