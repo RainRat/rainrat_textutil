@@ -917,13 +917,6 @@ def find_and_combine_files(
             else:
                 filtered_paths = filtered_result
                 size_excluded = []
-            if processor.create_backups:
-                filtered_paths = [
-                    p for p in filtered_paths if p.suffix.lower() != '.bak'
-                ]
-                size_excluded = [
-                    p for p in size_excluded if p.suffix.lower() != '.bak'
-                ]
 
             if list_files or tree_view:
                 paths_to_list = []
