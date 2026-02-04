@@ -619,7 +619,7 @@ class FileProcessor:
                 f"Failed to create backup for '{file_path}': {exc}"
             ) from exc
 
-    def process_and_write(self, file_path, root_path, outfile, output_format='text'):
+    def process_and_write(self, file_path, root_path, outfile, output_format='text', cached_content=None):
         """Read, process, and write a single file.
 
         Returns
@@ -632,12 +632,15 @@ class FileProcessor:
             return 0, True
 
         logging.debug("Processing: %s", file_path)
-        content = read_file_best_effort(file_path)
-        processed_content = process_content(content, self.processing_opts)
-        if self.apply_in_place and processed_content != content and not self.estimate_tokens:
-            logging.info("Updating in place: %s", file_path)
-            self._backup_file(file_path)
-            file_path.write_text(processed_content, encoding='utf8')
+        if cached_content is not None:
+            processed_content = cached_content
+        else:
+            content = read_file_best_effort(file_path)
+            processed_content = process_content(content, self.processing_opts)
+            if self.apply_in_place and processed_content != content and not self.estimate_tokens:
+                logging.info("Updating in place: %s", file_path)
+                self._backup_file(file_path)
+                file_path.write_text(processed_content, encoding='utf8')
 
         relative_path = file_path.relative_to(root_path)
 
@@ -654,7 +657,7 @@ class FileProcessor:
                 self._write_with_templates(outfile, processed_content, relative_path)
 
         # Estimate tokens on the final processed content
-        return estimate_tokens(processed_content)
+        return utils.estimate_tokens(processed_content)
 
     def write_max_size_placeholder(self, file_path, root_path, outfile, output_format='text'):
         """Write the placeholder for files skipped for exceeding max size.
@@ -686,7 +689,7 @@ class FileProcessor:
             else:
                 self._write_with_templates(outfile, rendered, relative_path)
 
-        return estimate_tokens(rendered)
+        return utils.estimate_tokens(rendered)
 
 
 def _print_tree(paths, root_path):
@@ -789,7 +792,8 @@ def find_and_combine_files(
         'total_size_bytes': 0,
         'files_by_extension': {},
         'total_tokens': 0,
-        'token_count_is_approx': False
+        'token_count_is_approx': False,
+        'budget_exceeded': False
     }
     search_opts = config.get('search', {})
     filter_opts = config.get('filters', {})
@@ -1038,6 +1042,70 @@ def find_and_combine_files(
 
         # End of root_folder loop
 
+        # Budgeting Pass for Single File Mode
+        max_total_tokens = filter_opts.get('max_total_tokens', 0)
+        if max_total_tokens > 0 and not pairing_enabled and not list_files and not tree_view:
+            budgeted_items = []
+            current_tokens = 0
+            budget_exceeded = False
+
+            # Account for global header tokens in the budget
+            if global_header and output_format == 'text':
+                current_tokens += utils.estimate_tokens(global_header)[0]
+
+            for item in all_single_mode_items:
+                file_path, root_path, is_excluded_by_size = item
+                tokens = 0
+                processed = None
+
+                try:
+                    rel_p = file_path.relative_to(root_path)
+                except ValueError:
+                    rel_p = file_path
+
+                if is_excluded_by_size:
+                    placeholder = output_opts.get('max_size_placeholder')
+                    if placeholder:
+                        rendered = placeholder.replace(FILENAME_PLACEHOLDER, str(rel_p))
+                        tokens, _ = utils.estimate_tokens(rendered)
+                else:
+                    content = read_file_best_effort(file_path)
+                    processed = process_content(content, processor.processing_opts)
+                    if processor.apply_in_place and processed != content and not estimate_tokens and not dry_run:
+                        logging.info("Updating in place: %s", file_path)
+                        processor._backup_file(file_path)
+                        file_path.write_text(processed, encoding='utf8')
+                    tokens, _ = utils.estimate_tokens(processed)
+
+                # Account for header/footer templates in the budget
+                h_template = output_opts.get('header_template', utils.DEFAULT_CONFIG['output']['header_template'])
+                f_template = output_opts.get('footer_template', utils.DEFAULT_CONFIG['output']['footer_template'])
+                if h_template:
+                    h_rendered = h_template.replace(FILENAME_PLACEHOLDER, str(rel_p))
+                    h_rendered = h_rendered.replace("{{EXT}}", rel_p.suffix.lstrip(".") or "")
+                    tokens += utils.estimate_tokens(h_rendered)[0]
+                if f_template:
+                    f_rendered = f_template.replace(FILENAME_PLACEHOLDER, str(rel_p))
+                    f_rendered = f_rendered.replace("{{EXT}}", rel_p.suffix.lstrip(".") or "")
+                    tokens += utils.estimate_tokens(f_rendered)[0]
+
+                if current_tokens + tokens > max_total_tokens and current_tokens > 0:
+                    budget_exceeded = True
+                    break
+
+                current_tokens += tokens
+                budgeted_items.append((file_path, root_path, is_excluded_by_size, processed))
+
+            all_single_mode_items = budgeted_items
+            stats['budget_exceeded'] = budget_exceeded
+
+            # Recalculate stats based on budgeted items
+            stats['total_files'] = 0
+            stats['total_size_bytes'] = 0
+            stats['files_by_extension'] = {}
+            for item in all_single_mode_items:
+                _update_file_stats(stats, item[0])
+
         # Process Single File Mode items (including TOC)
         if not pairing_enabled and not list_files and not tree_view:
             if output_opts.get('table_of_contents') and output_format in ('text', 'markdown'):
@@ -1045,7 +1113,7 @@ def find_and_combine_files(
                 # Only include files that are not size-excluded for the TOC?
                 # Or include them all? Usually TOC lists what's in the document.
                 # If size-excluded files get a placeholder, they are "in" the document.
-                toc_files = [(p, r) for p, r, _ in all_single_mode_items]
+                toc_files = [(item[0], item[1]) for item in all_single_mode_items]
                 toc_content = _generate_table_of_contents(toc_files, output_format)
 
                 if estimate_tokens:
@@ -1063,7 +1131,10 @@ def find_and_combine_files(
                 unit="file",
             )
 
-            for file_path, root_path, is_excluded_by_size in all_single_mode_items:
+            for item in all_single_mode_items:
+                file_path, root_path, is_excluded_by_size = item[:3]
+                cached_processed = item[3] if len(item) > 3 else None
+
                 if output_format == 'json' and not dry_run and not estimate_tokens:
                     if not first_item:
                         outfile.write(',')
@@ -1088,7 +1159,8 @@ def find_and_combine_files(
                         file_path,
                         root_path,
                         outfile,
-                        output_format=output_format
+                        output_format=output_format,
+                        cached_content=cached_processed
                     )
 
                 if not dry_run or estimate_tokens:
@@ -1227,6 +1299,11 @@ def main():
         "-e",
         action="store_true",
         help="Estimate token usage. This is slower because it must read the file contents.",
+    )
+    runtime_group.add_argument(
+        "--max-tokens",
+        type=int,
+        help="Stop adding files once this total token limit is reached. (Single-file mode only)",
     )
     runtime_group.add_argument(
         "-v",
@@ -1447,6 +1524,11 @@ def main():
         else:
             output_conf['file'] = args.output
 
+    if args.max_tokens is not None:
+        if not isinstance(config.get('filters'), dict):
+            config['filters'] = {}
+        config['filters']['max_total_tokens'] = args.max_tokens
+
     if args.toc:
         output_conf['table_of_contents'] = True
 
@@ -1582,6 +1664,9 @@ def _print_execution_summary(stats, args, pairing_enabled):
 
     # Header
     print(f"\n{title_color}{bold}=== {summary_title} ==={reset}", file=sys.stderr)
+
+    if stats.get('budget_exceeded'):
+        print(f"  {yellow}{bold}WARNING: Output truncated due to token budget.{reset}", file=sys.stderr)
 
     # Core Stats
     print(f"  {bold}Total Files:{reset}      {total_files}", file=sys.stderr)
