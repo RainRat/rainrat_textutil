@@ -789,7 +789,8 @@ def find_and_combine_files(
         'total_size_bytes': 0,
         'files_by_extension': {},
         'total_tokens': 0,
-        'token_count_is_approx': False
+        'token_count_is_approx': False,
+        'total_discovered': 0,
     }
     search_opts = config.get('search', {})
     filter_opts = config.get('filters', {})
@@ -895,6 +896,7 @@ def find_and_combine_files(
 
         for root_path, all_paths, excluded_count in iteration_targets:
             total_excluded_folders += excluded_count
+            stats['total_discovered'] += len(all_paths)
 
             source_exts = tuple(
                 e.lower() for e in (pair_opts.get('source_extensions') or [])
@@ -1551,6 +1553,8 @@ def _print_execution_summary(stats, args, pairing_enabled):
     total_files = stats['total_files']
     total_size_mb = stats['total_size_bytes'] / (1024 * 1024)
     excluded_folders = stats.get('excluded_folder_count', 0)
+    total_discovered = stats.get('total_discovered', 0)
+    filtered_files = max(0, total_discovered - total_files)
 
     # ANSI color codes (if supported)
     bold = "\033[1m"
@@ -1583,9 +1587,18 @@ def _print_execution_summary(stats, args, pairing_enabled):
     # Header
     print(f"\n{title_color}{bold}=== {summary_title} ==={reset}", file=sys.stderr)
 
-    # Core Stats
-    print(f"  {bold}Total Files:{reset}      {total_files}", file=sys.stderr)
-    print(f"  {bold}Total Size:{reset}       {total_size_mb:.2f} MB", file=sys.stderr)
+    # Files Section
+    print(f"  {bold}Files:{reset}", file=sys.stderr)
+    print(f"    Included:   {green}{total_files:,}{reset}", file=sys.stderr)
+    if filtered_files > 0:
+        print(f"    Filtered:   {yellow}{filtered_files:,}{reset} {dim}(skipped){reset}", file=sys.stderr)
+    if excluded_folders > 0:
+        print(f"    Folders:    {yellow}{excluded_folders:,}{reset} {dim}(excluded){reset}", file=sys.stderr)
+    print(f"    Total:      {total_discovered:,} {dim}discovered{reset}", file=sys.stderr)
+
+    # Data Section
+    print(f"\n  {bold}Data:{reset}", file=sys.stderr)
+    print(f"    Total Size: {cyan}{total_size_mb:.2f} MB{reset}", file=sys.stderr)
 
     # Token Counts
     # Show token counts for single-file mode OR if estimate_tokens was requested
@@ -1594,57 +1607,50 @@ def _print_execution_summary(stats, args, pairing_enabled):
         is_approx = stats.get('token_count_is_approx', False)
         approx_indicator = "~" if is_approx else ""
         print(
-            f"  {bold}Token Count:{reset}      {approx_indicator}{token_count}",
+            f"    Tokens:     {cyan}{approx_indicator}{token_count:,}{reset} {dim}(est.){reset}",
             file=sys.stderr,
         )
         if is_approx:
             print(
-                f"    {dim}(Install 'tiktoken' for accurate counts){reset}",
+                f"      {dim}(Install 'tiktoken' for accurate counts){reset}",
                 file=sys.stderr,
             )
 
     # Extensions Grid
     if stats['files_by_extension']:
+        print(f"\n  {bold}Extensions:{reset}", file=sys.stderr)
         # Sort by count desc, then alpha
         sorted_exts = sorted(
             stats['files_by_extension'].items(),
             key=lambda item: (-item[1], item[0])
         )
 
-        items = [f"{cyan}{ext}{reset}: {count}" for ext, count in sorted_exts]
-        # max_len needs to account for ANSI codes if we were calculating strictly,
-        # but since we want to align the visible text, we should use a helper or
-        # just add the length of ANSI codes if they are present.
-        # Actually, let's keep it simple and just use the raw string for length calculation.
-        raw_items = [f"{ext}: {count}" for ext, count in sorted_exts]
-        max_len = max(len(s) for s in raw_items) + 3  # +3 for spacing
+        items = [f"{cyan}{ext}{reset}: {count:,}" for ext, count in sorted_exts]
+        raw_items = [f"{ext}: {count:,}" for ext, count in sorted_exts]
 
-        # Determine available width
-        term_width = 80
-        if sys.stderr.isatty():
-            try:
-                term_width = shutil.get_terminal_size((80, 20)).columns
-            except Exception:
-                pass
+        if items:
+            max_len = max(len(s) for s in raw_items) + 3  # +3 for spacing
 
-        # Indent is 4
-        avail_width = max(40, term_width - 4)
-        cols = max(1, avail_width // max_len)
+            # Determine available width
+            term_width = 80
+            if sys.stderr.isatty():
+                try:
+                    term_width = shutil.get_terminal_size((80, 20)).columns
+                except Exception:
+                    pass
 
-        print(f"  {bold}Extensions:{reset}", file=sys.stderr)
+            # Indent is 4
+            avail_width = max(40, term_width - 4)
+            cols = max(1, avail_width // max_len)
 
-        for i in range(0, len(items), cols):
-            chunk = items[i:i + cols]
-            raw_chunk = raw_items[i:i + cols]
-            line_parts = []
-            for item, raw_item in zip(chunk, raw_chunk):
-                padding = " " * (max_len - len(raw_item))
-                line_parts.append(item + padding)
-            print(f"    {''.join(line_parts).rstrip()}", file=sys.stderr)
-
-    # Excluded Folders
-    if excluded_folders > 0:
-        print(f"  {bold}Excluded Folders:{reset} {excluded_folders}", file=sys.stderr)
+            for i in range(0, len(items), cols):
+                chunk = items[i:i + cols]
+                raw_chunk = raw_items[i:i + cols]
+                line_parts = []
+                for item, raw_item in zip(chunk, raw_chunk):
+                    padding = " " * (max_len - len(raw_item))
+                    line_parts.append(item + padding)
+                print(f"    {''.join(line_parts).rstrip()}", file=sys.stderr)
 
     # Footer
     print(f"{title_color}{'=' * (len(summary_title) + 8)}{reset}", file=sys.stderr)

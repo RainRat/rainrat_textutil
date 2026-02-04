@@ -7,6 +7,7 @@ def test_summary_printing(monkeypatch, capsys):
     # Mock stats
     stats = {
         'total_files': 123,
+        'total_discovered': 150,
         'total_size_bytes': 1024 * 1024 * 1.5, # 1.5 MB
         'files_by_extension': {
             '.py': 10, '.txt': 5, '.md': 3, '.c': 1, '.h': 1,
@@ -37,11 +38,13 @@ def test_summary_printing(monkeypatch, capsys):
     stderr = captured.err
 
     assert "=== Execution Summary ===" in stderr
-    assert "Total Files:      123" in stderr
-    assert "Total Size:       1.50 MB" in stderr
+    assert "Included:   123" in stderr
+    assert "Filtered:   27" in stderr
+    assert "Total:      150 discovered" in stderr
+    assert "Total Size: 1.50 MB" in stderr
     assert "Extensions:" in stderr
-    assert "Excluded Folders: 2" in stderr
-    assert "Token Count:      ~5000" in stderr
+    assert "Folders:    2" in stderr
+    assert "Tokens:     ~5,000" in stderr
 
     # Check wrapping (heuristic: check if .yml is on a new line or far right)
     # The list is long, so it should wrap.
@@ -71,8 +74,8 @@ def test_summary_printing_dry_run(monkeypatch, capsys):
     stderr = captured.err
 
     assert "=== Dry-Run Summary ===" in stderr
-    assert "Total Files:      0" in stderr
+    assert "Included:   0" in stderr
     # Token count should NOT appear in dry run unless requested (but logic says: not dry_run or estimate_tokens)
     # Wait, check logic: `if not pairing_enabled and (not args.dry_run or args.estimate_tokens)`
     # So if dry_run=True and estimate=False, it should NOT show tokens.
-    assert "Token Count" not in stderr
+    assert "Tokens:" not in stderr
