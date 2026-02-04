@@ -423,17 +423,15 @@ def _pair_files(filtered_paths, source_exts, header_exts, include_mismatched, *,
         src = _select_preferred_path(stem_files, source_exts)
         hdr = _select_preferred_path(stem_files, header_exts)
         if src and hdr:
-            pair = []
-            for path in (src, hdr):
-                if path not in pair:
-                    pair.append(path)
-            pair_key = _path_without_suffix(src or hdr, root_path)
+            pair = [src]
+            if hdr != src:
+                pair.append(hdr)
+            pair_key = _path_without_suffix(src, root_path)
             paired[pair_key] = pair
         elif include_mismatched and (src or hdr):
-            lone = [p for p in (src or hdr,) if p]
-            if lone:
-                pair_key = _path_without_suffix(lone[0], root_path)
-                paired[pair_key] = lone
+            path = src or hdr
+            pair_key = _path_without_suffix(path, root_path)
+            paired[pair_key] = [path]
     return paired
 
 
