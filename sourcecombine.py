@@ -278,10 +278,15 @@ def filter_file_paths(
     for p in file_paths:
         if p.suffix.lower() == '.bak' and create_backups:
             continue
+        try:
+            rel_p = p.relative_to(root_path)
+        except ValueError:
+            rel_p = p
+
         if record_size_exclusions:
             include, reason = should_include(
                 p,
-                p.relative_to(root_path),
+                rel_p,
                 filter_opts,
                 search_opts,
                 return_reason=True,
@@ -289,7 +294,7 @@ def filter_file_paths(
         else:
             include = should_include(
                 p,
-                p.relative_to(root_path),
+                rel_p,
                 filter_opts,
                 search_opts,
             )
@@ -642,7 +647,10 @@ class FileProcessor:
                 self._backup_file(file_path)
                 file_path.write_text(processed_content, encoding='utf8')
 
-        relative_path = file_path.relative_to(root_path)
+        try:
+            relative_path = file_path.relative_to(root_path)
+        except ValueError:
+            relative_path = file_path
 
         if not self.estimate_tokens:
             if output_format == 'json':
@@ -676,7 +684,10 @@ class FileProcessor:
         if not placeholder:
             return 0, True
 
-        relative_path = file_path.relative_to(root_path)
+        try:
+            relative_path = file_path.relative_to(root_path)
+        except ValueError:
+            relative_path = file_path
         rendered = placeholder.replace(FILENAME_PLACEHOLDER, str(relative_path))
 
         if not self.estimate_tokens:
@@ -1403,28 +1414,36 @@ def main():
                     break
 
             if not config_path:
-                # Fallback to current directory if no config found
-                logging.info(
-                    "No config file found (checked: %s). Scanning current directory '.' with default settings.",
-                    ", ".join(defaults),
-                )
-                config_path = "."
-                # Redirect flow to directory mode logic
-                # Since we are modifying config_path to '.', we need to handle it
-                # similar to the 'directory mode' block above, but we are already past it.
-                # So we construct the config here.
-                config = {'search': {'root_folders': [config_path]}}
-                try:
-                    validate_config(
-                        config,
-                        defaults=DEFAULT_CONFIG,
-                        nested_required=nested_required,
-                        source="<default-cwd>"
+                if args.files_from:
+                    # If we failed to auto-discover config, but we have files-from,
+                    # we can fallback to default config.
+                    logging.info("No configuration found. Using default settings with --files-from.")
+                    config = utils.DEFAULT_CONFIG.copy()
+                    # Ensure search section exists even if empty
+                    config.setdefault('search', {})
+                else:
+                    # Fallback to current directory if no config found
+                    logging.info(
+                        "No config file found (checked: %s). Scanning current directory '.' with default settings.",
+                        ", ".join(defaults),
                     )
-                except InvalidConfigError as e:
-                    logging.error("The configuration is not valid: %s", e)
-                    logging.debug("Configuration validation traceback:", exc_info=True)
-                    sys.exit(1)
+                    config_path = "."
+                    # Redirect flow to directory mode logic
+                    # Since we are modifying config_path to '.', we need to handle it
+                    # similar to the 'directory mode' block above, but we are already past it.
+                    # So we construct the config here.
+                    config = {'search': {'root_folders': [config_path]}}
+                    try:
+                        validate_config(
+                            config,
+                            defaults=DEFAULT_CONFIG,
+                            nested_required=nested_required,
+                            source="<default-cwd>"
+                        )
+                    except InvalidConfigError as e:
+                        logging.error("The configuration is not valid: %s", e)
+                        logging.debug("Configuration validation traceback:", exc_info=True)
+                        sys.exit(1)
 
         if config is None:
             try:
