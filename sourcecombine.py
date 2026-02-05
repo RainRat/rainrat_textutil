@@ -97,6 +97,14 @@ def _fnmatch_casefold(name, pattern):
     return fnmatch.fnmatchcase(name.casefold(), pattern.casefold())
 
 
+def _get_rel_path(path, root_path):
+    """Return ``path`` relative to ``root_path`` with fallback to original."""
+    try:
+        return path.relative_to(root_path)
+    except ValueError:
+        return path
+
+
 def _normalize_patterns(patterns):
     if not patterns:
         return ()
@@ -278,10 +286,7 @@ def filter_file_paths(
     for p in file_paths:
         if p.suffix.lower() == '.bak' and create_backups:
             continue
-        try:
-            rel_p = p.relative_to(root_path)
-        except ValueError:
-            rel_p = p
+        rel_p = _get_rel_path(p, root_path)
 
         if record_size_exclusions:
             include, reason = should_include(
@@ -379,11 +384,7 @@ def _render_paired_filename(
 
 
 def _path_without_suffix(file_path, root_path):
-    try:
-        relative = file_path.relative_to(root_path)
-    except ValueError:
-        relative = file_path
-    return relative.with_suffix("")
+    return _get_rel_path(file_path, root_path).with_suffix("")
 
 
 def _group_paths_by_stem_suffix(file_paths, *, root_path):
@@ -466,10 +467,7 @@ def _process_paired_files(
         header_path = _select_preferred_path(ext_map, header_exts)
 
         primary_path = source_path or header_path or paths[0]
-        try:
-            relative_dir = primary_path.relative_to(root_path).parent
-        except ValueError:
-            relative_dir = primary_path.parent
+        relative_dir = _get_rel_path(primary_path, root_path).parent
 
         out_filename = _render_paired_filename(
             template,
@@ -492,10 +490,7 @@ def _process_paired_files(
         if dry_run:
             logging.info("[PAIR %s] -> %s", stem, out_file)
             for path in paths:
-                try:
-                    rel_path = path.relative_to(root_path)
-                except ValueError:
-                    rel_path = path
+                rel_path = _get_rel_path(path, root_path)
                 logging.info("  - %s", rel_path)
             continue
 
@@ -647,10 +642,7 @@ class FileProcessor:
                 self._backup_file(file_path)
                 file_path.write_text(processed_content, encoding='utf8')
 
-        try:
-            relative_path = file_path.relative_to(root_path)
-        except ValueError:
-            relative_path = file_path
+        relative_path = _get_rel_path(file_path, root_path)
 
         if not self.estimate_tokens:
             if output_format == 'json':
@@ -684,10 +676,7 @@ class FileProcessor:
         if not placeholder:
             return 0, True
 
-        try:
-            relative_path = file_path.relative_to(root_path)
-        except ValueError:
-            relative_path = file_path
+        relative_path = _get_rel_path(file_path, root_path)
         rendered = placeholder.replace(FILENAME_PLACEHOLDER, str(relative_path))
 
         if not self.estimate_tokens:
@@ -754,10 +743,7 @@ def _generate_table_of_contents(files, output_format='text'):
     if output_format == 'markdown':
         toc_lines.append("## Table of Contents")
         for file_path, root_path in files:
-            try:
-                rel_path = file_path.relative_to(root_path)
-            except ValueError:
-                rel_path = file_path
+            rel_path = _get_rel_path(file_path, root_path)
 
             # Create a basic anchor link. Note: This assumes standard GitHub-style
             # slugification (lowercase, spaces to dashes, remove punctuation).
@@ -776,10 +762,7 @@ def _generate_table_of_contents(files, output_format='text'):
     else: # text
         toc_lines.append("Table of Contents:")
         for file_path, root_path in files:
-            try:
-                rel_path = file_path.relative_to(root_path)
-            except ValueError:
-                rel_path = file_path
+            rel_path = _get_rel_path(file_path, root_path)
             toc_lines.append(f"- {rel_path}")
         toc_lines.append("\n" + "-" * 20 + "\n")
 
@@ -971,10 +954,7 @@ def find_and_combine_files(
                 else:
                     for p in paths_to_list:
                         # Print relative path if possible for cleaner output
-                        try:
-                            print(p.relative_to(root_path) if p.is_absolute() else p)
-                        except ValueError:
-                            print(p)
+                        print(_get_rel_path(p, root_path) if p.is_absolute() else p)
                 continue
 
             # Update stats
@@ -1062,10 +1042,7 @@ def find_and_combine_files(
                 tokens = 0
                 processed = None
 
-                try:
-                    rel_p = file_path.relative_to(root_path)
-                except ValueError:
-                    rel_p = file_path
+                rel_p = _get_rel_path(file_path, root_path)
 
                 if is_excluded_by_size:
                     placeholder = output_opts.get('max_size_placeholder')
@@ -1148,10 +1125,7 @@ def find_and_combine_files(
                 is_approx = True
 
                 if is_excluded_by_size:
-                    try:
-                        rel_path = file_path.relative_to(root_path)
-                    except ValueError:
-                        rel_path = file_path
+                    rel_path = _get_rel_path(file_path, root_path)
                     logging.debug(
                         "File exceeds max size; writing placeholder: %s", rel_path
                     )
