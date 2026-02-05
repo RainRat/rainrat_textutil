@@ -659,6 +659,12 @@ class FileProcessor:
                     "content": processed_content
                 }
                 json.dump(entry, outfile)
+            elif output_format == 'xml':
+                from xml.sax.saxutils import escape
+                if self.output_opts.get('add_line_numbers', False):
+                    processed_content = add_line_numbers(processed_content)
+                processed_content = escape(processed_content)
+                self._write_with_templates(outfile, processed_content, relative_path)
             else:
                 if self.output_opts.get('add_line_numbers', False):
                     processed_content = add_line_numbers(processed_content)
@@ -697,6 +703,10 @@ class FileProcessor:
                     "content": rendered
                 }
                 json.dump(entry, outfile)
+            elif output_format == 'xml':
+                from xml.sax.saxutils import escape
+                rendered = escape(rendered)
+                self._write_with_templates(outfile, rendered, relative_path)
             else:
                 self._write_with_templates(outfile, rendered, relative_path)
 
@@ -841,6 +851,22 @@ def find_and_combine_files(
         if not current_footer or current_footer == default_footer:
             output_opts['footer_template'] = "\n```\n\n"
 
+    # Apply default XML templates if requested and not overridden
+    if output_format == 'xml':
+        default_header = utils.DEFAULT_CONFIG['output']['header_template']
+        default_footer = utils.DEFAULT_CONFIG['output']['footer_template']
+        default_global_header = utils.DEFAULT_CONFIG['output']['global_header_template']
+        default_global_footer = utils.DEFAULT_CONFIG['output']['global_footer_template']
+
+        if not output_opts.get('header_template') or output_opts.get('header_template') == default_header:
+            output_opts['header_template'] = '<file path="{{FILENAME}}">\n'
+        if not output_opts.get('footer_template') or output_opts.get('footer_template') == default_footer:
+            output_opts['footer_template'] = "\n</file>\n"
+        if not output_opts.get('global_header_template') or output_opts.get('global_header_template') == default_global_header:
+            output_opts['global_header_template'] = "<repository>\n"
+        if not output_opts.get('global_footer_template') or output_opts.get('global_footer_template') == default_global_footer:
+            output_opts['global_footer_template'] = "\n</repository>\n"
+
     if not pairing_enabled and not dry_run and not estimate_tokens and not clipboard and not list_files and output_path is None:
         raise InvalidConfigError(
             "'output.file' must be set when pairing is disabled and clipboard mode is off."
@@ -877,8 +903,8 @@ def find_and_combine_files(
         global_header = output_opts.get('global_header_template')
         global_footer = output_opts.get('global_footer_template')
 
-        # Only write global headers for text output
-        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and global_header and output_format == 'text':
+        # Only write global headers for text and xml output
+        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and global_header and output_format in ('text', 'xml'):
             outfile.write(global_header)
 
         if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and output_format == 'json':
@@ -1054,7 +1080,7 @@ def find_and_combine_files(
             budget_exceeded = False
 
             # Account for global header tokens in the budget
-            if global_header and output_format == 'text':
+            if global_header and output_format in ('text', 'xml'):
                 current_tokens += utils.estimate_tokens(global_header)[0]
 
             for item in all_single_mode_items:
@@ -1176,8 +1202,8 @@ def find_and_combine_files(
 
             processing_bar.close()
 
-        # Write global footer only for text output
-        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and global_footer and output_format == 'text':
+        # Write global footer only for text and xml output
+        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and global_footer and output_format in ('text', 'xml'):
             outfile.write(global_footer)
 
         if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and output_format == 'json':
@@ -1277,7 +1303,7 @@ def main():
     output_group.add_argument(
         "--format",
         "-f",
-        choices=["text", "json", "markdown"],
+        choices=["text", "json", "markdown", "xml"],
         default="text",
         help=(
             "Choose the output format. 'json' creates a list of file contents. "

@@ -67,6 +67,7 @@ DEFAULT_CONFIG = {
         'global_header_template': None,
         'global_footer_template': None,
         'max_size_placeholder': None,
+        'format': 'text',
     },
     'processing': {
         'apply_in_place': False,
@@ -479,6 +480,7 @@ def _validate_output_section(config):
         'global_header_template',
         'global_footer_template',
         'max_size_placeholder',
+        'format',
     ]
 
     for field in string_fields:
@@ -497,6 +499,10 @@ def _validate_output_section(config):
             "'output.max_size_placeholder' is set but does not include the %s placeholder",
             FILENAME_PLACEHOLDER,
         )
+
+    fmt = output_conf.get('format')
+    if fmt is not None and fmt not in ('text', 'json', 'markdown', 'xml'):
+        raise InvalidConfigError("'output.format' must be one of: text, json, markdown, xml")
 
 
 def apply_line_regex_replacements(text, rules):

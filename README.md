@@ -92,8 +92,8 @@ python sourcecombine.py [CONFIG_FILE_OR_DIRECTORY] [OPTIONS]
 *   `--verbose` / `-v`: Enable verbose output (DEBUG level) to troubleshoot configuration issues.
 *   `--clipboard` / `-c`: Copy the combined output directly to the clipboard instead of writing to a file.
     *   *Note: Clipboard mode is not available when file pairing is enabled.*
-*   `--format` / `-f`: Choose the output format (`text`, `json`, or `markdown`).
-    *   *Note: JSON format produces an array of file objects and is available in single-file mode only. Markdown format automatically sets header/footer templates to use Markdown code blocks.*
+*   `--format` / `-f`: Choose the output format (`text`, `json`, `markdown`, or `xml`).
+    *   *Note: JSON format produces an array of file objects and is available in single-file mode only. Markdown and XML formats automatically adjust templates to use appropriate markers (code blocks for Markdown, tags for XML).*
 *   `--toc`: Include a Table of Contents at the beginning of the output file. (Single-file mode only).
 *   `--max-tokens`: Stop adding files once this total token limit is reached. (Single-file mode only).
 *   `--estimate-tokens` / `-e`: Calculate token counts without writing output files.
