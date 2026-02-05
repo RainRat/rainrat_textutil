@@ -809,6 +809,7 @@ def find_and_combine_files(
 ):
     """Find, filter, and combine files based on the provided configuration."""
     stats = {
+        'total_discovered': 0,
         'total_files': 0,
         'total_size_bytes': 0,
         'files_by_extension': {},
@@ -936,6 +937,7 @@ def find_and_combine_files(
 
         for root_path, all_paths, excluded_count in iteration_targets:
             total_excluded_folders += excluded_count
+            stats['total_discovered'] += len(all_paths)
 
             source_exts = tuple(
                 e.lower() for e in (pair_opts.get('source_extensions') or [])
@@ -1668,7 +1670,9 @@ def main():
 def _print_execution_summary(stats, args, pairing_enabled):
     """Print a formatted summary of the execution statistics to stderr."""
 
-    total_files = stats['total_files']
+    total_included = stats['total_files']
+    total_discovered = stats.get('total_discovered', 0)
+    total_filtered = max(0, total_discovered - total_included)
     total_size_mb = stats['total_size_bytes'] / (1024 * 1024)
     excluded_folders = stats.get('excluded_folder_count', 0)
 
@@ -1706,23 +1710,31 @@ def _print_execution_summary(stats, args, pairing_enabled):
     if stats.get('budget_exceeded'):
         print(f"  {yellow}{bold}WARNING: Output truncated due to token budget.{reset}", file=sys.stderr)
 
-    # Core Stats
-    print(f"  {bold}Total Files:{reset}      {total_files}", file=sys.stderr)
-    print(f"  {bold}Total Size:{reset}       {total_size_mb:.2f} MB", file=sys.stderr)
+    # Files Section
+    print(f"  {bold}Files{reset}", file=sys.stderr)
+    print(f"    {bold}Included:{reset}   {total_included:12,}", file=sys.stderr)
+    print(f"    {bold}Filtered:{reset}   {total_filtered:12,}", file=sys.stderr)
+    print(f"    {bold}Total:{reset}      {total_discovered:12,}", file=sys.stderr)
+    if excluded_folders > 0:
+        print(f"    {bold}Excluded Folders:{reset} {excluded_folders:,}", file=sys.stderr)
+
+    # Data Section
+    print(f"\n  {bold}Data{reset}", file=sys.stderr)
+    print(f"    {bold}Total Size:{reset}  {total_size_mb:12.2f} MB", file=sys.stderr)
 
     # Token Counts
     # Show token counts for single-file mode OR if estimate_tokens was requested
     if not pairing_enabled and (not args.dry_run or args.estimate_tokens) and not args.list_files and not args.tree:
         token_count = stats.get('total_tokens', 0)
         is_approx = stats.get('token_count_is_approx', False)
-        approx_indicator = "~" if is_approx else ""
+        token_str = f"{'~' if is_approx else ''}{token_count:,}"
         print(
-            f"  {bold}Token Count:{reset}      {approx_indicator}{token_count}",
+            f"    {bold}Token Count:{reset} {token_str:>13}",
             file=sys.stderr,
         )
         if is_approx:
             print(
-                f"    {dim}(Install 'tiktoken' for accurate counts){reset}",
+                f"      {dim}(Install 'tiktoken' for accurate counts){reset}",
                 file=sys.stderr,
             )
 
@@ -1734,13 +1746,10 @@ def _print_execution_summary(stats, args, pairing_enabled):
             key=lambda item: (-item[1], item[0])
         )
 
-        items = [f"{cyan}{ext}{reset}: {count}" for ext, count in sorted_exts]
-        # max_len needs to account for ANSI codes if we were calculating strictly,
-        # but since we want to align the visible text, we should use a helper or
-        # just add the length of ANSI codes if they are present.
-        # Actually, let's keep it simple and just use the raw string for length calculation.
-        raw_items = [f"{ext}: {count}" for ext, count in sorted_exts]
-        max_len = max(len(s) for s in raw_items) + 3  # +3 for spacing
+        formatted_counts = [f"{count:,}" for _, count in sorted_exts]
+        items = [f"{cyan}{ext}{reset}: {c}" for (ext, _), c in zip(sorted_exts, formatted_counts)]
+        raw_items = [f"{ext}: {c}" for (ext, _), c in zip(sorted_exts, formatted_counts)]
+        max_len = max(len(s) for s in raw_items) + 3
 
         # Determine available width
         term_width = 80
@@ -1754,7 +1763,7 @@ def _print_execution_summary(stats, args, pairing_enabled):
         avail_width = max(40, term_width - 4)
         cols = max(1, avail_width // max_len)
 
-        print(f"  {bold}Extensions:{reset}", file=sys.stderr)
+        print(f"\n  {bold}Extensions{reset}", file=sys.stderr)
 
         for i in range(0, len(items), cols):
             chunk = items[i:i + cols]
@@ -1765,12 +1774,8 @@ def _print_execution_summary(stats, args, pairing_enabled):
                 line_parts.append(item + padding)
             print(f"    {''.join(line_parts).rstrip()}", file=sys.stderr)
 
-    # Excluded Folders
-    if excluded_folders > 0:
-        print(f"  {bold}Excluded Folders:{reset} {excluded_folders}", file=sys.stderr)
-
     # Footer
-    print(f"{title_color}{'=' * (len(summary_title) + 8)}{reset}", file=sys.stderr)
+    print(f"\n{title_color}{'=' * (len(summary_title) + 8)}{reset}", file=sys.stderr)
 
 
 if __name__ == "__main__":
