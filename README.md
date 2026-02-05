@@ -99,6 +99,7 @@ python sourcecombine.py [CONFIG_FILE_OR_DIRECTORY] [OPTIONS]
 *   `--estimate-tokens` / `-e`: Calculate token counts without writing output files.
     *   *Note: Slower than a regular dry-run as it processes content.*
 *   `--list-files`: Print a list of files that would be processed to the console and exit.
+*   `--tree`: Show a visual folder tree of all included files and exit.
 *   `--files-from`: Read a list of files to process from a text file (or `-` for stdin). Overrides normal folder scanning.
 *   `--init`: Generate a default configuration file (`sourcecombine.yml`) in the current directory.
 *   `--include` / `-i`: Include only files matching a specific pattern (e.g., `-i "*.py"`). Can be used multiple times.
@@ -111,6 +112,12 @@ python sourcecombine.py [CONFIG_FILE_OR_DIRECTORY] [OPTIONS]
 See exactly which files would be included without writing anything:
 ```bash
 python sourcecombine.py my_config.yml --dry-run
+```
+
+**View included files as a tree:**
+See the directory structure of all matched files:
+```bash
+python sourcecombine.py . --tree
 ```
 
 **Run on a specific directory without a config file:**
