@@ -367,8 +367,8 @@ def test_add_line_numbers():
 
 def test_compact_whitespace_converts_spaces_to_tabs():
     assert compact_whitespace("line\n    indent") == "line\n\tindent"
-    assert compact_whitespace(" " * 8) == "\t\t"
-    assert compact_whitespace(" " * 5) == "\t "
+    assert compact_whitespace(" " * 8 + "content") == "\t\tcontent"
+    assert compact_whitespace(" " * 5 + "content") == "\tcontent"
 
 
 def test_compact_whitespace_removes_spaces_around_tabs():
@@ -478,3 +478,17 @@ def test_validate_glob_pattern_raises_on_non_string_pattern(tmp_path):
                 },
             )
         )
+
+def test_compact_whitespace_trims_trailing_whitespace_on_last_line_no_newline():
+    assert compact_whitespace("abc  ") == "abc"
+
+def test_compact_whitespace_trims_trailing_tabs_on_last_line_no_newline():
+    assert compact_whitespace("abc\t") == "abc"
+
+def test_compact_whitespace_trims_mixed_trailing_whitespace_on_last_line_no_newline():
+    assert compact_whitespace("abc \t  ") == "abc"
+
+def test_compact_whitespace_trims_trailing_whitespace_on_all_lines():
+    text = "line 1  \nline 2\t\nline 3  "
+    expected = "line 1\nline 2\nline 3"
+    assert compact_whitespace(text) == expected

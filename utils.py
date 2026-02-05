@@ -232,7 +232,7 @@ def compact_whitespace(text, *, groups=None):
     if _should_apply('replace_mid_line_tabs'):
         text = re.sub(r'(?<=[^\n\t])\t', ' ', text)
     if _should_apply('trim_trailing_whitespace'):
-        text = re.sub(r'[ \t]+\n', '\n', text)
+        text = re.sub(r'[ \t]+$', '', text, flags=re.MULTILINE)
     if _should_apply('compact_blank_lines'):
         text = re.sub(r'\n{3,}', '\n\n', text)
     if _should_apply('compact_space_runs'):
