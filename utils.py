@@ -32,6 +32,7 @@ DEFAULT_CONFIG = {
     },
     'filters': {
         'skip_binary': False,
+        'max_total_tokens': 0,
         'exclusions': {
             'filenames': [
                 '*.pyc', '*.pyo', '*.pyd',
@@ -344,6 +345,13 @@ def _validate_filters_section(config):
         if not isinstance(max_size, int) or max_size < 0:
             raise InvalidConfigError(
                 "filters.max_size_bytes must be a non-negative integer"
+            )
+
+    max_total_tokens = filters.get('max_total_tokens')
+    if max_total_tokens is not None:
+        if not isinstance(max_total_tokens, int) or max_total_tokens < 0:
+            raise InvalidConfigError(
+                "filters.max_total_tokens must be a non-negative integer"
             )
 
     skip_binary = filters.get('skip_binary')

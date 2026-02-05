@@ -78,6 +78,10 @@ filters:
   # Files larger than this (bytes) are skipped. Omit, set to null, or set to 0 for no limit (0 is treated as unlimited).
   max_size_bytes: 0
 
+  # Stop adding files to the combined output once this total token limit is reached.
+  # (Single-file mode only). Omit or set to 0 for no limit.
+  max_total_tokens: 0
+
   # If true, skip files that appear to contain binary data (e.g., executables, images).
   skip_binary: false
 

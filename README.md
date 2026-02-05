@@ -95,6 +95,7 @@ python sourcecombine.py [CONFIG_FILE_OR_DIRECTORY] [OPTIONS]
 *   `--format` / `-f`: Choose the output format (`text`, `json`, or `markdown`).
     *   *Note: JSON format produces an array of file objects and is available in single-file mode only. Markdown format automatically sets header/footer templates to use Markdown code blocks.*
 *   `--toc`: Include a Table of Contents at the beginning of the output file. (Single-file mode only).
+*   `--max-tokens`: Stop adding files once this total token limit is reached. (Single-file mode only).
 *   `--estimate-tokens` / `-e`: Calculate token counts without writing output files.
     *   *Note: Slower than a regular dry-run as it processes content.*
 *   `--list-files`: Print a list of files that would be processed to the console and exit.
@@ -293,6 +294,10 @@ omitted files, set `output.max_size_placeholder` to a string such as
 file's path relative to the root folder. The placeholder is written for
 oversized files whether pairing is enabled or not; in pairing mode, it replaces
 the output for pairs whose primary file exceeds the limit.
+
+Set `filters.max_total_tokens` to a positive integer to cap the total size of the
+combined output document. This is particularly useful when preparing context for
+Large Language Models with specific context window limits.
 
 Set `filters.skip_binary` to `true` to ignore files that look like binary data
 (for example, executables or images) even when they match your other filters.
