@@ -15,13 +15,13 @@ Whether you are preparing files for printing, creating context for Large Languag
 ## Installation
 
 1.  **Check your Python version:**
-    SourceCombine requires Python 3.8 or newer.
+    SourceCombine requires Python 3.10 or newer.
     ```bash
     python --version
     ```
 
 2.  **Get the code:**
-    Clone the repository and enter the directory:
+    Clone the repository and enter the folder:
     ```bash
     git clone https://github.com/RainRat/TextUtilities.git
     cd TextUtilities
@@ -75,14 +75,14 @@ Whether you are preparing files for printing, creating context for Large Languag
     ```bash
     python sourcecombine.py sourcecombine.yml
     ```
-    By default, this combines files from the current directory into `combined_files.txt`.
+    By default, this combines files from the current folder into `combined_files.txt`.
 
 ## Usage
 
-Run the script from the command line. You can pass a configuration file or a directory path.
+Run the script from the command line. You can pass a configuration file or a folder path.
 
 ```bash
-python sourcecombine.py [CONFIG_FILE_OR_DIRECTORY] [OPTIONS]
+python sourcecombine.py [TARGET] [OPTIONS]
 ```
 
 ### Options
@@ -101,7 +101,7 @@ python sourcecombine.py [CONFIG_FILE_OR_DIRECTORY] [OPTIONS]
 *   `--list-files`: Print a list of files that would be processed to the console and exit.
 *   `--tree`: Show a visual folder tree of all included files and exit.
 *   `--files-from`: Read a list of files to process from a text file (or `-` for stdin). Overrides normal folder scanning.
-*   `--init`: Generate a default configuration file (`sourcecombine.yml`) in the current directory.
+*   `--init`: Generate a default configuration file (`sourcecombine.yml`) in the current folder.
 *   `--include` / `-i`: Include only files matching a specific pattern (e.g., `-i "*.py"`). Can be used multiple times.
 *   `--exclude-file` / `-x`: Exclude specific files (e.g., `-x "secret.txt"`). Can be used multiple times.
 *   `--exclude-folder` / `-X`: Exclude specific folders (e.g., `-X "build"`). Can be used multiple times.
@@ -115,12 +115,12 @@ python sourcecombine.py my_config.yml --dry-run
 ```
 
 **View included files as a tree:**
-See the directory structure of all matched files:
+See the folder structure of all matched files:
 ```bash
 python sourcecombine.py . --tree
 ```
 
-**Run on a specific directory without a config file:**
+**Run on a specific folder without a config file:**
 Use default settings to combine files in `src/`:
 ```bash
 python sourcecombine.py src/
@@ -132,6 +132,12 @@ Combine files defined in `config.yml` and copy the result:
 python sourcecombine.py config.yml --clipboard
 ```
 
+**Include only specific file types:**
+Combine only Python and Markdown files from the `src/` folder:
+```bash
+python sourcecombine.py src/ -i "*.py" -i "*.md"
+```
+
 ## Table of Contents
 
 For large combined files, you can enable a Table of Contents (TOC) at the top of the output.
@@ -140,11 +146,6 @@ This is particularly useful when outputting to Markdown or Text formats.
 **CLI:**
 ```bash
 python sourcecombine.py --toc
-```
-
-**Include only Python and Markdown files:**
-```bash
-python sourcecombine.py src/ -i "*.py" -i "*.md"
 ```
 
 **Configuration:**
@@ -204,11 +205,11 @@ following placeholders:
 - `{{STEM}}`: The base name of the file (e.g., `main` from `main.cpp`).
 - `{{SOURCE_EXT}}`: The extension of the source file (e.g., `.cpp`).
 - `{{HEADER_EXT}}`: The extension of the header file (e.g., `.h`).
-- `{{DIR}}`: The file's relative directory using POSIX separators (or `.` for
+- `{{DIR}}`: The file's relative folder path using forward slashes (or `.` for
   files located directly in the root folder being processed).
 - `{{DIR_SLUG}}`: A filesystem-safe version of `{{DIR}}`, lowercased and with
-  unsafe characters converted to dashes while preserving the directory
-  structure. When `{{DIR}}` is `.`, the slug is `root`.
+  unsafe characters converted to dashes while preserving the folder
+  structure. When `{{DIR}}` is `.`, the simplified name is `root`.
 
 The default template is `'{{STEM}}.combined'`. You can customize it to match
 your project's conventions:
@@ -218,7 +219,7 @@ output:
   paired_filename_template: '{{STEM}}{{SOURCE_EXT}}.txt'
 ```
 
-To preserve directory structure when writing paired outputs to a folder, use
+To preserve folder structure when writing paired outputs to a folder, use
 the `{{DIR_SLUG}}` placeholder:
 
 ```yaml
@@ -289,8 +290,8 @@ Use glob patterns in `filters.exclusions.filenames` to skip specific files.
 Patterns can match an extension (`'*.bak'`), a complete filename (`'test.py'`),
 or a relative path glob (`'tests/*'`).
 
-Exclude entire directories with `filters.exclusions.folders`. Each pattern is
-checked against every directory name in the path, so a single entry like
+Exclude entire folders with `filters.exclusions.folders`. Each pattern is
+checked against every folder name in the path, so a single entry like
 `'build'` will exclude both `./build` and nested folders such as
 `./src/app/build`.
 
