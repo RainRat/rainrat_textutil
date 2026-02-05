@@ -20,6 +20,9 @@ search:
 
 # --- Output Configuration ---
 output:
+  # Output format (text, json, markdown, xml). Defaults to text.
+  format: 'text'
+
   # When pairing is disabled, all content is written to this file.
   file: 'combined_files.txt'
 
