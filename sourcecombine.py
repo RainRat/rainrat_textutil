@@ -105,6 +105,15 @@ def _get_rel_path(path, root_path):
         return path
 
 
+def _render_template(template, relative_path):
+    """Replace placeholders in ``template`` with values from ``relative_path``."""
+    if not template:
+        return ""
+    rendered = template.replace(FILENAME_PLACEHOLDER, str(relative_path))
+    rendered = rendered.replace("{{EXT}}", relative_path.suffix.lstrip(".") or "")
+    return rendered
+
+
 def _normalize_patterns(patterns):
     if not patterns:
         return ()
@@ -580,25 +589,9 @@ class FileProcessor:
             'footer_template', utils.DEFAULT_CONFIG['output']['footer_template']
         )
 
-        if header_template not in (None, ""):
-            header_text = header_template.replace(
-                FILENAME_PLACEHOLDER, str(relative_path)
-            )
-            header_text = header_text.replace(
-                "{{EXT}}", relative_path.suffix.lstrip(".") or ""
-            )
-            outfile.write(header_text)
-
+        outfile.write(_render_template(header_template, relative_path))
         outfile.write(content)
-
-        if footer_template not in (None, ""):
-            footer_text = footer_template.replace(
-                FILENAME_PLACEHOLDER, str(relative_path)
-            )
-            footer_text = footer_text.replace(
-                "{{EXT}}", relative_path.suffix.lstrip(".") or ""
-            )
-            outfile.write(footer_text)
+        outfile.write(_render_template(footer_template, relative_path))
     def _backup_file(self, file_path):
         """Create a ``.bak`` backup for ``file_path`` when backups are enabled.
 
@@ -651,15 +644,12 @@ class FileProcessor:
                     "content": processed_content
                 }
                 json.dump(entry, outfile)
-            elif output_format == 'xml':
-                from xml.sax.saxutils import escape
-                if self.output_opts.get('add_line_numbers', False):
-                    processed_content = add_line_numbers(processed_content)
-                processed_content = escape(processed_content)
-                self._write_with_templates(outfile, processed_content, relative_path)
             else:
                 if self.output_opts.get('add_line_numbers', False):
                     processed_content = add_line_numbers(processed_content)
+                if output_format == 'xml':
+                    from xml.sax.saxutils import escape
+                    processed_content = escape(processed_content)
                 self._write_with_templates(outfile, processed_content, relative_path)
 
         # Estimate tokens on the final processed content
@@ -683,7 +673,7 @@ class FileProcessor:
             return 0, True
 
         relative_path = _get_rel_path(file_path, root_path)
-        rendered = placeholder.replace(FILENAME_PLACEHOLDER, str(relative_path))
+        rendered = _render_template(placeholder, relative_path)
 
         if not self.estimate_tokens:
             if output_format == 'json':
@@ -692,11 +682,10 @@ class FileProcessor:
                     "content": rendered
                 }
                 json.dump(entry, outfile)
-            elif output_format == 'xml':
-                from xml.sax.saxutils import escape
-                rendered = escape(rendered)
-                self._write_with_templates(outfile, rendered, relative_path)
             else:
+                if output_format == 'xml':
+                    from xml.sax.saxutils import escape
+                    rendered = escape(rendered)
                 self._write_with_templates(outfile, rendered, relative_path)
 
         return utils.estimate_tokens(rendered)
@@ -1075,7 +1064,7 @@ def find_and_combine_files(
                 if is_excluded_by_size:
                     placeholder = output_opts.get('max_size_placeholder')
                     if placeholder:
-                        rendered = placeholder.replace(FILENAME_PLACEHOLDER, str(rel_p))
+                        rendered = _render_template(placeholder, rel_p)
                         tokens, _ = utils.estimate_tokens(rendered)
                 else:
                     content = read_file_best_effort(file_path)
@@ -1089,14 +1078,8 @@ def find_and_combine_files(
                 # Account for header/footer templates in the budget
                 h_template = output_opts.get('header_template', utils.DEFAULT_CONFIG['output']['header_template'])
                 f_template = output_opts.get('footer_template', utils.DEFAULT_CONFIG['output']['footer_template'])
-                if h_template:
-                    h_rendered = h_template.replace(FILENAME_PLACEHOLDER, str(rel_p))
-                    h_rendered = h_rendered.replace("{{EXT}}", rel_p.suffix.lstrip(".") or "")
-                    tokens += utils.estimate_tokens(h_rendered)[0]
-                if f_template:
-                    f_rendered = f_template.replace(FILENAME_PLACEHOLDER, str(rel_p))
-                    f_rendered = f_rendered.replace("{{EXT}}", rel_p.suffix.lstrip(".") or "")
-                    tokens += utils.estimate_tokens(f_rendered)[0]
+                tokens += utils.estimate_tokens(_render_template(h_template, rel_p))[0]
+                tokens += utils.estimate_tokens(_render_template(f_template, rel_p))[0]
 
                 if current_tokens + tokens > max_total_tokens and current_tokens > 0:
                     budget_exceeded = True
