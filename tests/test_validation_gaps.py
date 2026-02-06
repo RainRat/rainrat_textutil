@@ -110,3 +110,17 @@ def test_validate_line_regex_replacements_invalid_regex(tmp_path):
     )
     with pytest.raises(InvalidConfigError, match="Invalid regex pattern in processing.line_regex_replacements\\[0\\]"):
         load_and_validate_config(config_path)
+
+def test_validate_output_format_invalid(tmp_path):
+    """Ensure InvalidConfigError is raised for an unsupported output format."""
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "output": {
+                "format": "invalid_format"
+            }
+        }
+    )
+    with pytest.raises(InvalidConfigError, match="'output.format' must be one of: text, json, markdown, xml"):
+        load_and_validate_config(config_path)
