@@ -1,5 +1,5 @@
 # ================================================================
-# Comprehensive configuration template for the File Combiner Tool
+# Comprehensive configuration template for SourceCombine
 # Lists every available option with default values and explanations.
 # ================================================================
 
@@ -36,11 +36,11 @@ output:
   #   {{STEM}}       - The base name of the file (e.g., 'main' from 'main.cpp')
   #   {{SOURCE_EXT}} - The extension of the source file (e.g., '.cpp')
   #   {{HEADER_EXT}} - The extension of the header file (e.g., '.h')
-  #   {{DIR}}        - Relative directory using POSIX separators (or '.' for root)
-  #   {{DIR_SLUG}}   - Filesystem-safe version of {{DIR}} ('root' when DIR is '.')
+  #   {{DIR}}        - The relative folder path using forward slashes (or '.' for the root folder)
+  #   {{DIR_SLUG}}   - A simplified name for {{DIR}} ('root' when DIR is '.')
   paired_filename_template: '{{STEM}}.combined'
 
-  # Example preserving directory structure in the output folder:
+  # Example preserving folder structure in the output folder:
   # paired_filename_template: '{{DIR_SLUG}}/{{STEM}}.combined'
 
   # Add line numbers starting at 1 for each file.
@@ -51,14 +51,14 @@ output:
   table_of_contents: false
 
   # Template written before each file's content.
-  # The special sequence "{{FILENAME}}" is replaced with the file's
-  # path relative to the root folder. Set to null or an empty string
-  # to omit the header.
+  # The sequence "{{FILENAME}}" is replaced with the file's path relative
+  # to the root folder, and "{{EXT}}" is replaced with its extension.
+  # Set to null or an empty string to omit the header.
   header_template: "--- {{FILENAME}} ---\n"
 
   # Template written after each file's content.
-  # "{{FILENAME}}" is replaced with the file's relative path. Set to null
-  # or an empty string to omit the footer/separator.
+  # "{{FILENAME}}" and "{{EXT}}" are replaced as described above.
+  # Set to null or an empty string to omit the footer/separator.
   footer_template: "\n--- end {{FILENAME}} ---\n"
 
   # Template written at the very beginning of the combined output file.
@@ -110,7 +110,7 @@ filters:
       - '.tox'
       - '.nox'
 
-    # Exclude folders if any directory name in the path matches one of these
+    # Exclude folders if any folder name in the path matches one of these
     # patterns. Case-insensitive.
     # Defaults include: .git, __pycache__, node_modules, .venv, dist, build, etc.
     folders:
