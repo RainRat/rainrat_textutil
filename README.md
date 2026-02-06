@@ -95,6 +95,7 @@ python sourcecombine.py [TARGET] [OPTIONS]
 *   `--format` / `-f`: Choose the output format (`text`, `json`, `markdown`, or `xml`).
     *   *Note: JSON format produces an array of file objects and is available in single-file mode only. Markdown and XML formats automatically adjust templates to use appropriate markers (code blocks for Markdown, tags for XML).*
 *   `--toc`: Include a Table of Contents at the beginning of the output file. (Single-file mode only).
+*   `--include-tree`: Include a visual directory tree at the start of the output. (Single-file mode only).
 *   `--max-tokens`: Stop adding files once this total token limit is reached. (Single-file mode only).
 *   `--estimate-tokens` / `-e`: Calculate token counts without writing output files.
     *   *Note: Slower than a regular dry-run as it processes content.*

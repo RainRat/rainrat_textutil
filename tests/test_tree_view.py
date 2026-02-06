@@ -4,7 +4,7 @@ import sys
 import os
 from pathlib import Path
 import yaml
-from sourcecombine import main, _print_tree
+from sourcecombine import main, _generate_tree_string
 
 def test_tree_view_output(capsys, tmp_path):
     """Verify that --tree produces the expected hierarchical output."""
@@ -90,14 +90,14 @@ def test_tree_view_with_pairing(capsys, tmp_path):
     assert "bar.c" not in out
 
 def test_print_tree_fallback_path(capsys):
-    """Test the fallback logic in _print_tree when paths are not relative to root."""
-    # This specifically targets the try-except ValueError block in _print_tree (line 699)
+    """Test the fallback logic in _generate_tree_string when paths are not relative to root."""
+    # This specifically targets the try-except ValueError block in _generate_tree_string
 
     # Use absolute paths that are clearly not under the root_path
     paths = [Path("/external_root/some_file.txt")]
     root_path = Path("/app/project")
 
-    _print_tree(paths, root_path)
+    print(_generate_tree_string(paths, root_path, include_header=False))
 
     captured = capsys.readouterr()
     # It should still print the root name
