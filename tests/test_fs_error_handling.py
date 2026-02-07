@@ -32,6 +32,10 @@ def test_collect_file_paths_root_access_error(monkeypatch, caplog):
         def __init__(self, *args, **kwargs):
             self.args = args
 
+        def is_file(self):
+            # sourcecombine calls is_file() first
+            return False
+
         def is_dir(self):
             raise OSError("Simulated Access Denied")
 
