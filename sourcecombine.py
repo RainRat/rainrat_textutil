@@ -702,8 +702,8 @@ class FileProcessor:
         return utils.estimate_tokens(rendered)
 
 
-def _print_tree(paths, root_path):
-    """Print a tree structure of file paths."""
+def _generate_tree_string(paths, root_path, output_format='text', include_header=True):
+    """Generate a tree structure string of file paths."""
     # Convert to relative paths
     try:
         rel_paths = [p.relative_to(root_path) for p in paths]
@@ -722,22 +722,38 @@ def _print_tree(paths, root_path):
                 current[part] = {}
             current = current[part]
 
-    def _print_node(node, prefix=""):
+    lines = []
+    if include_header:
+        if output_format == 'markdown':
+            lines.append("## Project Structure")
+            lines.append("```text")
+        else:
+            lines.append("Project Structure:")
+
+    def _add_node(node, prefix=""):
         items = sorted(node.keys())
         for i, item in enumerate(items):
             is_last = i == len(items) - 1
             connector = "└── " if is_last else "├── "
-            print(f"{prefix}{connector}{item}")
+            lines.append(f"{prefix}{connector}{item}")
 
             # If the item has children (it's a directory), recurse
             children = node[item]
             if children:
                 extension = "    " if is_last else "│   "
-                _print_node(children, prefix + extension)
+                _add_node(children, prefix + extension)
 
-    # Print the root directory name first
-    print(f"{root_path.name}/")
-    _print_node(tree)
+    # Add the root directory name first
+    lines.append(f"{root_path.name}/")
+    _add_node(tree)
+
+    if include_header:
+        if output_format == 'markdown':
+            lines.append("```\n")
+        else:
+            lines.append("-" * 20 + "\n")
+
+    return "\n".join(lines)
 
 
 def _generate_table_of_contents(files, output_format='text'):
@@ -978,7 +994,7 @@ def find_and_combine_files(
                     _update_file_stats(stats, p)
 
                 if tree_view:
-                    _print_tree(paths_to_list, root_path)
+                    print(_generate_tree_string(paths_to_list, root_path, include_header=False))
                 else:
                     for p in paths_to_list:
                         # Print relative path if possible for cleaner output
@@ -1115,8 +1131,26 @@ def find_and_combine_files(
             for item in all_single_mode_items:
                 _update_file_stats(stats, item[0])
 
-        # Process Single File Mode items (including TOC)
+        # Process Single File Mode items (including TOC and Tree)
         if not pairing_enabled and not list_files and not tree_view:
+            if output_opts.get('include_tree') and output_format in ('text', 'markdown'):
+                root_to_paths = {}
+                for item in all_single_mode_items:
+                    file_path, root_path = item[0], item[1]
+                    if root_path not in root_to_paths:
+                        root_to_paths[root_path] = []
+                    root_to_paths[root_path].append(file_path)
+
+                for root_path, paths in root_to_paths.items():
+                    tree_content = _generate_tree_string(paths, root_path, output_format)
+                    if estimate_tokens:
+                        token_count, is_approx = utils.estimate_tokens(tree_content)
+                        stats['total_tokens'] += token_count
+                        if is_approx:
+                            stats['token_count_is_approx'] = True
+                    elif not dry_run:
+                        outfile.write(tree_content + "\n")
+
             if output_opts.get('table_of_contents') and output_format in ('text', 'markdown'):
                 # Generate TOC
                 # Only include files that are not size-excluded for the TOC?
@@ -1290,6 +1324,11 @@ def main():
         "--toc",
         action="store_true",
         help="Add a Table of Contents to the start of the output. (Works for 'text' and 'markdown' formats in single-file mode only)",
+    )
+    output_group.add_argument(
+        "--include-tree",
+        action="store_true",
+        help="Include a visual directory tree at the start of the output. (Single-file mode only)",
     )
 
     # Runtime Options Group
@@ -1545,6 +1584,9 @@ def main():
 
     if args.toc:
         output_conf['table_of_contents'] = True
+
+    if args.include_tree:
+        output_conf['include_tree'] = True
 
     explicit_files = None
     if args.files_from:
