@@ -211,6 +211,10 @@ def collect_file_paths(root_folder, recursive, exclude_folders, progress=None):
     """Return all paths in ``root_folder`` while pruning excluded folders."""
     root_path = Path(root_folder)
     try:
+        if root_path.is_file():
+            if progress is not None:
+                progress.update(1)
+            return [root_path], root_path.parent, 0
         is_directory = root_path.is_dir()
     except OSError as exc:
         logging.warning(
@@ -1243,10 +1247,10 @@ def main():
 
     # Positional arguments
     parser.add_argument(
-        "config_file",
-        nargs="?",
+        "targets",
+        nargs="*",
         metavar="TARGET",
-        help="A configuration file (like 'config.yml') OR a folder to scan.",
+        help="One or more folders or files to combine. If the first argument is a .yml file, it is used as configuration.",
     )
 
     # Configuration Group
@@ -1393,8 +1397,27 @@ def main():
                 sys.exit(1)
         sys.exit(0)
 
-    config_path = args.config_file
+    targets = args.targets
+    config_path = None
+    cli_root_folders = []
     config = None
+
+    if targets:
+        first_target = targets[0]
+        if first_target.lower().endswith(('.yml', '.yaml')):
+            config_path = first_target
+            cli_root_folders = targets[1:]
+        else:
+            cli_root_folders = targets
+    else:
+        # Auto-discovery
+        defaults = ['sourcecombine.yml', 'sourcecombine.yaml', 'config.yml', 'config.yaml']
+        for default in defaults:
+            if Path(default).is_file():
+                config_path = default
+                logging.info("Auto-discovered config file: %s", config_path)
+                break
+
     nested_required = {
         'search': ['root_folders'],
     }
@@ -1404,16 +1427,16 @@ def main():
     if args.files_from:
         nested_required = {}
 
-    if config_path and Path(config_path).is_dir():
-        # Directory mode: Construct config in-memory
-        logging.info("Using directory '%s' as root with default settings.", config_path)
-        config = {'search': {'root_folders': [config_path]}}
+    if cli_root_folders and not config_path:
+        # Target mode (Explicitly provided folders/files, no config file found or used)
+        logging.info("Using %d explicit target(s) with default settings.", len(cli_root_folders))
+        config = {'search': {'root_folders': cli_root_folders}}
         try:
             validate_config(
                 config,
                 defaults=DEFAULT_CONFIG,
                 nested_required=nested_required,
-                source="<directory-arg>"
+                source="<cli-targets>"
             )
         except InvalidConfigError as e:
             logging.error("The configuration is not valid: %s", e)
@@ -1422,62 +1445,57 @@ def main():
     else:
         # Config file mode (explicit or auto-discovered)
         if not config_path:
-            # Auto-discovery
-            defaults = ['sourcecombine.yml', 'sourcecombine.yaml', 'config.yml', 'config.yaml']
-            for default in defaults:
-                if Path(default).is_file():
-                    config_path = default
-                    logging.info("Auto-discovered config file: %s", config_path)
-                    break
-
-            if not config_path:
-                if args.files_from:
-                    # If we failed to auto-discover config, but we have files-from,
-                    # we can fallback to default config.
-                    logging.info("No configuration found. Using default settings with --files-from.")
-                    config = utils.DEFAULT_CONFIG.copy()
-                    # Ensure search section exists even if empty
-                    config.setdefault('search', {})
-                else:
-                    # Fallback to current directory if no config found
-                    logging.info(
-                        "No config file found (checked: %s). Scanning current directory '.' with default settings.",
-                        ", ".join(defaults),
+            if args.files_from:
+                # If we failed to auto-discover config, but we have files-from,
+                # we can fallback to default config.
+                logging.info("No configuration found. Using default settings with --files-from.")
+                config = utils.DEFAULT_CONFIG.copy()
+                # Ensure search section exists even if empty
+                config.setdefault('search', {})
+            else:
+                # Fallback to current directory if no config found
+                logging.info(
+                    "No config file found. Scanning current directory '.' with default settings."
+                )
+                config = {'search': {'root_folders': ["."]}}
+                try:
+                    validate_config(
+                        config,
+                        defaults=DEFAULT_CONFIG,
+                        nested_required=nested_required,
+                        source="<default-cwd>"
                     )
-                    config_path = "."
-                    # Redirect flow to directory mode logic
-                    # Since we are modifying config_path to '.', we need to handle it
-                    # similar to the 'directory mode' block above, but we are already past it.
-                    # So we construct the config here.
-                    config = {'search': {'root_folders': [config_path]}}
-                    try:
-                        validate_config(
-                            config,
-                            defaults=DEFAULT_CONFIG,
-                            nested_required=nested_required,
-                            source="<default-cwd>"
-                        )
-                    except InvalidConfigError as e:
-                        logging.error("The configuration is not valid: %s", e)
-                        logging.debug("Configuration validation traceback:", exc_info=True)
-                        sys.exit(1)
+                except InvalidConfigError as e:
+                    logging.error("The configuration is not valid: %s", e)
+                    logging.debug("Configuration validation traceback:", exc_info=True)
+                    sys.exit(1)
 
         if config is None:
             try:
+                effective_nested_required = nested_required.copy()
+                if cli_root_folders:
+                    # If we are providing folders on the CLI, don't require them in the config file
+                    if 'search' in effective_nested_required:
+                        effective_nested_required['search'] = [
+                            k for k in effective_nested_required['search']
+                            if k != 'root_folders'
+                        ]
+                        if not effective_nested_required['search']:
+                            del effective_nested_required['search']
+
                 config = load_and_validate_config(
-                    config_path, nested_required=nested_required
+                    config_path, nested_required=effective_nested_required
                 )
+                if cli_root_folders:
+                    logging.info("Overriding 'root_folders' with %d explicit target(s).", len(cli_root_folders))
+                    if 'search' not in config:
+                        config['search'] = {}
+                    config['search']['root_folders'] = cli_root_folders
             except ConfigNotFoundError as e:
                 # If using --files-from and no config specified, we can optionally proceed with defaults?
-                # But typically find_and_combine_files needs *some* config structure.
-                # If explicit config path was given, it must exist.
-                # If it was auto-discovery failure...
-                if args.files_from and not args.config_file:
-                    # If we failed to auto-discover config, but we have files-from,
-                    # we can fallback to default config.
+                if args.files_from and not targets:
                     logging.info("No configuration found. Using default settings with --files-from.")
                     config = utils.DEFAULT_CONFIG.copy()
-                    # Ensure search section exists even if empty
                     config.setdefault('search', {})
                 else:
                     logging.error(
@@ -1666,7 +1684,9 @@ def main():
     elif args.estimate_tokens:
         logging.info(f"{green}Success!{reset} Token estimation complete.")
     else:
-        logging.info(f"{green}Success!{reset} Combined files {destination_desc}")
+        # Use .get() to avoid KeyError if stats is mocked to an empty dict in tests
+        count = stats.get('total_files', 0)
+        logging.info(f"{green}Success!{reset} Combined {count} files {destination_desc}")
 
     if stats:
         _print_execution_summary(stats, args, pairing_enabled)

@@ -79,10 +79,10 @@ Whether you are preparing files for printing, creating context for Large Languag
 
 ## Usage
 
-Run the script from the command line. You can pass a configuration file or a folder path.
+Run the script from the command line. You can pass a configuration file, multiple folder paths, or individual files.
 
 ```bash
-python sourcecombine.py [TARGET] [OPTIONS]
+python sourcecombine.py [TARGET ...] [OPTIONS]
 ```
 
 ### Options
@@ -121,10 +121,10 @@ See the folder structure of all matched files:
 python sourcecombine.py . --tree
 ```
 
-**Run on a specific folder without a config file:**
-Use default settings to combine files in `src/`:
+**Run on specific folders or files without a config file:**
+Use default settings to combine files from multiple targets:
 ```bash
-python sourcecombine.py src/
+python sourcecombine.py src/ tests/ README.md
 ```
 
 **Copy output to clipboard:**
