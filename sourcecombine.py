@@ -628,7 +628,7 @@ class FileProcessor:
             A tuple containing (token_count, is_approximate) for the written content.
         """
         if self.dry_run:
-            logging.info(file_path.resolve())
+            logging.info(_get_rel_path(file_path, root_path))
             return 0, True
 
         logging.debug("Processing: %s", file_path)
@@ -675,7 +675,7 @@ class FileProcessor:
         """
 
         if self.dry_run:
-            logging.info(file_path.resolve())
+            logging.info(_get_rel_path(file_path, root_path))
             return 0, True
 
         placeholder = self.output_opts.get('max_size_placeholder')
@@ -1676,6 +1676,12 @@ def main():
 
     if args.dry_run:
         logging.info(f"{yellow}Dry run complete.{reset}")
+    elif args.list_files:
+        logging.info(f"{green}Success!{reset} File listing complete.")
+    elif args.tree:
+        logging.info(f"{green}Success!{reset} Tree view complete.")
+    elif args.estimate_tokens:
+        logging.info(f"{green}Success!{reset} Token estimation complete.")
     else:
         logging.info(f"{green}Success!{reset} Combined files {destination_desc}")
 
@@ -1727,16 +1733,17 @@ def _print_execution_summary(stats, args, pairing_enabled):
         print(f"  {yellow}{bold}WARNING: Output truncated due to token budget.{reset}", file=sys.stderr)
 
     # Files Section
+    label_width = 18
     print(f"  {bold}Files{reset}", file=sys.stderr)
-    print(f"    {bold}Included:{reset}   {total_included:12,}", file=sys.stderr)
-    print(f"    {bold}Filtered:{reset}   {total_filtered:12,}", file=sys.stderr)
-    print(f"    {bold}Total:{reset}      {total_discovered:12,}", file=sys.stderr)
+    print(f"    {bold}{'Included:':<{label_width}}{reset}{total_included:12,}", file=sys.stderr)
+    print(f"    {bold}{'Filtered:':<{label_width}}{reset}{total_filtered:12,}", file=sys.stderr)
+    print(f"    {bold}{'Total:':<{label_width}}{reset}{total_discovered:12,}", file=sys.stderr)
     if excluded_folders > 0:
-        print(f"    {bold}Excluded Folders:{reset} {excluded_folders:,}", file=sys.stderr)
+        print(f"    {bold}{'Excluded Folders:':<{label_width}}{reset}{excluded_folders:12,}", file=sys.stderr)
 
     # Data Section
     print(f"\n  {bold}Data{reset}", file=sys.stderr)
-    print(f"    {bold}Total Size:{reset}  {total_size_mb:12.2f} MB", file=sys.stderr)
+    print(f"    {bold}{'Total Size:':<{label_width}}{reset}{total_size_mb:12.2f} MB", file=sys.stderr)
 
     # Token Counts
     # Show token counts for single-file mode OR if estimate_tokens was requested
@@ -1745,7 +1752,7 @@ def _print_execution_summary(stats, args, pairing_enabled):
         is_approx = stats.get('token_count_is_approx', False)
         token_str = f"{'~' if is_approx else ''}{token_count:,}"
         print(
-            f"    {bold}Token Count:{reset} {token_str:>13}",
+            f"    {bold}{'Token Count:':<{label_width}}{reset}{token_str:>12}",
             file=sys.stderr,
         )
         if is_approx:
