@@ -37,10 +37,10 @@ output:
   #   {{SOURCE_EXT}} - The extension of the source file (e.g., '.cpp')
   #   {{HEADER_EXT}} - The extension of the header file (e.g., '.h')
   #   {{DIR}}        - The relative folder path using forward slashes (or '.' for the root folder)
-  #   {{DIR_SLUG}}   - A simplified name for {{DIR}} ('root' when DIR is '.')
+  #   {{DIR_SLUG}}   - A simplified name for the folder path ('root' when DIR is '.')
   paired_filename_template: '{{STEM}}.combined'
 
-  # Example preserving folder structure in the output folder:
+  # Example keeping the folder structure in the output folder:
   # paired_filename_template: '{{DIR_SLUG}}/{{STEM}}.combined'
 
   # Add line numbers starting at 1 for each file.
@@ -50,7 +50,7 @@ output:
   # (Ignored in pairing mode and JSON format)
   table_of_contents: false
 
-  # Include a visual directory tree at the start of the output file.
+  # Include a visual folder tree at the start of the output file.
   # (Ignored in pairing mode and JSON format)
   include_tree: false
 
@@ -94,7 +94,7 @@ filters:
 
   # --- Inclusion Groups ---
   # Enable specific groups to only include listed filenames or glob patterns.
-  # Mutually exclusive with ``search.allowed_extensions``; specify file types within the patterns instead.
+  # Cannot be used with ``search.allowed_extensions``; specify file types within the patterns instead.
   inclusion_groups:
     example_group:
       enabled: false
@@ -102,7 +102,7 @@ filters:
 
   # --- Exclusion Rules ---
   exclusions:
-    # Skip files matching glob patterns.
+    # Skip files matching these patterns.
     # Defaults include: *.pyc, .DS_Store, Thumbs.db, .coverage, .tox, .nox
     filenames:
       - '*.pyc'
@@ -114,8 +114,7 @@ filters:
       - '.tox'
       - '.nox'
 
-    # Exclude folders if any folder name in the path matches one of these
-    # patterns. Case-insensitive.
+    # Exclude folders if any folder name in the path matches one of these.
     # Defaults include: .git, __pycache__, node_modules, .venv, dist, build, etc.
     folders:
       - '.git'
