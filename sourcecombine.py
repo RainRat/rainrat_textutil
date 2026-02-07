@@ -327,7 +327,7 @@ _INVALID_SLUG_CHARS_RE = re.compile(r'[^0-9A-Za-z._-]+')
 
 
 def _slugify_relative_dir(relative_dir):
-    """Return a filesystem-safe slug for ``relative_dir`` preserving structure."""
+    """Return a simplified, filesystem-safe version of ``relative_dir``."""
 
     if relative_dir in ('', '.'):  # Treat the project root specially.
         return 'root'
@@ -547,19 +547,16 @@ def _update_file_stats(stats, file_path):
 
 
 class FileProcessor:
-    """Process files according to configuration and write them to an output.
+    """Process files based on your settings and write them to an output.
 
     Parameters
     ----------
     config : dict
-        Parsed configuration mapping containing ``processing`` and output
-        settings used to drive file handling.
+        The configuration settings for processing and output.
     output_opts : dict
-        Options that control how processed content is emitted, including
-        header/footer templates and whether to include line numbers.
+        Settings that control how content is written, such as headers or line numbers.
     dry_run : bool, optional
-        When ``True``, only log the files that would be processed without
-        performing any writes.
+        If ``True``, only list the files that would be processed without writing them.
     """
 
     def __init__(self, config, output_opts, dry_run=False, estimate_tokens=False):
@@ -820,7 +817,7 @@ def find_and_combine_files(
         raise InvalidConfigError("Clipboard mode is only available when pairing is disabled.")
 
     if output_path == '-' and pairing_enabled:
-        raise InvalidConfigError("Stdout output is not available in pairing mode.")
+        raise InvalidConfigError("Output to the terminal is not available in pairing mode.")
 
     if output_format == 'json' and pairing_enabled:
         raise InvalidConfigError("JSON format is not compatible with paired output.")
@@ -1246,7 +1243,7 @@ def main():
         "config_file",
         nargs="?",
         metavar="TARGET",
-        help="A configuration file (like 'config.yml') OR a folder to scan.",
+        help="A configuration file (like 'sourcecombine.yml') OR a folder to scan.",
     )
 
     # Configuration Group
@@ -1311,7 +1308,7 @@ def main():
     output_group.add_argument(
         "--include-tree",
         action="store_true",
-        help="Include a visual directory tree at the start of the output. (Single-file mode only)",
+        help="Include a visual folder tree at the start of the output. (Single-file mode only)",
     )
 
     # Runtime Options Group
@@ -1320,7 +1317,7 @@ def main():
         "--dry-run",
         "-d",
         action="store_true",
-        help="Show which files would be included without creating any files.",
+        help="List matched files and planned outputs without writing any files.",
     )
     runtime_group.add_argument(
         "--estimate-tokens",
@@ -1337,7 +1334,7 @@ def main():
         "-v",
         "--verbose",
         action="store_true",
-        help="Show extra details to help with troubleshooting.",
+        help="Enable verbose output to help troubleshoot configuration issues.",
     )
     runtime_group.add_argument(
         "--list-files",
@@ -1351,7 +1348,7 @@ def main():
     )
     runtime_group.add_argument(
         "--files-from",
-        help="Read a list of files from a text file (use '-' for console). This skips folder scanning.",
+        help="Read a list of files to process from a text file (or '-' to read from your terminal). This overrides normal folder scanning.",
     )
 
     args = parser.parse_args()
@@ -1405,15 +1402,15 @@ def main():
         nested_required = {}
 
     if config_path and Path(config_path).is_dir():
-        # Directory mode: Construct config in-memory
-        logging.info("Using directory '%s' as root with default settings.", config_path)
+        # Folder mode: Construct config in-memory
+        logging.info("Using folder '%s' as root with default settings.", config_path)
         config = {'search': {'root_folders': [config_path]}}
         try:
             validate_config(
                 config,
                 defaults=DEFAULT_CONFIG,
                 nested_required=nested_required,
-                source="<directory-arg>"
+                source="<folder-arg>"
             )
         except InvalidConfigError as e:
             logging.error("The configuration is not valid: %s", e)
@@ -1439,15 +1436,15 @@ def main():
                     # Ensure search section exists even if empty
                     config.setdefault('search', {})
                 else:
-                    # Fallback to current directory if no config found
+                    # Fallback to current folder if no config found
                     logging.info(
-                        "No config file found (checked: %s). Scanning current directory '.' with default settings.",
+                        "No config file found (checked: %s). Scanning current folder '.' with default settings.",
                         ", ".join(defaults),
                     )
                     config_path = "."
-                    # Redirect flow to directory mode logic
+                    # Redirect flow to folder mode logic
                     # Since we are modifying config_path to '.', we need to handle it
-                    # similar to the 'directory mode' block above, but we are already past it.
+                    # similar to the 'folder mode' block above, but we are already past it.
                     # So we construct the config here.
                     config = {'search': {'root_folders': [config_path]}}
                     try:
@@ -1576,11 +1573,9 @@ def main():
         explicit_files = []
         try:
             if args.files_from == '-':
-                # stdin is already open, but we need to ensure we read it line by line
-                # without closing it if it's reused (though here we just consume it).
-                # Using sys.stdin directly.
+                # Read from the terminal's standard input.
                 input_source = sys.stdin
-                source_name = "stdin"
+                source_name = "your terminal"
             else:
                 input_source = open(args.files_from, 'r', encoding='utf-8')
                 source_name = args.files_from
@@ -1613,7 +1608,7 @@ def main():
     if args.clipboard:
         destination_desc = "to clipboard"
     elif output_path == '-':
-        destination_desc = "to stdout"
+        destination_desc = "to the terminal"
     elif pairing_enabled:
         destination_desc = (
             "alongside their source files"

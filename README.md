@@ -95,13 +95,13 @@ python sourcecombine.py [TARGET] [OPTIONS]
 *   `--format` / `-f`: Choose the output format (`text`, `json`, `markdown`, or `xml`).
     *   *Note: JSON format produces an array of file objects and is available in single-file mode only. Markdown and XML formats automatically adjust templates to use appropriate markers (code blocks for Markdown, tags for XML).*
 *   `--toc`: Include a Table of Contents at the beginning of the output file. (Single-file mode only).
-*   `--include-tree`: Include a visual directory tree at the start of the output. (Single-file mode only).
+*   `--include-tree`: Include a visual folder tree at the start of the output. (Single-file mode only).
 *   `--max-tokens`: Stop adding files once this total token limit is reached. (Single-file mode only).
 *   `--estimate-tokens` / `-e`: Calculate token counts without writing output files.
     *   *Note: Slower than a regular dry-run as it processes content.*
 *   `--list-files`: Print a list of files that would be processed to the console and exit.
 *   `--tree`: Show a visual folder tree of all included files and exit.
-*   `--files-from`: Read a list of files to process from a text file (or `-` for stdin). Overrides normal folder scanning.
+*   `--files-from`: Read a list of files to process from a text file (or `-` to read from your terminal). This overrides normal folder scanning.
 *   `--init`: Generate a default configuration file (`sourcecombine.yml`) in the current folder.
 *   `--include` / `-i`: Include only files matching a specific pattern (e.g., `-i "*.py"`). Can be used multiple times.
 *   `--exclude-file` / `-x`: Exclude specific files (e.g., `-x "secret.txt"`). Can be used multiple times.
@@ -208,9 +208,9 @@ following placeholders:
 - `{{HEADER_EXT}}`: The extension of the header file (e.g., `.h`).
 - `{{DIR}}`: The file's relative folder path using forward slashes (or `.` for
   files located directly in the root folder being processed).
-- `{{DIR_SLUG}}`: A filesystem-safe version of `{{DIR}}`, lowercased and with
-  unsafe characters converted to dashes while preserving the folder
-  structure. When `{{DIR}}` is `.`, the simplified name is `root`.
+- `{{DIR_SLUG}}`: A simplified name for the folder path that is safe for
+  filesystems. It uses lowercase letters and replaces unusual characters
+  with dashes. If the file is in the main folder, the simplified name is `root`.
 
 The default template is `'{{STEM}}.combined'`. You can customize it to match
 your project's conventions:
@@ -220,7 +220,7 @@ output:
   paired_filename_template: '{{STEM}}{{SOURCE_EXT}}.txt'
 ```
 
-To preserve folder structure when writing paired outputs to a folder, use
+To keep the folder structure when writing paired outputs to a folder, use
 the `{{DIR_SLUG}}` placeholder:
 
 ```yaml
@@ -287,14 +287,13 @@ favor of the simpler boolean flag.
 
 ### Filtering and Exclusion Rules
 
-Use glob patterns in `filters.exclusions.filenames` to skip specific files.
+Use matching patterns in `filters.exclusions.filenames` to skip specific files.
 Patterns can match an extension (`'*.bak'`), a complete filename (`'test.py'`),
-or a relative path glob (`'tests/*'`).
+or a path pattern (`'tests/*'`).
 
-Exclude entire folders with `filters.exclusions.folders`. Each pattern is
-checked against every folder name in the path, so a single entry like
-`'build'` will exclude both `./build` and nested folders such as
-`./src/app/build`.
+Exclude entire folders with `filters.exclusions.folders`. Every folder name in
+the path is checked. For example, `'build'` will skip both `./build` and
+nested folders like `./src/app/build`.
 
 When `filters.max_size_bytes` is set to a positive number, files that exceed
 the limit are skipped. To leave a marker in the combined output for those
