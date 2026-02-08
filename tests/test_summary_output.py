@@ -38,7 +38,7 @@ def test_summary_printing(monkeypatch, capsys):
 
     assert "=== Execution Summary ===" in stderr
     assert "Included:                  123" in stderr
-    assert "Total Size:               1.50 MB" in stderr
+    assert "Total Size:            1.50 MB" in stderr
     assert "Extensions" in stderr
     assert "Excluded Folders:            2" in stderr
     assert "Token Count:            ~5,000" in stderr

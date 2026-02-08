@@ -764,3 +764,14 @@ def estimate_tokens(text: str, encoding_name: str = "cl100k_base") -> tuple[int,
 
     # Approx: 1 token ~= 4 chars
     return len(text) // 4, True
+
+
+def format_size(size_bytes: int) -> str:
+    """Return a human-readable string representation of a size in bytes."""
+    if size_bytes < 0:
+        return "0 B"
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB']:
+        if abs(size_bytes) < 1024.0:
+            return f"{size_bytes:,.2f} {unit}"
+        size_bytes /= 1024.0
+    return f"{size_bytes:,.2f} YB"

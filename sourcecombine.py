@@ -256,6 +256,10 @@ def collect_file_paths(root_folder, recursive, exclude_folders, progress=None):
                 ]
                 excluded_folder_count += original_dir_count - len(dirnames)
 
+                # Sort for deterministic output
+                dirnames.sort()
+                filenames.sort()
+
                 for name in filenames:
                     file_paths.append(Path(dirpath) / name)
                     progress.update(1)
@@ -267,7 +271,8 @@ def collect_file_paths(root_folder, recursive, exclude_folders, progress=None):
             )
     else:
         try:
-            for entry in root_path.iterdir():
+            entries = sorted(root_path.iterdir(), key=lambda e: e.name)
+            for entry in entries:
                 if entry.is_dir():
                     if _folder_is_excluded(entry.relative_to(root_path)):
                         excluded_folder_count += 1
@@ -699,7 +704,7 @@ class FileProcessor:
         return utils.estimate_tokens(rendered)
 
 
-def _generate_tree_string(paths, root_path, output_format='text', include_header=True):
+def _generate_tree_string(paths, root_path, output_format='text', include_header=True, metadata=None):
     """Generate a tree structure string of file paths."""
     # Convert to relative paths
     try:
@@ -707,6 +712,9 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
     except ValueError:
         # Fallback if any path is not relative to root (should ideally not happen)
         rel_paths = paths
+
+    # Map relative paths back to original paths for metadata lookup
+    rel_to_orig = {p_rel: p_orig for p_rel, p_orig in zip(rel_paths, paths)}
 
     # Build the tree dictionary
     # { 'folder': { 'subfolder': { 'file.txt': None } } }
@@ -727,18 +735,35 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
         else:
             lines.append("Project Structure:")
 
-    def _add_node(node, prefix=""):
+    def _add_node(node, prefix="", rel_parts=()):
         items = sorted(node.keys())
         for i, item in enumerate(items):
             is_last = i == len(items) - 1
             connector = "└── " if is_last else "├── "
-            lines.append(f"{prefix}{connector}{item}")
+
+            current_rel_parts = rel_parts + (item,)
+            current_rel_path = Path(*current_rel_parts)
+
+            meta_str = ""
+            if metadata and current_rel_path in rel_to_orig:
+                orig_path = rel_to_orig[current_rel_path]
+                file_meta = metadata.get(orig_path)
+                if file_meta:
+                    parts = []
+                    if 'size' in file_meta:
+                        parts.append(utils.format_size(file_meta['size']))
+                    if 'tokens' in file_meta:
+                        parts.append(f"{file_meta['tokens']:,} tokens")
+                    if parts:
+                        meta_str = f" ({', '.join(parts)})"
+
+            lines.append(f"{prefix}{connector}{item}{meta_str}")
 
             # If the item has children (it's a directory), recurse
             children = node[item]
             if children:
                 extension = "    " if is_last else "│   "
-                _add_node(children, prefix + extension)
+                _add_node(children, prefix + extension, current_rel_parts)
 
     # Add the root directory name first
     lines.append(f"{root_path.name}/")
@@ -753,7 +778,7 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
     return "\n".join(lines)
 
 
-def _generate_table_of_contents(files, output_format='text'):
+def _generate_table_of_contents(files, output_format='text', metadata=None):
     """Generate a Table of Contents string for the provided files.
 
     files: List of (Path, Path) tuples representing (file_path, root_path).
@@ -769,25 +794,40 @@ def _generate_table_of_contents(files, output_format='text'):
             rel_path = _get_rel_path(file_path, root_path)
             posix_rel_path = rel_path.as_posix()
 
-            # Create a basic anchor link. Note: This assumes standard GitHub-style
-            # slugification (lowercase, spaces to dashes, remove punctuation).
-            # It matches the default Markdown header template: "## {{FILENAME}}"
+            meta_str = ""
+            if metadata and file_path in metadata:
+                file_meta = metadata[file_path]
+                parts = []
+                if 'size' in file_meta:
+                    parts.append(utils.format_size(file_meta['size']))
+                if 'tokens' in file_meta:
+                    parts.append(f"{file_meta['tokens']:,} tokens")
+                if parts:
+                    meta_str = f" ({', '.join(parts)})"
 
-            # Actually, standard GitHub slugify is:
-            # 1. Lowercase
-            # 2. Remove chars that are not a-z, 0-9, space, hyphen, underscore
-            # 3. Replace spaces with hyphens
-            # Let's try to be close to that.
+            # Create a basic anchor link.
             slug = re.sub(r'[^a-z0-9 _-]', '', posix_rel_path.lower()).replace(' ', '-')
 
-            toc_lines.append(f"- [{posix_rel_path}](#{slug})")
+            toc_lines.append(f"- [{posix_rel_path}](#{slug}){meta_str}")
         toc_lines.append("")
 
     else: # text
         toc_lines.append("Table of Contents:")
         for file_path, root_path in files:
             rel_path = _get_rel_path(file_path, root_path)
-            toc_lines.append(f"- {rel_path.as_posix()}")
+
+            meta_str = ""
+            if metadata and file_path in metadata:
+                file_meta = metadata[file_path]
+                parts = []
+                if 'size' in file_meta:
+                    parts.append(utils.format_size(file_meta['size']))
+                if 'tokens' in file_meta:
+                    parts.append(f"{file_meta['tokens']:,} tokens")
+                if parts:
+                    meta_str = f" ({', '.join(parts)})"
+
+            toc_lines.append(f"- {rel_path.as_posix()}{meta_str}")
         toc_lines.append("\n" + "-" * 20 + "\n")
 
     return "\n".join(toc_lines)
@@ -896,6 +936,8 @@ def find_and_combine_files(
     # Store all items to process for single-file mode to enable global TOC
     # List of (file_path, root_path, is_size_excluded)
     all_single_mode_items = []
+    # Metadata for TOC and Tree: {Path: {'size': int, 'tokens': int}}
+    file_metadata = {}
 
     with outfile_ctx as outfile:
         global_header = output_opts.get('global_header_template')
@@ -992,7 +1034,19 @@ def find_and_combine_files(
                     _update_file_stats(stats, p)
 
                 if tree_view:
-                    print(_generate_tree_string(paths_to_list, root_path, include_header=False))
+                    view_metadata = {}
+                    for p in paths_to_list:
+                        view_metadata[p] = {'size': p.stat().st_size if p.exists() else 0}
+                        if estimate_tokens:
+                            content = read_file_best_effort(p)
+                            processed = process_content(content, processor.processing_opts)
+                            tokens, is_approx = utils.estimate_tokens(processed)
+                            view_metadata[p]['tokens'] = tokens
+                            stats['total_tokens'] += tokens
+                            if is_approx:
+                                stats['token_count_is_approx'] = True
+
+                    print(_generate_tree_string(paths_to_list, root_path, include_header=False, metadata=view_metadata))
                 else:
                     for p in paths_to_list:
                         # Print relative path if possible for cleaner output
@@ -1068,9 +1122,11 @@ def find_and_combine_files(
 
         # End of root_folder loop
 
-        # Budgeting Pass for Single File Mode
+        # Metadata and Budgeting Pass for Single File Mode
         max_total_tokens = filter_opts.get('max_total_tokens', 0)
-        if max_total_tokens > 0 and not pairing_enabled and not list_files and not tree_view:
+        needs_metadata = bool(output_opts.get('include_tree') or output_opts.get('table_of_contents'))
+
+        if (max_total_tokens > 0 or (estimate_tokens and needs_metadata)) and not pairing_enabled and not list_files and not tree_view:
             budgeted_items = []
             current_tokens = 0
             budget_exceeded = False
@@ -1100,13 +1156,19 @@ def find_and_combine_files(
                         file_path.write_text(processed, encoding='utf8')
                     tokens, _ = utils.estimate_tokens(processed)
 
+                # Store metadata for TOC/Tree
+                file_metadata[file_path] = {
+                    'size': file_path.stat().st_size if file_path.exists() else 0,
+                    'tokens': tokens
+                }
+
                 # Account for header/footer templates in the budget
                 h_template = output_opts.get('header_template', utils.DEFAULT_CONFIG['output']['header_template'])
                 f_template = output_opts.get('footer_template', utils.DEFAULT_CONFIG['output']['footer_template'])
                 tokens += utils.estimate_tokens(_render_template(h_template, rel_p))[0]
                 tokens += utils.estimate_tokens(_render_template(f_template, rel_p))[0]
 
-                if current_tokens + tokens > max_total_tokens and current_tokens > 0:
+                if max_total_tokens > 0 and current_tokens + tokens > max_total_tokens and current_tokens > 0:
                     budget_exceeded = True
                     break
 
@@ -1122,6 +1184,13 @@ def find_and_combine_files(
             stats['files_by_extension'] = {}
             for item in all_single_mode_items:
                 _update_file_stats(stats, item[0])
+        elif needs_metadata and not pairing_enabled and not list_files and not tree_view:
+            # Just collect sizes if we don't need a full budgeting/token pass
+            for item in all_single_mode_items:
+                file_path = item[0]
+                file_metadata[file_path] = {
+                    'size': file_path.stat().st_size if file_path.exists() else 0
+                }
 
         # Process Single File Mode items (including TOC and Tree)
         if not pairing_enabled and not list_files and not tree_view:
@@ -1134,7 +1203,7 @@ def find_and_combine_files(
                     root_to_paths[root_path].append(file_path)
 
                 for root_path, paths in root_to_paths.items():
-                    tree_content = _generate_tree_string(paths, root_path, output_format)
+                    tree_content = _generate_tree_string(paths, root_path, output_format, metadata=file_metadata)
                     if estimate_tokens:
                         token_count, is_approx = utils.estimate_tokens(tree_content)
                         stats['total_tokens'] += token_count
@@ -1149,7 +1218,7 @@ def find_and_combine_files(
                 # Or include them all? Usually TOC lists what's in the document.
                 # If size-excluded files get a placeholder, they are "in" the document.
                 toc_files = [(item[0], item[1]) for item in all_single_mode_items]
-                toc_content = _generate_table_of_contents(toc_files, output_format)
+                toc_content = _generate_table_of_contents(toc_files, output_format, metadata=file_metadata)
 
                 if estimate_tokens:
                     # Count tokens for TOC
@@ -1315,12 +1384,12 @@ def main():
     output_group.add_argument(
         "--toc",
         action="store_true",
-        help="Add a Table of Contents to the start of the output. (Works for 'text' and 'markdown' formats in single-file mode only)",
+        help="Add a Table of Contents (including file sizes and token counts) to the start of the output. (Works for 'text' and 'markdown' formats in single-file mode only)",
     )
     output_group.add_argument(
         "--include-tree",
         action="store_true",
-        help="Include a visual directory tree at the start of the output. (Single-file mode only)",
+        help="Include a visual directory tree with file metadata at the start of the output. (Single-file mode only)",
     )
 
     # Runtime Options Group
@@ -1356,7 +1425,7 @@ def main():
     runtime_group.add_argument(
         "--tree",
         action="store_true",
-        help="Show a visual tree of all files that would be included and then stop.",
+        help="Show a visual tree of all included files with metadata and then stop.",
     )
     runtime_group.add_argument(
         "--files-from",
@@ -1704,8 +1773,9 @@ def _print_execution_summary(stats, args, pairing_enabled):
         print(f"    {bold}{'Excluded Folders:':<{label_width}}{reset}{excluded_folders:12,}", file=sys.stderr)
 
     # Data Section
+    total_size_str = utils.format_size(stats.get('total_size_bytes', 0))
     print(f"\n  {bold}Data{reset}", file=sys.stderr)
-    print(f"    {bold}{'Total Size:':<{label_width}}{reset}{total_size_mb:12.2f} MB", file=sys.stderr)
+    print(f"    {bold}{'Total Size:':<{label_width}}{reset}{total_size_str:>12}", file=sys.stderr)
 
     # Token Counts
     # Show token counts for single-file mode OR if estimate_tokens was requested

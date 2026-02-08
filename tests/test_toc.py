@@ -22,30 +22,38 @@ def test_generate_toc_text():
         (Path("/root/src/utils.py"), Path("/root")),
         (Path("/root/README.md"), Path("/root")),
     ]
+    metadata = {
+        Path("/root/src/main.py"): {'size': 1024, 'tokens': 256},
+        Path("/root/README.md"): {'size': 512}
+    }
 
     expected = (
         "Table of Contents:\n"
-        "- src/main.py\n"
+        "- src/main.py (1.00 KB, 256 tokens)\n"
         "- src/utils.py\n"
-        "- README.md\n"
+        "- README.md (512.00 B)\n"
         "\n--------------------\n"
     )
 
-    assert _generate_table_of_contents(files, 'text') == expected
+    assert _generate_table_of_contents(files, 'text', metadata=metadata) == expected
 
 def test_generate_toc_markdown():
     files = [
         (Path("/root/src/main.py"), Path("/root")),
         (Path("/root/Hello World.md"), Path("/root")),
     ]
+    metadata = {
+        Path("/root/src/main.py"): {'size': 1024, 'tokens': 256},
+        Path("/root/Hello World.md"): {'size': 512}
+    }
 
     expected = (
         "## Table of Contents\n"
-        "- [src/main.py](#srcmainpy)\n"
-        "- [Hello World.md](#hello-worldmd)\n"
+        "- [src/main.py](#srcmainpy) (1.00 KB, 256 tokens)\n"
+        "- [Hello World.md](#hello-worldmd) (512.00 B)\n"
     )
 
-    assert _generate_table_of_contents(files, 'markdown') == expected
+    assert _generate_table_of_contents(files, 'markdown', metadata=metadata) == expected
 
 def test_toc_integration_text(tmp_path, toc_config, caplog):
     # Setup files

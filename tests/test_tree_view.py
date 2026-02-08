@@ -43,11 +43,11 @@ def test_tree_view_output(capsys, tmp_path):
 
     assert "myproj/" in out
     assert "├── docs" in out
-    assert "│   └── readme.md" in out
-    assert "├── file1.txt" in out
+    assert "│   └── readme.md (8.00 B)" in out
+    assert "├── file1.txt (7.00 B)" in out
     assert "└── src" in out
-    assert "    ├── main.py" in out
-    assert "    └── utils.py" in out
+    assert "    ├── main.py (14.00 B)" in out
+    assert "    └── utils.py (16.00 B)" in out
 
     # Verify summary title in stderr
     assert "Tree View Summary" in captured.err
