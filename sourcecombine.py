@@ -901,8 +901,8 @@ def find_and_combine_files(
         global_header = output_opts.get('global_header_template')
         global_footer = output_opts.get('global_footer_template')
 
-        # Only write global headers for text and xml output
-        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and global_header and output_format in ('text', 'xml'):
+        # Only write global headers for text, markdown, and xml output
+        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and global_header and output_format in ('text', 'markdown', 'xml'):
             outfile.write(global_header)
 
         if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and output_format == 'json':
@@ -1075,9 +1075,11 @@ def find_and_combine_files(
             current_tokens = 0
             budget_exceeded = False
 
-            # Account for global header tokens in the budget
-            if global_header and output_format in ('text', 'xml'):
+            # Account for global header and footer tokens in the budget
+            if global_header and output_format in ('text', 'markdown', 'xml'):
                 current_tokens += utils.estimate_tokens(global_header)[0]
+            if global_footer and output_format in ('text', 'markdown', 'xml'):
+                current_tokens += utils.estimate_tokens(global_footer)[0]
 
             for item in all_single_mode_items:
                 file_path, root_path, is_excluded_by_size = item
@@ -1204,8 +1206,8 @@ def find_and_combine_files(
 
             processing_bar.close()
 
-        # Write global footer only for text and xml output
-        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and global_footer and output_format in ('text', 'xml'):
+        # Write global footer only for text, markdown, and xml output
+        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and global_footer and output_format in ('text', 'markdown', 'xml'):
             outfile.write(global_footer)
 
         if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and output_format == 'json':
