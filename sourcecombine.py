@@ -157,8 +157,7 @@ def should_include(
     """Return ``True`` if ``file_path`` passes all filtering rules.
 
     When ``return_reason`` is ``True``, a tuple of ``(bool, reason)`` is
-    returned, where ``reason`` is ``'too_large'`` when the file exceeds
-    ``max_size_bytes`` and ``None`` otherwise.
+    returned.
     """
 
     if not file_path.is_file():
@@ -292,6 +291,7 @@ def filter_file_paths(
     root_path,
     record_size_exclusions=False,
     create_backups=False,
+    filter_stats=None,
 ):
     """Apply filtering rules to ``file_paths`` and return the matches.
 
@@ -305,26 +305,21 @@ def filter_file_paths(
             continue
         rel_p = _get_rel_path(p, root_path)
 
-        if record_size_exclusions:
-            include, reason = should_include(
-                p,
-                rel_p,
-                filter_opts,
-                search_opts,
-                return_reason=True,
-            )
-        else:
-            include = should_include(
-                p,
-                rel_p,
-                filter_opts,
-                search_opts,
-            )
-            reason = None
+        include, reason = should_include(
+            p,
+            rel_p,
+            filter_opts,
+            search_opts,
+            return_reason=True,
+        )
+
         if include:
             filtered.append(p)
-        elif record_size_exclusions and reason == 'too_large':
-            size_excluded.append(p)
+        else:
+            if record_size_exclusions and reason == 'too_large':
+                size_excluded.append(p)
+            if filter_stats is not None:
+                filter_stats[reason] = filter_stats.get(reason, 0) + 1
 
     if record_size_exclusions:
         return filtered, size_excluded
@@ -805,6 +800,9 @@ def find_and_combine_files(
     explicit_files=None,
 ):
     """Find, filter, and combine files based on the provided configuration."""
+    search_opts = config.get('search', {})
+    filter_opts = config.get('filters', {})
+    output_opts = config.get('output', {})
     stats = {
         'total_discovered': 0,
         'total_files': 0,
@@ -812,11 +810,10 @@ def find_and_combine_files(
         'files_by_extension': {},
         'total_tokens': 0,
         'token_count_is_approx': False,
-        'budget_exceeded': False
+        'budget_exceeded': False,
+        'filter_reasons': {},
+        'max_total_tokens': filter_opts.get('max_total_tokens', 0)
     }
-    search_opts = config.get('search', {})
-    filter_opts = config.get('filters', {})
-    output_opts = config.get('output', {})
     pair_opts = config.get('pairing', {})
 
     exclude_folders = filter_opts.get('exclusions', {}).get('folders') or []
@@ -951,6 +948,7 @@ def find_and_combine_files(
                 root_path=root_path,
                 record_size_exclusions=record_size_exclusions,
                 create_backups=processor.create_backups,
+                filter_stats=stats['filter_reasons'],
             )
             if record_size_exclusions:
                 filtered_paths, size_excluded = filtered_result
@@ -1079,7 +1077,7 @@ def find_and_combine_files(
             if global_header and output_format in ('text', 'xml'):
                 current_tokens += utils.estimate_tokens(global_header)[0]
 
-            for item in all_single_mode_items:
+            for i, item in enumerate(all_single_mode_items):
                 file_path, root_path, is_excluded_by_size = item
                 tokens = 0
                 processed = None
@@ -1108,6 +1106,7 @@ def find_and_combine_files(
 
                 if current_tokens + tokens > max_total_tokens and current_tokens > 0:
                     budget_exceeded = True
+                    stats['filter_reasons']['budget_limit'] = len(all_single_mode_items) - i
                     break
 
                 current_tokens += tokens
@@ -1657,7 +1656,7 @@ def _print_execution_summary(stats, args, pairing_enabled):
     total_included = stats.get('total_files', 0)
     total_discovered = stats.get('total_discovered', 0)
     total_filtered = max(0, total_discovered - total_included)
-    total_size_mb = stats.get('total_size_bytes', 0) / (1024 * 1024)
+    total_size = stats.get('total_size_bytes', 0)
     excluded_folders = stats.get('excluded_folder_count', 0)
 
     # ANSI color codes (if supported)
@@ -1699,24 +1698,56 @@ def _print_execution_summary(stats, args, pairing_enabled):
     print(f"  {bold}Files{reset}", file=sys.stderr)
     print(f"    {bold}{'Included:':<{label_width}}{reset}{total_included:12,}", file=sys.stderr)
     print(f"    {bold}{'Filtered:':<{label_width}}{reset}{total_filtered:12,}", file=sys.stderr)
+
+    # Filtered breakdown
+    reasons = stats.get('filter_reasons', {})
+    if reasons and total_filtered > 0:
+        reason_labels = {
+            'excluded': 'Excluded by pattern',
+            'extension': 'Disallowed extension',
+            'not_included': 'Not in inclusion group',
+            'binary': 'Binary file',
+            'too_small': 'Below minimum size',
+            'too_large': 'Above maximum size',
+            'stat_error': 'Filesystem error',
+            'not_file': 'Not a file',
+            'budget_limit': 'Token budget limit'
+        }
+        # Sort reasons by count descending
+        sorted_reasons = sorted(reasons.items(), key=lambda x: x[1], reverse=True)
+        for r_key, r_count in sorted_reasons:
+            label = reason_labels.get(r_key, r_key)
+            print(f"      {dim}- {label:<22} {r_count:8,}{reset}", file=sys.stderr)
+
     print(f"    {bold}{'Total:':<{label_width}}{reset}{total_discovered:12,}", file=sys.stderr)
     if excluded_folders > 0:
         print(f"    {bold}{'Excluded Folders:':<{label_width}}{reset}{excluded_folders:12,}", file=sys.stderr)
 
     # Data Section
     print(f"\n  {bold}Data{reset}", file=sys.stderr)
-    print(f"    {bold}{'Total Size:':<{label_width}}{reset}{total_size_mb:12.2f} MB", file=sys.stderr)
+    print(f"    {bold}{'Total Size:':<{label_width}}{reset}{utils.format_size(total_size):>12}", file=sys.stderr)
 
     # Token Counts
     # Show token counts for single-file mode OR if estimate_tokens was requested
     if not pairing_enabled and (not args.dry_run or args.estimate_tokens) and not args.list_files and not args.tree:
         token_count = stats.get('total_tokens', 0)
+        max_tokens = stats.get('max_total_tokens', 0)
         is_approx = stats.get('token_count_is_approx', False)
+
         token_str = f"{'~' if is_approx else ''}{token_count:,}"
-        print(
-            f"    {bold}{'Token Count:':<{label_width}}{reset}{token_str:>12}",
-            file=sys.stderr,
-        )
+        if max_tokens > 0:
+            percent = (token_count / max_tokens) * 100
+            token_val = f"{token_str} / {max_tokens:,} ({percent:.1f}%)"
+            print(
+                f"    {bold}{'Token Usage:':<{label_width}}{reset}{token_val:>12}",
+                file=sys.stderr,
+            )
+        else:
+            print(
+                f"    {bold}{'Token Count:':<{label_width}}{reset}{token_str:>12}",
+                file=sys.stderr,
+            )
+
         if is_approx:
             print(
                 f"      {dim}(Install 'tiktoken' for accurate counts){reset}",
