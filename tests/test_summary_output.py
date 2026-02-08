@@ -7,6 +7,7 @@ def test_summary_printing(monkeypatch, capsys):
     # Mock stats
     stats = {
         'total_files': 123,
+        'total_discovered': 123,
         'total_size_bytes': 1024 * 1024 * 1.5, # 1.5 MB
         'files_by_extension': {
             '.py': 10, '.txt': 5, '.md': 3, '.c': 1, '.h': 1,
@@ -38,10 +39,81 @@ def test_summary_printing(monkeypatch, capsys):
 
     assert "=== Execution Summary ===" in stderr
     assert "Included:                  123" in stderr
-    assert "Total Size:               1.50 MB" in stderr
+    assert "Total Size:            1.50 MB" in stderr
     assert "Extensions" in stderr
     assert "Excluded Folders:            2" in stderr
     assert "Token Count:            ~5,000" in stderr
+
+
+def test_summary_printing_with_filter_reasons(monkeypatch, capsys):
+    # Mock stats
+    stats = {
+        'total_files': 5,
+        'total_discovered': 15,
+        'total_size_bytes': 1024, # 1 KB
+        'files_by_extension': {'.py': 5},
+        'filter_reasons': {
+            'excluded': 7,
+            'binary': 2,
+            'too_large': 1
+        },
+        'total_tokens': 1200,
+        'max_total_tokens': 10000,
+        'token_count_is_approx': False
+    }
+
+    args = MagicMock()
+    args.dry_run = False
+    args.estimate_tokens = False
+    args.list_files = False
+    args.tree = False
+
+    monkeypatch.setenv("NO_COLOR", "1")
+
+    sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
+
+    captured = capsys.readouterr()
+    stderr = captured.err
+
+    assert "Included:                    5" in stderr
+    assert "Filtered:                   10" in stderr
+    assert "- Excluded by pattern           7" in stderr
+    assert "- Binary file                   2" in stderr
+    assert "- Above maximum size            1" in stderr
+    assert "Total Size:            1.00 KB" in stderr
+    assert "Token Usage:      1,200 / 10,000 (12.0%)" in stderr
+
+
+def test_summary_printing_with_budget_limit(monkeypatch, capsys):
+    stats = {
+        'total_files': 2,
+        'total_discovered': 5,
+        'total_size_bytes': 500,
+        'files_by_extension': {'.py': 2},
+        'filter_reasons': {
+            'excluded': 2,
+            'budget_limit': 1
+        },
+        'budget_exceeded': True
+    }
+
+    args = MagicMock()
+    args.dry_run = False
+    args.estimate_tokens = False
+    args.list_files = False
+    args.tree = False
+
+    monkeypatch.setenv("NO_COLOR", "1")
+
+    sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
+
+    captured = capsys.readouterr()
+    stderr = captured.err
+
+    assert "WARNING: Output truncated due to token budget." in stderr
+    assert "Filtered:                    3" in stderr
+    assert "- Token budget limit            1" in stderr
+    assert "Total Size:              500 B" in stderr
 
     # Check wrapping (heuristic: check if .yml is on a new line or far right)
     # The list is long, so it should wrap.

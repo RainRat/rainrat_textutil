@@ -686,6 +686,17 @@ def add_line_numbers(text):
     return "\n".join(numbered)
 
 
+def format_size(size_bytes):
+    """Return a human-readable string for ``size_bytes``."""
+    if size_bytes < 1024:
+        return f"{size_bytes} B"
+    for unit in ("KB", "MB", "GB", "TB", "PB", "EB"):
+        size_bytes /= 1024.0
+        if size_bytes < 1024.0:
+            return f"{size_bytes:.2f} {unit}"
+    return f"{size_bytes:.2f} ZB"
+
+
 def validate_glob_pattern(pattern, *, context="glob pattern"):
     """Warn about potentially problematic glob patterns."""
     if not isinstance(pattern, str):
