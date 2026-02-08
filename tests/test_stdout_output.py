@@ -45,7 +45,7 @@ def test_stdout_output_pairing_error(tmp_path):
         'output': {'folder': 'output_folder'}
     }
 
-    with pytest.raises(InvalidConfigError, match="Stdout output is not available in pairing mode"):
+    with pytest.raises(InvalidConfigError, match="Writing to the terminal is not available in pairing mode"):
         find_and_combine_files(config, output_path='-')
 
 def test_stdout_output_dry_run(tmp_path, capsys):
