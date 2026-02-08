@@ -11,7 +11,7 @@ output:
 filters:
   exclusions:
     filenames: []  # e.g., ['*.log']
-    # Exclude folders if any directory name in the path matches one of these
+    # Exclude folders if any folder name in the path matches one of these
     # patterns (e.g., 'build' excludes ./build and ./src/app/build). Case-insensitive.
     folders: []
 
@@ -21,15 +21,15 @@ processing:
   compact_whitespace_groups:
     replace_mid_line_tabs: false
   line_regex_replacements:
-    - pattern: '^\\s*\\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$'
+    - pattern: '^\s*\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$'
       replacement: '<data removed>'
   # Example regex rule: remove lines starting with TODO comments.
   regex_replacements:
-    - pattern: '^\\s*//\\s*TODO:.*$'
+    - pattern: '^\s*//\s*TODO:.*$'
       replacement: ''
     # Example: keep only code between BEGIN and END markers
     # - pattern: '(?s).*BEGIN_SNIP(.*)END_SNIP.*'
-    #   replacement: '\\1'
+    #   replacement: '\1'
   apply_in_place: false
   create_backups: true
 

@@ -335,7 +335,7 @@ _INVALID_SLUG_CHARS_RE = re.compile(r'[^0-9A-Za-z._-]+')
 
 
 def _slugify_relative_dir(relative_dir):
-    """Return a filesystem-safe slug for ``relative_dir`` preserving structure."""
+    """Return a filesystem-safe simplified name for ``relative_dir`` preserving structure."""
 
     if relative_dir in ('', '.'):  # Treat the project root specially.
         return 'root'
@@ -734,13 +734,13 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
             connector = "└── " if is_last else "├── "
             lines.append(f"{prefix}{connector}{item}")
 
-            # If the item has children (it's a directory), recurse
+            # If the item has children (it's a folder), recurse
             children = node[item]
             if children:
                 extension = "    " if is_last else "│   "
                 _add_node(children, prefix + extension)
 
-    # Add the root directory name first
+    # Add the root folder name first
     lines.append(f"{root_path.name}/")
     _add_node(tree)
 
@@ -770,10 +770,10 @@ def _generate_table_of_contents(files, output_format='text'):
             posix_rel_path = rel_path.as_posix()
 
             # Create a basic anchor link. Note: This assumes standard GitHub-style
-            # slugification (lowercase, spaces to dashes, remove punctuation).
+            # simplified name creation (lowercase, spaces to dashes, remove punctuation).
             # It matches the default Markdown header template: "## {{FILENAME}}"
 
-            # Actually, standard GitHub slugify is:
+            # Actually, standard GitHub simplified name creation is:
             # 1. Lowercase
             # 2. Remove chars that are not a-z, 0-9, space, hyphen, underscore
             # 3. Replace spaces with hyphens
@@ -829,7 +829,7 @@ def find_and_combine_files(
         raise InvalidConfigError("Clipboard mode is only available when pairing is disabled.")
 
     if output_path == '-' and pairing_enabled:
-        raise InvalidConfigError("Stdout output is not available in pairing mode.")
+        raise InvalidConfigError("Writing to the terminal is not available in pairing mode.")
 
     if output_format == 'json' and pairing_enabled:
         raise InvalidConfigError("JSON format is not compatible with paired output.")
@@ -1320,7 +1320,7 @@ def main():
     output_group.add_argument(
         "--include-tree",
         action="store_true",
-        help="Include a visual directory tree at the start of the output. (Single-file mode only)",
+        help="Include a visual folder tree at the start of the output. (Single-file mode only)",
     )
 
     # Runtime Options Group
@@ -1455,12 +1455,12 @@ def main():
     if 'search' not in config:
         config['search'] = {}
 
-    # Apply positional targets or fallback to current directory
+    # Apply positional targets or fallback to current folder
     if remaining_targets:
         config['search']['root_folders'] = remaining_targets
     elif not config_path and not args.files_from:
         logging.info(
-            "No config file found. Scanning current directory '.' with default settings."
+            "No config file found. Scanning current folder '.' with default settings."
         )
         config['search']['root_folders'] = ["."]
 
@@ -1592,7 +1592,7 @@ def main():
     if args.clipboard:
         destination_desc = "to clipboard"
     elif output_path == '-':
-        destination_desc = "to stdout"
+        destination_desc = "to the terminal"
     elif pairing_enabled:
         destination_desc = (
             "alongside their source files"

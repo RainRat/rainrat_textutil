@@ -95,13 +95,13 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 *   `--format` / `-f`: Choose the output format (`text`, `json`, `markdown`, or `xml`).
     *   *Note: JSON format produces an array of file objects and is available in single-file mode only. Markdown and XML formats automatically adjust templates to use appropriate markers (code blocks for Markdown, tags for XML).*
 *   `--toc`: Include a Table of Contents at the beginning of the output file. (Single-file mode only).
-*   `--include-tree`: Include a visual directory tree at the start of the output. (Single-file mode only).
+*   `--include-tree`: Include a visual folder tree at the start of the output. (Single-file mode only).
 *   `--max-tokens`: Stop adding files once this total token limit is reached. (Single-file mode only).
 *   `--estimate-tokens` / `-e`: Calculate token counts without writing output files.
     *   *Note: Slower than a regular dry-run as it processes content.*
 *   `--list-files`: Print a list of files that would be processed to the console and exit.
 *   `--tree`: Show a visual folder tree of all included files and exit.
-*   `--files-from`: Read a list of files to process from a text file (or `-` for stdin). Overrides normal folder scanning.
+*   `--files-from`: Read a list of files to process from a text file (or `-` for the terminal). Overrides normal folder scanning.
 *   `--init`: Generate a default configuration file (`sourcecombine.yml`) in the current folder.
 *   `--include` / `-i`: Include only files matching a specific pattern (e.g., `-i "*.py"`). Can be used multiple times.
 *   `--exclude-file` / `-x`: Exclude specific files (e.g., `-x "secret.txt"`). Can be used multiple times.
@@ -247,7 +247,7 @@ rules to each file's content. Each rule specifies a `pattern` and a `replacement
 ```yaml
 processing:
   regex_replacements:
-    - pattern: '^\\s*#\\s*TODO:.*$'
+    - pattern: '^\s*#\s*TODO:.*$'
       replacement: ''
 ```
 
@@ -258,7 +258,7 @@ your pattern and referencing it in the replacement string:
 processing:
   regex_replacements:
     - pattern: '(?s).*BEGIN_SNIP(.*)END_SNIP.*'
-      replacement: '\\1'
+      replacement: '\1'
 ```
 
 To collapse entire blocks of matching lines, use the `processing.line_regex_replacements`
@@ -268,7 +268,7 @@ pattern are removed and optionally replaced with a single `replacement` string.
 ```yaml
 processing:
   line_regex_replacements:
-    - pattern: '^\\s*\\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$'
+    - pattern: '^\s*\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$'
       replacement: '<data removed>'
 ```
 

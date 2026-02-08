@@ -50,7 +50,7 @@ output:
   # (Ignored in pairing mode and JSON format)
   table_of_contents: false
 
-  # Include a visual directory tree at the start of the output file.
+  # Include a visual folder tree at the start of the output file.
   # (Ignored in pairing mode and JSON format)
   include_tree: false
 
