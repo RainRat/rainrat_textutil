@@ -110,7 +110,7 @@ def _render_template(template, relative_path):
     """Replace placeholders in ``template`` with values from ``relative_path``."""
     if not template:
         return ""
-    rendered = template.replace(FILENAME_PLACEHOLDER, str(relative_path))
+    rendered = template.replace(FILENAME_PLACEHOLDER, relative_path.as_posix())
     rendered = rendered.replace("{{EXT}}", relative_path.suffix.lstrip(".") or "")
     return rendered
 
@@ -767,6 +767,7 @@ def _generate_table_of_contents(files, output_format='text'):
         toc_lines.append("## Table of Contents")
         for file_path, root_path in files:
             rel_path = _get_rel_path(file_path, root_path)
+            posix_rel_path = rel_path.as_posix()
 
             # Create a basic anchor link. Note: This assumes standard GitHub-style
             # slugification (lowercase, spaces to dashes, remove punctuation).
@@ -777,16 +778,16 @@ def _generate_table_of_contents(files, output_format='text'):
             # 2. Remove chars that are not a-z, 0-9, space, hyphen, underscore
             # 3. Replace spaces with hyphens
             # Let's try to be close to that.
-            slug = re.sub(r'[^a-z0-9 _-]', '', str(rel_path).lower()).replace(' ', '-')
+            slug = re.sub(r'[^a-z0-9 _-]', '', posix_rel_path.lower()).replace(' ', '-')
 
-            toc_lines.append(f"- [{rel_path}](#{slug})")
+            toc_lines.append(f"- [{posix_rel_path}](#{slug})")
         toc_lines.append("")
 
     else: # text
         toc_lines.append("Table of Contents:")
         for file_path, root_path in files:
             rel_path = _get_rel_path(file_path, root_path)
-            toc_lines.append(f"- {rel_path}")
+            toc_lines.append(f"- {rel_path.as_posix()}")
         toc_lines.append("\n" + "-" * 20 + "\n")
 
     return "\n".join(toc_lines)
