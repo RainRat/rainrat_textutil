@@ -1,6 +1,7 @@
 import argparse
 from typing import Any, Mapping
 from contextlib import nullcontext
+import copy
 import fnmatch
 import io
 import logging
@@ -208,9 +209,16 @@ def should_include(
 
 
 def collect_file_paths(root_folder, recursive, exclude_folders, progress=None):
-    """Return all paths in ``root_folder`` while pruning excluded folders."""
+    """Return all paths in ``root_folder`` while pruning excluded folders.
+
+    If ``root_folder`` is a file, it returns a list containing only that file.
+    """
     root_path = Path(root_folder)
     try:
+        if root_path.is_file():
+            if progress:
+                progress.update(1)
+            return [root_path], root_path.parent, 0
         is_directory = root_path.is_dir()
     except OSError as exc:
         logging.warning(
@@ -907,7 +915,7 @@ def find_and_combine_files(
             # (root_path, all_paths, excluded_folder_count)
             iteration_targets.append((Path.cwd(), explicit_files, 0))
         else:
-            # Perform standard discovery
+            # Standard discovery from root folders
             for root_folder in root_folders:
                 discovery_bar = processor._make_bar(
                     desc=f"Discovering in {root_folder}",
@@ -1243,10 +1251,10 @@ def main():
 
     # Positional arguments
     parser.add_argument(
-        "config_file",
-        nargs="?",
+        "targets",
+        nargs="*",
         metavar="TARGET",
-        help="A configuration file (like 'config.yml') OR a folder to scan.",
+        help="One or more configuration files, folders, or files to process.",
     )
 
     # Configuration Group
@@ -1393,105 +1401,75 @@ def main():
                 sys.exit(1)
         sys.exit(0)
 
-    config_path = args.config_file
+    targets = args.targets
     config = None
-    nested_required = {
-        'search': ['root_folders'],
-    }
+    config_path = None
+    remaining_targets = []
 
-    # If --files-from is present, we don't strictly require root_folders
-    # because we are bypassing discovery.
-    if args.files_from:
+    if targets:
+        first = targets[0]
+        # If the first target is a YAML file, it's our configuration
+        # We don't check for existence here so that missing config files
+        # trigger a proper "Config not found" error later.
+        if first.lower().endswith(('.yml', '.yaml')) and not Path(first).is_dir():
+            config_path = first
+            remaining_targets = targets[1:]
+        else:
+            remaining_targets = targets
+
+    # Relax root_folders requirement if we have other targets or --files-from
+    nested_required = {'search': ['root_folders']}
+    if args.files_from or remaining_targets:
         nested_required = {}
 
-    if config_path and Path(config_path).is_dir():
-        # Directory mode: Construct config in-memory
-        logging.info("Using directory '%s' as root with default settings.", config_path)
-        config = {'search': {'root_folders': [config_path]}}
+    if not config_path and not remaining_targets:
+        # Case 1: No positional targets. Use auto-discovery
+        defaults = ['sourcecombine.yml', 'sourcecombine.yaml', 'config.yml', 'config.yaml']
+        for d in defaults:
+            if Path(d).is_file():
+                config_path = d
+                logging.info("Auto-discovered config file: %s", config_path)
+                break
+
+        if not config_path:
+            if args.files_from:
+                logging.info("No configuration found. Using default settings with --files-from.")
+
+    # Load config if we found/specified one
+    if config_path:
         try:
-            validate_config(
-                config,
-                defaults=DEFAULT_CONFIG,
-                nested_required=nested_required,
-                source="<directory-arg>"
-            )
+            config = load_and_validate_config(config_path, nested_required=nested_required)
+        except ConfigNotFoundError:
+            logging.error("Could not find the configuration file '%s'.", config_path)
+            sys.exit(1)
         except InvalidConfigError as e:
             logging.error("The configuration is not valid: %s", e)
-            logging.debug("Configuration validation traceback:", exc_info=True)
             sys.exit(1)
-    else:
-        # Config file mode (explicit or auto-discovered)
-        if not config_path:
-            # Auto-discovery
-            defaults = ['sourcecombine.yml', 'sourcecombine.yaml', 'config.yml', 'config.yaml']
-            for default in defaults:
-                if Path(default).is_file():
-                    config_path = default
-                    logging.info("Auto-discovered config file: %s", config_path)
-                    break
 
-            if not config_path:
-                if args.files_from:
-                    # If we failed to auto-discover config, but we have files-from,
-                    # we can fallback to default config.
-                    logging.info("No configuration found. Using default settings with --files-from.")
-                    config = utils.DEFAULT_CONFIG.copy()
-                    # Ensure search section exists even if empty
-                    config.setdefault('search', {})
-                else:
-                    # Fallback to current directory if no config found
-                    logging.info(
-                        "No config file found (checked: %s). Scanning current directory '.' with default settings.",
-                        ", ".join(defaults),
-                    )
-                    config_path = "."
-                    # Redirect flow to directory mode logic
-                    # Since we are modifying config_path to '.', we need to handle it
-                    # similar to the 'directory mode' block above, but we are already past it.
-                    # So we construct the config here.
-                    config = {'search': {'root_folders': [config_path]}}
-                    try:
-                        validate_config(
-                            config,
-                            defaults=DEFAULT_CONFIG,
-                            nested_required=nested_required,
-                            source="<default-cwd>"
-                        )
-                    except InvalidConfigError as e:
-                        logging.error("The configuration is not valid: %s", e)
-                        logging.debug("Configuration validation traceback:", exc_info=True)
-                        sys.exit(1)
+    # Initialize with defaults if no config was loaded
+    if config is None:
+        config = copy.deepcopy(utils.DEFAULT_CONFIG)
 
-        if config is None:
-            try:
-                config = load_and_validate_config(
-                    config_path, nested_required=nested_required
-                )
-            except ConfigNotFoundError as e:
-                # If using --files-from and no config specified, we can optionally proceed with defaults?
-                # But typically find_and_combine_files needs *some* config structure.
-                # If explicit config path was given, it must exist.
-                # If it was auto-discovery failure...
-                if args.files_from and not args.config_file:
-                    # If we failed to auto-discover config, but we have files-from,
-                    # we can fallback to default config.
-                    logging.info("No configuration found. Using default settings with --files-from.")
-                    config = utils.DEFAULT_CONFIG.copy()
-                    # Ensure search section exists even if empty
-                    config.setdefault('search', {})
-                else:
-                    logging.error(
-                        "Could not find the configuration file '%s'. "
-                        "Check the file name and make sure you are in the right folder: %s",
-                        config_path,
-                        Path.cwd(),
-                    )
-                    logging.debug("Missing configuration details:", exc_info=True)
-                    sys.exit(1)
-            except InvalidConfigError as e:
-                logging.error("The configuration is not valid: %s", e)
-                logging.debug("Configuration validation traceback:", exc_info=True)
-                sys.exit(1)
+    # Ensure search section exists
+    if 'search' not in config:
+        config['search'] = {}
+
+    # Apply positional targets or fallback to current directory
+    if remaining_targets:
+        config['search']['root_folders'] = remaining_targets
+    elif not config_path and not args.files_from:
+        logging.info(
+            "No config file found. Scanning current directory '.' with default settings."
+        )
+        config['search']['root_folders'] = ["."]
+
+    # Final validation for root_folders
+    if not args.files_from:
+        try:
+            validate_config(config, nested_required={'search': ['root_folders']})
+        except InvalidConfigError as e:
+            logging.error("The configuration is not valid: %s", e)
+            sys.exit(1)
 
     # Re-configure level based on config, *unless* -v was used.
     # The -v (DEBUG) flag always overrides the config file's setting.
@@ -1675,10 +1653,10 @@ def main():
 def _print_execution_summary(stats, args, pairing_enabled):
     """Print a formatted summary of the execution statistics to stderr."""
 
-    total_included = stats['total_files']
+    total_included = stats.get('total_files', 0)
     total_discovered = stats.get('total_discovered', 0)
     total_filtered = max(0, total_discovered - total_included)
-    total_size_mb = stats['total_size_bytes'] / (1024 * 1024)
+    total_size_mb = stats.get('total_size_bytes', 0) / (1024 * 1024)
     excluded_folders = stats.get('excluded_folder_count', 0)
 
     # ANSI color codes (if supported)
