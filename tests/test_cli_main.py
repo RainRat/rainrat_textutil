@@ -191,3 +191,16 @@ def test_invalid_config_validation(temp_cwd, mock_argv, caplog):
 
     assert excinfo.value.code == 1
     assert "The configuration is not valid" in caplog.text
+
+def test_main_config_validation_error(tmp_path, monkeypatch, caplog):
+    config_path = tmp_path / "config.yml"
+    config_path.write_text("search: {}", encoding="utf-8") # Missing root_folders
+
+    monkeypatch.setattr(sys, "argv", ["sourcecombine.py", str(config_path)])
+
+    with caplog.at_level(logging.ERROR):
+        with pytest.raises(SystemExit) as excinfo:
+            main()
+
+    assert excinfo.value.code == 1
+    assert "The configuration is not valid" in caplog.text

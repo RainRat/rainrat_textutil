@@ -138,3 +138,54 @@ def test_token_budget_large_first_file(tmp_path, monkeypatch):
     # Current implementation doesn't mark budget_exceeded if the FIRST file is what exceeds it
     # and there are no more files to process anyway.
     assert stats['budget_exceeded'] is False
+
+
+def test_budget_pass_apply_in_place(tmp_path, monkeypatch):
+    """Verify apply_in_place works during the budgeting pass."""
+    root = tmp_path / "root"
+    root.mkdir()
+    f1 = root / "f1.txt"
+    f1.write_text("content   ", encoding="utf-8")  # 3 trailing spaces
+
+    monkeypatch.setattr(utils, "tiktoken", None)
+    monkeypatch.chdir(tmp_path)
+
+    out_file = tmp_path / "out.txt"
+    config = {
+        "search": {"root_folders": [str(root)]},
+        "filters": {"max_total_tokens": 100},
+        "processing": {"apply_in_place": True, "compact_whitespace": True},
+        "output": {"file": str(out_file)},
+    }
+
+    find_and_combine_files(config, output_path=str(out_file))
+
+    # Verify update in place
+    assert f1.read_text(encoding="utf-8") == "content"
+    # Verify backup
+    assert (root / "f1.txt.bak").exists()
+
+
+def test_budget_pass_global_footer(tmp_path, monkeypatch):
+    """Verify global footer tokens are counted during budgeting."""
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "f1.txt").write_text("1234", encoding="utf-8")  # 1 token
+
+    monkeypatch.setattr(utils, "tiktoken", None)
+    monkeypatch.chdir(tmp_path)
+
+    out_file = tmp_path / "out.txt"
+    config = {
+        "search": {"root_folders": [str(root)]},
+        "filters": {"max_total_tokens": 1},  # Only enough for f1.txt *or* footer, not both
+        "output": {
+            "file": str(out_file),
+            "global_footer_template": "abcd",  # Another 1 token
+            "format": "text",
+        },
+    }
+
+    stats = find_and_combine_files(config, output_path=str(out_file))
+
+    assert stats["budget_exceeded"] is True
