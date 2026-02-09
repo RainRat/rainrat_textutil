@@ -18,6 +18,7 @@ from utils import (
     load_and_validate_config,
     process_content,
     read_file_best_effort,
+    format_size,
 )
 
 
@@ -492,3 +493,13 @@ def test_compact_whitespace_trims_trailing_whitespace_on_all_lines():
     text = "line 1  \nline 2\t\nline 3  "
     expected = "line 1\nline 2\nline 3"
     assert compact_whitespace(text) == expected
+
+
+def test_format_size():
+    assert format_size(0) == "0.00 B"
+    assert format_size(1023) == "1,023.00 B"
+    assert format_size(1024) == "1.00 KB"
+    assert format_size(1536) == "1.50 KB"
+    assert format_size(1024 * 1024) == "1.00 MB"
+    assert format_size(1024 * 1024 * 1024) == "1.00 GB"
+    assert format_size(-1) == "0 B"
