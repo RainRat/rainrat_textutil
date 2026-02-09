@@ -8,7 +8,7 @@ sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
 from sourcecombine import _slugify_relative_dir
 
-def test_slugify_basic_directories():
+def test_slugify_basic_folders():
     assert _slugify_relative_dir("src") == "src"
     assert _slugify_relative_dir("src/lib") == "src/lib"
     assert _slugify_relative_dir("a/b/c") == "a/b/c"

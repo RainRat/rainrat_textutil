@@ -146,7 +146,7 @@ def test_cwd_fallback(temp_cwd, mock_argv, caplog):
             main()
 
     assert "No config file found" in caplog.text
-    assert "Scanning current directory '.' with default settings" in caplog.text
+    assert "Scanning current folder '.' with default settings" in caplog.text
     mock_combine.assert_called_once()
     # Verify the config passed has root_folders set to ['.']
     args, _ = mock_combine.call_args
