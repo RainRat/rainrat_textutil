@@ -59,6 +59,18 @@ def test_silent_progress_implementation():
     with _SilentProgress() as sp_ctx:
         assert isinstance(sp_ctx, _SilentProgress)
 
+
+def test_dev_null_implementation():
+    # Directly test _DevNull to ensure full coverage of its methods
+    from sourcecombine import _DevNull
+
+    dn = _DevNull()
+    assert dn.write("anything") is None
+    assert dn.flush() is None
+    with dn as dn_ctx:
+        assert dn_ctx is dn
+
+
 def test_matches_glob_cached_defensive_guards():
     # Test internal functions directly to cover defensive guards for empty patterns
     assert _matches_file_glob_cached("file.txt", "file.txt", ()) is False

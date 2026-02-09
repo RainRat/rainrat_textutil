@@ -503,3 +503,12 @@ def test_format_size():
     assert format_size(1024 * 1024) == "1.00 MB"
     assert format_size(1024 * 1024 * 1024) == "1.00 GB"
     assert format_size(-1) == "0 B"
+
+
+def test_format_size_large_values():
+    assert format_size(1024**4) == "1.00 TB"
+    assert format_size(1024**5) == "1.00 PB"
+    assert format_size(1024**6) == "1.00 EB"
+    assert format_size(1024**7) == "1.00 ZB"
+    assert format_size(1024**8) == "1.00 YB"
+    assert format_size(1024**9) == "1,024.00 YB"

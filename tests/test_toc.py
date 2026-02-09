@@ -119,3 +119,7 @@ def test_toc_estimate_tokens(tmp_path, toc_config):
 
     # TOC adds tokens
     assert stats_with_toc['total_tokens'] > stats_without_toc['total_tokens']
+
+
+def test_generate_toc_empty():
+    assert _generate_table_of_contents([], 'text') == ""

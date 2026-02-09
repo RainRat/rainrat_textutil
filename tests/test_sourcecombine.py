@@ -686,3 +686,22 @@ def test_main_overrides_output_folder_in_pairing_mode(monkeypatch, tmp_path):
 
     assert captured["output_path"] == os.fspath(override_output)
     assert captured["config_output"]["folder"] == os.fspath(override_output)
+
+def test_write_max_size_placeholder_edge_cases(tmp_path, caplog):
+    """Test edge cases in write_max_size_placeholder."""
+    config = {"processing": {}}
+    output_opts = {"max_size_placeholder": "Too big: {{FILENAME}}"}
+
+    # Dry run
+    processor = FileProcessor(config, output_opts, dry_run=True)
+    with caplog.at_level(logging.INFO):
+        tokens, approx = processor.write_max_size_placeholder(tmp_path / "large.txt", tmp_path, None)
+    assert tokens == 0
+    assert approx is True
+    assert "large.txt" in caplog.text
+
+    # Missing placeholder
+    processor = FileProcessor(config, {}, dry_run=False)
+    tokens, approx = processor.write_max_size_placeholder(tmp_path / "large.txt", tmp_path, None)
+    assert tokens == 0
+    assert approx is True

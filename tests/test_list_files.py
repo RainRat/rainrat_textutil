@@ -163,3 +163,21 @@ def test_list_files_with_pairing_mismatched_disabled(capsys, tmp_path):
     assert "src/foo.c" in captured.out
     assert "src/foo.h" in captured.out
     assert "src/bar.c" not in captured.out
+
+
+def test_list_files_tree_estimate_tokens(capsys, tmp_path):
+    """Verify --list-files with --tree and --estimate-tokens."""
+    (tmp_path / "test.py").write_text("print('hello')", encoding="utf-8")
+
+    with patch.object(sys, "argv", ["sourcecombine.py", str(tmp_path), "--list-files", "--tree", "--estimate-tokens"]):
+        try:
+            main()
+        except SystemExit:
+            pass
+
+    captured = capsys.readouterr()
+    # Tree should contain tokens
+    assert "test.py" in captured.out
+    assert "tokens" in captured.out
+    # When estimate_tokens is set, it takes precedence in summary title
+    assert "Token Estimation Summary" in captured.err
