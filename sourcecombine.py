@@ -408,10 +408,6 @@ def _render_paired_filename(
     return rendered
 
 
-def _path_without_suffix(file_path, root_path):
-    return _get_rel_path(file_path, root_path).with_suffix("")
-
-
 def _group_paths_by_stem_suffix(file_paths, *, root_path):
     """Group ``file_paths`` by stem and suffix for pairing logic."""
 
@@ -457,11 +453,11 @@ def _pair_files(filtered_paths, source_exts, header_exts, include_mismatched, *,
             pair = [src]
             if hdr != src:
                 pair.append(hdr)
-            pair_key = _path_without_suffix(src, root_path)
+            pair_key = _get_rel_path(src, root_path).with_suffix("")
             paired[pair_key] = pair
         elif include_mismatched and (src or hdr):
             path = src or hdr
-            pair_key = _path_without_suffix(path, root_path)
+            pair_key = _get_rel_path(path, root_path).with_suffix("")
             paired[pair_key] = [path]
     return paired
 
