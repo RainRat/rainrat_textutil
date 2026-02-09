@@ -42,9 +42,14 @@ def test_json_output_success(tmp_path):
 
     assert data[0]['path'] == 'a.py'
     assert data[0]['content'] == "print('a')"
+    assert 'size_bytes' in data[0]
+    assert 'tokens' in data[0]
+    assert 'tokens_is_approx' in data[0]
 
     assert data[1]['path'] == 'b.txt'
     assert data[1]['content'] == "text b"
+    assert 'size_bytes' in data[1]
+    assert 'tokens' in data[1]
 
 def test_json_output_incompatible_with_pairing():
     config = {

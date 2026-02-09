@@ -15,6 +15,9 @@ from functools import lru_cache
 from pathlib import Path, PurePath
 
 
+__version__ = "0.5.0"
+
+
 try:  # Optional dependency for progress reporting
     from tqdm import tqdm as _tqdm
 except ImportError:  # pragma: no cover - gracefully handle missing tqdm
@@ -216,7 +219,7 @@ def collect_file_paths(root_folder, recursive, exclude_folders, progress=None):
     root_path = Path(root_folder)
     try:
         if root_path.is_file():
-            if progress:
+            if progress is not None:
                 progress.update(1)
             return [root_path], root_path.parent, 0
         is_directory = root_path.is_dir()
@@ -478,6 +481,7 @@ def _process_paired_files(
     size_excluded=None,
     global_header=None,
     global_footer=None,
+    stats=None,
 ):
     """Process paired files and write combined outputs."""
 
@@ -527,21 +531,31 @@ def _process_paired_files(
                 pair_out.write(global_header)
 
             if primary_path in size_excluded_set:
-                processor.write_max_size_placeholder(primary_path, root_path, pair_out)
+                token_count, is_approx = processor.write_max_size_placeholder(primary_path, root_path, pair_out)
+                if stats is not None:
+                    stats['total_tokens'] += token_count
+                    if is_approx:
+                        stats['token_count_is_approx'] = True
+                    stats['top_files'].append((token_count, primary_path.stat().st_size if primary_path.exists() else 0, _get_rel_path(primary_path, root_path).as_posix()))
                 if processing_bar:
                     processing_bar.update(len(paths))
             else:
                 for file_path in paths:
                     if file_path in size_excluded_set:
-                        processor.write_max_size_placeholder(
+                        token_count, is_approx = processor.write_max_size_placeholder(
                             file_path, root_path, pair_out
                         )
                     else:
-                        processor.process_and_write(
+                        token_count, is_approx = processor.process_and_write(
                             file_path,
                             root_path,
                             pair_out,
                         )
+                    if stats is not None:
+                        stats['total_tokens'] += token_count
+                        if is_approx:
+                            stats['token_count_is_approx'] = True
+                        stats['top_files'].append((token_count, file_path.stat().st_size if file_path.exists() else 0, _get_rel_path(file_path, root_path).as_posix()))
                     if processing_bar:
                         processing_bar.update(1)
 
@@ -650,10 +664,16 @@ class FileProcessor:
 
         relative_path = _get_rel_path(file_path, root_path)
 
+        # Estimate tokens on the final processed content
+        token_count, is_approx = utils.estimate_tokens(processed_content)
+
         if not self.estimate_tokens:
             if output_format == 'json':
                 entry = {
                     "path": relative_path.as_posix(),
+                    "size_bytes": file_path.stat().st_size if file_path.exists() else 0,
+                    "tokens": token_count,
+                    "tokens_is_approx": is_approx,
                     "content": processed_content
                 }
                 json.dump(entry, outfile)
@@ -665,8 +685,7 @@ class FileProcessor:
                     processed_content = escape(processed_content)
                 self._write_with_templates(outfile, processed_content, relative_path)
 
-        # Estimate tokens on the final processed content
-        return utils.estimate_tokens(processed_content)
+        return token_count, is_approx
 
     def write_max_size_placeholder(self, file_path, root_path, outfile, output_format='text'):
         """Write the placeholder for files skipped for exceeding max size.
@@ -688,10 +707,16 @@ class FileProcessor:
         relative_path = _get_rel_path(file_path, root_path)
         rendered = _render_template(placeholder, relative_path)
 
+        # Estimate tokens on the placeholder content
+        token_count, is_approx = utils.estimate_tokens(rendered)
+
         if not self.estimate_tokens:
             if output_format == 'json':
                 entry = {
                     "path": relative_path.as_posix(),
+                    "size_bytes": file_path.stat().st_size if file_path.exists() else 0,
+                    "tokens": token_count,
+                    "tokens_is_approx": is_approx,
                     "content": rendered
                 }
                 json.dump(entry, outfile)
@@ -701,7 +726,7 @@ class FileProcessor:
                     rendered = escape(rendered)
                 self._write_with_templates(outfile, rendered, relative_path)
 
-        return utils.estimate_tokens(rendered)
+        return token_count, is_approx
 
 
 def _generate_tree_string(paths, root_path, output_format='text', include_header=True, metadata=None):
@@ -852,7 +877,9 @@ def find_and_combine_files(
         'files_by_extension': {},
         'total_tokens': 0,
         'token_count_is_approx': False,
-        'budget_exceeded': False
+        'budget_exceeded': False,
+        'top_files': [],
+        'max_total_tokens': config.get('filters', {}).get('max_total_tokens', 0)
     }
     search_opts = config.get('search', {})
     filter_opts = config.get('filters', {})
@@ -1098,6 +1125,7 @@ def find_and_combine_files(
                     size_excluded=size_excluded,
                     global_header=global_header,
                     global_footer=global_footer,
+                    stats=stats,
                 )
                 processing_bar.close()
             else:
@@ -1270,6 +1298,7 @@ def find_and_combine_files(
                     stats['total_tokens'] += token_count
                     if is_approx:
                         stats['token_count_is_approx'] = True
+                    stats['top_files'].append((token_count, file_path.stat().st_size if file_path.exists() else 0, _get_rel_path(file_path, root_path).as_posix()))
 
                 processing_bar.update(1)
 
@@ -1396,6 +1425,12 @@ def main():
 
     # Runtime Options Group
     runtime_group = parser.add_argument_group("Runtime Options")
+    runtime_group.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+        help="Show the tool's version and exit.",
+    )
     runtime_group.add_argument(
         "--dry-run",
         "-d",
@@ -1766,7 +1801,7 @@ def _print_execution_summary(stats, args, pairing_enabled):
         print(f"  {yellow}{bold}WARNING: Output truncated due to token budget.{reset}", file=sys.stderr)
 
     # Files Section
-    label_width = 18
+    label_width = 22
     print(f"  {bold}Files{reset}", file=sys.stderr)
     print(f"    {bold}{'Included:':<{label_width}}{reset}{total_included:12,}", file=sys.stderr)
     print(f"    {bold}{'Filtered:':<{label_width}}{reset}{total_filtered:12,}", file=sys.stderr)
@@ -1794,6 +1829,23 @@ def _print_execution_summary(stats, args, pairing_enabled):
                 f"      {dim}(Install 'tiktoken' for accurate counts){reset}",
                 file=sys.stderr,
             )
+
+        # Budget Usage
+        max_tokens = stats.get('max_total_tokens', 0)
+        if max_tokens > 0 and token_count > 0:
+            percent = (token_count / max_tokens) * 100
+            print(f"    {bold}{'Budget Usage:':<{label_width}}{reset}{percent:>11.1f}%", file=sys.stderr)
+
+    # Largest Files
+    if stats.get('top_files') and not args.list_files and not args.tree:
+        print(f"\n  {bold}Largest Files (by tokens){reset}", file=sys.stderr)
+        # Sort by tokens desc, then path alpha
+        top = sorted(stats['top_files'], key=lambda x: (-x[0], x[2]))[:5]
+        for tokens, size, path in top:
+            token_str = f"{tokens:,}"
+            # Truncate long paths
+            display_path = (path[:45] + '...') if len(path) > 48 else path
+            print(f"    {dim}-{reset} {display_path:<48} {token_str:>12} tokens", file=sys.stderr)
 
     # Extensions Grid
     if stats['files_by_extension']:
