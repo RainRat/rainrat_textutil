@@ -520,7 +520,7 @@ def _process_paired_files(
             pair_out_ctx = _DevNull()
         else:
             out_file.parent.mkdir(parents=True, exist_ok=True)
-            pair_out_ctx = open(out_file, 'w', encoding='utf8')
+            pair_out_ctx = open(out_file, 'w', encoding='utf8', newline='')
 
         with pair_out_ctx as pair_out:
             if global_header and not estimate_tokens:
@@ -646,7 +646,7 @@ class FileProcessor:
             if self.apply_in_place and processed_content != content and not self.estimate_tokens:
                 logging.info("Updating in place: %s", file_path)
                 self._backup_file(file_path)
-                file_path.write_text(processed_content, encoding='utf8')
+                file_path.write_text(processed_content, encoding='utf8', newline='')
 
         relative_path = _get_rel_path(file_path, root_path)
 
@@ -925,7 +925,7 @@ def find_and_combine_files(
     elif output_path == '-':
         outfile_ctx = nullcontext(sys.stdout)
     else:
-        outfile_ctx = open(output_path, 'w', encoding='utf8')
+        outfile_ctx = open(output_path, 'w', encoding='utf8', newline='')
 
     # We only want true dry-run behavior (skipping reading) if we are NOT estimating tokens.
     processor_dry_run = (dry_run and not estimate_tokens) or list_files or tree_view
@@ -1155,7 +1155,7 @@ def find_and_combine_files(
                     if processor.apply_in_place and processed != content and not estimate_tokens and not dry_run:
                         logging.info("Updating in place: %s", file_path)
                         processor._backup_file(file_path)
-                        file_path.write_text(processed, encoding='utf8')
+                        file_path.write_text(processed, encoding='utf8', newline='')
                     tokens, _ = utils.estimate_tokens(processed)
 
                 # Store metadata for TOC/Tree

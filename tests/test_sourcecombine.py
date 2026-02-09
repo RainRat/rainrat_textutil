@@ -1,4 +1,5 @@
 import io
+import builtins
 import logging
 import os
 import sys
@@ -534,6 +535,37 @@ def test_apply_in_place_can_disable_backups(tmp_path):
     assert file_path.read_text(encoding="utf-8") == "updated"
 
 
+def test_apply_in_place_uses_raw_newline_writes(tmp_path, monkeypatch):
+    file_path = tmp_path / "windows_endings.txt"
+    file_path.write_bytes(b"before\r\nafter\r\n")
+
+    config = {
+        "processing": {
+            "apply_in_place": True,
+            "regex_replacements": [
+                {"pattern": "before", "replacement": "updated"}
+            ],
+        },
+        "output": {},
+    }
+
+    observed = {}
+    original_write_text = Path.write_text
+
+    def spy_write_text(self, data, *args, **kwargs):
+        if self == file_path:
+            observed["newline"] = kwargs.get("newline")
+        return original_write_text(self, data, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "write_text", spy_write_text)
+
+    processor = FileProcessor(config, config.get("output"), dry_run=False)
+    processor.process_and_write(file_path, tmp_path, io.StringIO())
+
+    assert observed["newline"] == ""
+    assert file_path.read_bytes() == b"updated\r\nafter\r\n"
+
+
 def test_find_and_combine_skips_backup_files(tmp_path):
     project_root = tmp_path / "project"
     project_root.mkdir()
@@ -558,6 +590,34 @@ def test_find_and_combine_skips_backup_files(tmp_path):
 
     assert output_path.read_text(encoding="utf-8") == "original"
     assert (project_root / "notes.txt.bak.bak").exists() is False
+
+
+def test_find_and_combine_opens_output_with_raw_newlines(tmp_path, monkeypatch):
+    root = tmp_path / "project"
+    root.mkdir()
+    (root / "file.txt").write_bytes(b"a\r\nb\r\n")
+    output_path = tmp_path / "combined.txt"
+
+    config = {
+        "search": {"root_folders": [os.fspath(root)], "recursive": True},
+        "filters": {},
+        "processing": {},
+        "output": {"file": os.fspath(output_path)},
+    }
+
+    observed = {}
+    original_open = builtins.open
+
+    def spy_open(*args, **kwargs):
+        if args and args[0] == output_path and len(args) > 1 and args[1] == "w":
+            observed["newline"] = kwargs.get("newline")
+        return original_open(*args, **kwargs)
+
+    monkeypatch.setattr(builtins, "open", spy_open)
+
+    find_and_combine_files(config, output_path, dry_run=False)
+
+    assert observed["newline"] == ""
 
 
 def test_main_overrides_output_file(monkeypatch, tmp_path):
