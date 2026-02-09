@@ -79,7 +79,7 @@ Whether you are preparing files for printing, creating context for Large Languag
 
 ## Usage
 
-Run the script from the command line. You can pass one or more folders, files, or a configuration file.
+Run the script from your terminal. You can pass one or more folders, files, or a configuration file.
 
 ```bash
 python sourcecombine.py [TARGET ...] [OPTIONS]
@@ -95,7 +95,7 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 *   `--format` / `-f`: Choose the output format (`text`, `json`, `markdown`, or `xml`).
     *   *Note: JSON format produces an array of file objects and is available in single-file mode only. Markdown and XML formats automatically adjust templates to use appropriate markers (code blocks for Markdown, tags for XML).*
 *   `--toc`: Include a Table of Contents at the beginning of the output file. (Single-file mode only).
-*   `--include-tree`: Include a visual directory tree at the start of the output. (Single-file mode only).
+*   `--include-tree`: Include a visual folder tree at the start of the output. (Single-file mode only).
 *   `--max-tokens`: Stop adding files once this total token limit is reached. (Single-file mode only).
 *   `--estimate-tokens` / `-e`: Calculate token counts without writing output files.
     *   *Note: Slower than a regular dry-run as it processes content.*
@@ -363,4 +363,4 @@ Ensure you have activated your virtual environment (Step 3 in Installation) and 
 If you encounter permission denied errors, check that you have read access to the files you are trying to combine and write access to the output location.
 
 **Encoding issues:**
-SourceCombine attempts to detect file encoding, but specialized files might cause issues. Try converting them to UTF-8 if problems persist.
+SourceCombine attempts to detect file encoding, but specialized files might cause issues. Try converting them to UTF-8 if problems continue.

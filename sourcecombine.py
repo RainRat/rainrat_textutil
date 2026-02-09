@@ -340,7 +340,7 @@ _INVALID_SLUG_CHARS_RE = re.compile(r'[^0-9A-Za-z._-]+')
 
 
 def _slugify_relative_dir(relative_dir):
-    """Return a filesystem-safe slug for ``relative_dir`` preserving structure."""
+    """Return a filesystem-safe simplified name for ``relative_dir`` preserving structure."""
 
     if relative_dir in ('', '.'):  # Treat the project root specially.
         return 'root'
@@ -759,13 +759,13 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
 
             lines.append(f"{prefix}{connector}{item}{meta_str}")
 
-            # If the item has children (it's a directory), recurse
+            # If the item has children (it's a folder), recurse
             children = node[item]
             if children:
                 extension = "    " if is_last else "│   "
                 _add_node(children, prefix + extension, current_rel_parts)
 
-    # Add the root directory name first
+    # Add the root folder name first
     lines.append(f"{root_path.name}/")
     _add_node(tree)
 
@@ -1391,7 +1391,7 @@ def main():
     output_group.add_argument(
         "--include-tree",
         action="store_true",
-        help="Include a visual directory tree with file metadata at the start of the output. (Single-file mode only)",
+        help="Include a visual folder tree with file metadata at the start of the output. (Single-file mode only)",
     )
 
     # Runtime Options Group
@@ -1427,7 +1427,7 @@ def main():
     runtime_group.add_argument(
         "--tree",
         action="store_true",
-        help="Show a visual tree of all included files with metadata and then stop.",
+        help="Show a visual folder tree of all included files with metadata and then stop.",
     )
     runtime_group.add_argument(
         "--files-from",
@@ -1526,12 +1526,12 @@ def main():
     if 'search' not in config:
         config['search'] = {}
 
-    # Apply positional targets or fallback to current directory
+    # Apply positional targets or fallback to current folder
     if remaining_targets:
         config['search']['root_folders'] = remaining_targets
     elif not config_path and not args.files_from:
         logging.info(
-            "No config file found. Scanning current directory '.' with default settings."
+            "No config file found. Scanning current folder '.' with default settings."
         )
         config['search']['root_folders'] = ["."]
 

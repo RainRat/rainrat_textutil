@@ -102,7 +102,7 @@ def test_pair_files_respects_relative_directories(tmp_path):
     assert result == {Path("src/feature/main"): [feature_src, feature_hdr]}
 
 
-def test_pair_files_pairs_unique_cross_directory_files(tmp_path):
+def test_pair_files_pairs_unique_cross_folder_files(tmp_path):
     root = tmp_path
     src_dir = root / "src"
     include_dir = root / "include"

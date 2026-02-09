@@ -11,12 +11,12 @@ from sourcecombine import should_include
 
 
 def test_should_include_returns_not_file_reason(tmp_path):
-    directory = tmp_path / "subdir"
-    directory.mkdir()
+    folder = tmp_path / "subdir"
+    folder.mkdir()
 
     result = should_include(
-        directory,
-        directory.relative_to(tmp_path),
+        folder,
+        folder.relative_to(tmp_path),
         filter_opts={},
         search_opts={},
         return_reason=True,

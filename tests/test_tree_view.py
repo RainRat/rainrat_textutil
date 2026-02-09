@@ -9,7 +9,7 @@ from sourcecombine import main, _generate_tree_string
 def test_tree_view_output(capsys, tmp_path):
     """Verify that --tree produces the expected hierarchical output."""
 
-    # Setup a directory structure
+    # Setup a folder structure
     root = tmp_path / "myproj"
     root.mkdir()
     (root / "file1.txt").write_text("content")
