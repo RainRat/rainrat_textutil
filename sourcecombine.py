@@ -300,6 +300,7 @@ def filter_file_paths(
     root_path,
     record_size_exclusions=False,
     create_backups=False,
+    stats=None,
 ):
     """Apply filtering rules to ``file_paths`` and return the matches.
 
@@ -310,29 +311,26 @@ def filter_file_paths(
     size_excluded = []
     for p in file_paths:
         if p.suffix.lower() == '.bak' and create_backups:
+            if stats is not None:
+                stats['filter_reasons']['excluded_bak'] = stats['filter_reasons'].get('excluded_bak', 0) + 1
             continue
         rel_p = _get_rel_path(p, root_path)
 
-        if record_size_exclusions:
-            include, reason = should_include(
-                p,
-                rel_p,
-                filter_opts,
-                search_opts,
-                return_reason=True,
-            )
-        else:
-            include = should_include(
-                p,
-                rel_p,
-                filter_opts,
-                search_opts,
-            )
-            reason = None
+        include, reason = should_include(
+            p,
+            rel_p,
+            filter_opts,
+            search_opts,
+            return_reason=True,
+        )
+
         if include:
             filtered.append(p)
-        elif record_size_exclusions and reason == 'too_large':
-            size_excluded.append(p)
+        else:
+            if stats is not None:
+                stats['filter_reasons'][reason] = stats['filter_reasons'].get(reason, 0) + 1
+            if record_size_exclusions and reason == 'too_large':
+                size_excluded.append(p)
 
     if record_size_exclusions:
         return filtered, size_excluded
@@ -875,7 +873,8 @@ def find_and_combine_files(
         'token_count_is_approx': False,
         'budget_exceeded': False,
         'top_files': [],
-        'max_total_tokens': config.get('filters', {}).get('max_total_tokens', 0)
+        'max_total_tokens': config.get('filters', {}).get('max_total_tokens', 0),
+        'filter_reasons': {}
     }
     search_opts = config.get('search', {})
     filter_opts = config.get('filters', {})
@@ -1016,6 +1015,7 @@ def find_and_combine_files(
                 root_path=root_path,
                 record_size_exclusions=record_size_exclusions,
                 create_backups=processor.create_backups,
+                stats=stats,
             )
             if record_size_exclusions:
                 filtered_paths, size_excluded = filtered_result
@@ -1161,7 +1161,7 @@ def find_and_combine_files(
             if global_footer and output_format in ('text', 'markdown', 'xml'):
                 current_tokens += utils.estimate_tokens(global_footer)[0]
 
-            for item in all_single_mode_items:
+            for idx, item in enumerate(all_single_mode_items):
                 file_path, root_path, is_excluded_by_size = item
                 tokens = 0
                 processed = None
@@ -1196,6 +1196,9 @@ def find_and_combine_files(
 
                 if max_total_tokens > 0 and current_tokens + tokens > max_total_tokens and current_tokens > 0:
                     budget_exceeded = True
+                    # Record budget limit exclusions
+                    skipped_count = len(all_single_mode_items) - idx
+                    stats['filter_reasons']['budget_limit'] = stats['filter_reasons'].get('budget_limit', 0) + skipped_count
                     break
 
                 current_tokens += tokens
@@ -1801,6 +1804,31 @@ def _print_execution_summary(stats, args, pairing_enabled):
     print(f"  {bold}Files{reset}", file=sys.stderr)
     print(f"    {bold}{'Included:':<{label_width}}{reset}{total_included:12,}", file=sys.stderr)
     print(f"    {bold}{'Filtered:':<{label_width}}{reset}{total_filtered:12,}", file=sys.stderr)
+
+    # Filtering Breakdown
+    if total_filtered > 0 and stats.get('filter_reasons'):
+        reason_labels = {
+            'not_file': 'Not a file',
+            'excluded': 'Excluded by pattern',
+            'extension': 'Disallowed extension',
+            'not_included': 'Not in inclusion group',
+            'binary': 'Binary file',
+            'too_small': 'Below minimum size',
+            'too_large': 'Above maximum size',
+            'stat_error': 'Access error',
+            'budget_limit': 'Token budget limit',
+            'excluded_bak': 'Backup file (.bak)'
+        }
+        # Sort by count desc, then alphabetically by label
+        sorted_reasons = sorted(
+            stats['filter_reasons'].items(),
+            key=lambda x: (-x[1], reason_labels.get(x[0], x[0]))
+        )
+        for reason, count in sorted_reasons:
+            if count > 0:
+                label = reason_labels.get(reason, reason.replace('_', ' ').capitalize())
+                print(f"      {dim}- {label:<{label_width - 4}}{reset}{count:12,}", file=sys.stderr)
+
     print(f"    {bold}{'Total:':<{label_width}}{reset}{total_discovered:12,}", file=sys.stderr)
     if excluded_folders > 0:
         print(f"    {bold}{'Excluded Folders:':<{label_width}}{reset}{excluded_folders:12,}", file=sys.stderr)
