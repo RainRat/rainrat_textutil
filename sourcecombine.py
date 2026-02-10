@@ -11,6 +11,7 @@ import shutil
 import sys
 import json
 import textwrap
+from xml.sax.saxutils import escape as xml_escape
 from functools import lru_cache
 from pathlib import Path, PurePath
 
@@ -109,12 +110,20 @@ def _get_rel_path(path, root_path):
         return path
 
 
-def _render_template(template, relative_path):
+def _render_template(template, relative_path, escape_func=None):
     """Replace placeholders in ``template`` with values from ``relative_path``."""
     if not template:
         return ""
-    rendered = template.replace(FILENAME_PLACEHOLDER, relative_path.as_posix())
-    rendered = rendered.replace("{{EXT}}", relative_path.suffix.lstrip(".") or "")
+
+    filename = relative_path.as_posix()
+    ext = relative_path.suffix.lstrip(".") or ""
+
+    if escape_func:
+        filename = escape_func(filename)
+        ext = escape_func(ext)
+
+    rendered = template.replace(FILENAME_PLACEHOLDER, filename)
+    rendered = rendered.replace("{{EXT}}", ext)
     return rendered
 
 
@@ -585,11 +594,12 @@ class FileProcessor:
         performing any writes.
     """
 
-    def __init__(self, config, output_opts, dry_run=False, estimate_tokens=False):
+    def __init__(self, config, output_opts, dry_run=False, estimate_tokens=False, output_format='text'):
         self.config = config
         self.output_opts = output_opts or {}
         self.dry_run = dry_run
         self.estimate_tokens = estimate_tokens
+        self.output_format = output_format
         self.processing_opts = config.get('processing', {}) or {}
         self.apply_in_place = bool(self.processing_opts.get('apply_in_place'))
         if self.apply_in_place:
@@ -612,9 +622,11 @@ class FileProcessor:
             'footer_template', utils.DEFAULT_CONFIG['output']['footer_template']
         )
 
-        outfile.write(_render_template(header_template, relative_path))
+        escape_func = xml_escape if self.output_format == 'xml' else None
+
+        outfile.write(_render_template(header_template, relative_path, escape_func=escape_func))
         outfile.write(content)
-        outfile.write(_render_template(footer_template, relative_path))
+        outfile.write(_render_template(footer_template, relative_path, escape_func=escape_func))
     def _backup_file(self, file_path):
         """Create a ``.bak`` backup for ``file_path`` when backups are enabled.
 
@@ -635,7 +647,7 @@ class FileProcessor:
                 f"Failed to create backup for '{file_path}': {exc}"
             ) from exc
 
-    def process_and_write(self, file_path, root_path, outfile, output_format='text', cached_content=None):
+    def process_and_write(self, file_path, root_path, outfile, cached_content=None):
         """Read, process, and write a single file.
 
         Returns
@@ -664,7 +676,7 @@ class FileProcessor:
         token_count, is_approx = utils.estimate_tokens(processed_content)
 
         if not self.estimate_tokens:
-            if output_format == 'json':
+            if self.output_format == 'json':
                 entry = {
                     "path": relative_path.as_posix(),
                     "size_bytes": file_path.stat().st_size if file_path.exists() else 0,
@@ -676,14 +688,13 @@ class FileProcessor:
             else:
                 if self.output_opts.get('add_line_numbers', False):
                     processed_content = add_line_numbers(processed_content)
-                if output_format == 'xml':
-                    from xml.sax.saxutils import escape
-                    processed_content = escape(processed_content)
+                if self.output_format == 'xml':
+                    processed_content = xml_escape(processed_content)
                 self._write_with_templates(outfile, processed_content, relative_path)
 
         return token_count, is_approx
 
-    def write_max_size_placeholder(self, file_path, root_path, outfile, output_format='text'):
+    def write_max_size_placeholder(self, file_path, root_path, outfile):
         """Write the placeholder for files skipped for exceeding max size.
 
         Returns
@@ -707,7 +718,7 @@ class FileProcessor:
         token_count, is_approx = utils.estimate_tokens(rendered)
 
         if not self.estimate_tokens:
-            if output_format == 'json':
+            if self.output_format == 'json':
                 entry = {
                     "path": relative_path.as_posix(),
                     "size_bytes": file_path.stat().st_size if file_path.exists() else 0,
@@ -717,9 +728,8 @@ class FileProcessor:
                 }
                 json.dump(entry, outfile)
             else:
-                if output_format == 'xml':
-                    from xml.sax.saxutils import escape
-                    rendered = escape(rendered)
+                if self.output_format == 'xml':
+                    rendered = xml_escape(rendered)
                 self._write_with_templates(outfile, rendered, relative_path)
 
         return token_count, is_approx
@@ -952,7 +962,13 @@ def find_and_combine_files(
 
     # We only want true dry-run behavior (skipping reading) if we are NOT estimating tokens.
     processor_dry_run = (dry_run and not estimate_tokens) or list_files or tree_view
-    processor = FileProcessor(config, output_opts, dry_run=processor_dry_run, estimate_tokens=estimate_tokens)
+    processor = FileProcessor(
+        config,
+        output_opts,
+        dry_run=processor_dry_run,
+        estimate_tokens=estimate_tokens,
+        output_format=output_format
+    )
 
     total_excluded_folders = 0
 
@@ -1279,14 +1295,13 @@ def find_and_combine_files(
                         "File exceeds max size; writing placeholder: %s", rel_path
                     )
                     token_count, is_approx = processor.write_max_size_placeholder(
-                        file_path, root_path, outfile, output_format=output_format
+                        file_path, root_path, outfile
                     )
                 else:
                     token_count, is_approx = processor.process_and_write(
                         file_path,
                         root_path,
                         outfile,
-                        output_format=output_format,
                         cached_content=cached_processed
                     )
 
