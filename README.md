@@ -247,7 +247,7 @@ rules to each file's content. Each rule specifies a `pattern` and a `replacement
 ```yaml
 processing:
   regex_replacements:
-    - pattern: '^\\s*#\\s*TODO:.*$'
+    - pattern: '^\s*#\s*TODO:.*$'
       replacement: ''
 ```
 
@@ -258,7 +258,7 @@ your pattern and referencing it in the replacement string:
 processing:
   regex_replacements:
     - pattern: '(?s).*BEGIN_SNIP(.*)END_SNIP.*'
-      replacement: '\\1'
+      replacement: '\1'
 ```
 
 To collapse entire blocks of matching lines, use the `processing.line_regex_replacements`
@@ -268,7 +268,7 @@ pattern are removed and optionally replaced with a single `replacement` string.
 ```yaml
 processing:
   line_regex_replacements:
-    - pattern: '^\\s*\\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$'
+    - pattern: '^\s*\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$'
       replacement: '<data removed>'
 ```
 
