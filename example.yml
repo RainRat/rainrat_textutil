@@ -8,7 +8,7 @@ search:
   root_folders:
     - 'C:\Users\Guest\GitHub\myproject'
 
-  # Whether to search recursively through subdirectories.
+  # Whether to search recursively through subfolders.
   recursive: true
 
   # List of file extensions to include.
