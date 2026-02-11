@@ -165,6 +165,7 @@ def should_include(
     search_opts: Mapping[str, Any],
     *,
     return_reason: bool = False,
+    abs_output_path: Path = None,
 ) -> bool | tuple[bool, str | None]:
     """Return ``True`` if ``file_path`` passes all filtering rules.
 
@@ -175,6 +176,10 @@ def should_include(
 
     if not file_path.is_file():
         return (False, 'not_file') if return_reason else False
+
+    # Automatically exclude the tool's own output file to prevent recursion.
+    if abs_output_path and file_path.resolve() == abs_output_path:
+        return (False, 'output_file') if return_reason else False
 
     file_name = file_path.name
     rel_str = relative_path.as_posix()
@@ -313,6 +318,7 @@ def filter_file_paths(
     record_size_exclusions=False,
     create_backups=False,
     stats=None,
+    abs_output_path=None,
 ):
     """Apply filtering rules to ``file_paths`` and return the matches.
 
@@ -336,6 +342,7 @@ def filter_file_paths(
             filter_opts,
             search_opts,
             return_reason=True,
+            abs_output_path=abs_output_path,
         )
 
         if include:
@@ -949,6 +956,10 @@ def find_and_combine_files(
             "'output.file' must be set when pairing is disabled and clipboard mode is off."
         )
 
+    abs_output_path = None
+    if not pairing_enabled and output_path and output_path != '-':
+        abs_output_path = Path(output_path).resolve()
+
     out_folder = None
     if pairing_enabled and output_path:
         out_folder = Path(output_path)
@@ -1041,6 +1052,7 @@ def find_and_combine_files(
                 record_size_exclusions=record_size_exclusions,
                 create_backups=processor.create_backups,
                 stats=stats,
+                abs_output_path=abs_output_path,
             )
             if record_size_exclusions:
                 filtered_paths, size_excluded = filtered_result
