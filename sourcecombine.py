@@ -1785,7 +1785,6 @@ def _print_execution_summary(stats, args, pairing_enabled):
     total_included = stats.get('total_files', 0)
     total_discovered = stats.get('total_discovered', 0)
     total_filtered = max(0, total_discovered - total_included)
-    total_size_mb = stats.get('total_size_bytes', 0) / (1024 * 1024)
     excluded_folders = stats.get('excluded_folder_count', 0)
 
     # ANSI color codes (if supported)
