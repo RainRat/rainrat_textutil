@@ -70,7 +70,11 @@ def test_integration_find_and_combine_files_estimates_tokens(tmp_path, monkeypat
 
     config = {
         "search": {"root_folders": [str(root)]},
-        "output": {"file": str(tmp_path / "out.txt")}
+        "output": {
+            "file": str(tmp_path / "out.txt"),
+            "header_template": "",
+            "footer_template": "",
+        }
     }
 
     stats = find_and_combine_files(
@@ -92,15 +96,19 @@ def test_integration_estimate_tokens_with_mocked_tiktoken(tmp_path, monkeypatch)
 
     mock_tiktoken = MagicMock()
     mock_encoding = MagicMock()
-    # Return 10 tokens for any input
-    mock_encoding.encode.return_value = list(range(10))
+    # Return 10 tokens for any non-empty input
+    mock_encoding.encode.side_effect = lambda text, **kwargs: list(range(10)) if text else []
     mock_tiktoken.get_encoding.return_value = mock_encoding
 
     monkeypatch.setattr(utils, "tiktoken", mock_tiktoken)
 
     config = {
         "search": {"root_folders": [str(root)]},
-        "output": {"file": str(tmp_path / "out.txt")}
+        "output": {
+            "file": str(tmp_path / "out.txt"),
+            "header_template": "",
+            "footer_template": "",
+        }
     }
 
     stats = find_and_combine_files(

@@ -170,9 +170,16 @@ The TOC lists all included files. In Markdown mode (`--format markdown`), it gen
 ## Customizing file boundaries
 
 The `output.header_template` and `output.footer_template` options control the
-text written before and after each file's content. The special sequence
-`{{FILENAME}}` is replaced with the file's path relative to the configured root
-folder, and `{{EXT}}` is replaced with the file's extension (without the dot).
+text written before and after each file's content. The following placeholders are
+available for these templates:
+
+- `{{FILENAME}}`: The file's path relative to the configured root folder.
+- `{{EXT}}`: The file's extension (without the dot).
+- `{{STEM}}`: The file name without the extension.
+- `{{DIR}}`: The relative folder path using forward slashes.
+- `{{DIR_SLUG}}`: A filesystem-safe version of `{{DIR}}`.
+- `{{SIZE}}`: The human-readable size of the file (e.g., `1.20 KB`).
+- `{{TOKENS}}`: The estimated number of tokens in the file.
 
 By default, SourceCombine writes a simple divider around each file:
 
@@ -195,17 +202,26 @@ output:
 
 You can add a custom header at the beginning and a footer at the end of the
 entire combined file using `output.global_header_template` and
-`output.global_footer_template`. These options are useful for adding license
-information, project descriptions, or wrapping the output in a specific format
-(like XML or JSON). The templates are written once around the combined output
-even when multiple `search.root_folders` are provided, and they also apply when
-pairing is enabled (one header and one footer per paired output file).
+`output.global_footer_template`. These templates are useful for adding license
+information, project descriptions, or wrapping the output in a specific format.
+
+In single-file mode, these templates support metadata placeholders for the
+entire project:
+
+- `{{FILE_COUNT}}`: The total number of files included in the output.
+- `{{TOTAL_SIZE}}`: The human-readable total size of all included files.
+- `{{TOTAL_TOKENS}}`: The total estimated token count.
 
 ```yaml
 output:
-  global_header_template: "# Project Source Code\n\n"
+  global_header_template: "# Project: {{FILE_COUNT}} files, {{TOTAL_TOKENS}} tokens\n\n"
   global_footer_template: "\n# End of Project Source Code\n"
 ```
+
+The templates are written once around the combined output even when multiple
+`search.root_folders` are provided. When pairing is enabled, the global header
+and footer are written around each paired output file (though global placeholders
+are not supported in pairing mode).
 
 ## Customizing paired output filenames
 

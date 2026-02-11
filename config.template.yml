@@ -55,26 +55,27 @@ output:
   include_tree: false
 
   # Template written before each file's content.
-  # The sequence "{{FILENAME}}" is replaced with the file's path relative
-  # to the root folder, and "{{EXT}}" is replaced with its extension.
+  # Placeholders: {{FILENAME}}, {{EXT}}, {{STEM}}, {{DIR}}, {{DIR_SLUG}}, {{SIZE}}, {{TOKENS}}.
   # Set to null or an empty string to omit the header.
   header_template: "--- {{FILENAME}} ---\n"
 
   # Template written after each file's content.
-  # "{{FILENAME}}" and "{{EXT}}" are replaced as described above.
+  # Placeholders: Same as header_template.
   # Set to null or an empty string to omit the footer/separator.
   footer_template: "\n--- end {{FILENAME}} ---\n"
 
   # Template written at the very beginning of the combined output file.
+  # Placeholders (Single-file mode): {{FILE_COUNT}}, {{TOTAL_SIZE}}, {{TOTAL_TOKENS}}.
   # In pairing mode, this is written to the start of each paired output file.
   global_header_template: null
 
   # Template written at the very end of the combined output file.
+  # Placeholders: Same as global_header_template.
   # In pairing mode, this is written to the end of each paired output file.
   global_footer_template: null
 
   # Optional placeholder to write when a file is skipped because it exceeds
-  # filters.max_size_bytes. The string may use the {{FILENAME}} placeholder.
+  # filters.max_size_bytes. The string may use placeholders like {{FILENAME}} and {{SIZE}}.
   max_size_placeholder: null
 
 # --- File Filtering ---

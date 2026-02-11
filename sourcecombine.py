@@ -110,20 +110,59 @@ def _get_rel_path(path, root_path):
         return path
 
 
-def _render_template(template, relative_path, escape_func=None):
-    """Replace placeholders in ``template`` with values from ``relative_path``."""
+def _render_template(template, relative_path, size=None, tokens=None, escape_func=None):
+    """Replace placeholders in a template with file metadata.
+
+    The placeholders include FILENAME, EXT, STEM, DIR, DIR_SLUG, SIZE,
+    and TOKENS.
+    """
     if not template:
         return ""
 
     filename = relative_path.as_posix()
     ext = relative_path.suffix.lstrip(".") or ""
+    stem = relative_path.stem
+    parent_dir = relative_path.parent.as_posix()
+    dir_slug = _slugify_relative_dir(parent_dir)
 
     if escape_func:
         filename = escape_func(filename)
         ext = escape_func(ext)
+        stem = escape_func(stem)
+        parent_dir = escape_func(parent_dir)
 
     rendered = template.replace(FILENAME_PLACEHOLDER, filename)
     rendered = rendered.replace("{{EXT}}", ext)
+    rendered = rendered.replace("{{STEM}}", stem)
+    rendered = rendered.replace("{{DIR}}", parent_dir)
+    rendered = rendered.replace("{{DIR_SLUG}}", dir_slug)
+
+    if size is not None:
+        rendered = rendered.replace("{{SIZE}}", utils.format_size(size))
+    if tokens is not None:
+        rendered = rendered.replace("{{TOKENS}}", f"{tokens:,}")
+
+    return rendered
+
+
+def _render_global_template(template, stats):
+    """Replace placeholders in a global template with project metadata.
+
+    The placeholders include FILE_COUNT, TOTAL_SIZE, and TOTAL_TOKENS.
+    """
+    if not template:
+        return ""
+
+    file_count = stats.get('total_files', 0)
+    total_size = utils.format_size(stats.get('total_size_bytes', 0))
+    total_tokens = stats.get('total_tokens', 0)
+    is_approx = stats.get('token_count_is_approx', False)
+    token_str = f"{'~' if is_approx else ''}{total_tokens:,}"
+
+    rendered = template.replace("{{FILE_COUNT}}", str(file_count))
+    rendered = rendered.replace("{{TOTAL_SIZE}}", total_size)
+    rendered = rendered.replace("{{TOTAL_TOKENS}}", token_str)
+
     return rendered
 
 
@@ -617,7 +656,7 @@ class FileProcessor:
     def _make_bar(self, **kwargs):
         return _progress_bar(enabled=_progress_enabled(self.dry_run), **kwargs)
 
-    def _write_with_templates(self, outfile, content, relative_path):
+    def _write_with_templates(self, outfile, content, relative_path, size=None, tokens=None):
         """Write ``content`` with configured header/footer templates."""
 
         header_template = self.output_opts.get(
@@ -629,9 +668,9 @@ class FileProcessor:
 
         escape_func = xml_escape if self.output_format == 'xml' else None
 
-        outfile.write(_render_template(header_template, relative_path, escape_func=escape_func))
+        outfile.write(_render_template(header_template, relative_path, size=size, tokens=tokens, escape_func=escape_func))
         outfile.write(content)
-        outfile.write(_render_template(footer_template, relative_path, escape_func=escape_func))
+        outfile.write(_render_template(footer_template, relative_path, size=size, tokens=tokens, escape_func=escape_func))
     def _backup_file(self, file_path):
         """Create a ``.bak`` backup for ``file_path`` when backups are enabled.
 
@@ -676,6 +715,7 @@ class FileProcessor:
                 file_path.write_text(processed_content, encoding='utf8', newline='')
 
         relative_path = _get_rel_path(file_path, root_path)
+        file_size = file_path.stat().st_size if file_path.exists() else 0
 
         # Estimate tokens on the final processed content
         token_count, is_approx = utils.estimate_tokens(processed_content)
@@ -684,7 +724,7 @@ class FileProcessor:
             if self.output_format == 'json':
                 entry = {
                     "path": relative_path.as_posix(),
-                    "size_bytes": file_path.stat().st_size if file_path.exists() else 0,
+                    "size_bytes": file_size,
                     "tokens": token_count,
                     "tokens_is_approx": is_approx,
                     "content": processed_content
@@ -695,7 +735,7 @@ class FileProcessor:
                     processed_content = add_line_numbers(processed_content)
                 if self.output_format == 'xml':
                     processed_content = xml_escape(processed_content)
-                self._write_with_templates(outfile, processed_content, relative_path)
+                self._write_with_templates(outfile, processed_content, relative_path, size=file_size, tokens=token_count)
 
         return token_count, is_approx
 
@@ -717,16 +757,20 @@ class FileProcessor:
             return 0, True
 
         relative_path = _get_rel_path(file_path, root_path)
-        rendered = _render_template(placeholder, relative_path)
+        file_size = file_path.stat().st_size if file_path.exists() else 0
 
-        # Estimate tokens on the placeholder content
+        # Estimate tokens on the placeholder content (but the placeholder itself might have tokens placeholder)
+        # For max_size_placeholder, it's a bit tricky because we don't know the token count of the placeholder
+        # until it's rendered. But we want to support {{SIZE}} in it.
+        rendered = _render_template(placeholder, relative_path, size=file_size)
+
         token_count, is_approx = utils.estimate_tokens(rendered)
 
         if not self.estimate_tokens:
             if self.output_format == 'json':
                 entry = {
                     "path": relative_path.as_posix(),
-                    "size_bytes": file_path.stat().st_size if file_path.exists() else 0,
+                    "size_bytes": file_size,
                     "tokens": token_count,
                     "tokens_is_approx": is_approx,
                     "content": rendered
@@ -735,7 +779,7 @@ class FileProcessor:
             else:
                 if self.output_format == 'xml':
                     rendered = xml_escape(rendered)
-                self._write_with_templates(outfile, rendered, relative_path)
+                self._write_with_templates(outfile, rendered, relative_path, size=file_size)
 
         return token_count, is_approx
 
@@ -988,10 +1032,6 @@ def find_and_combine_files(
         global_header = output_opts.get('global_header_template')
         global_footer = output_opts.get('global_footer_template')
 
-        # Only write global headers for text, markdown, and xml output
-        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and global_header and output_format in ('text', 'markdown', 'xml'):
-            outfile.write(global_header)
-
         if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and output_format == 'json':
             outfile.write('[')
 
@@ -1175,29 +1215,44 @@ def find_and_combine_files(
         max_total_tokens = filter_opts.get('max_total_tokens', 0)
         needs_metadata = bool(output_opts.get('include_tree') or output_opts.get('table_of_contents'))
 
-        if (max_total_tokens > 0 or (estimate_tokens and needs_metadata)) and not pairing_enabled and not list_files and not tree_view:
+        global_placeholders = ["{{FILE_COUNT}}", "{{TOTAL_SIZE}}", "{{TOTAL_TOKENS}}"]
+        has_global_placeholders = (global_header and any(p in global_header for p in global_placeholders)) or \
+                                  (global_footer and any(p in global_footer for p in global_placeholders))
+
+        if (max_total_tokens > 0 or needs_metadata or has_global_placeholders or estimate_tokens) and not pairing_enabled and not list_files and not tree_view:
             budgeted_items = []
             current_tokens = 0
             budget_exceeded = False
 
             # Account for global header and footer tokens in the budget
+            # We estimate these once without placeholders for initial budget.
             if global_header and output_format in ('text', 'markdown', 'xml'):
                 current_tokens += utils.estimate_tokens(global_header)[0]
             if global_footer and output_format in ('text', 'markdown', 'xml'):
                 current_tokens += utils.estimate_tokens(global_footer)[0]
 
+            # Estimate TOC and Tree tokens if enabled (rough estimation per file)
+            if output_format in ('text', 'markdown'):
+                if output_opts.get('include_tree'):
+                    current_tokens += len(all_single_mode_items) * 12
+                if output_opts.get('table_of_contents'):
+                    current_tokens += len(all_single_mode_items) * 12
+
             for i, item in enumerate(all_single_mode_items):
                 file_path, root_path, is_excluded_by_size = item
-                tokens = 0
+                content_tokens = 0
                 processed = None
+                file_size = file_path.stat().st_size if file_path.exists() else 0
 
                 rel_p = _get_rel_path(file_path, root_path)
 
                 if is_excluded_by_size:
                     placeholder = output_opts.get('max_size_placeholder')
                     if placeholder:
-                        rendered = _render_template(placeholder, rel_p)
-                        tokens, _ = utils.estimate_tokens(rendered)
+                        rendered = _render_template(placeholder, rel_p, size=file_size)
+                        content_tokens, is_approx = utils.estimate_tokens(rendered)
+                        if is_approx:
+                            stats['token_count_is_approx'] = True
                 else:
                     content = read_file_best_effort(file_path)
                     processed = process_content(content, processor.processing_opts)
@@ -1205,27 +1260,33 @@ def find_and_combine_files(
                         logging.info("Updating in place: %s", file_path)
                         processor._backup_file(file_path)
                         file_path.write_text(processed, encoding='utf8', newline='')
-                    tokens, _ = utils.estimate_tokens(processed)
+                    content_tokens, is_approx = utils.estimate_tokens(processed)
+                    if is_approx:
+                        stats['token_count_is_approx'] = True
 
-                # Store metadata for TOC/Tree
+                # Store content tokens for TOC/Tree
                 file_metadata[file_path] = {
-                    'size': file_path.stat().st_size if file_path.exists() else 0,
-                    'tokens': tokens
+                    'size': file_size,
+                    'tokens': content_tokens
                 }
 
                 # Account for header/footer templates in the budget
                 h_template = output_opts.get('header_template', utils.DEFAULT_CONFIG['output']['header_template'])
                 f_template = output_opts.get('footer_template', utils.DEFAULT_CONFIG['output']['footer_template'])
-                tokens += utils.estimate_tokens(_render_template(h_template, rel_p))[0]
-                tokens += utils.estimate_tokens(_render_template(f_template, rel_p))[0]
 
-                if max_total_tokens > 0 and current_tokens + tokens > max_total_tokens and current_tokens > 0:
+                header_tokens = utils.estimate_tokens(_render_template(h_template, rel_p, size=file_size, tokens=content_tokens))[0]
+                footer_tokens = utils.estimate_tokens(_render_template(f_template, rel_p, size=file_size, tokens=content_tokens))[0]
+
+                # Total tokens for this file entry including its boundaries
+                entry_tokens = content_tokens + header_tokens + footer_tokens
+
+                if max_total_tokens > 0 and current_tokens + entry_tokens > max_total_tokens and current_tokens > 0:
                     budget_exceeded = True
                     stats['filter_reasons']['budget_limit'] = len(all_single_mode_items) - i
                     logging.debug("Budget limit reached; skipping %d remaining files.", len(all_single_mode_items) - i)
                     break
 
-                current_tokens += tokens
+                current_tokens += entry_tokens
                 budgeted_items.append((file_path, root_path, is_excluded_by_size, processed))
 
             all_single_mode_items = budgeted_items
@@ -1234,10 +1295,15 @@ def find_and_combine_files(
             # Recalculate stats based on budgeted items
             stats['total_files'] = 0
             stats['total_size_bytes'] = 0
+            stats['total_tokens'] = current_tokens
             stats['files_by_extension'] = {}
             for item in all_single_mode_items:
                 _update_file_stats(stats, item[0])
-        elif needs_metadata and not pairing_enabled and not list_files and not tree_view:
+            budget_pass_performed = True
+        else:
+            budget_pass_performed = False
+
+        if not budget_pass_performed and needs_metadata and not pairing_enabled and not list_files and not tree_view:
             # Just collect sizes if we don't need a full budgeting/token pass
             for item in all_single_mode_items:
                 file_path = item[0]
@@ -1245,8 +1311,25 @@ def find_and_combine_files(
                     'size': file_path.stat().st_size if file_path.exists() else 0
                 }
 
-        # Process Single File Mode items (including TOC and Tree)
+        # Process Single File Mode items (including Global Header, TOC, Tree, and Footer)
         if not pairing_enabled and not list_files and not tree_view:
+            # Add global header/footer tokens if budget pass was skipped
+            if not budget_pass_performed and (not dry_run or estimate_tokens) and output_format in ('text', 'markdown', 'xml'):
+                if global_header:
+                    tokens, is_approx = utils.estimate_tokens(global_header)
+                    stats['total_tokens'] += tokens
+                    if is_approx:
+                        stats['token_count_is_approx'] = True
+                if global_footer:
+                    tokens, is_approx = utils.estimate_tokens(global_footer)
+                    stats['total_tokens'] += tokens
+                    if is_approx:
+                        stats['token_count_is_approx'] = True
+
+            # Write global header after metadata pass to ensure placeholders are filled
+            if global_header and not dry_run and not estimate_tokens and output_format in ('text', 'markdown', 'xml'):
+                outfile.write(_render_global_template(global_header, stats))
+
             if output_opts.get('include_tree') and output_format in ('text', 'markdown'):
                 root_to_paths = {}
                 for item in all_single_mode_items:
@@ -1257,29 +1340,27 @@ def find_and_combine_files(
 
                 for root_path, paths in root_to_paths.items():
                     tree_content = _generate_tree_string(paths, root_path, output_format, metadata=file_metadata)
-                    if estimate_tokens:
+                    if not dry_run or estimate_tokens:
                         token_count, is_approx = utils.estimate_tokens(tree_content)
-                        stats['total_tokens'] += token_count
+                        # We only add to total_tokens if it wasn't estimated in budget pass
+                        if not budget_pass_performed:
+                            stats['total_tokens'] += token_count
                         if is_approx:
                             stats['token_count_is_approx'] = True
-                    elif not dry_run:
+                    if not dry_run and not estimate_tokens:
                         outfile.write(tree_content + "\n")
 
             if output_opts.get('table_of_contents') and output_format in ('text', 'markdown'):
-                # Generate TOC
-                # Only include files that are not size-excluded for the TOC?
-                # Or include them all? Usually TOC lists what's in the document.
-                # If size-excluded files get a placeholder, they are "in" the document.
                 toc_files = [(item[0], item[1]) for item in all_single_mode_items]
                 toc_content = _generate_table_of_contents(toc_files, output_format, metadata=file_metadata)
 
-                if estimate_tokens:
-                    # Count tokens for TOC
+                if not dry_run or estimate_tokens:
                     token_count, is_approx = utils.estimate_tokens(toc_content)
-                    stats['total_tokens'] += token_count
+                    if not budget_pass_performed:
+                        stats['total_tokens'] += token_count
                     if is_approx:
                         stats['token_count_is_approx'] = True
-                elif not dry_run:
+                if not dry_run and not estimate_tokens:
                     outfile.write(toc_content)
 
             processing_bar = processor._make_bar(
@@ -1317,9 +1398,19 @@ def find_and_combine_files(
                     )
 
                 if not dry_run or estimate_tokens:
-                    stats['total_tokens'] += token_count
-                    if is_approx:
-                        stats['token_count_is_approx'] = True
+                    if not budget_pass_performed:
+                        # Total tokens for this file entry include boundaries
+                        h_template = output_opts.get('header_template', utils.DEFAULT_CONFIG['output']['header_template'])
+                        f_template = output_opts.get('footer_template', utils.DEFAULT_CONFIG['output']['footer_template'])
+                        rel_p = _get_rel_path(file_path, root_path)
+                        f_size = file_path.stat().st_size if file_path.exists() else 0
+
+                        header_tokens = utils.estimate_tokens(_render_template(h_template, rel_p, size=f_size, tokens=token_count))[0]
+                        footer_tokens = utils.estimate_tokens(_render_template(f_template, rel_p, size=f_size, tokens=token_count))[0]
+
+                        stats['total_tokens'] += token_count + header_tokens + footer_tokens
+                        if is_approx:
+                            stats['token_count_is_approx'] = True
                     stats['top_files'].append((token_count, file_path.stat().st_size if file_path.exists() else 0, _get_rel_path(file_path, root_path).as_posix()))
 
                 processing_bar.update(1)
@@ -1328,7 +1419,7 @@ def find_and_combine_files(
 
         # Write global footer only for text, markdown, and xml output
         if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and global_footer and output_format in ('text', 'markdown', 'xml'):
-            outfile.write(global_footer)
+            outfile.write(_render_global_template(global_footer, stats))
 
         if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and output_format == 'json':
             outfile.write(']')
