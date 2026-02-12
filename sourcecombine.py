@@ -110,6 +110,12 @@ def _get_rel_path(path, root_path):
         return path
 
 
+@lru_cache(maxsize=128)
+def _get_replacement_pattern(keys):
+    """Compile a regex pattern from a tuple of keys, sorted by length."""
+    return re.compile("|".join(re.escape(k) for k in keys))
+
+
 def _render_single_pass(template, replacements):
     """Replace multiple placeholders in a template in a single pass.
 
@@ -121,8 +127,8 @@ def _render_single_pass(template, replacements):
         return template or ""
 
     # Sort keys by length descending to prevent partial prefix matching
-    sorted_keys = sorted(replacements.keys(), key=len, reverse=True)
-    pattern = re.compile("|".join(re.escape(k) for k in sorted_keys))
+    sorted_keys = tuple(sorted(replacements.keys(), key=len, reverse=True))
+    pattern = _get_replacement_pattern(sorted_keys)
     return pattern.sub(lambda m: str(replacements[m.group(0)]), template)
 
 
