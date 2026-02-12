@@ -1594,6 +1594,11 @@ def main():
         "--files-from",
         help="Read a list of files from a text file (use '-' for your terminal). This skips folder scanning.",
     )
+    runtime_group.add_argument(
+        "--extract",
+        action="store_true",
+        help="Extract files from a combined JSON, XML, or Markdown file into a folder structure.",
+    )
 
     args = parser.parse_args()
 
@@ -1602,6 +1607,16 @@ def main():
     # is called, preventing a race condition that locks the log level at WARNING.
     prelim_level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(level=prelim_level, format='%(levelname)s: %(message)s')
+
+    if args.extract:
+        if not args.targets:
+            logging.error("No input file specified for extraction. Usage: python sourcecombine.py --extract INPUT_FILE [-o OUTPUT_FOLDER]")
+            sys.exit(1)
+        input_file = args.targets[0]
+        output_folder = args.output or "."
+        extract_files(input_file, output_folder, dry_run=args.dry_run)
+        sys.exit(0)
+
 
     if args.files_from and args.init:
         logging.error("You cannot use --init and --files-from at the same time.")
@@ -1881,6 +1896,90 @@ def main():
 
     if stats:
         _print_execution_summary(stats, args, pairing_enabled)
+
+
+def extract_files(input_path, output_folder, dry_run=False):
+    """Recreate the original folder structure and files from a combined file."""
+    input_path = Path(input_path)
+    output_folder = Path(output_folder)
+
+    if not input_path.exists():
+        logging.error("Input file not found: %s", input_path)
+        sys.exit(1)
+
+    content = read_file_best_effort(input_path)
+    if not content:
+        logging.error("Input file is empty: %s", input_path)
+        sys.exit(1)
+
+    files_to_create = []
+
+    # 1. Try JSON
+    try:
+        data = json.loads(content)
+        if isinstance(data, list):
+            for entry in data:
+                if isinstance(entry, dict) and 'path' in entry and 'content' in entry:
+                    files_to_create.append((entry['path'], entry['content']))
+    except json.JSONDecodeError:
+        pass
+
+    # 2. Try XML if JSON failed or found nothing
+    if not files_to_create:
+        try:
+            import xml.etree.ElementTree as ET
+            root = ET.fromstring(content)
+            # Support both flat and nested <file> tags
+            for file_node in root.iter('file'):
+                path = file_node.get('path')
+                file_content = file_node.text
+                if path and file_content is not None:
+                    # XML extraction often has extra newlines due to templates
+                    # If it starts and ends with a newline, it's likely from the template
+                    if file_content.startswith('\n') and file_content.endswith('\n'):
+                        file_content = file_content[1:-1]
+                    files_to_create.append((path, file_content))
+        except (ET.ParseError, ImportError):
+            pass
+
+    # 3. Try Markdown if others failed or found nothing
+    if not files_to_create:
+        # Match ## Header followed by a code block
+        # Group 1: Path, Group 2: Content
+        pattern = re.compile(r'^##\s+(.+?)\s*\n+(?:[\s\S]*?)```(?:\w+)?\n(.*?)\n```', re.MULTILINE | re.DOTALL)
+        for match in pattern.finditer(content):
+            path, file_content = match.groups()
+            files_to_create.append((path.strip(), file_content))
+
+    if not files_to_create:
+        logging.error("Could not find any files to extract in %s. Supported formats are JSON, XML, and Markdown.", input_path)
+        sys.exit(1)
+
+    logging.info("Found %d files to extract from %s", len(files_to_create), input_path)
+
+    extracted_count = 0
+    for rel_path_str, file_content in files_to_create:
+        # Security check: prevent path traversal
+        rel_path = Path(rel_path_str)
+        if rel_path.is_absolute() or '..' in rel_path.parts:
+            logging.warning("Skipping potentially unsafe path: %s", rel_path_str)
+            continue
+
+        target_path = output_folder / rel_path
+
+        if dry_run:
+            logging.info("[DRY RUN] Would create: %s", target_path)
+        else:
+            try:
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+                target_path.write_text(file_content, encoding='utf-8')
+                logging.info("Extracted: %s", target_path)
+                extracted_count += 1
+            except OSError as e:
+                logging.error("Failed to write %s: %s", target_path, e)
+
+    if not dry_run:
+        logging.info("Extraction complete. %d files created in %s", extracted_count, output_folder)
 
 
 def _print_execution_summary(stats, args, pairing_enabled):

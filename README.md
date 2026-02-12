@@ -102,6 +102,7 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 *   `--list-files`: Print a list of files that would be processed to your terminal and exit.
 *   `--tree`: Show a visual folder tree of all included files and exit.
 *   `--files-from`: Read a list of files to process from a text file (or `-` for stdin). Overrides normal folder scanning.
+*   `--extract`: Recreate files and folders from a combined JSON, XML, or Markdown file.
 *   `--init`: Generate a default configuration file (`sourcecombine.yml`) in the current folder.
 *   `--include` / `-i`: Include only files matching a specific pattern (e.g., `-i "*.py"`). Can be used multiple times.
 *   `--exclude-file` / `-x`: Exclude specific files (e.g., `-x "secret.txt"`). Can be used multiple times.
@@ -147,6 +148,12 @@ python sourcecombine.py config.yml --clipboard
 Combine only Python and Markdown files from the `src/` folder:
 ```bash
 python sourcecombine.py src/ -i "*.py" -i "*.md"
+```
+
+**Extract files from a combined archive:**
+Recreate your project from a JSON or Markdown file:
+```bash
+python sourcecombine.py --extract combined.json -o restored_project/
 ```
 
 ## Table of Contents
