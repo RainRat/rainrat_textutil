@@ -1539,7 +1539,20 @@ def main():
         ),
     )
     output_group.add_argument(
+        "--markdown",
+        "-m",
+        action="store_true",
+        help="Shortcut for '--format markdown'.",
+    )
+    output_group.add_argument(
+        "--json",
+        "-j",
+        action="store_true",
+        help="Shortcut for '--format json'.",
+    )
+    output_group.add_argument(
         "--toc",
+        "-T",
         action="store_true",
         help="Add a Table of Contents (including file sizes and token counts) to the start of the output. (Works for 'text' and 'markdown' formats in single-file mode only)",
     )
@@ -1547,6 +1560,33 @@ def main():
         "--include-tree",
         action="store_true",
         help="Include a visual folder tree with file metadata at the start of the output. (Single-file mode only)",
+    )
+
+    # Preview & Estimation Group
+    preview_group = parser.add_argument_group("Preview & Estimation")
+    preview_group.add_argument(
+        "--dry-run",
+        "-d",
+        action="store_true",
+        help="Show which files would be included without creating any files.",
+    )
+    preview_group.add_argument(
+        "--estimate-tokens",
+        "-e",
+        action="store_true",
+        help="Estimate token usage. This is slower because it must read the file contents.",
+    )
+    preview_group.add_argument(
+        "--list-files",
+        "-l",
+        action="store_true",
+        help="Print a list of all files that would be included and then stop.",
+    )
+    preview_group.add_argument(
+        "--tree",
+        "-t",
+        action="store_true",
+        help="Show a visual folder tree of all included files with metadata and then stop.",
     )
 
     # Runtime Options Group
@@ -1558,18 +1598,6 @@ def main():
         help="Show the tool's version and exit.",
     )
     runtime_group.add_argument(
-        "--dry-run",
-        "-d",
-        action="store_true",
-        help="Show which files would be included without creating any files.",
-    )
-    runtime_group.add_argument(
-        "--estimate-tokens",
-        "-e",
-        action="store_true",
-        help="Estimate token usage. This is slower because it must read the file contents.",
-    )
-    runtime_group.add_argument(
         "--max-tokens",
         type=int,
         help="Stop adding files once this total token limit is reached. (Single-file mode only)",
@@ -1579,16 +1607,6 @@ def main():
         "--verbose",
         action="store_true",
         help="Show extra details to help with troubleshooting.",
-    )
-    runtime_group.add_argument(
-        "--list-files",
-        action="store_true",
-        help="Print a list of all files that would be included and then stop.",
-    )
-    runtime_group.add_argument(
-        "--tree",
-        action="store_true",
-        help="Show a visual folder tree of all included files with metadata and then stop.",
     )
     runtime_group.add_argument(
         "--files-from",
@@ -1796,6 +1814,11 @@ def main():
 
     if args.include_tree:
         output_conf['include_tree'] = True
+
+    if args.markdown:
+        args.format = "markdown"
+    elif args.json:
+        args.format = "json"
 
     explicit_files = None
     if args.files_from:
