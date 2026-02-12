@@ -1,6 +1,6 @@
 # SourceCombine
 
-**SourceCombine** is a flexible command-line tool for merging multiple text files into a single output or organized pairs. It uses a YAML configuration file to define rules for file discovery, filtering, and text processing.
+**SourceCombine** is a flexible tool for your terminal for merging multiple text files into a single output or organized pairs. It uses a YAML configuration file to define rules for file discovery, filtering, and text processing.
 
 Whether you are preparing files for printing, creating context for Large Language Models (LLMs), or simply want a compact archive of your code, SourceCombine streamlines the process.
 
@@ -99,7 +99,7 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 *   `--max-tokens`: Stop adding files once this total token limit is reached. (Single-file mode only).
 *   `--estimate-tokens` / `-e`: Calculate token counts without writing output files.
     *   *Note: Slower than a regular dry-run as it processes content.*
-*   `--list-files`: Print a list of files that would be processed to the console and exit.
+*   `--list-files`: Print a list of files that would be processed to your terminal and exit.
 *   `--tree`: Show a visual folder tree of all included files and exit.
 *   `--files-from`: Read a list of files to process from a text file (or `-` for stdin). Overrides normal folder scanning.
 *   `--init`: Generate a default configuration file (`sourcecombine.yml`) in the current folder.
@@ -190,7 +190,8 @@ output:
 ```
 
 You can switch back to the older fenced-code-block format by overriding the
-templates in your configuration:
+templates in your configuration (Note: SourceCombine automatically uses these
+markers when you choose the Markdown or XML output formats):
 
 ```yaml
 output:
@@ -234,8 +235,8 @@ following placeholders:
 - `{{HEADER_EXT}}`: The extension of the header file (e.g., `.h`).
 - `{{DIR}}`: The file's relative folder path using forward slashes (or `.` for
   files located directly in the root folder being processed).
-- `{{DIR_SLUG}}`: A filesystem-safe version of `{{DIR}}`, lowercased and with
-  unsafe characters converted to dashes while preserving the folder
+- `{{DIR_SLUG}}`: A filesystem-safe simplified name for `{{DIR}}`, lowercased and
+  with unsafe characters converted to dashes while preserving the folder
   structure. When `{{DIR}}` is `.`, the simplified name is `root`.
 
 The default template is `'{{STEM}}.combined'`. You can customize it to match

@@ -1534,7 +1534,8 @@ def main():
         default="text",
         help=(
             "Choose the output format. 'json' creates a list of file contents. "
-            "'markdown' automatically adds code blocks. (Single-file mode only)"
+            "'markdown' and 'xml' automatically use appropriate markers "
+            "(code blocks or tags). (Single-file mode only)"
         ),
     )
     output_group.add_argument(
@@ -1591,7 +1592,7 @@ def main():
     )
     runtime_group.add_argument(
         "--files-from",
-        help="Read a list of files from a text file (use '-' for console). This skips folder scanning.",
+        help="Read a list of files from a text file (use '-' for your terminal). This skips folder scanning.",
     )
 
     args = parser.parse_args()
