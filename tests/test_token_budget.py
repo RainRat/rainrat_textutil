@@ -63,7 +63,8 @@ def test_token_budget_with_toc(tmp_path, monkeypatch):
     out_file = tmp_path / "out.txt"
     config = {
         "search": {"root_folders": [str(root)]},
-        "filters": {"max_total_tokens": 1},
+        # Budget enough for TOC (~24) + 1 file (1) but not 2 files
+        "filters": {"max_total_tokens": 25},
         "output": {
             "file": str(out_file),
             "table_of_contents": True,
