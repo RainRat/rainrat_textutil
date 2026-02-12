@@ -409,3 +409,82 @@ def test_token_budget_with_global_header(tmp_path, monkeypatch):
     )
 
     assert stats['budget_exceeded'] is True
+
+
+
+
+def test_token_approximation_fallback_coverage(tmp_path, monkeypatch):
+    """Verify that token_count_is_approx is set across various features when tiktoken is missing."""
+    import utils
+    import sourcecombine
+
+    # Force fallback mode
+    monkeypatch.setattr(utils, "tiktoken", None)
+
+    root = tmp_path / "root"
+    root.mkdir()
+
+    # 1. Pairing mode coverage (hits 548, 567)
+    src_normal = root / "normal.c"
+    src_normal.write_text("int main() { return 0; }")
+    src_big = root / "big.c"
+    src_big.write_text("very big content" * 100)
+
+    config = copy.deepcopy(DEFAULT_CONFIG)
+    config['search'] = {}
+    config['pairing']['enabled'] = True
+    config['filters']['max_size_bytes'] = 10
+    config['output']['max_size_placeholder'] = "Too big: {{FILENAME}}"
+
+    processor = FileProcessor(config, config['output'], dry_run=False)
+    paired_paths = {
+        "normal": [src_normal],
+        "big": [src_big]
+    }
+    stats = {'total_tokens': 0, 'token_count_is_approx': False, 'top_files': []}
+
+    sourcecombine._process_paired_files(
+        paired_paths,
+        template="{{STEM}}.combined",
+        source_exts=[".c"],
+        header_exts=[".h"],
+        root_path=root,
+        out_folder=tmp_path / "out",
+        processor=processor,
+        processing_bar=None,
+        dry_run=False,
+        stats=stats,
+        size_excluded=[src_big]
+    )
+    assert stats['token_count_is_approx'] is True
+
+    # 2. Tree view coverage (hits 1095)
+    config = copy.deepcopy(DEFAULT_CONFIG)
+    config['search'] = {'root_folders': [str(root)]}
+
+    out_file = tmp_path / "out2.txt"
+    # To hit 1095, we need tree_view=True AND estimate_tokens=True
+    # This path is in find_and_combine_files when list_files=True OR tree_view=True
+    stats = find_and_combine_files(
+        config,
+        output_path=str(out_file),
+        estimate_tokens=True,
+        tree_view=True
+    )
+    assert stats['token_count_is_approx'] is True
+
+    # 3. Include Tree and TOC coverage (hits 1264, 1281)
+    config = copy.deepcopy(DEFAULT_CONFIG)
+    config['search'] = {'root_folders': [str(root)]}
+    config['output']['table_of_contents'] = True
+    config['output']['include_tree'] = True
+
+    out_file = tmp_path / "out3.txt"
+    # To hit 1264 and 1281, we need tree_view=False AND estimate_tokens=True
+    stats = find_and_combine_files(
+        config,
+        output_path=str(out_file),
+        estimate_tokens=True,
+        tree_view=False
+    )
+    assert stats['token_count_is_approx'] is True
