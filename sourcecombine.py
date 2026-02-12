@@ -110,6 +110,28 @@ def _get_rel_path(path, root_path):
         return path
 
 
+@lru_cache(maxsize=128)
+def _get_replacement_pattern(keys):
+    """Compile a regex pattern from a tuple of keys, sorted by length."""
+    return re.compile("|".join(re.escape(k) for k in keys))
+
+
+def _render_single_pass(template, replacements):
+    """Replace multiple placeholders in a template in a single pass.
+
+    Placeholders are matched in order of descending length to ensure that
+    longer, more specific markers (like {{DIR_SLUG}}) are preferred over
+    shorter prefixes (like {{DIR}}).
+    """
+    if not template or not replacements:
+        return template or ""
+
+    # Sort keys by length descending to prevent partial prefix matching
+    sorted_keys = tuple(sorted(replacements.keys(), key=len, reverse=True))
+    pattern = _get_replacement_pattern(sorted_keys)
+    return pattern.sub(lambda m: str(replacements[m.group(0)]), template)
+
+
 def _render_template(template, relative_path, size=None, tokens=None, escape_func=None):
     """Replace placeholders in a template with file metadata.
 
@@ -131,18 +153,20 @@ def _render_template(template, relative_path, size=None, tokens=None, escape_fun
         stem = escape_func(stem)
         parent_dir = escape_func(parent_dir)
 
-    rendered = template.replace(FILENAME_PLACEHOLDER, filename)
-    rendered = rendered.replace("{{EXT}}", ext)
-    rendered = rendered.replace("{{STEM}}", stem)
-    rendered = rendered.replace("{{DIR}}", parent_dir)
-    rendered = rendered.replace("{{DIR_SLUG}}", dir_slug)
+    replacements = {
+        FILENAME_PLACEHOLDER: filename,
+        "{{EXT}}": ext,
+        "{{STEM}}": stem,
+        "{{DIR}}": parent_dir,
+        "{{DIR_SLUG}}": dir_slug,
+    }
 
     if size is not None:
-        rendered = rendered.replace("{{SIZE}}", utils.format_size(size))
+        replacements["{{SIZE}}"] = utils.format_size(size)
     if tokens is not None:
-        rendered = rendered.replace("{{TOKENS}}", f"{tokens:,}")
+        replacements["{{TOKENS}}"] = f"{tokens:,}"
 
-    return rendered
+    return _render_single_pass(template, replacements)
 
 
 def _render_global_template(template, stats):
@@ -159,11 +183,13 @@ def _render_global_template(template, stats):
     is_approx = stats.get('token_count_is_approx', False)
     token_str = f"{'~' if is_approx else ''}{total_tokens:,}"
 
-    rendered = template.replace("{{FILE_COUNT}}", str(file_count))
-    rendered = rendered.replace("{{TOTAL_SIZE}}", total_size)
-    rendered = rendered.replace("{{TOTAL_TOKENS}}", token_str)
+    replacements = {
+        "{{FILE_COUNT}}": str(file_count),
+        "{{TOTAL_SIZE}}": total_size,
+        "{{TOTAL_TOKENS}}": token_str,
+    }
 
-    return rendered
+    return _render_single_pass(template, replacements)
 
 
 def _normalize_patterns(patterns):
