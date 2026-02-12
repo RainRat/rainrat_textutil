@@ -144,3 +144,51 @@ def test_dir_placeholders_root(tmp_path):
     result = output_file.read_text()
     assert "DIR:." in result
     assert "SLUG:root" in result
+
+def test_placeholder_recursion(tmp_path):
+    """Test that placeholders are not replaced recursively."""
+    root = tmp_path / "project"
+    root.mkdir()
+    # Create a filename that contains another placeholder string
+    file_path = root / "foo_{{EXT}}.py"
+    file_path.write_text("content", encoding="utf-8")
+
+    output_file = tmp_path / "combined.txt"
+
+    config = {
+        "search": {"root_folders": [str(root)]},
+        "output": {
+            "file": str(output_file),
+            "header_template": "FILE:{{FILENAME}} EXT:{{EXT}}\n",
+        },
+    }
+
+    find_and_combine_files(config, str(output_file))
+
+    result = output_file.read_text()
+    # It should NOT replace {{EXT}} inside the filename
+    assert "FILE:foo_{{EXT}}.py EXT:py" in result
+
+def test_placeholder_prefix_matching(tmp_path):
+    """Test that {{DIR_SLUG}} is not partially matched by {{DIR}}."""
+    root = tmp_path / "project"
+    root.mkdir()
+    sub = root / "sub"
+    sub.mkdir()
+    (sub / "file.txt").write_text("content")
+
+    output_file = tmp_path / "combined.txt"
+    config = {
+        "search": {"root_folders": [str(root)]},
+        "output": {
+            "file": str(output_file),
+            "header_template": "DIR:{{DIR}} SLUG:{{DIR_SLUG}}\n",
+        },
+    }
+
+    find_and_combine_files(config, str(output_file))
+    result = output_file.read_text()
+
+    # If DIR was matched first, SLUG would be corrupted (e.g., sub_SLUG}})
+    assert "DIR:sub SLUG:sub" in result
+    assert "_SLUG}}" not in result
