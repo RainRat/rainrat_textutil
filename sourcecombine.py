@@ -208,9 +208,10 @@ def should_include(
 ) -> bool | tuple[bool, str | None]:
     """Return ``True`` if ``file_path`` passes all filtering rules.
 
-    When ``return_reason`` is ``True``, a tuple of ``(bool, reason)`` is
-    returned, where ``reason`` is ``'too_large'`` when the file exceeds
-    ``max_size_bytes`` and ``None`` otherwise.
+    When ``return_reason`` is ``True``, it returns a tuple of ``(bool, reason)``.
+    Possible reason codes include: 'not_file', 'output_file', 'excluded',
+    'extension', 'not_included', 'binary', 'too_small', 'too_large', and
+    'stat_error'.
     """
 
     if not file_path.is_file():
@@ -1464,6 +1465,12 @@ def main():
               # Combine files from a specific folder
               python sourcecombine.py src/
 
+              # Use a configuration file
+              python sourcecombine.py my_config.yml
+
+              # Use a configuration file but override the folders to scan
+              python sourcecombine.py my_config.yml project_a/ project_b/
+
               # Copy the result to your clipboard
               python sourcecombine.py src/ -c
 
@@ -1480,7 +1487,10 @@ def main():
         "targets",
         nargs="*",
         metavar="TARGET",
-        help="One or more configuration files, folders, or files to process.",
+        help=(
+            "Folders, files, or a configuration file to process. "
+            "If the first target is a .yml or .yaml file, it is used as the configuration."
+        ),
     )
 
     # Configuration Group
@@ -1533,9 +1543,9 @@ def main():
         choices=["text", "json", "markdown", "xml"],
         default="text",
         help=(
-            "Choose the output format. 'json' creates a list of file contents. "
-            "'markdown' and 'xml' automatically use appropriate markers "
-            "(code blocks or tags). (Single-file mode only)"
+            "Choose the output format. 'json' is available in single-file mode only. "
+            "'markdown' and 'xml' formats automatically add appropriate markers "
+            "like code blocks or tags."
         ),
     )
     output_group.add_argument(
