@@ -1377,17 +1377,39 @@ def find_and_combine_files(
                         root_to_paths[root_path] = []
                     root_to_paths[root_path].append(file_path)
 
-                for root_path, paths in root_to_paths.items():
-                    tree_content = _generate_tree_string(paths, root_path, output_format, metadata=file_metadata)
+                if root_to_paths:
+                    # Write the section header once
+                    tree_header = ""
+                    tree_footer = ""
+                    if output_format == 'markdown':
+                        tree_header = "## Project Structure\n```text\n"
+                        tree_footer = "```\n\n"
+                    else:
+                        tree_header = "Project Structure:\n"
+                        tree_footer = "-" * 20 + "\n\n"
+
                     if not dry_run or estimate_tokens:
-                        token_count, is_approx = utils.estimate_tokens(tree_content)
-                        # We only add to total_tokens if it wasn't estimated in budget pass
-                        if not budget_pass_performed:
-                            stats['total_tokens'] += token_count
-                        if is_approx:
-                            stats['token_count_is_approx'] = True
+                        stats['total_tokens'] += utils.estimate_tokens(tree_header)[0]
+                        stats['total_tokens'] += utils.estimate_tokens(tree_footer)[0]
+
                     if not dry_run and not estimate_tokens:
-                        outfile.write(tree_content + "\n")
+                        outfile.write(tree_header)
+
+                    for root_path, paths in root_to_paths.items():
+                        tree_content = _generate_tree_string(
+                            paths, root_path, output_format, include_header=False, metadata=file_metadata
+                        )
+                        if not dry_run or estimate_tokens:
+                            token_count, is_approx = utils.estimate_tokens(tree_content)
+                            if not budget_pass_performed:
+                                stats['total_tokens'] += token_count
+                            if is_approx:
+                                stats['token_count_is_approx'] = True
+                        if not dry_run and not estimate_tokens:
+                            outfile.write(tree_content + "\n")
+
+                    if not dry_run and not estimate_tokens:
+                        outfile.write(tree_footer)
 
             if output_opts.get('table_of_contents') and output_format in ('text', 'markdown'):
                 toc_files = [(item[0], item[1]) for item in all_single_mode_items]
