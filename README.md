@@ -151,9 +151,17 @@ python sourcecombine.py src/ -i "*.py" -i "*.md"
 ```
 
 **Extract files from a combined archive:**
-Recreate your project from a JSON or Markdown file:
+Recreate your project from a JSON, XML, Markdown, or Text file. You can even
+extract directly from your clipboard or stdin:
 ```bash
+# Extract from a JSON file
 python sourcecombine.py --extract combined.json -o restored_project/
+
+# Extract directly from your clipboard
+python sourcecombine.py --extract --clipboard -o restored_project/
+
+# Extract from stdin
+cat combined.txt | python sourcecombine.py --extract - -o restored_project/
 ```
 
 ## Table of Contents
