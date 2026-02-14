@@ -1651,7 +1651,7 @@ def main():
     runtime_group.add_argument(
         "--extract",
         action="store_true",
-        help="Extract files from a combined JSON, XML, or Markdown file into a folder structure.",
+        help="Extract files from a combined JSON, XML, Markdown, or Text file into a folder structure. Supports reading from a file, stdin ('-'), or --clipboard.",
     )
 
     args = parser.parse_args()
@@ -1663,12 +1663,33 @@ def main():
     logging.basicConfig(level=prelim_level, format='%(levelname)s: %(message)s')
 
     if args.extract:
-        if not args.targets:
-            logging.error("No input file specified for extraction. Usage: python sourcecombine.py --extract INPUT_FILE [-o OUTPUT_FOLDER]")
-            sys.exit(1)
-        input_file = args.targets[0]
         output_folder = args.output or "."
-        extract_files(input_file, output_folder, dry_run=args.dry_run)
+        content = ""
+        source_name = ""
+
+        if args.clipboard:
+            try:
+                import pyperclip
+                content = pyperclip.paste()
+                source_name = "clipboard"
+            except ImportError:
+                logging.error("The 'pyperclip' library is required for clipboard support. Install it with: pip install pyperclip")
+                sys.exit(1)
+        elif args.targets and args.targets[0] == "-":
+            content = sys.stdin.read()
+            source_name = "stdin"
+        elif args.targets:
+            input_path = Path(args.targets[0])
+            if not input_path.exists():
+                logging.error("Input file not found: %s", input_path)
+                sys.exit(1)
+            content = read_file_best_effort(input_path)
+            source_name = str(input_path)
+        else:
+            logging.error("No input specified for extraction. Use a file path, '-' for stdin, or --clipboard.")
+            sys.exit(1)
+
+        extract_files(content, output_folder, dry_run=args.dry_run, source_name=source_name)
         sys.exit(0)
 
 
@@ -1957,18 +1978,12 @@ def main():
         _print_execution_summary(stats, args, pairing_enabled)
 
 
-def extract_files(input_path, output_folder, dry_run=False):
-    """Recreate the original folder structure and files from a combined file."""
-    input_path = Path(input_path)
+def extract_files(content, output_folder, dry_run=False, source_name="archive"):
+    """Recreate the original folder structure and files from a combined file content."""
     output_folder = Path(output_folder)
 
-    if not input_path.exists():
-        logging.error("Input file not found: %s", input_path)
-        sys.exit(1)
-
-    content = read_file_best_effort(input_path)
     if not content:
-        logging.error("Input file is empty: %s", input_path)
+        logging.error("Input content is empty.")
         sys.exit(1)
 
     files_to_create = []
@@ -2001,20 +2016,29 @@ def extract_files(input_path, output_folder, dry_run=False):
         except (ET.ParseError, ImportError):
             pass
 
-    # 3. Try Markdown if others failed or found nothing
+    # 3. Try Text format (Default SourceCombine output)
     if not files_to_create:
-        # Match ## Header followed by a code block
+        # Match --- FILENAME --- followed by content and --- end FILENAME ---
+        # Note: The non-greedy [\s\S]*? handles multiple files correctly.
+        pattern = re.compile(r'^---\s+(.+?)\s+---\n([\s\S]*?)\n--- end \1 ---', re.MULTILINE)
+        for match in pattern.finditer(content):
+            path, file_content = match.groups()
+            files_to_create.append((path.strip(), file_content))
+
+    # 4. Try Markdown if others failed or found nothing
+    if not files_to_create:
+        # Match ## or ### Header followed by an optional metadata block and then a code block
         # Group 1: Path, Group 2: Content
-        pattern = re.compile(r'^##\s+(.+?)\s*\n+(?:[\s\S]*?)```(?:\w+)?\n(.*?)\n```', re.MULTILINE | re.DOTALL)
+        pattern = re.compile(r'^#{2,3}\s+(.+?)\s*\n+(?:[\s\S]*?)```(?:\w+)?\n([\s\S]*?)\n```', re.MULTILINE)
         for match in pattern.finditer(content):
             path, file_content = match.groups()
             files_to_create.append((path.strip(), file_content))
 
     if not files_to_create:
-        logging.error("Could not find any files to extract in %s. Supported formats are JSON, XML, and Markdown.", input_path)
+        logging.error("Could not find any files to extract in %s. Supported formats are JSON, XML, Markdown, and Text.", source_name)
         sys.exit(1)
 
-    logging.info("Found %d files to extract from %s", len(files_to_create), input_path)
+    logging.info("Found %d files to extract from %s", len(files_to_create), source_name)
 
     extracted_count = 0
     for rel_path_str, file_content in files_to_create:
