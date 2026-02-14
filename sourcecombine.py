@@ -97,11 +97,6 @@ from utils import (
 )
 
 
-def _fnmatch_casefold(name, pattern):
-    """Case-insensitive ``fnmatch`` using Unicode casefolding."""
-    return fnmatch.fnmatchcase(name.casefold(), pattern.casefold())
-
-
 def _get_rel_path(path, root_path):
     """Return ``path`` relative to ``root_path`` with fallback to original."""
     try:
@@ -204,10 +199,12 @@ def _normalize_patterns(patterns):
 def _matches_file_glob_cached(file_name, relative_path_str, patterns):
     if not patterns:
         return False
+    file_name_cf = file_name.casefold()
+    rel_path_cf = relative_path_str.casefold()
     return any(
-        _fnmatch_casefold(file_name, pattern)
-        or _fnmatch_casefold(relative_path_str, pattern)
-        for pattern in patterns
+        fnmatch.fnmatchcase(file_name_cf, p.casefold())
+        or fnmatch.fnmatchcase(rel_path_cf, p.casefold())
+        for p in patterns
     )
 
 
@@ -215,10 +212,13 @@ def _matches_file_glob_cached(file_name, relative_path_str, patterns):
 def _matches_folder_glob_cached(relative_path_str, parts, patterns):
     if not patterns:
         return False
+    rel_path_cf = relative_path_str.casefold()
+    parts_cf = tuple(p.casefold() for p in parts)
     for pattern in patterns:
-        if _fnmatch_casefold(relative_path_str, pattern):
+        pattern_cf = pattern.casefold()
+        if fnmatch.fnmatchcase(rel_path_cf, pattern_cf):
             return True
-        if any(_fnmatch_casefold(part, pattern) for part in parts):
+        if any(fnmatch.fnmatchcase(p_cf, pattern_cf) for p_cf in parts_cf):
             return True
     return False
 
