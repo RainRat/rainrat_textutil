@@ -11,6 +11,7 @@ Whether you are preparing files for printing, creating context for Large Languag
 *   **Code Reviews:** Aggregate dispersed files into one document to easily review or print them.
 *   **Preprocessing:** Apply regex replacements or strip comments across multiple files in bulk.
 *   **C/C++ Pairing:** Automatically pair source files (`.cpp`) with their headers (`.h`) for organized distribution.
+*   **Code Restoration:** Recreate original folders and files from combined archives (JSON, XML, Markdown, or Text).
 
 ## Installation
 
@@ -77,10 +78,11 @@ The easiest way to use SourceCombine is to run it on a folder.
     ```bash
     python sourcecombine.py --init
     ```
-    Edit the created `sourcecombine.yml` to set your own rules, then run:
+    Edit the created `sourcecombine.yml` to set your own rules. Then, simply run the tool:
     ```bash
-    python sourcecombine.py sourcecombine.yml
+    python sourcecombine.py
     ```
+    *SourceCombine will automatically find and use `sourcecombine.yml` in your current folder.*
 
 ## Usage
 
@@ -98,16 +100,16 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 *   `--clipboard` / `-c`: Copy the combined output directly to the clipboard instead of writing to a file.
     *   *Note: Clipboard mode is not available when file pairing is enabled.*
 *   `--format` / `-f`: Choose the output format (`text`, `json`, `markdown`, or `xml`).
-    *   *Note: JSON format produces an array of file objects and is available in single-file mode only. Markdown and XML formats automatically adjust templates to use appropriate markers (code blocks for Markdown, tags for XML).*
-*   `--toc`: Include a Table of Contents at the beginning of the output file. (Single-file mode only).
+    *   *Note: You can also use the shortcuts `-m` (markdown) or `-j` (json). JSON format produces an array of file objects and is available in single-file mode only. Markdown and XML formats automatically adjust templates to use appropriate markers (code blocks for Markdown, tags for XML).*
+*   `--toc` / `-T`: Include a Table of Contents at the beginning of the output file. (Single-file mode only).
 *   `--include-tree`: Include a visual folder tree at the start of the output. (Single-file mode only).
 *   `--max-tokens`: Stop adding files once this total token limit is reached. (Single-file mode only).
 *   `--estimate-tokens` / `-e`: Calculate token counts without writing output files.
     *   *Note: Slower than a regular dry-run as it processes content.*
-*   `--list-files`: Print a list of files that would be processed to your terminal and exit.
-*   `--tree`: Show a visual folder tree of all included files and exit.
+*   `--list-files` / `-l`: Print a list of files that would be processed to your terminal and exit.
+*   `--tree` / `-t`: Show a visual folder tree of all included files and exit.
 *   `--files-from`: Read a list of files to process from a text file (or `-` for stdin). Overrides normal folder scanning.
-*   `--extract`: Recreate files and folders from a combined JSON, XML, or Markdown file.
+*   `--extract`: Recreate files and folders from a combined JSON, XML, Markdown, or Text file.
 *   `--init`: Generate a default configuration file (`sourcecombine.yml`) in the current folder.
 *   `--include` / `-i`: Include only files matching a specific pattern (e.g., `-i "*.py"`). Can be used multiple times.
 *   `--exclude-file` / `-x`: Exclude specific files (e.g., `-x "secret.txt"`). Can be used multiple times.
