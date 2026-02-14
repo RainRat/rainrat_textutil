@@ -1567,7 +1567,6 @@ def main():
         "--format",
         "-f",
         choices=["text", "json", "markdown", "xml"],
-        default="text",
         help=(
             "Choose the output format. 'json' is available in single-file mode only. "
             "'markdown' and 'xml' formats automatically add appropriate markers "
@@ -1872,10 +1871,14 @@ def main():
     if args.include_tree:
         output_conf['include_tree'] = True
 
+    # Determine the effective output format. CLI flags take precedence over config.
     if args.markdown:
         args.format = "markdown"
     elif args.json:
         args.format = "json"
+
+    if not args.format:
+        args.format = output_conf.get('format', 'text')
 
     explicit_files = None
     if args.files_from:
@@ -1913,6 +1916,16 @@ def main():
     if pairing_enabled:
         output_path = output_conf.get('folder')
     else:
+        # Smart extension adjustment: if no explicit output path was provided via CLI
+        # and we are using the default filename, adjust the extension to match the format.
+        if not args.output and output_conf.get('file', DEFAULT_OUTPUT_FILENAME) == DEFAULT_OUTPUT_FILENAME:
+            if args.format == 'markdown':
+                output_conf['file'] = str(Path(DEFAULT_OUTPUT_FILENAME).with_suffix('.md'))
+            elif args.format == 'json':
+                output_conf['file'] = str(Path(DEFAULT_OUTPUT_FILENAME).with_suffix('.json'))
+            elif args.format == 'xml':
+                output_conf['file'] = str(Path(DEFAULT_OUTPUT_FILENAME).with_suffix('.xml'))
+
         output_path = output_conf.get('file', DEFAULT_OUTPUT_FILENAME)
 
     # Determine output description before the main loop
