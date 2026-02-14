@@ -64,18 +64,23 @@ Whether you are preparing files for printing, creating context for Large Languag
 
 ## Quick Start
 
-1.  **Generate a default configuration:**
-    Run this command in the folder you want to process (or where you want to store the config):
+The easiest way to use SourceCombine is to run it on a folder.
+
+1.  **Combine files in the current folder:**
+    ```bash
+    python sourcecombine.py .
+    ```
+    This merges all files in your current folder into `combined_files.txt`.
+
+2.  **Initialize a configuration file for more control:**
+    Generate a starter configuration:
     ```bash
     python sourcecombine.py --init
     ```
-    This creates a `sourcecombine.yml` file with default settings.
-
-2.  **Run the tool:**
+    Edit the created `sourcecombine.yml` to set your own rules, then run:
     ```bash
     python sourcecombine.py sourcecombine.yml
     ```
-    By default, this combines files from the current folder into `combined_files.txt`.
 
 ## Usage
 
@@ -180,7 +185,7 @@ output:
   table_of_contents: true
 ```
 
-The TOC lists all included files. In Markdown mode (`--format markdown`), it generates links to each file section (assuming standard header anchors).
+The TOC lists all included files along with their sizes and estimated token counts. In Markdown mode (`--format markdown`), it also generates links to each file section.
 
 ## Customizing file boundaries
 
@@ -192,7 +197,7 @@ available for these templates:
 - `{{EXT}}`: The file's extension (without the dot).
 - `{{STEM}}`: The file name without the extension.
 - `{{DIR}}`: The relative folder path using forward slashes.
-- `{{DIR_SLUG}}`: A filesystem-safe version of `{{DIR}}`.
+- `{{DIR_SLUG}}`: A filesystem-safe simplified name for `{{DIR}}` (uses `root` for the project root).
 - `{{SIZE}}`: The human-readable size of the file (e.g., `1.20 KB`).
 - `{{TOKENS}}`: The estimated number of tokens in the file.
 
