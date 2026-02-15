@@ -13,7 +13,7 @@ import json
 import textwrap
 from xml.sax.saxutils import escape as xml_escape
 from functools import lru_cache
-from pathlib import Path, PurePath
+from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 
 
 __version__ = "0.5.0"
@@ -1374,14 +1374,6 @@ def find_and_combine_files(
         else:
             budget_pass_performed = False
 
-        if not budget_pass_performed and needs_metadata and not pairing_enabled and not list_files and not tree_view:
-            # Just collect sizes if we don't need a full budgeting/token pass
-            for item in all_single_mode_items:
-                file_path = item[0]
-                file_metadata[file_path] = {
-                    'size': file_path.stat().st_size if file_path.exists() else 0
-                }
-
         # Process Single File Mode items (including Global Header, TOC, Tree, and Footer)
         if not pairing_enabled and not list_files and not tree_view:
             # Add global header/footer tokens if budget pass was skipped
@@ -1433,8 +1425,6 @@ def find_and_combine_files(
                         )
                         if not dry_run or estimate_tokens:
                             token_count, is_approx = utils.estimate_tokens(tree_content)
-                            if not budget_pass_performed:
-                                stats['total_tokens'] += token_count
                             if is_approx:
                                 stats['token_count_is_approx'] = True
                         if not dry_run and not estimate_tokens:
@@ -1449,8 +1439,6 @@ def find_and_combine_files(
 
                 if not dry_run or estimate_tokens:
                     token_count, is_approx = utils.estimate_tokens(toc_content)
-                    if not budget_pass_performed:
-                        stats['total_tokens'] += token_count
                     if is_approx:
                         stats['token_count_is_approx'] = True
                 if not dry_run and not estimate_tokens:
@@ -2096,12 +2084,21 @@ def extract_files(content, output_folder, dry_run=False, source_name="archive"):
 
     # 4. Try Markdown if others failed or found nothing
     if not files_to_create:
-        # Match ## or ### Header followed by an optional metadata block and then a code block
-        # Group 1: Path, Group 2: Content
-        pattern = re.compile(r'^#{2,3}\s+(.+?)\s*\n+(?:[\s\S]*?)```(?:\w+)?\n([\s\S]*?)\n```', re.MULTILINE)
-        for match in pattern.finditer(content):
-            path, file_content = match.groups()
-            files_to_create.append((path.strip(), file_content))
+        # Find all header starts (## or ###)
+        header_pattern = re.compile(r'^#{2,3}\s+(.+?)\s*$', re.MULTILINE)
+        headers = list(header_pattern.finditer(content))
+
+        for i, match in enumerate(headers):
+            path = match.group(1).strip()
+            start = match.end()
+            end = headers[i + 1].start() if i + 1 < len(headers) else len(content)
+            section = content[start:end]
+
+            # Find the first code block in this section
+            code_pattern = re.compile(r'```(?:\w+)?\n([\s\S]*?)\n```')
+            code_match = code_pattern.search(section)
+            if code_match:
+                files_to_create.append((path, code_match.group(1)))
 
     if not files_to_create:
         logging.error("Could not find any files to extract in %s. Supported formats are JSON, XML, Markdown, and Text.", source_name)
@@ -2111,11 +2108,20 @@ def extract_files(content, output_folder, dry_run=False, source_name="archive"):
 
     extracted_count = 0
     for rel_path_str, file_content in files_to_create:
-        # Security check: prevent path traversal
-        rel_path = Path(rel_path_str)
-        if rel_path.is_absolute() or '..' in rel_path.parts:
+        # Security check: prevent path traversal and absolute paths across platforms.
+        # We explicitly check for both Posix and Windows absolute path patterns.
+        # For traversal, we normalize separators to ensure '..' is caught.
+        normalized_path = rel_path_str.replace('\\', '/')
+        is_unsafe = (
+            PurePosixPath(rel_path_str).is_absolute() or
+            PureWindowsPath(rel_path_str).is_absolute() or
+            '..' in PurePosixPath(normalized_path).parts
+        )
+        if is_unsafe:
             logging.warning("Skipping potentially unsafe path: %s", rel_path_str)
             continue
+
+        rel_path = Path(rel_path_str)
 
         target_path = output_folder / rel_path
 
