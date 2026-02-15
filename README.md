@@ -1,6 +1,6 @@
 # SourceCombine
 
-**SourceCombine** is a flexible tool for your terminal for merging multiple text files into a single output or organized pairs. It uses a YAML configuration file to define rules for file discovery, filtering, and text processing.
+**SourceCombine** is a flexible tool for your terminal for combining multiple text files into a single output or organized pairs. It uses a YAML configuration file to set rules for finding files, filtering, and processing text.
 
 Whether you are preparing files for printing, creating context for Large Language Models (LLMs), or simply want a compact archive of your code, SourceCombine streamlines the process.
 
@@ -8,8 +8,8 @@ Whether you are preparing files for printing, creating context for Large Languag
 
 *   **LLM Context:** Combine your entire project's source code into a single file to provide comprehensive context for AI assistants.
 *   **Code Archiving:** Create a snapshot of your source files for documentation or backup purposes.
-*   **Code Reviews:** Aggregate dispersed files into one document to easily review or print them.
-*   **Preprocessing:** Apply regex replacements or strip comments across multiple files in bulk.
+*   **Code Reviews:** Combine scattered files into one document to easily review or print them.
+*   **Preprocessing:** Apply regex replacements or remove comments across multiple files at once.
 *   **C/C++ Pairing:** Automatically pair source files (`.cpp`) with their headers (`.h`) for organized distribution.
 *   **Code Restoration:** Recreate original folders and files from combined archives (JSON, XML, Markdown, or Text).
 
@@ -97,15 +97,15 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 *   `--output` / `-o`: Override the output path specified in the configuration.
 *   `--dry-run` / `-d`: List matched files and planned outputs without writing any files. Useful for previewing changes.
 *   `--verbose` / `-v`: Enable verbose output (DEBUG level) to troubleshoot configuration issues.
-*   `--clipboard` / `-c`: Copy the combined output directly to the clipboard instead of writing to a file.
-    *   *Note: Clipboard mode is not available when file pairing is enabled.*
+*   `--clipboard` / `-c`: Copy the combined output directly to your clipboard instead of saving a file.
+    *   *Note: You cannot use clipboard mode when file pairing is enabled.*
 *   `--format` / `-f`: Choose the output format (`text`, `json`, `markdown`, or `xml`).
-    *   *Note: You can also use the shortcuts `-m` (markdown) or `-j` (json). JSON format produces an array of file objects and is available in single-file mode only. Markdown and XML formats automatically adjust templates to use appropriate markers (code blocks for Markdown, tags for XML).*
+    *   *Note: You can also use the shortcuts `-m` (markdown) or `-j` (json). JSON format produces a list of file objects and only works in single-file mode. Markdown and XML formats automatically use appropriate markers (code blocks for Markdown, tags for XML).*
 *   `--toc` / `-T`: Include a Table of Contents at the beginning of the output file. (Single-file mode only).
 *   `--include-tree`: Include a visual folder tree at the start of the output. (Single-file mode only).
 *   `--max-tokens`: Stop adding files once this total token limit is reached. (Single-file mode only).
-*   `--estimate-tokens` / `-e`: Calculate token counts without writing output files.
-    *   *Note: Slower than a regular dry-run as it processes content.*
+*   `--estimate-tokens` / `-e`: Calculate token counts without creating any files.
+    *   *Note: Slower than a regular dry-run because it must read the file contents.*
 *   `--list-files` / `-l`: Print a list of files that would be processed to your terminal and exit.
 *   `--tree` / `-t`: Show a visual folder tree of all included files and exit.
 *   `--files-from`: Read a list of files to process from a text file (or `-` for stdin). Overrides normal folder scanning.
@@ -187,7 +187,7 @@ output:
   table_of_contents: true
 ```
 
-The TOC lists all included files along with their sizes and estimated token counts. In Markdown mode (`--format markdown`), it also generates links to each file section.
+The Table of Contents lists all included files with their sizes and estimated token counts. In Markdown mode (`--format markdown`), it also creates links to each file section.
 
 ## Customizing file boundaries
 
@@ -300,9 +300,9 @@ processing:
       replacement: '\1'
 ```
 
-To collapse entire blocks of matching lines, use the `processing.line_regex_replacements`
-option. Each rule operates line-by-line: consecutive lines that match the
-pattern are removed and optionally replaced with a single `replacement` string.
+To combine entire blocks of matching lines, use the `processing.line_regex_replacements`
+option. Each rule works line-by-line: lines that follow each other and match the
+pattern are removed. They can be replaced with a single `replacement` string.
 
 ```yaml
 processing:
@@ -353,9 +353,9 @@ file's path relative to the root folder. The placeholder is written for
 oversized files whether pairing is enabled or not; in pairing mode, it replaces
 the output for pairs whose primary file exceeds the limit.
 
-Set `filters.max_total_tokens` to a positive integer to cap the total size of the
-combined output document. This is particularly useful when preparing context for
-Large Language Models with specific context window limits.
+Set `filters.max_total_tokens` to a positive integer to limit the total size of the
+combined output document. This is very helpful when preparing context for
+Large Language Models with specific limits.
 
 Set `filters.skip_binary` to `true` to ignore files that look like binary data
 (for example, executables or images) even when they match your other filters.
@@ -376,14 +376,14 @@ case-sensitive filesystems.
 ### Windows path note
 
 When specifying Windows paths in YAML, wrap them in single quotes so backslashes
-are treated literally:
+are treated exactly as they are:
 
 ```yaml
 root_folders:
   - 'C:\Users\Guest\GitHub\myproject'
 ```
 
-Using double quotes would require escaping each backslash (`"C:\\Users\\Guest"`).
+Using double quotes would require adding an extra backslash for each one (`"C:\\Users\\Guest"`).
 
 ## Example configurations
 
@@ -399,7 +399,7 @@ Using double quotes would require escaping each backslash (`"C:\\Users\\Guest"`)
 Ensure you have activated your virtual environment (Step 3 in Installation) and installed the dependencies.
 
 **Permission errors:**
-If you encounter permission denied errors, check that you have read access to the files you are trying to combine and write access to the output location.
+If you see permission errors, check that you have permission to read the files you are trying to combine and permission to write to the output location.
 
 **Encoding issues:**
-SourceCombine attempts to detect file encoding, but specialized files might cause issues. Try converting them to UTF-8 if problems continue.
+SourceCombine tries to detect the file encoding, but some files might not work correctly. Try converting them to UTF-8 if you have problems.
