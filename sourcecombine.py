@@ -831,7 +831,7 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
     rel_to_orig = {p_rel: p_orig for p_rel, p_orig in zip(rel_paths, paths)}
 
     # Build the tree dictionary
-    # { 'folder': { 'subfolder': { 'file.txt': None } } }
+    # { 'folder': { 'subfolder': { 'file.txt': {} } } }
     tree = {}
     for p in rel_paths:
         parts = p.parts
@@ -840,6 +840,20 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
             if part not in current:
                 current[part] = {}
             current = current[part]
+
+    # Pre-calculate folder-level statistics
+    folder_metadata = {}
+    if metadata:
+        for rel_p, orig_p in rel_to_orig.items():
+            file_meta = metadata.get(orig_p)
+            if not file_meta:
+                continue
+            for parent in rel_p.parents:
+                if parent not in folder_metadata:
+                    folder_metadata[parent] = {'size': 0, 'tokens': 0, 'files': 0}
+                folder_metadata[parent]['size'] += file_meta.get('size', 0)
+                folder_metadata[parent]['tokens'] += file_meta.get('tokens', 0)
+                folder_metadata[parent]['files'] += 1
 
     lines = []
     if include_header:
@@ -857,30 +871,48 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
 
             current_rel_parts = rel_parts + (item,)
             current_rel_path = Path(*current_rel_parts)
+            children = node[item]
 
             meta_str = ""
-            if metadata and current_rel_path in rel_to_orig:
-                orig_path = rel_to_orig[current_rel_path]
-                file_meta = metadata.get(orig_path)
-                if file_meta:
-                    parts = []
-                    if 'size' in file_meta:
-                        parts.append(utils.format_size(file_meta['size']))
-                    if 'tokens' in file_meta:
-                        parts.append(f"{file_meta['tokens']:,} tokens")
-                    if parts:
+            if metadata:
+                if children:
+                    # It's a folder - show aggregates
+                    if current_rel_path in folder_metadata:
+                        fm = folder_metadata[current_rel_path]
+                        parts = [f"{fm['files']} {'file' if fm['files'] == 1 else 'files'}", utils.format_size(fm['size'])]
+                        if fm.get('tokens', 0) > 0:
+                            parts.append(f"{fm['tokens']:,} tokens")
                         meta_str = f" ({', '.join(parts)})"
+                elif current_rel_path in rel_to_orig:
+                    # It's a file - show individual stats
+                    orig_path = rel_to_orig[current_rel_path]
+                    file_meta = metadata.get(orig_path)
+                    if file_meta:
+                        parts = []
+                        if 'size' in file_meta:
+                            parts.append(utils.format_size(file_meta['size']))
+                        if 'tokens' in file_meta and file_meta['tokens'] > 0:
+                            parts.append(f"{file_meta['tokens']:,} tokens")
+                        if parts:
+                            meta_str = f" ({', '.join(parts)})"
 
             lines.append(f"{prefix}{connector}{item}{meta_str}")
 
             # If the item has children (it's a folder), recurse
-            children = node[item]
             if children:
                 extension = "    " if is_last else "│   "
                 _add_node(children, prefix + extension, current_rel_parts)
 
     # Add the root folder name first
-    lines.append(f"{root_path.name}/")
+    root_meta_str = ""
+    if metadata and Path('.') in folder_metadata:
+        rm = folder_metadata[Path('.')]
+        parts = [f"{rm['files']} {'file' if rm['files'] == 1 else 'files'}", utils.format_size(rm['size'])]
+        if rm.get('tokens', 0) > 0:
+            parts.append(f"{rm['tokens']:,} tokens")
+        root_meta_str = f" ({', '.join(parts)})"
+
+    lines.append(f"{root_path.name or str(root_path)}/{root_meta_str}")
     _add_node(tree)
 
     if include_header:
