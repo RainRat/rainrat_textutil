@@ -2031,15 +2031,17 @@ def main():
     reset = "\033[0m" if use_color else ""
 
     if args.dry_run:
-        logging.info(f"{yellow}Dry run complete.{reset}")
+        print(f"{yellow}Dry run complete.{reset}", file=sys.stderr)
     elif args.list_files:
-        logging.info(f"{green}Success!{reset} File listing complete.")
+        print(f"{green}Success!{reset} File listing complete.", file=sys.stderr)
     elif args.tree:
-        logging.info(f"{green}Success!{reset} Tree view complete.")
+        print(f"{green}Success!{reset} Tree view complete.", file=sys.stderr)
     elif args.estimate_tokens:
-        logging.info(f"{green}Success!{reset} Token estimation complete.")
+        print(f"{green}Success!{reset} Token estimation complete.", file=sys.stderr)
     else:
-        logging.info(f"{green}Success!{reset} Combined files {destination_desc}")
+        total_included = stats.get('total_files', 0) if stats else 0
+        file_word = "file" if total_included == 1 else "files"
+        print(f"{green}Success!{reset} Combined {total_included:,} {file_word} {destination_desc}", file=sys.stderr)
 
     if stats:
         _print_execution_summary(stats, args, pairing_enabled)
@@ -2222,7 +2224,14 @@ def _print_execution_summary(stats, args, pairing_enabled):
         max_tokens = stats.get('max_total_tokens', 0)
         if max_tokens > 0 and token_count > 0:
             percent = (token_count / max_tokens) * 100
-            print(f"    {bold}{'Budget Usage:':<{label_width}}{reset}{percent:>11.1f}%", file=sys.stderr)
+            # Create a 10-character ASCII bar
+            bar_len = 10
+            filled = min(bar_len, int((percent / 100) * bar_len))
+            bar = f"[{'#' * filled}{'-' * (bar_len - filled)}]"
+            bar_color = yellow if percent > 90 else green
+            if not use_color:
+                bar_color = ""
+            print(f"    {bold}{'Budget Usage:':<{label_width}}{reset}{bar_color}{bar}{reset} {percent:>6.1f}%", file=sys.stderr)
 
     # Largest Files
     if stats.get('top_files') and not args.list_files and not args.tree:
@@ -2233,7 +2242,7 @@ def _print_execution_summary(stats, args, pairing_enabled):
             token_str = f"{tokens:,}"
             # Truncate long paths
             display_path = (path[:45] + '...') if len(path) > 48 else path
-            print(f"    {dim}-{reset} {display_path:<48} {token_str:>12} tokens", file=sys.stderr)
+            print(f"    {dim}-{reset} {display_path:<48} {token_str:>12}", file=sys.stderr)
 
     # Extensions Grid
     if stats['files_by_extension']:
