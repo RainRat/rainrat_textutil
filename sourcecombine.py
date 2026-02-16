@@ -1645,6 +1645,12 @@ def main():
         action="store_true",
         help="Include a visual folder tree with file metadata at the start of the output. (Single-file mode only)",
     )
+    output_group.add_argument(
+        "--compact",
+        "-C",
+        action="store_true",
+        help="Compact and clean up whitespace in the combined output to save tokens.",
+    )
 
     # Preview & Estimation Group
     preview_group = parser.add_argument_group("Preview & Estimation")
@@ -1895,6 +1901,11 @@ def main():
 
     if args.include_tree:
         output_conf['include_tree'] = True
+
+    if args.compact:
+        if not isinstance(config.get('processing'), dict):
+            config['processing'] = {}
+        config['processing']['compact_whitespace'] = True
 
     # Determine the effective output format. CLI flags take precedence over config.
     if args.markdown:

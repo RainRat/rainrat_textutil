@@ -103,6 +103,7 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
     *   *Note: You can also use the shortcuts `-m` (markdown) or `-j` (json). JSON format produces a list of file objects and only works in single-file mode. Markdown and XML formats automatically use appropriate markers (code blocks for Markdown, tags for XML).*
 *   `--toc` / `-T`: Include a Table of Contents at the beginning of the output file. (Single-file mode only).
 *   `--include-tree`: Include a visual folder tree at the start of the output. (Single-file mode only).
+*   `--compact` / `-C`: Compact and clean up whitespace in the combined output to save tokens.
 *   `--max-tokens`: Stop adding files once this total token limit is reached. (Single-file mode only).
 *   `--estimate-tokens` / `-e`: Calculate token counts without creating any files.
     *   *Note: Slower than a regular dry-run because it must read the file contents.*
