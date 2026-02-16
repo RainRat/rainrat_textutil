@@ -883,7 +883,7 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
             meta_str = ""
             if metadata:
                 if children:
-                    # It's a folder - show aggregates
+                    # It's a folder - show totals
                     if current_rel_path in folder_metadata:
                         fm = folder_metadata[current_rel_path]
                         parts = [f"{fm['files']} {'file' if fm['files'] == 1 else 'files'}", utils.format_size(fm['size'])]
@@ -1116,14 +1116,14 @@ def find_and_combine_files(
 
         iteration_targets = []
         if explicit_files:
-            # Bypass discovery: process specific files relative to CWD
+            # Bypass finding: process specific files relative to the current folder
             # (root_path, all_paths, excluded_folder_count)
             iteration_targets.append((Path.cwd(), explicit_files, 0))
         else:
-            # Standard discovery from root folders
+            # Standard finding from root folders
             for root_folder in root_folders:
                 discovery_bar = processor._make_bar(
-                    desc=f"Discovering in {root_folder}",
+                    desc=f"Finding in {root_folder}",
                     unit="file",
                     leave=False,
                 )
@@ -1770,7 +1770,7 @@ def main():
         nested_required = {}
 
     if not config_path and not remaining_targets:
-        # Case 1: No positional targets. Use auto-discovery
+        # Case 1: No positional targets. Use auto-finding
         defaults = ['sourcecombine.yml', 'sourcecombine.yaml', 'config.yml', 'config.yaml']
         for d in defaults:
             if Path(d).is_file():
