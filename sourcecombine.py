@@ -224,7 +224,7 @@ def _matches_folder_glob_cached(relative_path_str, parts, patterns):
 
 
 def should_include(
-    file_path: Path,
+    file_path: Path | None,
     relative_path: PurePath,
     filter_opts: Mapping[str, Any],
     search_opts: Mapping[str, Any],
@@ -232,7 +232,7 @@ def should_include(
     return_reason: bool = False,
     abs_output_path: Path = None,
 ) -> bool | tuple[bool, str | None]:
-    """Return ``True`` if ``file_path`` passes all filtering rules.
+    """Return ``True`` if ``file_path`` (or ``relative_path``) passes filtering rules.
 
     When ``return_reason`` is ``True``, it returns a tuple of ``(bool, reason)``.
     Possible reason codes include: 'not_file', 'output_file', 'excluded',
@@ -240,14 +240,14 @@ def should_include(
     'stat_error'.
     """
 
-    if not file_path.is_file():
+    if file_path is not None and not file_path.is_file():
         return (False, 'not_file') if return_reason else False
 
     # Automatically exclude the tool's own output file to prevent recursion.
-    if abs_output_path and file_path.resolve() == abs_output_path:
+    if file_path is not None and abs_output_path and file_path.resolve() == abs_output_path:
         return (False, 'output_file') if return_reason else False
 
-    file_name = file_path.name
+    file_name = relative_path.name
     rel_str = relative_path.as_posix()
 
     exclusions = filter_opts.get('exclusions') or {}
@@ -257,8 +257,14 @@ def should_include(
     ):
         return (False, 'excluded') if return_reason else False
 
+    exclusion_folders = _normalize_patterns(exclusions.get('folders'))
+    if exclusion_folders and _matches_folder_glob_cached(
+        rel_str, relative_path.parts, exclusion_folders
+    ):
+        return (False, 'excluded') if return_reason else False
+
     allowed_extensions = search_opts.get('effective_allowed_extensions') or ()
-    suffix = file_path.suffix.lower()
+    suffix = relative_path.suffix.lower()
     if allowed_extensions and suffix not in allowed_extensions:
         return (False, 'extension') if return_reason else False
 
@@ -273,19 +279,20 @@ def should_include(
     ):
         return (False, 'not_included') if return_reason else False
 
-    if filter_opts.get('skip_binary'):
+    if file_path is not None and filter_opts.get('skip_binary'):
         if _looks_binary(file_path):
             return (False, 'binary') if return_reason else False
 
     try:
-        file_size = file_path.stat().st_size
-        min_size = filter_opts.get('min_size_bytes', 0)
-        max_size = filter_opts.get('max_size_bytes')
-        if max_size in (None, 0):
-            max_size = float('inf')
-        if not (min_size <= file_size <= max_size):
-            reason = 'too_small' if file_size < min_size else 'too_large'
-            return (False, reason) if return_reason else False
+        if file_path is not None:
+            file_size = file_path.stat().st_size
+            min_size = filter_opts.get('min_size_bytes', 0)
+            max_size = filter_opts.get('max_size_bytes')
+            if max_size in (None, 0):
+                max_size = float('inf')
+            if not (min_size <= file_size <= max_size):
+                reason = 'too_small' if file_size < min_size else 'too_large'
+                return (False, reason) if return_reason else False
     except OSError:
         return (False, 'stat_error') if return_reason else False
     return (True, None) if return_reason else True
@@ -1692,7 +1699,12 @@ def main():
     runtime_group.add_argument(
         "--extract",
         action="store_true",
-        help="Extract files from a combined JSON, XML, Markdown, or Text file into a folder structure. Supports reading from a file, stdin ('-'), or --clipboard.",
+        help=(
+            "Extract files from a combined JSON, XML, Markdown, or Text file into a folder structure. "
+            "Supports reading from a file, stdin ('-'), or --clipboard. Filtering flags "
+            "(--include, --exclude-file, --exclude-folder) and preview flags "
+            "(--list-files, --tree) are supported."
+        ),
     )
 
     args = parser.parse_args()
@@ -1703,35 +1715,6 @@ def main():
     prelim_level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(level=prelim_level, format='%(levelname)s: %(message)s')
 
-    if args.extract:
-        output_folder = args.output or "."
-        content = ""
-        source_name = ""
-
-        if args.clipboard:
-            try:
-                import pyperclip
-                content = pyperclip.paste()
-                source_name = "clipboard"
-            except ImportError:
-                logging.error("The 'pyperclip' library is required for clipboard support. Install it with: pip install pyperclip")
-                sys.exit(1)
-        elif args.targets and args.targets[0] == "-":
-            content = sys.stdin.read()
-            source_name = "stdin"
-        elif args.targets:
-            input_path = Path(args.targets[0])
-            if not input_path.exists():
-                logging.error("Input file not found: %s", input_path)
-                sys.exit(1)
-            content = read_file_best_effort(input_path)
-            source_name = str(input_path)
-        else:
-            logging.error("No input specified for extraction. Use a file path, '-' for stdin, or --clipboard.")
-            sys.exit(1)
-
-        extract_files(content, output_folder, dry_run=args.dry_run, source_name=source_name)
-        sys.exit(0)
 
 
     if args.files_from and args.init:
@@ -1984,6 +1967,45 @@ def main():
     else:
         destination_desc = f"to '{output_path}'"
 
+    if args.extract:
+        output_folder = args.output or "."
+        content = ""
+        source_name = ""
+
+        if args.clipboard:
+            try:
+                import pyperclip
+                content = pyperclip.paste()
+                source_name = "clipboard"
+            except ImportError:
+                logging.error("The 'pyperclip' library is required for clipboard support. Install it with: pip install pyperclip")
+                sys.exit(1)
+        elif remaining_targets and remaining_targets[0] == "-":
+            content = sys.stdin.read()
+            source_name = "stdin"
+        elif remaining_targets:
+            input_path = Path(remaining_targets[0])
+            if not input_path.exists():
+                logging.error("Input file not found: %s", input_path)
+                sys.exit(1)
+            content = read_file_best_effort(input_path)
+            source_name = str(input_path)
+        else:
+            logging.error("No input specified for extraction. Use a file path, '-' for stdin, or --clipboard.")
+            sys.exit(1)
+
+        stats = extract_files(
+            content,
+            output_folder,
+            dry_run=args.dry_run,
+            source_name=source_name,
+            config=config,
+            list_files=args.list_files,
+            tree_view=args.tree
+        )
+        _print_execution_summary(stats, args, pairing_enabled=False)
+        sys.exit(0)
+
     mode_desc = "Pairing" if pairing_enabled else "Single File"
     logging.info("SourceCombine starting. Mode: %s", mode_desc)
 
@@ -2035,9 +2057,19 @@ def main():
         _print_execution_summary(stats, args, pairing_enabled)
 
 
-def extract_files(content, output_folder, dry_run=False, source_name="archive"):
+def extract_files(content, output_folder, dry_run=False, source_name="archive", config=None, list_files=False, tree_view=False):
     """Recreate the original folder structure and files from a combined file content."""
     output_folder = Path(output_folder)
+    stats = {
+        'total_discovered': 0,
+        'total_files': 0,
+        'total_size_bytes': 0,
+        'files_by_extension': {},
+        'filter_reasons': {},
+    }
+
+    if config is None:
+        config = copy.deepcopy(utils.DEFAULT_CONFIG)
 
     if not content:
         logging.error("Input content is empty.")
@@ -2104,6 +2136,43 @@ def extract_files(content, output_folder, dry_run=False, source_name="archive"):
         logging.error("Could not find any files to extract in %s. Supported formats are JSON, XML, Markdown, and Text.", source_name)
         sys.exit(1)
 
+    stats['total_discovered'] = len(files_to_create)
+    filter_opts = config.get('filters', {})
+    search_opts = config.get('search', {})
+
+    filtered_files = []
+    for path_str, file_content in files_to_create:
+        rel_path = PurePath(path_str)
+        include, reason = should_include(
+            None,
+            rel_path,
+            filter_opts,
+            search_opts,
+            return_reason=True
+        )
+
+        if include:
+            filtered_files.append((path_str, file_content))
+            stats['total_files'] += 1
+            ext = rel_path.suffix.lower() or '.no_extension'
+            stats['files_by_extension'][ext] = stats['files_by_extension'].get(ext, 0) + 1
+            stats['total_size_bytes'] += len(file_content.encode('utf-8'))
+        else:
+            if reason:
+                stats['filter_reasons'][reason] = stats['filter_reasons'].get(reason, 0) + 1
+
+    files_to_create = filtered_files
+
+    if list_files:
+        for path_str, _ in files_to_create:
+            print(path_str)
+        return stats
+
+    if tree_view:
+        tree_paths = [Path(source_name) / p for p, _ in files_to_create]
+        print(_generate_tree_string(tree_paths, Path(source_name), include_header=False))
+        return stats
+
     logging.info("Found %d files to extract from %s", len(files_to_create), source_name)
 
     extracted_count = 0
@@ -2138,6 +2207,8 @@ def extract_files(content, output_folder, dry_run=False, source_name="archive"):
 
     if not dry_run:
         logging.info("Extraction complete. %d files created in %s", extracted_count, output_folder)
+
+    return stats
 
 
 def _print_execution_summary(stats, args, pairing_enabled):
