@@ -1,7 +1,7 @@
 import sys
 import os
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import pytest
 import yaml
 
@@ -107,3 +107,72 @@ def test_cli_override_config_format(temp_cwd, mock_argv):
             args, kwargs = mock_combine.call_args
             assert args[1] == 'combined_files.txt'
             assert kwargs['output_format'] == 'text'
+
+def test_summary_tokens_visible_in_pairing_mode(monkeypatch, capsys):
+    # Mock stats
+    stats = {
+        'total_files': 10,
+        'total_size_bytes': 1000,
+        'files_by_extension': {'.py': 10},
+        'total_tokens': 1234,
+        'token_count_is_approx': False,
+        'top_files': [(500, 2000, 'file.py')]
+    }
+
+    # Mock args
+    args = MagicMock()
+    args.dry_run = False
+    args.estimate_tokens = True
+    args.list_files = False
+    args.tree = False
+
+    monkeypatch.setenv("NO_COLOR", "1")
+
+    # Call with pairing_enabled=True
+    import sourcecombine
+    sourcecombine._print_execution_summary(stats, args, pairing_enabled=True)
+
+    captured = capsys.readouterr()
+    stderr = captured.err
+
+    # Token Count should now be visible even in pairing mode
+    # 10 spaces from label padding + 7 spaces from value padding
+    assert "Token Count:                 1,234" in stderr
+    # Largest Files should also be visible
+    assert "Largest Files (by tokens)" in stderr
+    # 4 (indent) + 7 (padding) + 500 + 2 (spaces) + 3 (padding) + (1.95 KB)
+    assert "           500     (1.95 KB)  file.py" in stderr
+
+def test_summary_tokens_visible_with_list_files(monkeypatch, capsys):
+    # Mock stats
+    stats = {
+        'total_files': 5,
+        'total_size_bytes': 500,
+        'files_by_extension': {'.md': 5},
+        'total_tokens': 567,
+        'token_count_is_approx': False,
+        'top_files': [(100, 500, 'doc.md')]
+    }
+
+    # Mock args
+    args = MagicMock()
+    args.dry_run = False
+    args.estimate_tokens = True
+    args.list_files = True
+    args.tree = False
+
+    monkeypatch.setenv("NO_COLOR", "1")
+
+    import sourcecombine
+    sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
+
+    captured = capsys.readouterr()
+    stderr = captured.err
+
+    # Token Count should now be visible even with --list-files
+    # 10 spaces from label padding + 9 spaces from value padding
+    assert "Token Count:                   567" in stderr
+    # Largest Files should also be visible
+    assert "Largest Files (by tokens)" in stderr
+    # 4 (indent) + 7 (padding) + 100 + 2 (spaces) + 1 (padding) + (500.00 B)
+    assert "           100    (500.00 B)  doc.md" in stderr

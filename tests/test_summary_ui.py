@@ -31,10 +31,10 @@ def test_summary_redesign_largest_files(monkeypatch, capsys):
     captured = capsys.readouterr()
     stderr = captured.err
 
-    # Check redesign of Largest Files: tokens should come first
-    # 500 should be right-aligned in 10 columns
-    assert "       500  large_file.py" in stderr
-    assert "       300  medium_file.py" in stderr
+    # Check redesign of Largest Files: tokens should come first, followed by size
+    # 500 should be right-aligned in 10 columns (plus 4 spaces indent)
+    assert "           500     (1.95 KB)  large_file.py" in stderr
+    assert "           300  (1,000.00 B)  medium_file.py" in stderr
     # Should NOT have the old format
     assert "large_file.py                                          500" not in stderr
 
