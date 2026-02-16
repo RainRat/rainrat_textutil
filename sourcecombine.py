@@ -2263,7 +2263,7 @@ def _print_execution_summary(stats, args, pairing_enabled):
     if stats.get('filter_reasons'):
         # Sort by count descending, then alphabetically
         sorted_reasons = sorted(
-            stats['filter_reasons'].items(),
+            [(r, c) for r, c in stats['filter_reasons'].items() if r != 'excluded_folder'],
             key=lambda x: (-x[1], x[0])
         )
         for reason, count in sorted_reasons:
@@ -2272,7 +2272,7 @@ def _print_execution_summary(stats, args, pairing_enabled):
                 # Use dim for less visual noise in the breakdown
                 print(f"      {dim}- {display_reason:<{label_width - 4}}{reset}{count:12,}", file=sys.stderr)
 
-    print(f"    {bold}{'Total:':<{label_width}}{reset}{total_discovered:12,}", file=sys.stderr)
+    print(f"    {bold}{'Total Discovered:':<{label_width}}{reset}{total_discovered:12,}", file=sys.stderr)
     if excluded_folders > 0:
         print(f"    {bold}{'Excluded Folders:':<{label_width}}{reset}{excluded_folders:12,}", file=sys.stderr)
 
@@ -2318,8 +2318,8 @@ def _print_execution_summary(stats, args, pairing_enabled):
         for tokens, size, path in top:
             token_str = f"{tokens:,}"
             # Truncate long paths
-            display_path = (path[:45] + '...') if len(path) > 48 else path
-            print(f"    {dim}-{reset} {display_path:<48} {token_str:>12}", file=sys.stderr)
+            display_path = (path[:48] + '...') if len(path) > 51 else path
+            print(f"    {cyan}{token_str:>10}{reset}  {display_path}", file=sys.stderr)
 
     # Extensions Grid
     if stats['files_by_extension']:
@@ -2330,8 +2330,8 @@ def _print_execution_summary(stats, args, pairing_enabled):
         )
 
         formatted_counts = [f"{count:,}" for _, count in sorted_exts]
-        items = [f"{cyan}{ext}{reset}: {c}" for (ext, _), c in zip(sorted_exts, formatted_counts)]
-        raw_items = [f"{ext}: {c}" for (ext, _), c in zip(sorted_exts, formatted_counts)]
+        items = [f"{cyan}{ext}{reset}: {c:>5}" for (ext, _), c in zip(sorted_exts, formatted_counts)]
+        raw_items = [f"{ext}: {c:>5}" for (ext, _), c in zip(sorted_exts, formatted_counts)]
         max_len = max(len(s) for s in raw_items) + 3
 
         # Determine available width
