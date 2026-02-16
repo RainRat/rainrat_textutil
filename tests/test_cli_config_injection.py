@@ -283,6 +283,7 @@ def test_summary_top_files_loop_2232(temp_cwd, mock_stats, capsys):
 
     captured = capsys.readouterr()
     assert "file1.txt" in captured.err
-    # Check for truncation of long path
-    assert "very/long/path/to/some/file/that/should/be/tr..." in captured.err
+    # Check for truncation of long path (path[:48] + '...')
+    expected_truncated = long_path[:48] + "..."
+    assert expected_truncated in captured.err
     assert "200" in captured.err
