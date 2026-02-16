@@ -124,3 +124,59 @@ def test_tree_view_no_files(capsys, tmp_path):
     # If no files are matched, iteration_targets is empty, so no tree is printed.
     assert captured.out == ""
     assert "Included:                        0" in captured.err
+
+def test_tree_view_no_output_file_validation(capsys, tmp_path):
+    """Verify that --tree does not require output.file when set to null."""
+    root = tmp_path / "validproj"
+    root.mkdir()
+    (root / "f1.txt").write_text("test")
+
+    config = {
+        'search': {'root_folders': [str(root)]},
+        'output': {'file': None}
+    }
+
+    config_file = tmp_path / "config.yml"
+    with open(config_file, 'w') as f:
+        yaml.dump(config, f)
+
+    with patch.object(sys, 'argv', ["sourcecombine.py", str(config_file), "--tree"]):
+        try:
+            main()
+        except SystemExit:
+            pass
+
+    captured = capsys.readouterr()
+    assert "f1.txt" in captured.out
+    assert "Tree View Summary" in captured.err
+
+def test_tree_view_no_folder_creation(capsys, tmp_path):
+    """Verify that --tree does not create an output folder in pairing mode."""
+    root = tmp_path / "pairproj"
+    root.mkdir()
+    (root / "f1.c").write_text("c")
+    (root / "f1.h").write_text("h")
+
+    out_dir = tmp_path / "should_not_exist"
+
+    config = {
+        'search': {'root_folders': [str(root)]},
+        'pairing': {
+            'enabled': True,
+            'source_extensions': ['.c'],
+            'header_extensions': ['.h']
+        },
+        'output': {'folder': str(out_dir)}
+    }
+
+    config_file = tmp_path / "config.yml"
+    with open(config_file, 'w') as f:
+        yaml.dump(config, f)
+
+    with patch.object(sys, 'argv', ["sourcecombine.py", str(config_file), "--tree"]):
+        try:
+            main()
+        except SystemExit:
+            pass
+
+    assert not out_dir.exists()

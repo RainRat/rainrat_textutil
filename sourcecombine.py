@@ -1061,7 +1061,7 @@ def find_and_combine_files(
         if not output_opts.get('global_footer_template') or output_opts.get('global_footer_template') == default_global_footer:
             output_opts['global_footer_template'] = "\n</repository>\n"
 
-    if not pairing_enabled and not dry_run and not estimate_tokens and not clipboard and not list_files and output_path is None:
+    if not pairing_enabled and not dry_run and not estimate_tokens and not clipboard and not list_files and not tree_view and output_path is None:
         raise InvalidConfigError(
             "'output.file' must be set when pairing is disabled and clipboard mode is off."
         )
@@ -1073,7 +1073,7 @@ def find_and_combine_files(
     out_folder = None
     if pairing_enabled and output_path:
         out_folder = Path(output_path)
-        if not dry_run and not estimate_tokens and not list_files:
+        if not dry_run and not estimate_tokens and not list_files and not tree_view:
             out_folder.mkdir(parents=True, exist_ok=True)
 
     clipboard_buffer = io.StringIO() if clipboard else None
