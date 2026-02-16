@@ -2282,9 +2282,9 @@ def _print_execution_summary(stats, args, pairing_enabled):
     print(f"    {bold}{'Total Size:':<{label_width}}{reset}{total_size_str:>12}", file=sys.stderr)
 
     # Token Counts
-    # Show token counts for single-file mode OR if estimate_tokens was requested
-    if not pairing_enabled and (not args.dry_run or args.estimate_tokens) and not args.list_files and not args.tree:
-        token_count = stats.get('total_tokens', 0)
+    # Show token counts if they were collected (single-file mode or explicit estimation)
+    token_count = stats.get('total_tokens', 0)
+    if token_count > 0 or args.estimate_tokens:
         is_approx = stats.get('token_count_is_approx', False)
         token_str = f"{'~' if is_approx else ''}{token_count:,}"
         print(
@@ -2311,15 +2311,16 @@ def _print_execution_summary(stats, args, pairing_enabled):
             print(f"    {bold}{'Budget Usage:':<{label_width}}{reset}{bar_color}{bar}{reset} {percent:>6.1f}%", file=sys.stderr)
 
     # Largest Files
-    if stats.get('top_files') and not args.list_files and not args.tree:
+    if stats.get('top_files'):
         print(f"\n  {bold}Largest Files (by tokens){reset}", file=sys.stderr)
         # Sort by tokens desc, then path alpha
         top = sorted(stats['top_files'], key=lambda x: (-x[0], x[2]))[:5]
         for tokens, size, path in top:
             token_str = f"{tokens:,}"
+            size_str = f"({utils.format_size(size)})"
             # Truncate long paths
-            display_path = (path[:48] + '...') if len(path) > 51 else path
-            print(f"    {cyan}{token_str:>10}{reset}  {display_path}", file=sys.stderr)
+            display_path = (path[:40] + '...') if len(path) > 43 else path
+            print(f"    {cyan}{token_str:>10}{reset}  {dim}{size_str:>12}{reset}  {display_path}", file=sys.stderr)
 
     # Extensions Grid
     if stats['files_by_extension']:
