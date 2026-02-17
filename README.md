@@ -101,6 +101,7 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
     *   *Note: You cannot use clipboard mode when file pairing is enabled.*
 *   `--format` / `-f`: Choose the output format (`text`, `json`, `markdown`, or `xml`).
     *   *Note: You can also use the shortcuts `-m` (markdown) or `-j` (json). JSON format produces a list of file objects and only works in single-file mode. Markdown and XML formats automatically use appropriate markers (code blocks for Markdown, tags for XML).*
+*   `--line-numbers` / `-n`: Add line numbers to the beginning of each line in the combined output.
 *   `--toc` / `-T`: Include a Table of Contents at the beginning of the output file. (Single-file mode only).
 *   `--include-tree`: Include a visual folder tree at the start of the output. (Single-file mode only).
 *   `--compact` / `-C`: Compact and clean up whitespace in the combined output to save tokens.
@@ -122,6 +123,12 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 See exactly which files would be included without writing anything:
 ```bash
 python sourcecombine.py my_config.yml --dry-run
+```
+
+**Combine files with line numbers:**
+Useful for code reviews or providing context to AI assistants:
+```bash
+python sourcecombine.py src/ --line-numbers
 ```
 
 **View included files as a tree:**
