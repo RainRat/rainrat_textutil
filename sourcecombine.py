@@ -1725,7 +1725,7 @@ def main():
         action="store_true",
         help=(
             "Extract files from a combined JSON, XML, Markdown, or Text file into a folder structure. "
-            "Supports reading from a file, stdin ('-'), or --clipboard. Filtering flags "
+            "Supports reading from a file, your terminal ('-'), or --clipboard. Filtering flags "
             "(--include, --exclude-file, --exclude-folder) and preview flags "
             "(--list-files, --tree) are supported."
         ),
@@ -2023,7 +2023,7 @@ def main():
             content = read_file_best_effort(input_path)
             source_name = str(input_path)
         else:
-            logging.error("No input specified for extraction. Use a file path, '-' for stdin, or --clipboard.")
+            logging.error("No input specified for extraction. Use a file path, '-' for your terminal, or --clipboard.")
             sys.exit(1)
 
         stats = extract_files(

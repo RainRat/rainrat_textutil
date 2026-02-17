@@ -71,7 +71,7 @@ The easiest way to use SourceCombine is to run it on a folder.
     ```bash
     python sourcecombine.py .
     ```
-    This merges all files in your current folder into `combined_files.txt`.
+    This combines all files in your current folder into `combined_files.txt`.
 
 2.  **Initialize a configuration file for more control:**
     Generate a starter configuration:
@@ -110,7 +110,7 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
     *   *Note: Slower than a regular dry-run because it must read the file contents.*
 *   `--list-files` / `-l`: Print a list of files that would be processed to your terminal and exit.
 *   `--tree` / `-t`: Show a visual folder tree of all included files and exit.
-*   `--files-from`: Read a list of files to process from a text file (or `-` for stdin). Overrides normal folder scanning.
+*   `--files-from`: Read a list of files to process from a text file (or `-` for your terminal). Overrides normal folder scanning.
 *   `--extract`: Recreate files and folders from a combined JSON, XML, Markdown, or Text file.
 *   `--init`: Generate a default configuration file (`sourcecombine.yml`) in the current folder.
 *   `--include` / `-i`: Include only files matching a specific pattern (e.g., `-i "*.py"`). Can be used multiple times.
@@ -167,7 +167,7 @@ python sourcecombine.py src/ -i "*.py" -i "*.md"
 
 **Extract files from a combined archive:**
 Recreate your project from a JSON, XML, Markdown, or Text file. You can even
-extract directly from your clipboard or stdin:
+extract directly from your clipboard or your terminal:
 ```bash
 # Extract from a JSON file
 python sourcecombine.py --extract combined.json -o restored_project/
@@ -175,7 +175,7 @@ python sourcecombine.py --extract combined.json -o restored_project/
 # Extract directly from your clipboard
 python sourcecombine.py --extract --clipboard -o restored_project/
 
-# Extract from stdin
+# Extract from your terminal
 cat combined.txt | python sourcecombine.py --extract - -o restored_project/
 ```
 
