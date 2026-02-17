@@ -124,3 +124,31 @@ def test_validate_output_format_invalid(tmp_path):
     )
     with pytest.raises(InvalidConfigError, match="'output.format' must be one of: text, json, markdown, xml"):
         load_and_validate_config(config_path)
+
+def test_validate_processing_compact_whitespace_non_bool(tmp_path):
+    """Ensure InvalidConfigError is raised if processing.compact_whitespace is not a boolean."""
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "processing": {
+                "compact_whitespace": "not_a_bool"
+            }
+        }
+    )
+    with pytest.raises(InvalidConfigError, match="'processing.compact_whitespace' must be a boolean value"):
+        load_and_validate_config(config_path)
+
+def test_validate_processing_apply_in_place_non_bool(tmp_path):
+    """Ensure InvalidConfigError is raised if processing.apply_in_place is not a boolean."""
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "processing": {
+                "apply_in_place": "not_a_bool"
+            }
+        }
+    )
+    with pytest.raises(InvalidConfigError, match="'processing.apply_in_place' must be a boolean value"):
+        load_and_validate_config(config_path)
