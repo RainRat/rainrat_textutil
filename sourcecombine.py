@@ -1202,7 +1202,8 @@ def find_and_combine_files(
                 if tree_view:
                     view_metadata = {}
                     for p in paths_to_list:
-                        view_metadata[p] = {'size': p.stat().st_size if p.exists() else 0}
+                        f_size = p.stat().st_size if p.exists() else 0
+                        view_metadata[p] = {'size': f_size}
                         if estimate_tokens:
                             content = read_file_best_effort(p)
                             processed = process_content(content, processor.processing_opts)
@@ -1211,10 +1212,21 @@ def find_and_combine_files(
                             stats['total_tokens'] += tokens
                             if is_approx:
                                 stats['token_count_is_approx'] = True
+                            stats['top_files'].append((tokens, f_size, _get_rel_path(p, root_path).as_posix()))
 
                     print(_generate_tree_string(paths_to_list, root_path, include_header=False, metadata=view_metadata))
                 else:
                     for p in paths_to_list:
+                        if estimate_tokens:
+                            f_size = p.stat().st_size if p.exists() else 0
+                            content = read_file_best_effort(p)
+                            processed = process_content(content, processor.processing_opts)
+                            tokens, is_approx = utils.estimate_tokens(processed)
+                            stats['total_tokens'] += tokens
+                            if is_approx:
+                                stats['token_count_is_approx'] = True
+                            stats['top_files'].append((tokens, f_size, _get_rel_path(p, root_path).as_posix()))
+
                         # Print relative path if possible for cleaner output
                         print(_get_rel_path(p, root_path) if p.is_absolute() else p)
                 continue
@@ -2302,9 +2314,9 @@ def _print_execution_summary(stats, args, pairing_enabled):
     print(f"    {bold}{'Total Size:':<{label_width}}{reset}{total_size_str:>12}", file=sys.stderr)
 
     # Token Counts
-    # Show token counts for single-file mode OR if estimate_tokens was requested
-    if not pairing_enabled and (not args.dry_run or args.estimate_tokens) and not args.list_files and not args.tree:
-        token_count = stats.get('total_tokens', 0)
+    # Show token counts if tokens were estimated
+    token_count = stats.get('total_tokens', 0)
+    if token_count > 0:
         is_approx = stats.get('token_count_is_approx', False)
         token_str = f"{'~' if is_approx else ''}{token_count:,}"
         print(
@@ -2319,7 +2331,7 @@ def _print_execution_summary(stats, args, pairing_enabled):
 
         # Budget Usage
         max_tokens = stats.get('max_total_tokens', 0)
-        if max_tokens > 0 and token_count > 0:
+        if max_tokens > 0:
             percent = (token_count / max_tokens) * 100
             # Create a 10-character ASCII bar
             bar_len = 10
@@ -2331,15 +2343,17 @@ def _print_execution_summary(stats, args, pairing_enabled):
             print(f"    {bold}{'Budget Usage:':<{label_width}}{reset}{bar_color}{bar}{reset} {percent:>6.1f}%", file=sys.stderr)
 
     # Largest Files
-    if stats.get('top_files') and not args.list_files and not args.tree:
+    if stats.get('top_files'):
         print(f"\n  {bold}Largest Files (by tokens){reset}", file=sys.stderr)
         # Sort by tokens desc, then path alpha
         top = sorted(stats['top_files'], key=lambda x: (-x[0], x[2]))[:5]
-        for tokens, size, path in top:
+        for tokens, f_size, path in top:
             token_str = f"{tokens:,}"
+            size_str = f"({utils.format_size(f_size)})"
             # Truncate long paths
             display_path = (path[:48] + '...') if len(path) > 51 else path
-            print(f"    {cyan}{token_str:>10}{reset}  {display_path}", file=sys.stderr)
+            # Align token counts at 10 and sizes at 12 to keep paths consistent
+            print(f"    {cyan}{token_str:>10}{reset}  {dim}{size_str:<12}{reset}  {display_path}", file=sys.stderr)
 
     # Extensions Grid
     if stats['files_by_extension']:
