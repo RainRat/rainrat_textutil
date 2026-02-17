@@ -405,6 +405,12 @@ def _validate_processing_section(config, *, source=None):
             "'processing.apply_in_place' must be a boolean value"
         )
 
+    compact_whitespace_val = processing_conf.get('compact_whitespace')
+    if compact_whitespace_val is not None and not isinstance(compact_whitespace_val, bool):
+        raise InvalidConfigError(
+            "'processing.compact_whitespace' must be a boolean value"
+        )
+
     create_backups = processing_conf.get('create_backups')
     if create_backups is not None and not isinstance(create_backups, bool):
         raise InvalidConfigError(
