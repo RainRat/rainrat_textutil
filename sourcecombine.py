@@ -105,6 +105,20 @@ def _get_rel_path(path, root_path):
         return path
 
 
+def _format_metadata_summary(meta: Mapping[str, Any]) -> str:
+    """Return a formatted string representing file or folder metadata."""
+    parts = []
+    if 'files' in meta:
+        count = meta['files']
+        parts.append(f"{count} {'file' if count == 1 else 'files'}")
+    if 'size' in meta:
+        parts.append(utils.format_size(meta['size']))
+    if 'tokens' in meta and meta['tokens'] > 0:
+        parts.append(f"{meta['tokens']:,} tokens")
+
+    return f" ({', '.join(parts)})" if parts else ""
+
+
 @lru_cache(maxsize=128)
 def _get_replacement_pattern(keys):
     """Compile a regex pattern from a tuple of keys, sorted by length."""
@@ -885,23 +899,13 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
                 if children:
                     # It's a folder - show totals
                     if current_rel_path in folder_metadata:
-                        fm = folder_metadata[current_rel_path]
-                        parts = [f"{fm['files']} {'file' if fm['files'] == 1 else 'files'}", utils.format_size(fm['size'])]
-                        if fm.get('tokens', 0) > 0:
-                            parts.append(f"{fm['tokens']:,} tokens")
-                        meta_str = f" ({', '.join(parts)})"
+                        meta_str = _format_metadata_summary(folder_metadata[current_rel_path])
                 elif current_rel_path in rel_to_orig:
                     # It's a file - show individual stats
                     orig_path = rel_to_orig[current_rel_path]
                     file_meta = metadata.get(orig_path)
                     if file_meta:
-                        parts = []
-                        if 'size' in file_meta:
-                            parts.append(utils.format_size(file_meta['size']))
-                        if 'tokens' in file_meta and file_meta['tokens'] > 0:
-                            parts.append(f"{file_meta['tokens']:,} tokens")
-                        if parts:
-                            meta_str = f" ({', '.join(parts)})"
+                        meta_str = _format_metadata_summary(file_meta)
 
             lines.append(f"{prefix}{connector}{item}{meta_str}")
 
@@ -913,11 +917,7 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
     # Add the root folder name first
     root_meta_str = ""
     if metadata and Path('.') in folder_metadata:
-        rm = folder_metadata[Path('.')]
-        parts = [f"{rm['files']} {'file' if rm['files'] == 1 else 'files'}", utils.format_size(rm['size'])]
-        if rm.get('tokens', 0) > 0:
-            parts.append(f"{rm['tokens']:,} tokens")
-        root_meta_str = f" ({', '.join(parts)})"
+        root_meta_str = _format_metadata_summary(folder_metadata[Path('.')])
 
     lines.append(f"{root_path.name or str(root_path)}/{root_meta_str}")
     _add_node(tree)
@@ -949,14 +949,7 @@ def _generate_table_of_contents(files, output_format='text', metadata=None):
 
             meta_str = ""
             if metadata and file_path in metadata:
-                file_meta = metadata[file_path]
-                parts = []
-                if 'size' in file_meta:
-                    parts.append(utils.format_size(file_meta['size']))
-                if 'tokens' in file_meta:
-                    parts.append(f"{file_meta['tokens']:,} tokens")
-                if parts:
-                    meta_str = f" ({', '.join(parts)})"
+                meta_str = _format_metadata_summary(metadata[file_path])
 
             # Create a basic anchor link.
             slug = re.sub(r'[^a-z0-9 _-]', '', posix_rel_path.lower()).replace(' ', '-')
@@ -971,14 +964,7 @@ def _generate_table_of_contents(files, output_format='text', metadata=None):
 
             meta_str = ""
             if metadata and file_path in metadata:
-                file_meta = metadata[file_path]
-                parts = []
-                if 'size' in file_meta:
-                    parts.append(utils.format_size(file_meta['size']))
-                if 'tokens' in file_meta:
-                    parts.append(f"{file_meta['tokens']:,} tokens")
-                if parts:
-                    meta_str = f" ({', '.join(parts)})"
+                meta_str = _format_metadata_summary(metadata[file_path])
 
             toc_lines.append(f"- {rel_path.as_posix()}{meta_str}")
         toc_lines.append("\n" + "-" * 20 + "\n")
