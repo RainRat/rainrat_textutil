@@ -1635,6 +1635,12 @@ def main():
         help="Shortcut for '--format json'.",
     )
     output_group.add_argument(
+        "--line-numbers",
+        "-n",
+        action="store_true",
+        help="Add line numbers to the beginning of each line in the combined output.",
+    )
+    output_group.add_argument(
         "--toc",
         "-T",
         action="store_true",
@@ -1898,6 +1904,9 @@ def main():
 
     if args.toc:
         output_conf['table_of_contents'] = True
+
+    if args.line_numbers:
+        output_conf['add_line_numbers'] = True
 
     if args.include_tree:
         output_conf['include_tree'] = True
