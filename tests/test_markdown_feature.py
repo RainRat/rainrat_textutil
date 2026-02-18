@@ -26,7 +26,7 @@ def test_file_processor_markdown_ext_placeholder(tmp_path):
 
     processor = FileProcessor(config, config["output"])
     out = io.StringIO()
-    processor.process_and_write(file_path, root, out)
+    processor.process_and_write(file_path, root, out)[:-1]
 
     result = out.getvalue()
     assert "File: script.py (py)" in result
@@ -46,7 +46,7 @@ def test_file_processor_markdown_ext_placeholder_no_ext(tmp_path):
 
     processor = FileProcessor(config, config["output"])
     out = io.StringIO()
-    processor.process_and_write(file_path, root, out)
+    processor.process_and_write(file_path, root, out)[:-1]
 
     result = out.getvalue()
     assert "File: Makefile ()" in result

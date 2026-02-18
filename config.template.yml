@@ -55,7 +55,7 @@ output:
   include_tree: false
 
   # Template written before each file's content.
-  # Placeholders: {{FILENAME}}, {{EXT}}, {{STEM}}, {{DIR}}, {{DIR_SLUG}}, {{SIZE}}, {{TOKENS}}.
+  # Placeholders: {{FILENAME}}, {{EXT}}, {{STEM}}, {{DIR}}, {{DIR_SLUG}}, {{SIZE}}, {{TOKENS}}, {{LINE_COUNT}}.
   # Set to null or an empty string to omit the header.
   header_template: "--- {{FILENAME}} ---\n"
 
@@ -65,7 +65,7 @@ output:
   footer_template: "\n--- end {{FILENAME}} ---\n"
 
   # Template written at the very beginning of the combined output file.
-  # Placeholders (Single-file mode): {{FILE_COUNT}}, {{TOTAL_SIZE}}, {{TOTAL_TOKENS}}.
+  # Placeholders (Single-file mode): {{FILE_COUNT}}, {{TOTAL_SIZE}}, {{TOTAL_TOKENS}}, {{TOTAL_LINES}}.
   # In pairing mode, this is written to the start of each paired output file.
   global_header_template: null
 

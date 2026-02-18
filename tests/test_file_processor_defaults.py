@@ -25,7 +25,7 @@ def test_file_processor_uses_default_header_when_missing_in_options(tmp_path):
     processor = FileProcessor(config, output_opts, dry_run=False)
     output_buffer = io.StringIO()
 
-    processor.process_and_write(file_path, tmp_path, output_buffer)
+    processor.process_and_write(file_path, tmp_path, output_buffer)[:-1]
 
     result = output_buffer.getvalue()
 
@@ -49,7 +49,7 @@ def test_file_processor_uses_default_footer_when_missing_in_options(tmp_path):
     processor = FileProcessor(config, output_opts, dry_run=False)
     output_buffer = io.StringIO()
 
-    processor.process_and_write(file_path, tmp_path, output_buffer)
+    processor.process_and_write(file_path, tmp_path, output_buffer)[:-1]
 
     result = output_buffer.getvalue()
 
@@ -73,7 +73,7 @@ def test_file_processor_respects_explicit_none_to_disable_templates(tmp_path):
     processor = FileProcessor(config, output_opts, dry_run=False)
     output_buffer = io.StringIO()
 
-    processor.process_and_write(file_path, tmp_path, output_buffer)
+    processor.process_and_write(file_path, tmp_path, output_buffer)[:-1]
 
     result = output_buffer.getvalue()
 
