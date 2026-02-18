@@ -19,6 +19,45 @@ from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 __version__ = "0.5.0"
 
 
+class _LazyColor:
+    """A lazy color constant that evaluates isatty/NO_COLOR at string conversion time."""
+    def __init__(self, code):
+        self.code = code
+
+    def __str__(self):
+        if sys.stderr.isatty() and "NO_COLOR" not in os.environ:
+            return self.code
+        return ""
+
+    def __format__(self, format_spec):
+        return format(str(self), format_spec)
+
+
+# UI Color Constants
+C_BOLD = _LazyColor("\033[1m")
+C_DIM = _LazyColor("\033[90m")
+C_GREEN = _LazyColor("\033[32m")
+C_YELLOW = _LazyColor("\033[33m")
+C_RED = _LazyColor("\033[31m")
+C_CYAN = _LazyColor("\033[36m")
+C_RESET = _LazyColor("\033[0m")
+
+
+class CLILogFormatter(logging.Formatter):
+    """Custom formatter to provide clean, colored CLI output."""
+
+    def format(self, record):
+        if record.levelno == logging.INFO:
+            return record.getMessage()
+        if record.levelno == logging.WARNING:
+            return f"{C_YELLOW}{record.levelname}: {record.getMessage()}{C_RESET}"
+        if record.levelno >= logging.ERROR:
+            return f"{C_RED}{record.levelname}: {record.getMessage()}{C_RESET}"
+        if record.levelno == logging.DEBUG:
+            return f"{C_DIM}{record.levelname}: {record.getMessage()}{C_RESET}"
+        return super().format(record)
+
+
 try:  # Optional dependency for progress reporting
     from tqdm import tqdm as _tqdm
 except ImportError:  # pragma: no cover - gracefully handle missing tqdm
@@ -618,10 +657,10 @@ def _process_paired_files(
             out_file = primary_path.parent / out_path
 
         if dry_run:
-            logging.info("[PAIR %s] -> %s", stem, out_file)
+            logging.info("%s[PAIR %s] -> %s%s", C_DIM, stem, out_file, C_RESET)
             for path in paths:
                 rel_path = _get_rel_path(path, root_path)
-                logging.info("  - %s", rel_path)
+                logging.info("%s  - %s%s", C_DIM, rel_path, C_RESET)
             continue
 
         if estimate_tokens:
@@ -755,7 +794,7 @@ class FileProcessor:
             A tuple containing (token_count, is_approximate) for the written content.
         """
         if self.dry_run:
-            logging.info(_get_rel_path(file_path, root_path))
+            logging.info("%s%s%s", C_DIM, _get_rel_path(file_path, root_path), C_RESET)
             return 0, True
 
         logging.debug("Processing: %s", file_path)
@@ -804,7 +843,7 @@ class FileProcessor:
         """
 
         if self.dry_run:
-            logging.info(_get_rel_path(file_path, root_path))
+            logging.info("%s%s%s", C_DIM, _get_rel_path(file_path, root_path), C_RESET)
             return 0, True
 
         placeholder = self.output_opts.get('max_size_placeholder')
@@ -1723,7 +1762,21 @@ def main():
     # This ensures logging is set up *before* load_and_validate_config (which logs)
     # is called, preventing a race condition that locks the log level at WARNING.
     prelim_level = logging.DEBUG if args.verbose else logging.INFO
-    logging.basicConfig(level=prelim_level, format='%(levelname)s: %(message)s')
+
+    # Use a custom handler and formatter for clean CLI output
+    handler = logging.StreamHandler()
+    if args.verbose:
+        handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+    else:
+        handler.setFormatter(CLILogFormatter())
+
+    root_logger = logging.getLogger()
+    # Ensure we don't add multiple handlers if main is called multiple times in one process.
+    # We only add our handler if no handlers are present, or if we are not in a test environment.
+    # Pytest adds its own handlers which we should not remove.
+    if not root_logger.handlers:
+        root_logger.addHandler(handler)
+    root_logger.setLevel(prelim_level)
 
 
 
@@ -1785,12 +1838,12 @@ def main():
         for d in defaults:
             if Path(d).is_file():
                 config_path = d
-                logging.info("Auto-discovered config file: %s", config_path)
+                logging.info("%sAuto-discovered config file: %s%s", C_DIM, config_path, C_RESET)
                 break
 
         if not config_path:
             if args.files_from:
-                logging.info("No configuration found. Using default settings with --files-from.")
+                logging.info("%sNo configuration found. Using default settings with --files-from.%s", C_DIM, C_RESET)
 
     # Load config if we found/specified one
     if config_path:
@@ -1816,7 +1869,8 @@ def main():
         config['search']['root_folders'] = remaining_targets
     elif not config_path and not args.files_from:
         logging.info(
-            "No config file found. Scanning current folder '.' with default settings."
+            "%sNo config file found. Scanning current folder '.' with default settings.%s",
+            C_DIM, C_RESET
         )
         config['search']['root_folders'] = ["."]
 
@@ -2025,16 +2079,16 @@ def main():
         sys.exit(0)
 
     mode_desc = "Pairing" if pairing_enabled else "Single File"
-    logging.info("SourceCombine starting. Mode: %s", mode_desc)
+    logging.info("%sSourceCombine starting. Mode: %s%s", C_DIM, mode_desc, C_RESET)
 
     if args.list_files:
-        logging.info("Output: Listing files only (no files will be written)")
+        logging.info("%sOutput: Listing files only%s %s(no files will be written)%s", C_CYAN, C_RESET, C_DIM, C_RESET)
     elif args.tree:
-        logging.info("Output: Showing file tree (no files will be written)")
+        logging.info("%sOutput: Showing file tree%s %s(no files will be written)%s", C_CYAN, C_RESET, C_DIM, C_RESET)
     elif args.estimate_tokens:
-        logging.info("Output: Token estimation only (no files will be written)")
+        logging.info("%sOutput: Token estimation only%s %s(no files will be written)%s", C_CYAN, C_RESET, C_DIM, C_RESET)
     else:
-        logging.info("Output: Writing %s", destination_desc)
+        logging.info("%sOutput:%s %s%s%s", C_CYAN, C_RESET, C_BOLD, destination_desc, C_RESET)
 
     try:
         stats = find_and_combine_files(
@@ -2053,23 +2107,18 @@ def main():
         sys.exit(1)
 
     # Success/Completion Feedback
-    use_color = sys.stderr.isatty() and not os.getenv("NO_COLOR")
-    green = "\033[32m" if use_color else ""
-    yellow = "\033[33m" if use_color else ""
-    reset = "\033[0m" if use_color else ""
-
     if args.dry_run:
-        print(f"{yellow}Dry run complete.{reset}", file=sys.stderr)
+        print(f"{C_YELLOW}Dry run complete.{C_RESET}", file=sys.stderr)
     elif args.list_files:
-        print(f"{green}Success!{reset} File listing complete.", file=sys.stderr)
+        print(f"{C_GREEN}Success!{C_RESET} File listing complete.", file=sys.stderr)
     elif args.tree:
-        print(f"{green}Success!{reset} Tree view complete.", file=sys.stderr)
+        print(f"{C_GREEN}Success!{C_RESET} Tree view complete.", file=sys.stderr)
     elif args.estimate_tokens:
-        print(f"{green}Success!{reset} Token estimation complete.", file=sys.stderr)
+        print(f"{C_GREEN}Success!{C_RESET} Token estimation complete.", file=sys.stderr)
     else:
         total_included = stats.get('total_files', 0) if stats else 0
         file_word = "file" if total_included == 1 else "files"
-        print(f"{green}Success!{reset} Combined {total_included:,} {file_word} {destination_desc}", file=sys.stderr)
+        print(f"{C_GREEN}Success!{C_RESET} Combined {total_included:,} {file_word} {destination_desc}", file=sys.stderr)
 
     if stats:
         _print_execution_summary(stats, args, pairing_enabled)
@@ -2237,45 +2286,33 @@ def _print_execution_summary(stats, args, pairing_enabled):
     total_filtered = max(0, total_discovered - total_included)
     excluded_folders = stats.get('excluded_folder_count', 0)
 
-    # ANSI color codes (if supported)
-    bold = "\033[1m"
-    reset = "\033[0m"
-    dim = "\033[90m"
-    green = "\033[32m"
-    yellow = "\033[33m"
-    cyan = "\033[36m"
-
-    use_color = sys.stderr.isatty() and not os.getenv("NO_COLOR")
-    if not use_color:
-        bold = reset = dim = green = yellow = cyan = ""
-
     if args.dry_run:
         summary_title = "Dry-Run Summary"
-        title_color = yellow
+        title_color = C_YELLOW
     elif args.estimate_tokens:
         summary_title = "Token Estimation Summary"
-        title_color = cyan
+        title_color = C_CYAN
     elif args.list_files:
         summary_title = "File List Summary"
-        title_color = cyan
+        title_color = C_CYAN
     elif args.tree:
         summary_title = "Tree View Summary"
-        title_color = cyan
+        title_color = C_CYAN
     else:
         summary_title = "Execution Summary"
-        title_color = green
+        title_color = C_GREEN
 
     # Header
-    print(f"\n{title_color}{bold}=== {summary_title} ==={reset}", file=sys.stderr)
+    print(f"\n{title_color}{C_BOLD}=== {summary_title} ==={C_RESET}", file=sys.stderr)
 
     if stats.get('budget_exceeded'):
-        print(f"  {yellow}{bold}WARNING: Output truncated due to token budget.{reset}", file=sys.stderr)
+        print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to token budget.{C_RESET}", file=sys.stderr)
 
     # Files Section
     label_width = 22
-    print(f"  {bold}Files{reset}", file=sys.stderr)
-    print(f"    {bold}{'Included:':<{label_width}}{reset}{total_included:12,}", file=sys.stderr)
-    print(f"    {bold}{'Filtered:':<{label_width}}{reset}{total_filtered:12,}", file=sys.stderr)
+    print(f"  {C_BOLD}Files{C_RESET}", file=sys.stderr)
+    print(f"    {C_BOLD}{'Included:':<{label_width}}{C_RESET}{total_included:12,}", file=sys.stderr)
+    print(f"    {C_BOLD}{'Filtered:':<{label_width}}{C_RESET}{total_filtered:12,}", file=sys.stderr)
 
     # Detailed breakdown of filtering reasons
     if stats.get('filter_reasons'):
@@ -2288,16 +2325,16 @@ def _print_execution_summary(stats, args, pairing_enabled):
             if count > 0:
                 display_reason = reason.replace('_', ' ')
                 # Use dim for less visual noise in the breakdown
-                print(f"      {dim}- {display_reason:<{label_width - 4}}{reset}{count:12,}", file=sys.stderr)
+                print(f"      {C_DIM}- {display_reason:<{label_width - 4}}{C_RESET}{count:12,}", file=sys.stderr)
 
-    print(f"    {bold}{'Total Discovered:':<{label_width}}{reset}{total_discovered:12,}", file=sys.stderr)
+    print(f"    {C_BOLD}{'Total Discovered:':<{label_width}}{C_RESET}{total_discovered:12,}", file=sys.stderr)
     if excluded_folders > 0:
-        print(f"    {bold}{'Excluded Folders:':<{label_width}}{reset}{excluded_folders:12,}", file=sys.stderr)
+        print(f"    {C_BOLD}{'Excluded Folders:':<{label_width}}{C_RESET}{excluded_folders:12,}", file=sys.stderr)
 
     # Data Section
     total_size_str = utils.format_size(stats.get('total_size_bytes', 0))
-    print(f"\n  {bold}Data{reset}", file=sys.stderr)
-    print(f"    {bold}{'Total Size:':<{label_width}}{reset}{total_size_str:>12}", file=sys.stderr)
+    print(f"\n  {C_BOLD}Data{C_RESET}", file=sys.stderr)
+    print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{total_size_str:>12}", file=sys.stderr)
 
     # Token Counts
     # Show token counts if tokens were estimated
@@ -2306,12 +2343,12 @@ def _print_execution_summary(stats, args, pairing_enabled):
         is_approx = stats.get('token_count_is_approx', False)
         token_str = f"{'~' if is_approx else ''}{token_count:,}"
         print(
-            f"    {bold}{'Token Count:':<{label_width}}{reset}{token_str:>12}",
+            f"    {C_BOLD}{'Token Count:':<{label_width}}{C_RESET}{token_str:>12}",
             file=sys.stderr,
         )
         if is_approx:
             print(
-                f"      {dim}(Install 'tiktoken' for accurate counts){reset}",
+                f"      {C_DIM}(Install 'tiktoken' for accurate counts){C_RESET}",
                 file=sys.stderr,
             )
 
@@ -2323,14 +2360,12 @@ def _print_execution_summary(stats, args, pairing_enabled):
             bar_len = 10
             filled = min(bar_len, int((percent / 100) * bar_len))
             bar = f"[{'#' * filled}{'-' * (bar_len - filled)}]"
-            bar_color = yellow if percent > 90 else green
-            if not use_color:
-                bar_color = ""
-            print(f"    {bold}{'Budget Usage:':<{label_width}}{reset}{bar_color}{bar}{reset} {percent:>6.1f}%", file=sys.stderr)
+            bar_color = C_YELLOW if percent > 90 else C_GREEN
+            print(f"    {C_BOLD}{'Budget Usage:':<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {percent:>6.1f}%", file=sys.stderr)
 
     # Largest Files
     if stats.get('top_files'):
-        print(f"\n  {bold}Largest Files (by tokens){reset}", file=sys.stderr)
+        print(f"\n  {C_BOLD}Largest Files (by tokens){C_RESET}", file=sys.stderr)
         # Sort by tokens desc, then path alpha
         top = sorted(stats['top_files'], key=lambda x: (-x[0], x[2]))[:5]
         for tokens, f_size, path in top:
@@ -2339,7 +2374,7 @@ def _print_execution_summary(stats, args, pairing_enabled):
             # Truncate long paths
             display_path = (path[:48] + '...') if len(path) > 51 else path
             # Align token counts at 10 and sizes at 12 to keep paths consistent
-            print(f"    {cyan}{token_str:>10}{reset}  {dim}{size_str:<12}{reset}  {display_path}", file=sys.stderr)
+            print(f"    {C_CYAN}{token_str:>10}{C_RESET}  {C_DIM}{size_str:<12}{C_RESET}  {display_path}", file=sys.stderr)
 
     # Extensions Grid
     if stats['files_by_extension']:
@@ -2350,7 +2385,7 @@ def _print_execution_summary(stats, args, pairing_enabled):
         )
 
         formatted_counts = [f"{count:,}" for _, count in sorted_exts]
-        items = [f"{cyan}{ext}{reset}: {c:>5}" for (ext, _), c in zip(sorted_exts, formatted_counts)]
+        items = [f"{C_CYAN}{ext}{C_RESET}: {c:>5}" for (ext, _), c in zip(sorted_exts, formatted_counts)]
         raw_items = [f"{ext}: {c:>5}" for (ext, _), c in zip(sorted_exts, formatted_counts)]
         max_len = max(len(s) for s in raw_items) + 3
 
@@ -2366,7 +2401,7 @@ def _print_execution_summary(stats, args, pairing_enabled):
         avail_width = max(40, term_width - 4)
         cols = max(1, avail_width // max_len)
 
-        print(f"\n  {bold}Extensions{reset}", file=sys.stderr)
+        print(f"\n  {C_BOLD}Extensions{C_RESET}", file=sys.stderr)
 
         for i in range(0, len(items), cols):
             chunk = items[i:i + cols]
@@ -2378,7 +2413,7 @@ def _print_execution_summary(stats, args, pairing_enabled):
             print(f"    {''.join(line_parts).rstrip()}", file=sys.stderr)
 
     # Footer
-    print(f"\n{title_color}{'=' * (len(summary_title) + 8)}{reset}", file=sys.stderr)
+    print(f"\n{title_color}{'=' * (len(summary_title) + 8)}{C_RESET}", file=sys.stderr)
 
 
 if __name__ == "__main__":
