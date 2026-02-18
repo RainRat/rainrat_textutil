@@ -1,17 +1,17 @@
 # SourceCombine
 
-**SourceCombine** is a flexible tool for your terminal for combining multiple text files into a single output or organized pairs. It uses a YAML configuration file to set rules for finding files, filtering, and processing text.
+**SourceCombine** is a tool for your terminal that combines many text files into one file or organized pairs. It uses a YAML configuration file to set rules for finding, filtering, and changing text.
 
-Whether you are preparing files for printing, creating context for Large Language Models (LLMs), or simply want a compact archive of your code, SourceCombine streamlines the process.
+Whether you are preparing files for printing, giving context to AI assistants, or making a small archive of your code, SourceCombine makes it easy.
 
 ## Common Use Cases
 
-*   **LLM Context:** Combine your entire project's source code into a single file to provide comprehensive context for AI assistants.
-*   **Code Archiving:** Create a snapshot of your source files for documentation or backup purposes.
-*   **Code Reviews:** Combine scattered files into one document to easily review or print them.
-*   **Preprocessing:** Apply regex replacements or remove comments across multiple files at once.
-*   **C/C++ Pairing:** Automatically pair source files (`.cpp`) with their headers (`.h`) for organized distribution.
-*   **Code Restoration:** Recreate original folders and files from combined archives (JSON, XML, Markdown, or Text).
+*   **AI Context:** Combine your whole project into one file to give AI assistants better context.
+*   **Code Archiving:** Save a snapshot of your source files for documentation or backup.
+*   **Code Reviews:** Combine scattered files into one document to review or print them easily.
+*   **Preparing Files:** Change text with search-and-replace rules or remove comments from many files at once.
+*   **C/C++ Pairing:** Pair source files (`.cpp`) with their headers (`.h`) automatically to keep them organized.
+*   **Restoring Code:** Recreate folders and files from combined archives (JSON, XML, Markdown, or Text).
 
 ## Installation
 
