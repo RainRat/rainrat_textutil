@@ -695,13 +695,13 @@ def test_write_max_size_placeholder_edge_cases(tmp_path, caplog):
     # Dry run
     processor = FileProcessor(config, output_opts, dry_run=True)
     with caplog.at_level(logging.INFO):
-        tokens, approx = processor.write_max_size_placeholder(tmp_path / "large.txt", tmp_path, None)
+        tokens, approx, lines = processor.write_max_size_placeholder(tmp_path / "large.txt", tmp_path, None)
     assert tokens == 0
     assert approx is True
     assert "large.txt" in caplog.text
 
     # Missing placeholder
     processor = FileProcessor(config, {}, dry_run=False)
-    tokens, approx = processor.write_max_size_placeholder(tmp_path / "large.txt", tmp_path, None)
+    tokens, approx, lines = processor.write_max_size_placeholder(tmp_path / "large.txt", tmp_path, None)
     assert tokens == 0
     assert approx is True

@@ -210,6 +210,7 @@ available for these templates:
 - `{{DIR_SLUG}}`: A filesystem-safe simplified name for `{{DIR}}` (uses `root` for the project root).
 - `{{SIZE}}`: The human-readable size of the file (e.g., `1.20 KB`).
 - `{{TOKENS}}`: The estimated number of tokens in the file.
+- `{{LINE_COUNT}}`: The number of lines in the file.
 
 By default, SourceCombine writes a simple divider around each file:
 
@@ -242,6 +243,7 @@ entire project:
 - `{{FILE_COUNT}}`: The total number of files included in the output.
 - `{{TOTAL_SIZE}}`: The human-readable total size of all included files.
 - `{{TOTAL_TOKENS}}`: The total estimated token count.
+- `{{TOTAL_LINES}}`: The total line count of all included content.
 
 ```yaml
 output:

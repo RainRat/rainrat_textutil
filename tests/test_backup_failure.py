@@ -41,7 +41,7 @@ def test_backup_failure_raises_invalid_config_error(tmp_path):
         with pytest.raises(InvalidConfigError) as excinfo:
             # Pass a dummy outfile because process_and_write writes to it if successful
             # But here it should fail before writing to outfile
-            processor.process_and_write(file_path, tmp_path, MagicMock())
+            processor.process_and_write(file_path, tmp_path, MagicMock())[:-1]
 
     assert "Failed to create backup" in str(excinfo.value)
     assert "Disk full" in str(excinfo.value)
