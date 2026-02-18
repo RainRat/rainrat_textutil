@@ -210,9 +210,7 @@ def _render_global_template(template, stats):
 def _normalize_patterns(patterns):
     if not patterns:
         return ()
-    if isinstance(patterns, set):
-        return tuple(sorted(patterns))
-    return tuple(patterns)
+    return tuple(sorted({p.casefold() for p in patterns}))
 
 
 @lru_cache(maxsize=4096)
@@ -222,8 +220,8 @@ def _matches_file_glob_cached(file_name, relative_path_str, patterns):
     file_name_cf = file_name.casefold()
     rel_path_cf = relative_path_str.casefold()
     return any(
-        fnmatch.fnmatchcase(file_name_cf, p.casefold())
-        or fnmatch.fnmatchcase(rel_path_cf, p.casefold())
+        fnmatch.fnmatchcase(file_name_cf, p)
+        or fnmatch.fnmatchcase(rel_path_cf, p)
         for p in patterns
     )
 
@@ -235,10 +233,9 @@ def _matches_folder_glob_cached(relative_path_str, parts, patterns):
     rel_path_cf = relative_path_str.casefold()
     parts_cf = tuple(p.casefold() for p in parts)
     for pattern in patterns:
-        pattern_cf = pattern.casefold()
-        if fnmatch.fnmatchcase(rel_path_cf, pattern_cf):
+        if fnmatch.fnmatchcase(rel_path_cf, pattern):
             return True
-        if any(fnmatch.fnmatchcase(p_cf, pattern_cf) for p_cf in parts_cf):
+        if any(fnmatch.fnmatchcase(p_cf, pattern) for p_cf in parts_cf):
             return True
     return False
 
