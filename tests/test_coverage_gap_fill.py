@@ -125,3 +125,15 @@ def test_cli_extract_clipboard_import_error_coverage(monkeypatch, caplog):
             sourcecombine.main()
     assert excinfo.value.code == 1
     assert "The 'pyperclip' library is required" in caplog.text
+
+def test_utils_tiktoken_import_error_coverage():
+    """Cover utils.py lines 12-13: tiktoken ImportError."""
+    with patch.dict(sys.modules, {'tiktoken': None}):
+        # runpy executes the module in a fresh namespace without reloading it in sys.modules
+        utils_namespace = runpy.run_path("utils.py")
+        assert utils_namespace['tiktoken'] is None
+
+def test_looks_binary_no_args_coverage():
+    """Cover utils.py line 179: _looks_binary with no args."""
+    from utils import _looks_binary
+    assert _looks_binary() is False

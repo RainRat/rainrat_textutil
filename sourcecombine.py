@@ -248,6 +248,7 @@ def should_include(
     *,
     return_reason: bool = False,
     abs_output_path: Path = None,
+    virtual_content: str | bytes | None = None,
 ) -> bool | tuple[bool, str | None]:
     """Return ``True`` if ``file_path`` (or ``relative_path``) passes filtering rules.
 
@@ -296,13 +297,31 @@ def should_include(
     ):
         return (False, 'not_included') if return_reason else False
 
-    if file_path is not None and filter_opts.get('skip_binary'):
-        if _looks_binary(file_path):
-            return (False, 'binary') if return_reason else False
+    if filter_opts.get('skip_binary'):
+        if file_path is not None:
+            if _looks_binary(file_path):
+                return (False, 'binary') if return_reason else False
+        elif virtual_content is not None:
+            sample_bytes = (
+                virtual_content
+                if isinstance(virtual_content, bytes)
+                else virtual_content.encode('utf-8', errors='replace')
+            )
+            if _looks_binary(sample=sample_bytes):
+                return (False, 'binary') if return_reason else False
 
     try:
+        file_size = None
         if file_path is not None:
             file_size = file_path.stat().st_size
+        elif virtual_content is not None:
+            file_size = (
+                len(virtual_content)
+                if isinstance(virtual_content, bytes)
+                else len(virtual_content.encode('utf-8', errors='replace'))
+            )
+
+        if file_size is not None:
             min_size = filter_opts.get('min_size_bytes', 0)
             max_size = filter_opts.get('max_size_bytes')
             if max_size in (None, 0):
@@ -2213,7 +2232,8 @@ def extract_files(content, output_folder, dry_run=False, source_name="archive", 
             rel_path,
             filter_opts,
             search_opts,
-            return_reason=True
+            return_reason=True,
+            virtual_content=file_content,
         )
 
         if include:
