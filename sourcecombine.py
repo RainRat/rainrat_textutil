@@ -858,7 +858,7 @@ class FileProcessor:
 
         # Estimate tokens on the final processed content
         token_count, is_approx = utils.estimate_tokens(processed_content)
-        line_count = processed_content.count('\n') + (1 if processed_content and not processed_content.endswith('\n') else 0) if processed_content else 0
+        line_count = utils.count_lines(processed_content)
 
         if not self.estimate_tokens:
             if self.output_format == 'json':
@@ -906,7 +906,7 @@ class FileProcessor:
         rendered = _render_template(placeholder, relative_path, size=file_size)
 
         token_count, is_approx = utils.estimate_tokens(rendered)
-        line_count = rendered.count('\n') + (1 if rendered and not rendered.endswith('\n') else 0) if rendered else 0
+        line_count = utils.count_lines(rendered)
 
         if not self.estimate_tokens:
             if self.output_format == 'json':
@@ -1290,7 +1290,7 @@ def find_and_combine_files(
                             content = read_file_best_effort(p)
                             processed = process_content(content, processor.processing_opts)
                             tokens, is_approx = utils.estimate_tokens(processed)
-                            lines = processed.count('\n') + (1 if processed and not processed.endswith('\n') else 0) if processed else 0
+                            lines = utils.count_lines(processed)
                             view_metadata[p]['tokens'] = tokens
                             view_metadata[p]['lines'] = lines
                             stats['total_tokens'] += tokens
@@ -1307,7 +1307,7 @@ def find_and_combine_files(
                             content = read_file_best_effort(p)
                             processed = process_content(content, processor.processing_opts)
                             tokens, is_approx = utils.estimate_tokens(processed)
-                            lines = processed.count('\n') + (1 if processed and not processed.endswith('\n') else 0) if processed else 0
+                            lines = utils.count_lines(processed)
                             stats['total_tokens'] += tokens
                             stats['total_lines'] += lines
                             if is_approx:
@@ -1432,10 +1432,10 @@ def find_and_combine_files(
             # We estimate these once without placeholders for initial budget.
             if global_header and output_format in ('text', 'markdown', 'xml'):
                 current_tokens += utils.estimate_tokens(global_header)[0]
-                current_lines += global_header.count('\n') + (1 if global_header and not global_header.endswith('\n') else 0)
+                current_lines += utils.count_lines(global_header)
             if global_footer and output_format in ('text', 'markdown', 'xml'):
                 current_tokens += utils.estimate_tokens(global_footer)[0]
-                current_lines += global_footer.count('\n') + (1 if global_footer and not global_footer.endswith('\n') else 0)
+                current_lines += utils.count_lines(global_footer)
 
             # Estimate TOC and Tree tokens if enabled (rough estimation per file)
             if output_format in ('text', 'markdown'):
@@ -1486,7 +1486,7 @@ def find_and_combine_files(
                     if placeholder:
                         rendered = _render_template(placeholder, rel_p, size=file_size)
                         content_tokens, is_approx = utils.estimate_tokens(rendered)
-                        content_lines = rendered.count('\n') + (1 if rendered and not rendered.endswith('\n') else 0) if rendered else 0
+                        content_lines = utils.count_lines(rendered)
                         if is_approx:
                             stats['token_count_is_approx'] = True
                 else:
@@ -1497,7 +1497,7 @@ def find_and_combine_files(
                         processor._backup_file(file_path)
                         file_path.write_text(processed, encoding='utf8', newline='')
                     content_tokens, is_approx = utils.estimate_tokens(processed)
-                    content_lines = processed.count('\n') + (1 if processed and not processed.endswith('\n') else 0) if processed else 0
+                    content_lines = utils.count_lines(processed)
                     if is_approx:
                         stats['token_count_is_approx'] = True
 
@@ -1517,8 +1517,8 @@ def find_and_combine_files(
 
                 header_tokens = utils.estimate_tokens(rendered_h)[0]
                 footer_tokens = utils.estimate_tokens(rendered_f)[0]
-                header_lines = rendered_h.count('\n') + (1 if rendered_h and not rendered_h.endswith('\n') else 0) if rendered_h else 0
-                footer_lines = rendered_f.count('\n') + (1 if rendered_f and not rendered_f.endswith('\n') else 0) if rendered_f else 0
+                header_lines = utils.count_lines(rendered_h)
+                footer_lines = utils.count_lines(rendered_f)
 
                 # Total tokens for this file entry including its boundaries
                 entry_tokens = content_tokens + header_tokens + footer_tokens
@@ -1592,14 +1592,14 @@ def find_and_combine_files(
             if not budget_pass_performed and (not dry_run or estimate_tokens) and output_format in ('text', 'markdown', 'xml'):
                 if global_header:
                     tokens, is_approx = utils.estimate_tokens(global_header)
-                    lines = global_header.count('\n') + (1 if global_header and not global_header.endswith('\n') else 0)
+                    lines = utils.count_lines(global_header)
                     stats['total_tokens'] += tokens
                     stats['total_lines'] += lines
                     if is_approx:
                         stats['token_count_is_approx'] = True
                 if global_footer:
                     tokens, is_approx = utils.estimate_tokens(global_footer)
-                    lines = global_footer.count('\n') + (1 if global_footer and not global_footer.endswith('\n') else 0)
+                    lines = utils.count_lines(global_footer)
                     stats['total_tokens'] += tokens
                     stats['total_lines'] += lines
                     if is_approx:
@@ -1631,8 +1631,8 @@ def find_and_combine_files(
                     if not dry_run or estimate_tokens:
                         stats['total_tokens'] += utils.estimate_tokens(tree_header)[0]
                         stats['total_tokens'] += utils.estimate_tokens(tree_footer)[0]
-                        stats['total_lines'] += tree_header.count('\n') + (1 if tree_header and not tree_header.endswith('\n') else 0)
-                        stats['total_lines'] += tree_footer.count('\n') + (1 if tree_footer and not tree_footer.endswith('\n') else 0)
+                        stats['total_lines'] += utils.count_lines(tree_header)
+                        stats['total_lines'] += utils.count_lines(tree_footer)
 
                     if not dry_run and not estimate_tokens:
                         outfile.write(tree_header)
@@ -1643,7 +1643,7 @@ def find_and_combine_files(
                         )
                         if not dry_run or estimate_tokens:
                             token_count, is_approx = utils.estimate_tokens(tree_content)
-                            line_count = tree_content.count('\n') + (1 if tree_content and not tree_content.endswith('\n') else 0)
+                            line_count = utils.count_lines(tree_content)
                             stats['total_lines'] += line_count
                             if is_approx:
                                 stats['token_count_is_approx'] = True
@@ -1659,7 +1659,7 @@ def find_and_combine_files(
 
                 if not dry_run or estimate_tokens:
                     token_count, is_approx = utils.estimate_tokens(toc_content)
-                    line_count = toc_content.count('\n') + (1 if toc_content and not toc_content.endswith('\n') else 0)
+                    line_count = utils.count_lines(toc_content)
                     stats['total_lines'] += line_count
                     if is_approx:
                         stats['token_count_is_approx'] = True
@@ -1713,8 +1713,8 @@ def find_and_combine_files(
 
                         header_tokens = utils.estimate_tokens(rendered_h)[0]
                         footer_tokens = utils.estimate_tokens(rendered_f)[0]
-                        header_lines = rendered_h.count('\n') + (1 if rendered_h and not rendered_h.endswith('\n') else 0) if rendered_h else 0
-                        footer_lines = rendered_f.count('\n') + (1 if rendered_f and not rendered_f.endswith('\n') else 0) if rendered_f else 0
+                        header_lines = utils.count_lines(rendered_h)
+                        footer_lines = utils.count_lines(rendered_f)
 
                         stats['total_tokens'] += token_count + header_tokens + footer_tokens
                         stats['total_lines'] += line_count + header_lines + footer_lines

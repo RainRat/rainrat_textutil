@@ -705,6 +705,13 @@ def process_content(buffer: str, options: Mapping[str, Any]) -> str:
     return buffer
 
 
+def count_lines(text: str) -> int:
+    """Return the number of lines in the text."""
+    if not text:
+        return 0
+    return len(text.splitlines())
+
+
 def add_line_numbers(text):
     """Prepend line numbers to each line of text."""
     lines = text.splitlines()
