@@ -6,7 +6,7 @@ Whether you are preparing files for printing, giving context to AI assistants, o
 
 ## Common Use Cases
 
-*   **AI Context:** Combine your whole project into one file to give AI assistants better context.
+*   **Context for AI Assistants:** Combine your whole project into one file to give AI assistants better context.
 *   **Code Archiving:** Save a snapshot of your source files for documentation or backup.
 *   **Code Reviews:** Combine scattered files into one document to review or print them easily.
 *   **Preparing Files:** Change text with search-and-replace rules or remove comments from many files at once.
@@ -100,12 +100,12 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 *   `--clipboard` / `-c`: Copy the combined output directly to your clipboard instead of saving a file.
     *   *Note: You cannot use clipboard mode when file pairing is enabled.*
 *   `--format` / `-f`: Choose the output format (`text`, `json`, `markdown`, or `xml`).
-    *   *Note: You can also use the shortcuts `-m` (markdown) or `-j` (json). JSON format produces a list of file objects and only works in single-file mode. Markdown and XML formats automatically use appropriate markers (code blocks for Markdown, tags for XML).*
+    *   *Note: You can also use the shortcuts `-m` (markdown) or `-j` (json). JSON format produces a list of file objects and only works when combining many files into one. Markdown and XML formats automatically use appropriate markers (code blocks for Markdown, tags for XML).*
 *   `--line-numbers` / `-n`: Add line numbers to the beginning of each line in the combined output.
-*   `--toc` / `-T`: Include a Table of Contents at the beginning of the output file. (Single-file mode only).
-*   `--include-tree`: Include a visual folder tree at the start of the output. (Single-file mode only).
+*   `--toc` / `-T`: Include a Table of Contents at the beginning of the output file. (Only works when combining many files into one).
+*   `--include-tree`: Include a visual folder tree at the start of the output. (Only works when combining many files into one).
 *   `--compact` / `-C`: Compact and clean up whitespace in the combined output to save tokens.
-*   `--max-tokens`: Stop adding files once this total token limit is reached. (Single-file mode only).
+*   `--max-tokens`: Stop adding files once this total token limit is reached. (Only works when combining many files into one).
 *   `--estimate-tokens` / `-e`: Calculate token counts without creating any files.
     *   *Note: Slower than a regular dry-run because it must read the file contents.*
 *   `--list-files` / `-l`: Print a list of files that would be processed to your terminal and exit.
@@ -113,9 +113,9 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 *   `--files-from`: Read a list of files to process from a text file (or `-` for your terminal). Overrides normal folder scanning.
 *   `--extract`: Recreate files and folders from a combined JSON, XML, Markdown, or Text file.
 *   `--init`: Generate a default configuration file (`sourcecombine.yml`) in the current folder.
-*   `--include` / `-i`: Include only files matching a specific pattern (e.g., `-i "*.py"`). Can be used multiple times.
-*   `--exclude-file` / `-x`: Exclude specific files (e.g., `-x "secret.txt"`). Can be used multiple times.
-*   `--exclude-folder` / `-X`: Exclude specific folders (e.g., `-X "build"`). Can be used multiple times.
+*   `--include` / `-i`: Include only files matching a specific pattern (e.g., `-i "*.py"`). Can be used many times.
+*   `--exclude-file` / `-x`: Exclude specific files (e.g., `-x "secret.txt"`). Can be used many times.
+*   `--exclude-folder` / `-X`: Exclude specific folders (e.g., `-X "build"`). Can be used many times.
 
 ### Examples
 
@@ -143,7 +143,7 @@ Use default settings to combine files in `src/`:
 python sourcecombine.py src/
 ```
 
-**Combine multiple folders and files:**
+**Combine many folders and files:**
 ```bash
 python sourcecombine.py src/ docs/ README.md
 ```
@@ -195,7 +195,7 @@ output:
   table_of_contents: true
 ```
 
-The Table of Contents lists all included files with their sizes and estimated token counts. In Markdown mode (`--format markdown`), it also creates links to each file section.
+The Table of Contents lists all included files with their sizes and estimated token counts. In Markdown mode (`--format markdown`), it also creates links to each file section. (This feature only works when combining many files into one).
 
 ## Customizing file boundaries
 
@@ -237,7 +237,7 @@ entire combined file using `output.global_header_template` and
 `output.global_footer_template`. These templates are useful for adding license
 information, project descriptions, or wrapping the output in a specific format.
 
-In single-file mode, these templates support metadata placeholders for the
+When combining many files into one, these templates support metadata placeholders for the
 entire project:
 
 - `{{FILE_COUNT}}`: The total number of files included in the output.
@@ -251,7 +251,7 @@ output:
   global_footer_template: "\n# End of Project Source Code\n"
 ```
 
-The templates are written once around the combined output even when multiple
+The templates are written once around the combined output even when many
 `search.root_folders` are provided. When pairing is enabled, the global header
 and footer are written around each paired output file (though global placeholders
 are not supported in pairing mode).
@@ -365,7 +365,7 @@ the output for pairs whose primary file exceeds the limit.
 
 Set `filters.max_total_tokens` to a positive integer to limit the total size of the
 combined output document. This is very helpful when preparing context for
-Large Language Models with specific limits.
+AI assistants with specific limits.
 
 Set `filters.skip_binary` to `true` to ignore files that look like binary data
 (for example, executables or images) even when they match your other filters.
