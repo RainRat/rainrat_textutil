@@ -25,7 +25,7 @@ def test_dry_run_output(capsys, caplog, tmp_path):
     # caplog catches logging
 
     # We expect the summary to be in stderr
-    assert "Dry-Run Summary" in captured.err
+    assert "DRY RUN COMPLETE" in captured.err
 
     # We expect the filename to be logged at INFO level
     # Since pytest intercepts logging, we check caplog
@@ -52,7 +52,7 @@ def test_list_files_proposal(capsys, tmp_path):
     assert "src/other.py" in captured.out
 
     # stderr should contain the summary
-    assert "File List Summary" in captured.err
+    assert "FILE LISTING COMPLETE" in captured.err
 
     # stdout should NOT contain log info
     assert "SourceCombine starting" not in captured.out
@@ -128,7 +128,7 @@ def test_list_files_with_pairing(capsys, tmp_path):
     assert "src/bar.c" in captured.out
 
     # Verify summary title
-    assert "File List Summary" in captured.err
+    assert "FILE LISTING COMPLETE" in captured.err
 
 def test_list_files_with_pairing_mismatched_disabled(capsys, tmp_path):
     """Verify --list-files respects include_mismatched=False."""
@@ -180,4 +180,4 @@ def test_list_files_tree_estimate_tokens(capsys, tmp_path):
     assert "test.py" in captured.out
     assert "tokens" in captured.out
     # When estimate_tokens is set, it takes precedence in summary title
-    assert "Token Estimation Summary" in captured.err
+    assert "TOKEN ESTIMATION COMPLETE" in captured.err
