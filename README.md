@@ -100,10 +100,10 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 *   `--clipboard` / `-c`: Copy the combined output directly to your clipboard instead of saving a file.
     *   *Note: You cannot use clipboard mode when file pairing is enabled.*
 *   `--format` / `-f`: Choose the output format (`text`, `json`, `markdown`, or `xml`).
-    *   *Note: You can also use the shortcuts `-m` (markdown) or `-j` (json). JSON format produces a list of file objects and only works when combining many files into one. Markdown and XML formats automatically use appropriate markers (code blocks for Markdown, tags for XML).*
+    *   *Note: You can also use the shortcuts `-m` (markdown), `-j` (json), or `-w` (xml). JSON format produces a list of file objects and only works when combining many files into one. Markdown and XML formats automatically use appropriate markers (code blocks for Markdown, tags for XML).*
 *   `--line-numbers` / `-n`: Add line numbers to the beginning of each line in the combined output.
 *   `--toc` / `-T`: Include a Table of Contents at the beginning of the output file. (Only works when combining many files into one).
-*   `--include-tree`: Include a visual folder tree at the start of the output. (Only works when combining many files into one).
+*   `--include-tree` / `-p`: Include a visual folder tree at the start of the output. (Only works when combining many files into one).
 *   `--compact` / `-C`: Compact and clean up whitespace in the combined output to save tokens.
 *   `--sort`: Sort files by `name`, `size`, `modified`, `tokens`, or `depth` before combining.
 *   `--reverse`: Reverse the sort order.

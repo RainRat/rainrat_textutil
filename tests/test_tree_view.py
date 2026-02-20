@@ -50,7 +50,7 @@ def test_tree_view_output(capsys, tmp_path):
     assert "    └── utils.py (16.00 B)" in out
 
     # Verify summary title in stderr
-    assert "Tree View Summary" in captured.err
+    assert "TREE VIEW COMPLETE" in captured.err
 
 def test_tree_view_with_pairing(capsys, tmp_path):
     """Verify --tree works correctly when pairing is enabled."""
@@ -148,7 +148,7 @@ def test_tree_view_no_output_file_validation(capsys, tmp_path):
 
     captured = capsys.readouterr()
     assert "f1.txt" in captured.out
-    assert "Tree View Summary" in captured.err
+    assert "TREE VIEW COMPLETE" in captured.err
 
 def test_tree_view_no_folder_creation(capsys, tmp_path):
     """Verify that --tree does not create an output folder in pairing mode."""

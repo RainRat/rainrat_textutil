@@ -1853,6 +1853,12 @@ def main():
         help="Shortcut for '--format json'.",
     )
     output_group.add_argument(
+        "--xml",
+        "-w",
+        action="store_true",
+        help="Shortcut for '--format xml'.",
+    )
+    output_group.add_argument(
         "--line-numbers",
         "-n",
         action="store_true",
@@ -1866,6 +1872,7 @@ def main():
     )
     output_group.add_argument(
         "--include-tree",
+        "-p",
         action="store_true",
         help="Include a visual folder tree with file metadata at the start of the output. (Single-file mode only)",
     )
@@ -2162,6 +2169,8 @@ def main():
         args.format = "markdown"
     elif args.json:
         args.format = "json"
+    elif args.xml:
+        args.format = "xml"
 
     if not args.format:
         args.format = output_conf.get('format', 'text')
@@ -2264,7 +2273,8 @@ def main():
             list_files=args.list_files,
             tree_view=args.tree
         )
-        _print_execution_summary(stats, args, pairing_enabled=False)
+        dest = f"to '{output_folder}'"
+        _print_execution_summary(stats, args, pairing_enabled=False, destination_desc=dest)
         sys.exit(0)
 
     mode_desc = "Pairing" if pairing_enabled else "Single File"
@@ -2295,22 +2305,8 @@ def main():
         logging.error(exc, exc_info=True)
         sys.exit(1)
 
-    # Success/Completion Feedback
-    if args.dry_run:
-        print(f"{C_YELLOW}Dry run complete.{C_RESET}", file=sys.stderr)
-    elif args.list_files:
-        print(f"{C_GREEN}Success!{C_RESET} File listing complete.", file=sys.stderr)
-    elif args.tree:
-        print(f"{C_GREEN}Success!{C_RESET} Tree view complete.", file=sys.stderr)
-    elif args.estimate_tokens:
-        print(f"{C_GREEN}Success!{C_RESET} Token estimation complete.", file=sys.stderr)
-    else:
-        total_included = stats.get('total_files', 0) if stats else 0
-        file_word = "file" if total_included == 1 else "files"
-        print(f"{C_GREEN}Success!{C_RESET} Combined {total_included:,} {file_word} {destination_desc}", file=sys.stderr)
-
     if stats:
-        _print_execution_summary(stats, args, pairing_enabled)
+        _print_execution_summary(stats, args, pairing_enabled, destination_desc)
 
 
 def extract_files(content, output_folder, dry_run=False, source_name="archive", config=None, list_files=False, tree_view=False):
@@ -2468,7 +2464,7 @@ def extract_files(content, output_folder, dry_run=False, source_name="archive", 
     return stats
 
 
-def _print_execution_summary(stats, args, pairing_enabled):
+def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None):
     """Print a formatted summary of the execution statistics to stderr."""
 
     total_included = stats.get('total_files', 0)
@@ -2477,19 +2473,20 @@ def _print_execution_summary(stats, args, pairing_enabled):
     excluded_folders = stats.get('excluded_folder_count', 0)
 
     if args.dry_run:
-        summary_title = "Dry-Run Summary"
+        summary_title = "DRY RUN COMPLETE"
         title_color = C_YELLOW
     elif args.estimate_tokens:
-        summary_title = "Token Estimation Summary"
+        summary_title = "TOKEN ESTIMATION COMPLETE"
         title_color = C_CYAN
     elif args.list_files:
-        summary_title = "File List Summary"
+        summary_title = "FILE LISTING COMPLETE"
         title_color = C_CYAN
     elif args.tree:
-        summary_title = "Tree View Summary"
+        summary_title = "TREE VIEW COMPLETE"
         title_color = C_CYAN
     else:
-        summary_title = "Execution Summary"
+        file_word = "file" if total_included == 1 else "files"
+        summary_title = f"SUCCESS: Combined {total_included:,} {file_word} {destination_desc or ''}".strip()
         title_color = C_GREEN
 
     # Header
