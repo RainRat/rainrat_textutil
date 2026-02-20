@@ -370,6 +370,8 @@ def _validate_filters_section(config):
     if isinstance(exclusions_conf, dict):
         filenames = exclusions_conf.get('filenames', [])
         _validate_glob_list(filenames, "filters.exclusions.filenames")
+        folders = exclusions_conf.get('folders', [])
+        _validate_glob_list(folders, "filters.exclusions.folders")
 
     groups = filters.get('inclusion_groups', {})
     if isinstance(groups, dict):
