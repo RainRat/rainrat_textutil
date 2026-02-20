@@ -78,6 +78,13 @@ output:
   # filters.max_size_bytes. The string may use placeholders like {{FILENAME}} and {{SIZE}}.
   max_size_placeholder: null
 
+  # Global sorting options for both single-file and pairing modes.
+  # Choices: name, size, modified, tokens, depth.
+  sort_by: 'name'
+
+  # If true, sort in descending order.
+  sort_reverse: false
+
 # --- File Filtering ---
 filters:
   # Files smaller than this (bytes) are skipped.

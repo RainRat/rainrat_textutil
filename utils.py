@@ -68,6 +68,8 @@ DEFAULT_CONFIG = {
         'global_footer_template': None,
         'max_size_placeholder': None,
         'format': 'text',
+        'sort_by': 'name',
+        'sort_reverse': False,
     },
     'processing': {
         'apply_in_place': False,
@@ -518,6 +520,16 @@ def _validate_output_section(config):
     fmt = output_conf.get('format')
     if fmt is not None and fmt not in ('text', 'json', 'markdown', 'xml'):
         raise InvalidConfigError("'output.format' must be one of: text, json, markdown, xml")
+
+    sort_by = output_conf.get('sort_by')
+    if sort_by is not None and sort_by not in ('name', 'size', 'modified', 'tokens', 'depth'):
+        raise InvalidConfigError(
+            "'output.sort_by' must be one of: name, size, modified, tokens, depth"
+        )
+
+    sort_reverse = output_conf.get('sort_reverse')
+    if sort_reverse is not None and not isinstance(sort_reverse, bool):
+        raise InvalidConfigError("'output.sort_reverse' must be a boolean value.")
 
 
 def apply_line_regex_replacements(text, rules):

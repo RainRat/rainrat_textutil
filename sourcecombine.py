@@ -1175,7 +1175,12 @@ def find_and_combine_files(
     # Store all items to process for single-file mode to enable global TOC
     # List of (file_path, root_path, is_size_excluded)
     all_single_mode_items = []
-    # Metadata for TOC and Tree: {Path: {'size': int, 'tokens': int}}
+    # Store all pairs across all roots
+    # List of (root_path, pair_key, paths)
+    all_paired_items = []
+    # Track all files excluded by size across all roots
+    all_size_excluded = set()
+    # Metadata for TOC and Tree: {Path: {'size': int, 'tokens': int, 'mtime': float, 'depth': int}}
     file_metadata = {}
 
     with outfile_ctx as outfile:
@@ -1209,18 +1214,18 @@ def find_and_combine_files(
                 if paths:
                     iteration_targets.append((root, paths, excluded))
 
+        source_exts = tuple(
+            e.lower() for e in (pair_opts.get('source_extensions') or [])
+        )
+        header_exts = tuple(
+            e.lower() for e in (pair_opts.get('header_extensions') or [])
+        )
+
         for root_path, all_paths, excluded_count in iteration_targets:
             total_excluded_folders += excluded_count
             if excluded_count > 0:
                 stats['filter_reasons']['excluded_folder'] = stats['filter_reasons'].get('excluded_folder', 0) + excluded_count
             stats['total_discovered'] += len(all_paths)
-
-            source_exts = tuple(
-                e.lower() for e in (pair_opts.get('source_extensions') or [])
-            )
-            header_exts = tuple(
-                e.lower() for e in (pair_opts.get('header_extensions') or [])
-            )
             record_size_exclusions = bool(output_opts.get('max_size_placeholder'))
 
             filtered_result = filter_file_paths(
@@ -1235,6 +1240,7 @@ def find_and_combine_files(
             )
             if record_size_exclusions:
                 filtered_paths, size_excluded = filtered_result
+                all_size_excluded.update(size_excluded)
             else:
                 filtered_paths = filtered_result
                 size_excluded = []
@@ -1314,17 +1320,6 @@ def find_and_combine_files(
                 _update_file_stats(stats, p)
 
             if pairing_enabled:
-                # Process pairing immediately per root folder
-                processing_bar = processor._make_bar(
-                    total=(
-                        len(filtered_paths) + len(size_excluded)
-                        if (filtered_paths or size_excluded)
-                        else None
-                    ),
-                    desc="Processing files",
-                    unit="file",
-                )
-
                 include_mismatched = pair_opts.get('include_mismatched', False)
                 pairing_inputs = filtered_paths
                 if record_size_exclusions:
@@ -1336,27 +1331,16 @@ def find_and_combine_files(
                     include_mismatched,
                     root_path=root_path,
                 )
-                template = (
-                    output_opts.get('paired_filename_template')
-                    or '{{STEM}}.combined'
-                )
-                _process_paired_files(
-                    paired_paths,
-                    template=template,
-                    source_exts=source_exts,
-                    header_exts=header_exts,
-                    root_path=root_path,
-                    out_folder=out_folder,
-                    processor=processor,
-                    processing_bar=processing_bar,
-                    dry_run=dry_run,
-                    estimate_tokens=estimate_tokens,
-                    size_excluded=size_excluded,
-                    global_header=global_header,
-                    global_footer=global_footer,
-                    stats=stats,
-                )
-                processing_bar.close()
+                for pair_key, paths in paired_paths.items():
+                    all_paired_items.append((root_path, pair_key, paths))
+
+                # We still need to track stats for these files if we were to list them
+                if list_files or tree_view:
+                    unique_paths = set()
+                    for paths in paired_paths.values():
+                        unique_paths.update(paths)
+                    for p in sorted(unique_paths):
+                        _update_file_stats(stats, p)
             else:
                 # Accumulate for single-file mode
                 if record_size_exclusions:
@@ -1379,15 +1363,63 @@ def find_and_combine_files(
 
         # End of root_folder loop
 
-        # Metadata and Budgeting Pass for Single File Mode
+        # Metadata and Sorting Pass
+        sort_by = output_opts.get('sort_by', 'name')
+        sort_reverse = output_opts.get('sort_reverse', False)
+
         max_total_tokens = filter_opts.get('max_total_tokens', 0)
         needs_metadata = bool(output_opts.get('include_tree') or output_opts.get('table_of_contents'))
 
+        # We need metadata for sorting (except name), budgeting, TOC/Tree, or global placeholders
         global_placeholders = ["{{FILE_COUNT}}", "{{TOTAL_SIZE}}", "{{TOTAL_TOKENS}}", "{{TOTAL_LINES}}"]
         has_global_placeholders = (global_header and any(p in global_header for p in global_placeholders)) or \
                                   (global_footer and any(p in global_footer for p in global_placeholders))
 
-        if (max_total_tokens > 0 or needs_metadata or has_global_placeholders or estimate_tokens) and not pairing_enabled and not list_files and not tree_view:
+        needs_full_pass = (sort_by != 'name' or max_total_tokens > 0 or needs_metadata or
+                           has_global_placeholders or estimate_tokens)
+
+        # Global Sort
+        if pairing_enabled:
+            if sort_by != 'name' or sort_reverse:
+                def get_pair_sort_key(item):
+                    root_p, _, paths = item
+                    primary_path = paths[0]
+                    rel_p = _get_rel_path(primary_path, root_p)
+
+                    if sort_by == 'size':
+                        val = primary_path.stat().st_size if primary_path.exists() else 0
+                    elif sort_by == 'modified':
+                        val = primary_path.stat().st_mtime if primary_path.exists() else 0
+                    elif sort_by == 'depth':
+                        val = len(rel_p.parts)
+                    elif sort_by == 'tokens':
+                        content = read_file_best_effort(primary_path)
+                        processed = process_content(content, processor.processing_opts)
+                        val, _ = utils.estimate_tokens(processed)
+                    else:
+                        val = rel_p.as_posix()
+                    return (val, rel_p.as_posix())
+
+                all_paired_items.sort(key=get_pair_sort_key, reverse=sort_reverse)
+        else:
+            if sort_by != 'name' or sort_reverse:
+                if sort_by in ('name', 'size', 'modified', 'depth'):
+                    def get_single_sort_key(item):
+                        file_p, root_p, _ = item
+                        rel_p = _get_rel_path(file_p, root_p)
+                        if sort_by == 'size':
+                            val = file_p.stat().st_size if file_p.exists() else 0
+                        elif sort_by == 'modified':
+                            val = file_p.stat().st_mtime if file_p.exists() else 0
+                        elif sort_by == 'depth':
+                            val = len(rel_p.parts)
+                        else:
+                            val = rel_p.as_posix()
+                        return (val, rel_p.as_posix())
+                    all_single_mode_items.sort(key=get_single_sort_key, reverse=sort_reverse)
+                # Note: 'tokens' sort for single-file mode is handled inside the metadata pass below
+
+        if needs_full_pass and not pairing_enabled and not list_files and not tree_view:
             budgeted_items = []
             current_tokens = 0
             current_lines = 0
@@ -1408,6 +1440,34 @@ def find_and_combine_files(
                     current_tokens += len(all_single_mode_items) * 12
                 if output_opts.get('table_of_contents'):
                     current_tokens += len(all_single_mode_items) * 12
+
+            # If sorting by tokens, we must calculate tokens for all files first
+            if sort_by == 'tokens':
+                token_data = []
+                for item in all_single_mode_items:
+                    file_path, root_path, is_excluded_by_size = item
+                    rel_p = _get_rel_path(file_path, root_path)
+                    if is_excluded_by_size:
+                        placeholder = output_opts.get('max_size_placeholder')
+                        if placeholder:
+                            rendered = _render_template(placeholder, rel_p, size=file_path.stat().st_size if file_path.exists() else 0)
+                            tokens, _ = utils.estimate_tokens(rendered)
+                        else:
+                            tokens = 0
+                    else:
+                        content = read_file_best_effort(file_path)
+                        processed = process_content(content, processor.processing_opts)
+                        tokens, _ = utils.estimate_tokens(processed)
+                    token_data.append((tokens, rel_p.as_posix()))
+
+                # Sort by tokens
+                # Zip tokens with items to sort them together
+                indexed_items = sorted(
+                    zip(all_single_mode_items, token_data),
+                    key=lambda x: (x[1][0], x[1][1]),
+                    reverse=sort_reverse
+                )
+                all_single_mode_items = [x[0] for x in indexed_items]
 
             for i, item in enumerate(all_single_mode_items):
                 file_path, root_path, is_excluded_by_size = item
@@ -1485,6 +1545,43 @@ def find_and_combine_files(
             budget_pass_performed = True
         else:
             budget_pass_performed = False
+
+        # Process Paired files if enabled
+        if pairing_enabled and not list_files and not tree_view:
+            processing_bar = processor._make_bar(
+                total=sum(len(paths) for _, _, paths in all_paired_items),
+                desc="Processing files",
+                unit="file",
+            )
+            template = (
+                output_opts.get('paired_filename_template')
+                or '{{STEM}}.combined'
+            )
+
+            # Group back by root_path for _process_paired_files if needed,
+            # or just call it for each pair.
+            # Actually, _process_paired_files currently takes a dict of {key: paths}.
+            # I'll adapt it or call it per pair.
+
+            # Since we want to support global sorting, we should process in the sorted order.
+            for root_path, pair_key, paths in all_paired_items:
+                _process_paired_files(
+                    {pair_key: paths},
+                    template=template,
+                    source_exts=source_exts,
+                    header_exts=header_exts,
+                    root_path=root_path,
+                    out_folder=out_folder,
+                    processor=processor,
+                    processing_bar=processing_bar,
+                    dry_run=dry_run,
+                    estimate_tokens=estimate_tokens,
+                    size_excluded=all_size_excluded,
+                    global_header=global_header,
+                    global_footer=global_footer,
+                    stats=stats,
+                )
+            processing_bar.close()
 
         # Process Single File Mode items (including Global Header, TOC, Tree, and Footer)
         if not pairing_enabled and not list_files and not tree_view:
@@ -1778,6 +1875,16 @@ def main():
         action="store_true",
         help="Compact and clean up whitespace in the combined output to save tokens.",
     )
+    output_group.add_argument(
+        "--sort",
+        choices=["name", "size", "modified", "tokens", "depth"],
+        help="Sort files by name, size, modified time, token count, or path depth before combining.",
+    )
+    output_group.add_argument(
+        "--reverse",
+        action="store_true",
+        help="Reverse the sort order.",
+    )
 
     # Preview & Estimation Group
     preview_group = parser.add_argument_group("Preview & Estimation")
@@ -2043,6 +2150,12 @@ def main():
         if not isinstance(config.get('processing'), dict):
             config['processing'] = {}
         config['processing']['compact_whitespace'] = True
+
+    if args.sort:
+        output_conf['sort_by'] = args.sort
+
+    if args.reverse:
+        output_conf['sort_reverse'] = True
 
     # Determine the effective output format. CLI flags take precedence over config.
     if args.markdown:
