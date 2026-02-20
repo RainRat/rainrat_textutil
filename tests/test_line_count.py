@@ -92,3 +92,8 @@ def test_line_count_in_metadata_summary():
     meta_singular = {'lines': 1}
     summary_singular = _format_metadata_summary(meta_singular)
     assert "1 line" in summary_singular
+
+    # Test singular file
+    meta_file = {'files': 1}
+    summary_file = _format_metadata_summary(meta_file)
+    assert "1 file" in summary_file

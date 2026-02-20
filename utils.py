@@ -169,14 +169,21 @@ def read_file_best_effort(file_path):
     return raw_bytes.decode('utf-8', errors='replace').lstrip('\ufeff')
 
 
-def _looks_binary(path: Path, sample_size: int = 4096) -> bool:
-    """Return ``True`` when ``path`` appears to contain binary data."""
+def _looks_binary(
+    path: Path | None = None, sample: bytes | None = None, sample_size: int = 4096
+) -> bool:
+    """Return ``True`` when content appears to contain binary data."""
 
-    try:
-        with open(path, 'rb') as f:
-            sample = f.read(sample_size)
-    except OSError:
-        return False
+    if sample is None:
+        if path is None:
+            return False
+        try:
+            with open(path, 'rb') as f:
+                sample = f.read(sample_size)
+        except OSError:
+            return False
+    else:
+        sample = sample[:sample_size]
 
     if not sample:
         return False

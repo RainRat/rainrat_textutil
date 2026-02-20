@@ -379,3 +379,45 @@ def test_extract_xml_parse_error(tmp_path, caplog):
     with pytest.raises(SystemExit):
         extract_files(content, str(tmp_path))
     assert "Could not find any files to extract" in caplog.text
+
+def test_extract_respects_size_filter(tmp_path):
+    """Verify that extraction respects the max_size_bytes filter."""
+    output_dir = tmp_path / "extracted"
+    data = [
+        {"path": "small.txt", "content": "small"},
+        {"path": "large.txt", "content": "this is a much larger content"}
+    ]
+    content = json.dumps(data)
+
+    config = DEFAULT_CONFIG.copy()
+    config['filters'] = {
+        'max_size_bytes': 10
+    }
+
+    stats = extract_files(content, str(output_dir), config=config)
+
+    assert (output_dir / "small.txt").exists()
+    assert not (output_dir / "large.txt").exists()
+    assert stats['total_files'] == 1
+    assert stats['filter_reasons']['too_large'] == 1
+
+def test_extract_respects_binary_filter(tmp_path):
+    """Verify that extraction respects the skip_binary filter."""
+    output_dir = tmp_path / "extracted"
+    data = [
+        {"path": "text.txt", "content": "normal text"},
+        {"path": "binary.bin", "content": "\x00\x01\x02binary"}
+    ]
+    content = json.dumps(data)
+
+    config = DEFAULT_CONFIG.copy()
+    config['filters'] = {
+        'skip_binary': True
+    }
+
+    stats = extract_files(content, str(output_dir), config=config)
+
+    assert (output_dir / "text.txt").exists()
+    assert not (output_dir / "binary.bin").exists()
+    assert stats['total_files'] == 1
+    assert stats['filter_reasons']['binary'] == 1
