@@ -105,6 +105,8 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 *   `--toc` / `-T`: Include a Table of Contents at the beginning of the output file. (Only works when combining many files into one).
 *   `--include-tree`: Include a visual folder tree at the start of the output. (Only works when combining many files into one).
 *   `--compact` / `-C`: Compact and clean up whitespace in the combined output to save tokens.
+*   `--sort`: Sort files by `name`, `size`, `modified`, `tokens`, or `depth` before combining.
+*   `--reverse`: Reverse the sort order.
 *   `--max-tokens`: Stop adding files once this total token limit is reached. (Only works when combining many files into one).
 *   `--estimate-tokens` / `-e`: Calculate token counts without creating any files.
     *   *Note: Slower than a regular dry-run because it must read the file contents.*
@@ -163,6 +165,12 @@ python sourcecombine.py config.yml --clipboard
 Combine only Python and Markdown files from the `src/` folder:
 ```bash
 python sourcecombine.py src/ -i "*.py" -i "*.md"
+```
+
+**Sort files by size:**
+Put the largest files first in the combined output:
+```bash
+python sourcecombine.py src/ --sort size --reverse
 ```
 
 **Extract files from a combined archive:**
