@@ -185,7 +185,7 @@ def _get_replacement_pattern(keys):
 
 
 def _render_single_pass(template, replacements):
-    """Replace multiple placeholders in a template in a single pass.
+    """Replace many placeholders in a template in a single pass.
 
     Placeholders are matched in order of descending length to ensure that
     longer, more specific markers (like {{DIR_SLUG}}) are preferred over
@@ -1172,7 +1172,7 @@ def find_and_combine_files(
 
     total_excluded_folders = 0
 
-    # Store all items to process for single-file mode to enable global TOC
+    # Store all items to process for when combining many files into one to enable global TOC
     # List of (file_path, root_path, is_size_excluded)
     all_single_mode_items = []
     # Metadata for TOC and Tree: {Path: {'size': int, 'tokens': int}}
@@ -1195,17 +1195,17 @@ def find_and_combine_files(
         else:
             # Standard finding from root folders
             for root_folder in root_folders:
-                discovery_bar = processor._make_bar(
+                finding_bar = processor._make_bar(
                     desc=f"Finding in {root_folder}",
                     unit="file",
                     leave=False,
                 )
                 try:
                     paths, root, excluded = collect_file_paths(
-                        root_folder, recursive, exclude_folders, progress=discovery_bar
+                        root_folder, recursive, exclude_folders, progress=finding_bar
                     )
                 finally:
-                    discovery_bar.close()
+                    finding_bar.close()
                 if paths:
                     iteration_targets.append((root, paths, excluded))
 
@@ -1358,7 +1358,7 @@ def find_and_combine_files(
                 )
                 processing_bar.close()
             else:
-                # Accumulate for single-file mode
+                # Accumulate when combining many files into one
                 if record_size_exclusions:
                     filtered_set = set(filtered_paths)
                     size_excluded_set = set(size_excluded)
@@ -1649,7 +1649,7 @@ def main():
     """Main function to parse arguments and run the tool."""
     parser = argparse.ArgumentParser(
         description=(
-            "Combine multiple source files into one document or organized pairs. "
+            "Combine many source files into one document or organized pairs. "
             "This tool is useful for creating AI context, documentation, or code reviews."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -1702,7 +1702,7 @@ def main():
         dest="exclude_file",
         action="append",
         default=[],
-        help="Skip files that match this pattern (e.g., '*.log'). Use multiple times to skip more.",
+        help="Skip files that match this pattern (e.g., '*.log'). Use many times to skip more.",
     )
     config_group.add_argument(
         "--exclude-folder",
@@ -1710,14 +1710,14 @@ def main():
         dest="exclude_folder",
         action="append",
         default=[],
-        help="Skip folders that match this pattern (e.g., 'build'). Use multiple times to skip more.",
+        help="Skip folders that match this pattern (e.g., 'build'). Use many times to skip more.",
     )
     config_group.add_argument(
         "--include",
         "-i",
         action="append",
         default=[],
-        help="Include only files matching this glob pattern. Can be used multiple times. Overrides/appends to config.",
+        help="Include only files matching this glob pattern. Can be used many times. Overrides/appends to config.",
     )
 
     # Output Options Group
@@ -1731,16 +1731,16 @@ def main():
         "--clipboard",
         "-c",
         action="store_true",
-        help="Copy the result to your clipboard instead of saving a file. (Single-file mode only)",
+        help="Copy the result to your clipboard instead of saving a file. (Only when combining many files into one)",
     )
     output_group.add_argument(
         "--format",
         "-f",
         choices=["text", "json", "markdown", "xml"],
         help=(
-            "Choose the output format. 'json' is available in single-file mode only. "
-            "'markdown' and 'xml' formats automatically add appropriate markers "
-            "like code blocks or tags."
+            "Choose the output format. 'json' is only available when combining many "
+            "files into one. 'markdown' and 'xml' formats automatically add "
+            "appropriate markers like code blocks or tags."
         ),
     )
     output_group.add_argument(
@@ -1765,12 +1765,12 @@ def main():
         "--toc",
         "-T",
         action="store_true",
-        help="Add a Table of Contents (including file sizes and token counts) to the start of the output. (Works for 'text' and 'markdown' formats in single-file mode only)",
+        help="Add a Table of Contents (including file sizes and token counts) to the start of the output. (Only when combining many files into one in 'text' or 'markdown' formats)",
     )
     output_group.add_argument(
         "--include-tree",
         action="store_true",
-        help="Include a visual folder tree with file metadata at the start of the output. (Single-file mode only)",
+        help="Include a visual folder tree with file metadata at the start of the output. (Only when combining many files into one)",
     )
     output_group.add_argument(
         "--compact",
@@ -1817,7 +1817,7 @@ def main():
     runtime_group.add_argument(
         "--max-tokens",
         type=int,
-        help="Stop adding files once this total token limit is reached. (Single-file mode only)",
+        help="Stop adding files once this total token limit is reached. (Only when combining many files into one)",
     )
     runtime_group.add_argument(
         "-v",
@@ -1915,7 +1915,7 @@ def main():
         for d in defaults:
             if Path(d).is_file():
                 config_path = d
-                logging.info("Auto-discovered config file: %s", config_path)
+                logging.info("Auto-found config file: %s", config_path)
                 break
 
         if not config_path:
@@ -2154,7 +2154,7 @@ def main():
         _print_execution_summary(stats, args, pairing_enabled=False)
         sys.exit(0)
 
-    mode_desc = "Pairing" if pairing_enabled else "Single File"
+    mode_desc = "Pairing" if pairing_enabled else "Combining files"
     logging.info("SourceCombine starting. Mode: %s", mode_desc)
 
     if args.list_files:
@@ -2251,7 +2251,7 @@ def extract_files(content, output_folder, dry_run=False, source_name="archive", 
     # 3. Try Text format (Default SourceCombine output)
     if not files_to_create:
         # Match --- FILENAME --- followed by content and --- end FILENAME ---
-        # Note: The non-greedy [\s\S]*? handles multiple files correctly.
+        # Note: The non-greedy [\s\S]*? handles many files correctly.
         pattern = re.compile(r'^---\s+(.+?)\s+---\n([\s\S]*?)\n--- end \1 ---', re.MULTILINE)
         for match in pattern.finditer(content):
             path, file_content = match.groups()
@@ -2404,7 +2404,7 @@ def _print_execution_summary(stats, args, pairing_enabled):
                 # Use dim for less visual noise in the breakdown
                 print(f"      {C_DIM}- {display_reason:<{label_width - 4}}{C_RESET}{count:12,}", file=sys.stderr)
 
-    print(f"    {C_BOLD}{'Total Discovered:':<{label_width}}{C_RESET}{total_discovered:12,}", file=sys.stderr)
+    print(f"    {C_BOLD}{'Total Found:':<{label_width}}{C_RESET}{total_discovered:12,}", file=sys.stderr)
     if excluded_folders > 0:
         print(f"    {C_BOLD}{'Excluded Folders:':<{label_width}}{C_RESET}{excluded_folders:12,}", file=sys.stderr)
 

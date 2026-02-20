@@ -112,7 +112,7 @@ def test_init_fails_to_write_config(temp_cwd, mock_argv, caplog):
     assert excinfo.value.code == 1
     assert "Could not write the configuration file" in caplog.text
 
-def test_auto_discovery_success(temp_cwd, mock_argv, caplog):
+def test_auto_finding_success(temp_cwd, mock_argv, caplog):
     """Test that main finds a default config file when none is specified."""
     config_file = temp_cwd / "config.yaml"
     config_data = {
@@ -130,7 +130,7 @@ def test_auto_discovery_success(temp_cwd, mock_argv, caplog):
         with mock_argv([]):
             main()
 
-    assert "Auto-discovered config file: config.yaml" in caplog.text
+    assert "Auto-found config file: config.yaml" in caplog.text
     mock_combine.assert_called_once()
 
 def test_cwd_fallback(temp_cwd, mock_argv, caplog):

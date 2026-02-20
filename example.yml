@@ -84,8 +84,8 @@ processing:
   #   - pattern: '^\s*\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$'
   #     replacement: '<data removed>'
 
-  # Regex-based text transformations. Each rule should provide:
-  #   pattern: 'regex'
+  # Search-and-replace rules. Each rule should provide:
+  #   pattern: 'search pattern'
   #   replacement: 'replacement text'
   # Capture groups can be referenced in the replacement string, such as "\1".
   regex_replacements: []
