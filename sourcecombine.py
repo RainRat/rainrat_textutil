@@ -46,6 +46,9 @@ C_RED = _LazyColor("\033[31m")
 C_CYAN = _LazyColor("\033[36m")
 C_RESET = _LazyColor("\033[0m")
 
+# Regex for stripping ANSI escape codes to calculate display width accurately
+_ANSI_ESCAPE = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+
 
 class CLILogFormatter(logging.Formatter):
     """A clean logging formatter for the CLI.
@@ -68,7 +71,7 @@ class CLILogFormatter(logging.Formatter):
         message = record.getMessage()
         if "\n" in message and prefix:
             # Strip ANSI from prefix for correct indentation calculation
-            raw_prefix = str(prefix).replace("\033[1m", "").replace("\033[90m", "").replace("\033[32m", "").replace("\033[33m", "").replace("\033[31m", "").replace("\033[36m", "").replace("\033[0m", "")
+            raw_prefix = _ANSI_ESCAPE.sub('', str(prefix))
             indent = " " * len(raw_prefix)
             lines = message.splitlines()
             return f"{prefix}{lines[0]}\n" + "\n".join(f"{indent}{line}" for line in lines[1:])
