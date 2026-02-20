@@ -38,7 +38,7 @@ def test_summary_redesign_largest_files(monkeypatch, capsys):
     # Should NOT have the old format
     assert "large_file.py                                          500" not in stderr
 
-def test_summary_total_discovered_label(monkeypatch, capsys):
+def test_summary_total_found_label(monkeypatch, capsys):
     stats = {
         'total_files': 5,
         'total_size_bytes': 500,
@@ -59,7 +59,7 @@ def test_summary_total_discovered_label(monkeypatch, capsys):
     captured = capsys.readouterr()
     stderr = captured.err
 
-    assert "Total Discovered:               10" in stderr
+    assert "Total Found:                    10" in stderr
     # excluded_folder should be skipped in breakdown
     assert "- excluded folder" not in stderr
     # extension should be present

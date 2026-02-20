@@ -209,13 +209,13 @@ def compact_whitespace(text, *, groups=None):
     Transformations are applied in the following order:
 
     - Normalize Windows (CRLF) and classic Mac (CR) endings to LF.
-    - Convert each run of four consecutive spaces to a tab character. This is
+    - Convert each run of four spaces that follow each other to a tab character. This is
       intended to normalize indentation but may affect other formatting.
     - Trim spaces that surround tabs, which helps collapse mixed indentation.
     - Replace mid-line tabs (those not at the start of a line) with single
       spaces for readability.
     - Trim trailing horizontal whitespace from all lines.
-    - Collapse multiple blank lines into at most two consecutive newlines.
+    - Collapse many blank lines into at most two newlines that follow each other.
     - Reduce any remaining long runs of spaces to at most two characters.
 
     Note: keep the regular expressions compatible with Python 3.8 for the sake
@@ -296,8 +296,8 @@ def _replace_line_block(text, regex, replacement=None):
     """Collapse blocks of lines matching ``regex`` into ``replacement``.
 
     ``regex`` should be a compiled regular expression that matches an entire
-    line. Consecutive matching lines are treated as a single block. If
-    ``replacement`` is ``None`` the block is simply removed; otherwise
+    line. Lines that follow each other and match are treated as a single block.
+    If ``replacement`` is ``None`` the block is simply removed; otherwise
     ``replacement`` is inserted once for each block.
     """
     lines = text.splitlines()
@@ -639,8 +639,9 @@ def process_content(buffer: str, options: Mapping[str, Any]) -> str:
       and ``replacement`` (str). Rules are applied sequentially. Capture groups
       can be referenced in the replacement string (e.g., ``"\\1"``).
     - ``line_regex_replacements`` (list of dicts): like ``regex_replacements`` but
-      applied to whole lines. Consecutive blocks of matching lines collapse into a
-      single ``replacement`` entry (or are removed if ``replacement`` is omitted).
+      applied to whole lines. Blocks of matching lines that follow each other
+      collapse into a single ``replacement`` entry (or are removed if
+      ``replacement`` is omitted).
     - ``compact_whitespace`` (bool)
     - ``compact_whitespace_groups`` (dict): optional overrides that enable or disable
       specific whitespace transformations. Supported keys are defined in

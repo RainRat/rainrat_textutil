@@ -296,9 +296,9 @@ output:
   paired_filename_template: '{{DIR_SLUG}}/{{STEM}}.combined'
 ```
 
-## Regex-based text transformations
+## Search-and-replace rules
 
-The `processing.regex_replacements` option lets you apply regular-expression search/replace
+The `processing.regex_replacements` option lets you apply search-and-replace
 rules to each file's content. Each rule specifies a `pattern` and a `replacement`.
 
 ```yaml
@@ -320,7 +320,7 @@ processing:
 
 To combine entire blocks of matching lines, use the `processing.line_regex_replacements`
 option. Each rule works line-by-line: lines that follow each other and match the
-pattern are removed. They can be replaced with a single `replacement` string.
+search pattern are removed. They can be replaced with a single `replacement` string.
 
 ```yaml
 processing:
@@ -407,7 +407,7 @@ Using double quotes would require adding an extra backslash for each one (`"C:\\
 
 - `concat_simple.yml`: basic text file concatenation with minimal options.
 - `example.yml`: a full-featured configuration showcasing filtering groups and
-  regex-based processing.
+  search-and-replace rules.
 - `example_cpp_h.yml`: demonstrates pairing C/C++ source files with their
   corresponding headers.
 
