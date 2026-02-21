@@ -152,3 +152,31 @@ def test_validate_processing_apply_in_place_non_bool(tmp_path):
     )
     with pytest.raises(InvalidConfigError, match="'processing.apply_in_place' must be a boolean value"):
         load_and_validate_config(config_path)
+
+def test_validate_output_sort_by_invalid(tmp_path):
+    """Ensure InvalidConfigError is raised for an unsupported sort_by value."""
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "output": {
+                "sort_by": "invalid_sort"
+            }
+        }
+    )
+    with pytest.raises(InvalidConfigError, match="'output.sort_by' must be one of: name, size, modified, tokens, depth"):
+        load_and_validate_config(config_path)
+
+def test_validate_output_sort_reverse_non_bool(tmp_path):
+    """Ensure InvalidConfigError is raised if output.sort_reverse is not a boolean."""
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "output": {
+                "sort_reverse": "not_a_bool"
+            }
+        }
+    )
+    with pytest.raises(InvalidConfigError, match="'output.sort_reverse' must be a boolean value"):
+        load_and_validate_config(config_path)

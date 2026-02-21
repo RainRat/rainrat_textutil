@@ -7,8 +7,26 @@ import pytest
 # Add project root to path
 sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
+import logging
+from io import StringIO
+from contextlib import contextmanager
 import utils
 from sourcecombine import find_and_combine_files
+
+@contextmanager
+def log_capture():
+    """Context manager to capture log output."""
+    log_stream = StringIO()
+    logger = logging.getLogger()
+    old_level = logger.level
+    logger.setLevel(logging.INFO)
+    handler = logging.StreamHandler(log_stream)
+    logger.addHandler(handler)
+    try:
+        yield log_stream
+    finally:
+        logger.removeHandler(handler)
+        logger.setLevel(old_level)
 
 @pytest.fixture
 def test_env(tmp_path):
@@ -205,16 +223,7 @@ def test_pairing_sort(test_env, monkeypatch):
     # So file1.combined should be processed before file2.combined
     # We can verify via logs or stats (though stats are totals)
     # Let's use dry-run and capture log output
-    import logging
-    from io import StringIO
-    log_stream = StringIO()
-    logger = logging.getLogger()
-    old_level = logger.level
-    logger.setLevel(logging.INFO)
-    handler = logging.StreamHandler(log_stream)
-    logger.addHandler(handler)
-
-    try:
+    with log_capture() as log_stream:
         find_and_combine_files(config, str(out_dir), dry_run=True)
         log_output = log_stream.getvalue()
         # [PAIR file1] should appear before [PAIR file2]
@@ -234,6 +243,144 @@ def test_pairing_sort(test_env, monkeypatch):
         pos2 = log_output.find("[PAIR file2]")
         assert pos1 > pos2
 
-    finally:
-        logger.removeHandler(handler)
-        logger.setLevel(old_level)
+def test_pairing_sort_by_modified(test_env, monkeypatch):
+    root, tmp_path = test_env
+    # Create pairs with different modification times
+    (root / "file1.cpp").write_text("src1", encoding="utf-8")
+    (root / "file1.h").write_text("hdr1", encoding="utf-8")
+    (root / "file2.cpp").write_text("src2", encoding="utf-8")
+    (root / "file2.h").write_text("hdr2", encoding="utf-8")
+
+    now = time.time()
+    os.utime(root / "file1.cpp", (now - 100, now - 100))
+    os.utime(root / "file2.cpp", (now - 10, now - 10))
+
+    out_dir = tmp_path / "paired_modified"
+    config = {
+        "search": {"root_folders": [str(root)]},
+        "pairing": {
+            "enabled": True,
+            "source_extensions": [".cpp"],
+            "header_extensions": [".h"]
+        },
+        "output": {
+            "folder": str(out_dir),
+            "sort_by": "modified",
+            "paired_filename_template": "{{STEM}}.combined"
+        }
+    }
+
+    with log_capture() as log_stream:
+        find_and_combine_files(config, str(out_dir), dry_run=True)
+        log_output = log_stream.getvalue()
+        # [PAIR file1] (older) should appear before [PAIR file2] (newer)
+        pos1 = log_output.find("[PAIR file1]")
+        pos2 = log_output.find("[PAIR file2]")
+        assert pos1 != -1
+        assert pos2 != -1
+        assert pos1 < pos2
+
+def test_pairing_sort_by_name_reverse(test_env, monkeypatch):
+    root, tmp_path = test_env
+    (root / "file1.cpp").write_text("src1", encoding="utf-8")
+    (root / "file1.h").write_text("hdr1", encoding="utf-8")
+    (root / "file2.cpp").write_text("src2", encoding="utf-8")
+    (root / "file2.h").write_text("hdr2", encoding="utf-8")
+
+    out_dir = tmp_path / "paired_name_rev"
+    config = {
+        "search": {"root_folders": [str(root)]},
+        "pairing": {
+            "enabled": True,
+            "source_extensions": [".cpp"],
+            "header_extensions": [".h"]
+        },
+        "output": {
+            "folder": str(out_dir),
+            "sort_by": "name",
+            "sort_reverse": True,
+            "paired_filename_template": "{{STEM}}.combined"
+        }
+    }
+
+    with log_capture() as log_stream:
+        find_and_combine_files(config, str(out_dir), dry_run=True)
+        log_output = log_stream.getvalue()
+        # file2 should appear before file1 in reverse name sort
+        pos1 = log_output.find("[PAIR file1]")
+        pos2 = log_output.find("[PAIR file2]")
+        assert pos1 != -1
+        assert pos2 != -1
+        assert pos2 < pos1
+
+def test_pairing_sort_by_depth(test_env, monkeypatch):
+    root, tmp_path = test_env
+    # Create pairs at different depths
+    (root / "file1.cpp").write_text("src1", encoding="utf-8")
+    (root / "file1.h").write_text("hdr1", encoding="utf-8")
+
+    sub = root / "sub"
+    sub.mkdir(exist_ok=True)
+    (sub / "file2.cpp").write_text("src2", encoding="utf-8")
+    (sub / "file2.h").write_text("hdr2", encoding="utf-8")
+
+    out_dir = tmp_path / "paired_depth"
+    config = {
+        "search": {"root_folders": [str(root)]},
+        "pairing": {
+            "enabled": True,
+            "source_extensions": [".cpp"],
+            "header_extensions": [".h"]
+        },
+        "output": {
+            "folder": str(out_dir),
+            "sort_by": "depth",
+            "paired_filename_template": "{{STEM}}.combined"
+        }
+    }
+
+    with log_capture() as log_stream:
+        find_and_combine_files(config, str(out_dir), dry_run=True)
+        log_output = log_stream.getvalue()
+        # [PAIR file1] (depth 1) should appear before [PAIR file2] (depth 2)
+        pos1 = log_output.find("[PAIR file1]")
+        pos2 = log_output.find("[PAIR file2]")
+        assert pos1 != -1
+        assert pos2 != -1
+        assert pos1 < pos2
+
+def test_pairing_sort_by_tokens(test_env, monkeypatch):
+    root, tmp_path = test_env
+    monkeypatch.setattr(utils, "tiktoken", None) # Use char length / 4
+
+    # file1.cpp: "src1" (4 chars) -> 1 token
+    # file2.cpp: "longer source file" (18 chars) -> 5 tokens
+    (root / "file1.cpp").write_text("src1", encoding="utf-8")
+    (root / "file1.h").write_text("hdr1", encoding="utf-8")
+    (root / "file2.cpp").write_text("longer source file", encoding="utf-8")
+    (root / "file2.h").write_text("hdr2", encoding="utf-8")
+
+    out_dir = tmp_path / "paired_tokens"
+    config = {
+        "search": {"root_folders": [str(root)]},
+        "pairing": {
+            "enabled": True,
+            "source_extensions": [".cpp"],
+            "header_extensions": [".h"]
+        },
+        "output": {
+            "folder": str(out_dir),
+            "sort_by": "tokens",
+            "paired_filename_template": "{{STEM}}.combined"
+        }
+    }
+
+    with log_capture() as log_stream:
+        find_and_combine_files(config, str(out_dir), dry_run=True)
+        log_output = log_stream.getvalue()
+        # [PAIR file1] (1 token) should appear before [PAIR file2] (5 tokens)
+        pos1 = log_output.find("[PAIR file1]")
+        pos2 = log_output.find("[PAIR file2]")
+        assert pos1 != -1
+        assert pos2 != -1
+        assert pos1 < pos2
