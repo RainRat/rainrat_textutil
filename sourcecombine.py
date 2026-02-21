@@ -1101,10 +1101,10 @@ def find_and_combine_files(
         raise InvalidConfigError("Clipboard mode is only available when pairing is disabled.")
 
     if output_path == '-' and pairing_enabled:
-        raise InvalidConfigError("Stdout output is not available in pairing mode.")
+        raise InvalidConfigError("You cannot send output to your terminal when pairing files.")
 
     if output_format == 'json' and pairing_enabled:
-        raise InvalidConfigError("JSON format is not compatible with paired output.")
+        raise InvalidConfigError("You cannot use JSON format when pairing files.")
 
     # Apply default Markdown templates if requested and not overridden
     if output_format == 'markdown':
@@ -1139,7 +1139,7 @@ def find_and_combine_files(
 
     if not pairing_enabled and not dry_run and not estimate_tokens and not clipboard and not list_files and not tree_view and output_path is None:
         raise InvalidConfigError(
-            "'output.file' must be set when pairing is disabled and clipboard mode is off."
+            "You must set an output file in your configuration or use the --output flag."
         )
 
     abs_output_path = None
@@ -1749,8 +1749,9 @@ def main():
     """Main function to parse arguments and run the tool."""
     parser = argparse.ArgumentParser(
         description=(
-            "Combine many source files into one document or organized pairs. "
-            "This tool is useful for creating AI context, documentation, or code reviews."
+            "Combine many files into one document or into pairs. "
+            "This tool is helpful for providing better context to AI assistants, "
+            "archiving code, or performing code reviews."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=textwrap.dedent("""
@@ -1761,10 +1762,10 @@ def main():
               # Combine files from a specific folder
               python sourcecombine.py src/
 
-              # Use a configuration file
+              # Use a settings file
               python sourcecombine.py my_config.yml
 
-              # Use a configuration file but override the folders to scan
+              # Use settings but override the folders to scan
               python sourcecombine.py my_config.yml project_a/ project_b/
 
               # Copy the result to your clipboard
@@ -1784,8 +1785,8 @@ def main():
         nargs="*",
         metavar="TARGET",
         help=(
-            "Folders, files, or a configuration file to process. "
-            "If the first target is a .yml or .yaml file, it is used as the configuration."
+            "Folders, files, or a settings file to process. "
+            "If you provide a .yml or .yaml file first, the tool will use it for settings."
         ),
     )
 
@@ -1794,7 +1795,7 @@ def main():
     config_group.add_argument(
         "--init",
         action="store_true",
-        help="Create a starter 'sourcecombine.yml' file in the current folder.",
+        help="Create a basic 'sourcecombine.yml' file in your current folder to get started.",
     )
     config_group.add_argument(
         "--exclude-file",
@@ -1817,7 +1818,7 @@ def main():
         "-i",
         action="append",
         default=[],
-        help="Include only files matching this glob pattern. Can be used many times. Overrides/appends to config.",
+        help="Include only files matching this pattern (like '*.py'). You can use this flag many times.",
     )
 
     # Output Options Group
@@ -1838,9 +1839,9 @@ def main():
         "-f",
         choices=["text", "json", "markdown", "xml"],
         help=(
-            "Choose the output format. 'json' is only available when combining many "
+            "Choose the output format. 'json' only works when combining many "
             "files into one. 'markdown' and 'xml' formats automatically add "
-            "appropriate markers like code blocks or tags."
+            "markers like code blocks or tags."
         ),
     )
     output_group.add_argument(
@@ -1871,7 +1872,7 @@ def main():
         "--toc",
         "-T",
         action="store_true",
-        help="Add a Table of Contents (including file sizes and token counts) to the start of the output. (Only when combining many files into one in 'text' or 'markdown' formats)",
+        help="Add a Table of Contents with file sizes and token counts to the start of the output. (Only works when combining many files into one in 'text' or 'markdown' formats)",
     )
     output_group.add_argument(
         "--include-tree",
@@ -1883,7 +1884,7 @@ def main():
         "--compact",
         "-C",
         action="store_true",
-        help="Compact and clean up whitespace in the combined output to save tokens.",
+        help="Clean up extra spaces and blank lines in the output to save tokens.",
     )
     output_group.add_argument(
         "--sort",
@@ -1902,19 +1903,19 @@ def main():
         "--dry-run",
         "-d",
         action="store_true",
-        help="Show which files would be included without creating any files.",
+        help="See which files would be included without writing any files.",
     )
     preview_group.add_argument(
         "--estimate-tokens",
         "-e",
         action="store_true",
-        help="Estimate token usage. This is slower because it must read the file contents.",
+        help="Estimate how many tokens the output will use. This is slower because the tool must read every file.",
     )
     preview_group.add_argument(
         "--list-files",
         "-l",
         action="store_true",
-        help="Print a list of all files that would be included and then stop.",
+        help="Show a list of all files that would be included and then stop.",
     )
     preview_group.add_argument(
         "--tree",
@@ -1950,8 +1951,8 @@ def main():
         "--extract",
         action="store_true",
         help=(
-            "Extract files from a combined JSON, XML, Markdown, or Text file into a folder structure. "
-            "Supports reading from a file, your terminal ('-'), or --clipboard. Filtering flags "
+            "Restore original files and folders from a combined JSON, XML, Markdown, or Text file. "
+            "You can read from a file, your terminal ('-'), or your clipboard. Filtering flags "
             "(--include, --exclude-file, --exclude-folder) and preview flags "
             "(--list-files, --tree) are supported."
         ),
@@ -2230,7 +2231,7 @@ def main():
     if args.clipboard:
         destination_desc = "to clipboard"
     elif output_path == '-':
-        destination_desc = "to stdout"
+        destination_desc = "to your terminal"
     elif pairing_enabled:
         destination_desc = (
             "alongside their source files"
