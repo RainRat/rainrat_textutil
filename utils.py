@@ -707,8 +707,6 @@ def process_content(buffer: str, options: Mapping[str, Any]) -> str:
 
 def count_lines(text: str) -> int:
     """Return the number of lines in the text."""
-    if not text:
-        return 0
     return len(text.splitlines())
 
 
