@@ -56,7 +56,7 @@ def test_json_output_incompatible_with_pairing():
         'search': {'root_folders': []},
         'pairing': {'enabled': True}
     }
-    with pytest.raises(InvalidConfigError, match="JSON format is not compatible"):
+    with pytest.raises(InvalidConfigError, match="You cannot use JSON format when pairing files"):
         find_and_combine_files(config, "out", output_format='json')
 
 def test_json_output_excludes_header_templates(tmp_path):
