@@ -2017,10 +2017,9 @@ def main():
         else:
             remaining_targets = targets
 
-    # Relax root_folders requirement if we have other targets or --files-from
-    nested_required = {'search': ['root_folders']}
-    if args.files_from or remaining_targets:
-        nested_required = {}
+    # Initially, we don't strictly require root_folders in the config file
+    # because we can fall back to the current folder later.
+    nested_required = {}
 
     if not config_path and not remaining_targets:
         # Case 1: No positional targets. Use auto-finding
@@ -2057,11 +2056,17 @@ def main():
     # Apply positional targets or fallback to current folder
     if remaining_targets:
         config['search']['root_folders'] = remaining_targets
-    elif not config_path and not args.files_from:
-        logging.info(
-            "No config file found. Scanning current folder '.' with default settings."
-        )
-        config['search']['root_folders'] = ["."]
+    elif not args.files_from:
+        if not config.get('search', {}).get('root_folders'):
+            if not config_path:
+                logging.info(
+                    "No config file found. Scanning current folder '.' with default settings."
+                )
+            else:
+                logging.info(
+                    "No root folders specified in configuration. Scanning current folder '.'"
+                )
+            config.setdefault('search', {})['root_folders'] = ["."]
 
     # Final validation for root_folders
     if not args.files_from:

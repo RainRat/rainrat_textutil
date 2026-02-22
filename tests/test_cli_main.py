@@ -177,30 +177,40 @@ def test_invalid_config_structure(temp_cwd, mock_argv, caplog):
     assert excinfo.value.code == 1
     assert "The configuration is not valid" in caplog.text
 
-def test_invalid_config_validation(temp_cwd, mock_argv, caplog):
-    """Test that main exits if config fails validation (e.g. missing required keys)."""
+def test_config_missing_root_folders_fallback(temp_cwd, mock_argv, caplog):
+    """Test that main defaults to CWD if config file is missing root_folders."""
     config_file = temp_cwd / "incomplete.yml"
     # Missing search.root_folders
     yaml.dump({'output': {'file': 'out.txt'}}, open(config_file, 'w'))
 
-    caplog.set_level(logging.ERROR)
+    caplog.set_level(logging.INFO)
 
-    with mock_argv([str(config_file)]):
-        with pytest.raises(SystemExit) as excinfo:
+    with patch('sourcecombine.find_and_combine_files') as mock_combine:
+        mock_combine.return_value = {}
+        with mock_argv([str(config_file)]):
             main()
 
-    assert excinfo.value.code == 1
-    assert "The configuration is not valid" in caplog.text
+    assert "No root folders specified in configuration" in caplog.text
+    assert "Scanning current folder '.'" in caplog.text
+    mock_combine.assert_called_once()
+    # Verify the config passed has root_folders set to ['.']
+    args, _ = mock_combine.call_args
+    assert args[0]['search']['root_folders'] == ['.']
 
-def test_main_config_validation_error(tmp_path, monkeypatch, caplog):
+def test_main_config_root_folders_fallback_alt(tmp_path, monkeypatch, caplog):
+    """Test alternate path for root_folders fallback via monkeypatch."""
     config_path = tmp_path / "config.yml"
     config_path.write_text("search: {}", encoding="utf-8") # Missing root_folders
 
     monkeypatch.setattr(sys, "argv", ["sourcecombine.py", str(config_path)])
 
-    with caplog.at_level(logging.ERROR):
-        with pytest.raises(SystemExit) as excinfo:
-            main()
+    caplog.set_level(logging.INFO)
 
-    assert excinfo.value.code == 1
-    assert "The configuration is not valid" in caplog.text
+    with patch('sourcecombine.find_and_combine_files') as mock_combine:
+        mock_combine.return_value = {}
+        main()
+
+    assert "No root folders specified in configuration" in caplog.text
+    mock_combine.assert_called_once()
+    args, _ = mock_combine.call_args
+    assert args[0]['search']['root_folders'] == ['.']
