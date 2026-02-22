@@ -1330,14 +1330,6 @@ def find_and_combine_files(
                 )
                 for pair_key, paths in paired_paths.items():
                     all_paired_items.append((root_path, pair_key, paths))
-
-                # We still need to track stats for these files if we were to list them
-                if list_files or tree_view:
-                    unique_paths = set()
-                    for paths in paired_paths.values():
-                        unique_paths.update(paths)
-                    for p in sorted(unique_paths):
-                        _update_file_stats(stats, p)
             else:
                 # Accumulate when combining many files into one
                 if record_size_exclusions:
@@ -1446,11 +1438,9 @@ def find_and_combine_files(
                     rel_p = _get_rel_path(file_path, root_path)
                     if is_excluded_by_size:
                         placeholder = output_opts.get('max_size_placeholder')
-                        if placeholder:
-                            rendered = _render_template(placeholder, rel_p, size=file_path.stat().st_size if file_path.exists() else 0)
-                            tokens, _ = utils.estimate_tokens(rendered)
-                        else:
-                            tokens = 0
+                        # Note: 1372-1373 ensures placeholder exists if we are here
+                        rendered = _render_template(placeholder, rel_p, size=file_path.stat().st_size if file_path.exists() else 0)
+                        tokens, _ = utils.estimate_tokens(rendered)
                     else:
                         content = read_file_best_effort(file_path)
                         processed = process_content(content, processor.processing_opts)
