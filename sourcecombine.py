@@ -276,8 +276,6 @@ def _normalize_patterns(patterns):
 
 @lru_cache(maxsize=4096)
 def _matches_file_glob_cached(file_name, relative_path_str, patterns):
-    if not patterns:
-        return False
     file_name_cf = file_name.casefold()
     rel_path_cf = relative_path_str.casefold()
     return any(
@@ -289,8 +287,6 @@ def _matches_file_glob_cached(file_name, relative_path_str, patterns):
 
 @lru_cache(maxsize=4096)
 def _matches_folder_glob_cached(relative_path_str, parts, patterns):
-    if not patterns:
-        return False
     rel_path_cf = relative_path_str.casefold()
     parts_cf = tuple(p.casefold() for p in parts)
     for pattern in patterns:
