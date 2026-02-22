@@ -1280,6 +1280,13 @@ def find_and_combine_files(
                             if p in filtered_set or p in size_excluded_set
                         ]
 
+                # Apply limit to list/tree
+                max_files = filter_opts.get('max_files', 0)
+                if max_files > 0 and len(paths_to_list) > max_files:
+                    stats['filter_reasons']['file_limit'] = stats['filter_reasons'].get('file_limit', 0) + (len(paths_to_list) - max_files)
+                    paths_to_list = paths_to_list[:max_files]
+                    stats['limit_reached'] = True
+
                 # Update stats for listed files
                 for p in paths_to_list:
                     _update_file_stats(stats, p)
@@ -1416,6 +1423,36 @@ def find_and_combine_files(
                     all_single_mode_items.sort(key=get_single_sort_key, reverse=sort_reverse)
                 # Note: 'tokens' sort for single-file mode is handled inside the metadata pass below
 
+        # Apply file limit after global sorting
+        max_files = filter_opts.get('max_files', 0)
+        limit_applied = False
+        if max_files > 0:
+            if pairing_enabled:
+                if len(all_paired_items) > max_files:
+                    stats['filter_reasons']['file_limit'] = len(all_paired_items) - max_files
+                    all_paired_items = all_paired_items[:max_files]
+                    stats['limit_reached'] = True
+                    limit_applied = True
+            elif sort_by != 'tokens':
+                if len(all_single_mode_items) > max_files:
+                    stats['filter_reasons']['file_limit'] = len(all_single_mode_items) - max_files
+                    all_single_mode_items = all_single_mode_items[:max_files]
+                    stats['limit_reached'] = True
+                    limit_applied = True
+
+        # Recalculate stats if limit was applied and we aren't doing a full pass anyway
+        if limit_applied and not (needs_full_pass and not pairing_enabled and not list_files and not tree_view):
+            stats['total_files'] = 0
+            stats['total_size_bytes'] = 0
+            stats['files_by_extension'] = {}
+            if pairing_enabled:
+                for _, _, paths in all_paired_items:
+                    for p in paths:
+                        _update_file_stats(stats, p)
+            else:
+                for item in all_single_mode_items:
+                    _update_file_stats(stats, item[0])
+
         if needs_full_pass and not pairing_enabled and not list_files and not tree_view:
             budgeted_items = []
             current_tokens = 0
@@ -1465,6 +1502,23 @@ def find_and_combine_files(
                     reverse=sort_reverse
                 )
                 all_single_mode_items = [x[0] for x in indexed_items]
+
+            if max_files > 0 and sort_by == 'tokens' and len(all_single_mode_items) > max_files:
+                stats['filter_reasons']['file_limit'] = len(all_single_mode_items) - max_files
+                all_single_mode_items = all_single_mode_items[:max_files]
+                stats['limit_reached'] = True
+
+                # Recalculate stats after truncation
+                stats['total_files'] = 0
+                stats['total_size_bytes'] = 0
+                stats['total_tokens'] = 0
+                stats['total_lines'] = 0
+                stats['files_by_extension'] = {}
+                for item in all_single_mode_items:
+                    _update_file_stats(stats, item[0])
+                    meta = file_metadata.get(item[0], {})
+                    stats['total_tokens'] += meta.get('tokens', 0)
+                    stats['total_lines'] += meta.get('lines', 0)
 
             for i, item in enumerate(all_single_mode_items):
                 file_path, root_path, is_excluded_by_size = item
@@ -1918,6 +1972,12 @@ def main():
         action="store_true",
         help="Show a visual folder tree of all included files with metadata and then stop.",
     )
+    preview_group.add_argument(
+        "--limit",
+        "-L",
+        type=int,
+        help="Stop processing after this many files.",
+    )
 
     # Runtime Options Group
     runtime_group = parser.add_argument_group("Runtime Options")
@@ -2143,6 +2203,11 @@ def main():
             config['filters'] = {}
         config['filters']['max_total_tokens'] = args.max_tokens
 
+    if args.limit is not None:
+        if not isinstance(config.get('filters'), dict):
+            config['filters'] = {}
+        config['filters']['max_files'] = args.limit
+
     if args.toc:
         output_conf['table_of_contents'] = True
 
@@ -2270,7 +2335,8 @@ def main():
             source_name=source_name,
             config=config,
             list_files=args.list_files,
-            tree_view=args.tree
+            tree_view=args.tree,
+            limit=config.get('filters', {}).get('max_files', 0)
         )
         dest = f"to '{output_folder}'"
         duration = time.perf_counter() - start_time
@@ -2310,7 +2376,7 @@ def main():
         _print_execution_summary(stats, args, pairing_enabled, destination_desc, duration=duration)
 
 
-def extract_files(content, output_folder, dry_run=False, source_name="archive", config=None, list_files=False, tree_view=False):
+def extract_files(content, output_folder, dry_run=False, source_name="archive", config=None, list_files=False, tree_view=False, limit=0):
     """Recreate the original folder structure and files from a combined file content."""
     output_folder = Path(output_folder)
     stats = {
@@ -2407,13 +2473,21 @@ def extract_files(content, output_folder, dry_run=False, source_name="archive", 
 
         if include:
             filtered_files.append((path_str, file_content))
-            stats['total_files'] += 1
-            ext = rel_path.suffix.lower() or '.no_extension'
-            stats['files_by_extension'][ext] = stats['files_by_extension'].get(ext, 0) + 1
-            stats['total_size_bytes'] += len(file_content.encode('utf-8'))
         else:
             if reason:
                 stats['filter_reasons'][reason] = stats['filter_reasons'].get(reason, 0) + 1
+
+    if limit > 0 and len(filtered_files) > limit:
+        stats['filter_reasons']['file_limit'] = len(filtered_files) - limit
+        filtered_files = filtered_files[:limit]
+        stats['limit_reached'] = True
+
+    for path_str, file_content in filtered_files:
+        rel_path = PurePath(path_str)
+        stats['total_files'] += 1
+        ext = rel_path.suffix.lower() or '.no_extension'
+        stats['files_by_extension'][ext] = stats['files_by_extension'].get(ext, 0) + 1
+        stats['total_size_bytes'] += len(file_content.encode('utf-8'))
 
     files_to_create = filtered_files
 
@@ -2495,6 +2569,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
     if stats.get('budget_exceeded'):
         print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to token budget.{C_RESET}", file=sys.stderr)
+    if stats.get('limit_reached'):
+        print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to file limit.{C_RESET}", file=sys.stderr)
 
     # Files Section
     label_width = 22

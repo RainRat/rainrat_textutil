@@ -97,6 +97,9 @@ filters:
   # (Only when combining many files into one). Omit or set to 0 for no limit.
   max_total_tokens: 0
 
+  # Stop processing after this many files. Omit or set to 0 for no limit.
+  max_files: 0
+
   # If true, skip files that appear to contain binary data (e.g., executables, images).
   skip_binary: false
 
