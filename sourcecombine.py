@@ -1,4 +1,5 @@
 import argparse
+import time
 from typing import Any, Mapping
 from contextlib import nullcontext
 import copy
@@ -704,6 +705,8 @@ def _process_paired_files(
             for path in paths:
                 rel_path = _get_rel_path(path, root_path)
                 logging.info("  - %s", rel_path)
+                if stats is not None:
+                    stats['top_files'].append((0, path.stat().st_size if path.exists() else 0, rel_path.as_posix()))
             continue
 
         if estimate_tokens:
@@ -1281,39 +1284,30 @@ def find_and_combine_files(
                 for p in paths_to_list:
                     _update_file_stats(stats, p)
 
-                if tree_view:
-                    view_metadata = {}
-                    for p in paths_to_list:
-                        f_size = p.stat().st_size if p.exists() else 0
-                        view_metadata[p] = {'size': f_size}
-                        if estimate_tokens:
-                            content = read_file_best_effort(p)
-                            processed = process_content(content, processor.processing_opts)
-                            tokens, is_approx = utils.estimate_tokens(processed)
-                            lines = utils.count_lines(processed)
-                            view_metadata[p]['tokens'] = tokens
-                            view_metadata[p]['lines'] = lines
-                            stats['total_tokens'] += tokens
-                            stats['total_lines'] += lines
-                            if is_approx:
-                                stats['token_count_is_approx'] = True
-                            stats['top_files'].append((tokens, f_size, _get_rel_path(p, root_path).as_posix()))
+                view_metadata = {}
+                for p in paths_to_list:
+                    f_size = p.stat().st_size if p.exists() else 0
+                    tokens = 0
+                    lines = 0
+                    is_approx = True
 
+                    if estimate_tokens:
+                        content = read_file_best_effort(p)
+                        processed = process_content(content, processor.processing_opts)
+                        tokens, is_approx = utils.estimate_tokens(processed)
+                        lines = utils.count_lines(processed)
+                        stats['total_tokens'] += tokens
+                        stats['total_lines'] += lines
+                        if is_approx:
+                            stats['token_count_is_approx'] = True
+
+                    view_metadata[p] = {'size': f_size, 'tokens': tokens, 'lines': lines}
+                    stats['top_files'].append((tokens, f_size, _get_rel_path(p, root_path).as_posix()))
+
+                if tree_view:
                     print(_generate_tree_string(paths_to_list, root_path, include_header=False, metadata=view_metadata))
                 else:
                     for p in paths_to_list:
-                        if estimate_tokens:
-                            f_size = p.stat().st_size if p.exists() else 0
-                            content = read_file_best_effort(p)
-                            processed = process_content(content, processor.processing_opts)
-                            tokens, is_approx = utils.estimate_tokens(processed)
-                            lines = utils.count_lines(processed)
-                            stats['total_tokens'] += tokens
-                            stats['total_lines'] += lines
-                            if is_approx:
-                                stats['token_count_is_approx'] = True
-                            stats['top_files'].append((tokens, f_size, _get_rel_path(p, root_path).as_posix()))
-
                         # Print relative path if possible for cleaner output
                         print(_get_rel_path(p, root_path) if p.is_absolute() else p)
                 continue
@@ -1700,27 +1694,27 @@ def find_and_combine_files(
                         cached_content=cached_processed
                     )
 
-                if not dry_run or estimate_tokens:
-                    if not budget_pass_performed:
-                        # Total tokens for this file entry include boundaries
-                        h_template = output_opts.get('header_template', utils.DEFAULT_CONFIG['output']['header_template'])
-                        f_template = output_opts.get('footer_template', utils.DEFAULT_CONFIG['output']['footer_template'])
-                        rel_p = _get_rel_path(file_path, root_path)
-                        f_size = file_path.stat().st_size if file_path.exists() else 0
+                if not budget_pass_performed and (not dry_run or estimate_tokens):
+                    # Total tokens for this file entry include boundaries
+                    h_template = output_opts.get('header_template', utils.DEFAULT_CONFIG['output']['header_template'])
+                    f_template = output_opts.get('footer_template', utils.DEFAULT_CONFIG['output']['footer_template'])
+                    rel_p = _get_rel_path(file_path, root_path)
+                    f_size = file_path.stat().st_size if file_path.exists() else 0
 
-                        rendered_h = _render_template(h_template, rel_p, size=f_size, tokens=token_count, lines=line_count)
-                        rendered_f = _render_template(f_template, rel_p, size=f_size, tokens=token_count, lines=line_count)
+                    rendered_h = _render_template(h_template, rel_p, size=f_size, tokens=token_count, lines=line_count)
+                    rendered_f = _render_template(f_template, rel_p, size=f_size, tokens=token_count, lines=line_count)
 
-                        header_tokens = utils.estimate_tokens(rendered_h)[0]
-                        footer_tokens = utils.estimate_tokens(rendered_f)[0]
-                        header_lines = utils.count_lines(rendered_h)
-                        footer_lines = utils.count_lines(rendered_f)
+                    header_tokens = utils.estimate_tokens(rendered_h)[0]
+                    footer_tokens = utils.estimate_tokens(rendered_f)[0]
+                    header_lines = utils.count_lines(rendered_h)
+                    footer_lines = utils.count_lines(rendered_f)
 
-                        stats['total_tokens'] += token_count + header_tokens + footer_tokens
-                        stats['total_lines'] += line_count + header_lines + footer_lines
-                        if is_approx:
-                            stats['token_count_is_approx'] = True
-                    stats['top_files'].append((token_count, file_path.stat().st_size if file_path.exists() else 0, _get_rel_path(file_path, root_path).as_posix()))
+                    stats['total_tokens'] += token_count + header_tokens + footer_tokens
+                    stats['total_lines'] += line_count + header_lines + footer_lines
+                    if is_approx:
+                        stats['token_count_is_approx'] = True
+
+                stats['top_files'].append((token_count, file_path.stat().st_size if file_path.exists() else 0, _get_rel_path(file_path, root_path).as_posix()))
 
                 processing_bar.update(1)
 
@@ -1747,6 +1741,7 @@ def find_and_combine_files(
 
 def main():
     """Main function to parse arguments and run the tool."""
+    start_time = time.perf_counter()
     parser = argparse.ArgumentParser(
         description=(
             "Combine many source files into one document or organized pairs. "
@@ -2277,7 +2272,8 @@ def main():
             tree_view=args.tree
         )
         dest = f"to '{output_folder}'"
-        _print_execution_summary(stats, args, pairing_enabled=False, destination_desc=dest)
+        duration = time.perf_counter() - start_time
+        _print_execution_summary(stats, args, pairing_enabled=False, destination_desc=dest, duration=duration)
         sys.exit(0)
 
     mode_desc = "Pairing" if pairing_enabled else "Combining files"
@@ -2309,7 +2305,8 @@ def main():
         sys.exit(1)
 
     if stats:
-        _print_execution_summary(stats, args, pairing_enabled, destination_desc)
+        duration = time.perf_counter() - start_time
+        _print_execution_summary(stats, args, pairing_enabled, destination_desc, duration=duration)
 
 
 def extract_files(content, output_folder, dry_run=False, source_name="archive", config=None, list_files=False, tree_view=False):
@@ -2467,7 +2464,7 @@ def extract_files(content, output_folder, dry_run=False, source_name="archive", 
     return stats
 
 
-def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None):
+def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None, duration=None):
     """Print a formatted summary of the execution statistics to stderr."""
 
     total_included = stats.get('total_files', 0)
@@ -2476,7 +2473,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     excluded_folders = stats.get('excluded_folder_count', 0)
 
     if args.dry_run:
-        summary_title = "DRY RUN COMPLETE"
+        summary_title = f"DRY RUN COMPLETE: Would combine {total_included:,} files {destination_desc or ''}".strip()
         title_color = C_YELLOW
     elif args.estimate_tokens:
         summary_title = "TOKEN ESTIMATION COMPLETE"
@@ -2501,8 +2498,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     # Files Section
     label_width = 22
     print(f"  {C_BOLD}Files{C_RESET}", file=sys.stderr)
-    print(f"    {C_BOLD}{'Included:':<{label_width}}{C_RESET}{total_included:12,}", file=sys.stderr)
-    print(f"    {C_BOLD}{'Filtered:':<{label_width}}{C_RESET}{total_filtered:12,}", file=sys.stderr)
+    print(f"    {C_BOLD}{'Included:':<{label_width}}{C_RESET}{C_CYAN}{total_included:12,}{C_RESET}", file=sys.stderr)
+    print(f"    {C_BOLD}{'Filtered:':<{label_width}}{C_RESET}{C_CYAN}{total_filtered:12,}{C_RESET}", file=sys.stderr)
 
     # Detailed breakdown of filtering reasons
     if stats.get('filter_reasons'):
@@ -2515,18 +2512,18 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             if count > 0:
                 display_reason = reason.replace('_', ' ')
                 # Use dim for less visual noise in the breakdown
-                print(f"      {C_DIM}- {display_reason:<{label_width - 4}}{C_RESET}{count:12,}", file=sys.stderr)
+                print(f"      {C_DIM}- {display_reason:<{label_width - 4}}{C_RESET}{C_CYAN}{count:12,}{C_RESET}", file=sys.stderr)
 
-    print(f"    {C_BOLD}{'Total Found:':<{label_width}}{C_RESET}{total_discovered:12,}", file=sys.stderr)
+    print(f"    {C_BOLD}{'Total Found:':<{label_width}}{C_RESET}{C_CYAN}{total_discovered:12,}{C_RESET}", file=sys.stderr)
     if excluded_folders > 0:
-        print(f"    {C_BOLD}{'Excluded Folders:':<{label_width}}{C_RESET}{excluded_folders:12,}", file=sys.stderr)
+        print(f"    {C_BOLD}{'Excluded Folders:':<{label_width}}{C_RESET}{C_CYAN}{excluded_folders:12,}{C_RESET}", file=sys.stderr)
 
     # Data Section
     total_size_str = utils.format_size(stats.get('total_size_bytes', 0))
     total_lines = stats.get('total_lines', 0)
     print(f"\n  {C_BOLD}Data{C_RESET}", file=sys.stderr)
-    print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{total_size_str:>12}", file=sys.stderr)
-    print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{total_lines:12,}", file=sys.stderr)
+    print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_CYAN}{total_size_str:>12}{C_RESET}", file=sys.stderr)
+    print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_CYAN}{total_lines:12,}{C_RESET}", file=sys.stderr)
 
     # Token Counts
     # Show token counts if tokens were estimated
@@ -2535,7 +2532,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         is_approx = stats.get('token_count_is_approx', False)
         token_str = f"{'~' if is_approx else ''}{token_count:,}"
         print(
-            f"    {C_BOLD}{'Token Count:':<{label_width}}{C_RESET}{token_str:>12}",
+            f"    {C_BOLD}{'Token Count:':<{label_width}}{C_RESET}{C_CYAN}{token_str:>12}{C_RESET}",
             file=sys.stderr,
         )
         if is_approx:
@@ -2553,20 +2550,32 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             filled = min(bar_len, int((percent / 100) * bar_len))
             bar = f"[{'#' * filled}{'-' * (bar_len - filled)}]"
             bar_color = C_YELLOW if percent > 90 else C_GREEN
-            print(f"    {C_BOLD}{'Budget Usage:':<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {percent:>6.1f}%", file=sys.stderr)
+            print(f"    {C_BOLD}{'Budget Usage:':<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_CYAN}{percent:>6.1f}%{C_RESET}", file=sys.stderr)
+
+    if duration is not None:
+        print(f"    {C_BOLD}{'Duration:':<{label_width}}{C_RESET}{C_CYAN}{duration:.2f}s{C_RESET}", file=sys.stderr)
 
     # Largest Files
     if stats.get('top_files'):
-        print(f"\n  {C_BOLD}Largest Files (by tokens){C_RESET}", file=sys.stderr)
-        # Sort by tokens desc, then path alpha
-        top = sorted(stats['top_files'], key=lambda x: (-x[0], x[2]))[:5]
+        # Fallback to sorting by size if no token counts are available
+        has_tokens = any(f[0] > 0 for f in stats['top_files'])
+        if has_tokens:
+            print(f"\n  {C_BOLD}Largest Files (by tokens){C_RESET}", file=sys.stderr)
+            top = sorted(stats['top_files'], key=lambda x: (-x[0], x[2]))[:5]
+        else:
+            print(f"\n  {C_BOLD}Largest Files (by size){C_RESET}", file=sys.stderr)
+            top = sorted(stats['top_files'], key=lambda x: (-x[1], x[2]))[:5]
+
         for tokens, f_size, path in top:
             token_str = f"{tokens:,}"
             size_str = f"({utils.format_size(f_size)})"
             # Truncate long paths
             display_path = (path[:48] + '...') if len(path) > 51 else path
             # Align token counts at 10 and sizes at 12 to keep paths consistent
-            print(f"    {C_CYAN}{token_str:>10}{C_RESET}  {C_DIM}{size_str:<12}{C_RESET}  {display_path}", file=sys.stderr)
+            if has_tokens:
+                print(f"    {C_CYAN}{token_str:>10}{C_RESET}  {C_DIM}{size_str:<12}{C_RESET}  {display_path}", file=sys.stderr)
+            else:
+                print(f"    {C_CYAN}{size_str:<12}{C_RESET}  {display_path}", file=sys.stderr)
 
     # Extensions Grid
     if stats['files_by_extension']:
