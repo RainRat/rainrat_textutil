@@ -860,7 +860,7 @@ class FileProcessor:
         line_count = utils.count_lines(processed_content)
 
         if not self.estimate_tokens:
-            if self.output_format == 'json':
+            if self.output_format in ('json', 'jsonl'):
                 entry = {
                     "path": relative_path.as_posix(),
                     "size_bytes": file_size,
@@ -870,6 +870,8 @@ class FileProcessor:
                     "content": processed_content
                 }
                 json.dump(entry, outfile)
+                if self.output_format == 'jsonl':
+                    outfile.write('\n')
             else:
                 if self.output_opts.get('add_line_numbers', False):
                     processed_content = add_line_numbers(processed_content)
@@ -908,7 +910,7 @@ class FileProcessor:
         line_count = utils.count_lines(rendered)
 
         if not self.estimate_tokens:
-            if self.output_format == 'json':
+            if self.output_format in ('json', 'jsonl'):
                 entry = {
                     "path": relative_path.as_posix(),
                     "size_bytes": file_size,
@@ -918,6 +920,8 @@ class FileProcessor:
                     "content": rendered
                 }
                 json.dump(entry, outfile)
+                if self.output_format == 'jsonl':
+                    outfile.write('\n')
             else:
                 if self.output_format == 'xml':
                     rendered = xml_escape(rendered)
@@ -1102,8 +1106,8 @@ def find_and_combine_files(
     if output_path == '-' and pairing_enabled:
         raise InvalidConfigError("You cannot send output to your terminal when pairing files.")
 
-    if output_format == 'json' and pairing_enabled:
-        raise InvalidConfigError("You cannot use JSON format when pairing files.")
+    if output_format in ('json', 'jsonl') and pairing_enabled:
+        raise InvalidConfigError(f"You cannot use {output_format.upper()} format when pairing files.")
 
     # Apply default Markdown templates if requested and not overridden
     if output_format == 'markdown':
@@ -1872,11 +1876,11 @@ def main():
     output_group.add_argument(
         "--format",
         "-f",
-        choices=["text", "json", "markdown", "xml"],
+        choices=["text", "json", "jsonl", "markdown", "xml"],
         help=(
-            "Choose the output format. 'json' only works when combining many "
-            "files into one. 'markdown' and 'xml' formats automatically add "
-            "markers like code blocks or tags."
+            "Choose the output format. 'json' and 'jsonl' only work when "
+            "combining many files into one. 'markdown' and 'xml' formats "
+            "automatically add markers like code blocks or tags."
         ),
     )
     output_group.add_argument(
@@ -2227,9 +2231,6 @@ def main():
     elif args.xml:
         args.format = "xml"
 
-    if not args.format:
-        args.format = output_conf.get('format', 'text')
-
     explicit_files = None
     if args.files_from:
         explicit_files = []
@@ -2263,6 +2264,21 @@ def main():
             sys.exit(1)
 
     pairing_enabled = pairing_conf.get('enabled')
+
+    # Auto-detect format from extension if not explicitly set via CLI flags
+    if not args.format and not pairing_enabled and args.output and args.output != '-':
+        ext = Path(args.output).suffix.lower()
+        if ext in ('.md', '.markdown'):
+            args.format = 'markdown'
+        elif ext == '.json':
+            args.format = 'json'
+        elif ext == '.jsonl':
+            args.format = 'jsonl'
+        elif ext == '.xml':
+            args.format = 'xml'
+
+    if not args.format:
+        args.format = output_conf.get('format', 'text')
     if pairing_enabled:
         output_path = output_conf.get('folder')
     else:
@@ -2273,6 +2289,8 @@ def main():
                 output_conf['file'] = str(Path(DEFAULT_OUTPUT_FILENAME).with_suffix('.md'))
             elif args.format == 'json':
                 output_conf['file'] = str(Path(DEFAULT_OUTPUT_FILENAME).with_suffix('.json'))
+            elif args.format == 'jsonl':
+                output_conf['file'] = str(Path(DEFAULT_OUTPUT_FILENAME).with_suffix('.jsonl'))
             elif args.format == 'xml':
                 output_conf['file'] = str(Path(DEFAULT_OUTPUT_FILENAME).with_suffix('.xml'))
 
@@ -2396,6 +2414,25 @@ def extract_files(content, output_folder, dry_run=False, source_name="archive", 
                     files_to_create.append((entry['path'], entry['content']))
     except json.JSONDecodeError:
         pass
+
+    # 1.5 Try JSONL if JSON failed
+    if not files_to_create:
+        try:
+            potential_files = []
+            for line in content.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                entry = json.loads(line)
+                if isinstance(entry, dict) and 'path' in entry and 'content' in entry:
+                    potential_files.append((entry['path'], entry['content']))
+                else:
+                    potential_files = []
+                    break
+            if potential_files:
+                files_to_create = potential_files
+        except (json.JSONDecodeError, TypeError):
+            pass
 
     # 2. Try XML if JSON failed or found nothing
     if not files_to_create:

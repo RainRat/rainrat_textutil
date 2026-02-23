@@ -122,7 +122,7 @@ def test_validate_output_format_invalid(tmp_path):
             }
         }
     )
-    with pytest.raises(InvalidConfigError, match="'output.format' must be one of: text, json, markdown, xml"):
+    with pytest.raises(InvalidConfigError, match="'output.format' must be one of: text, json, jsonl, markdown, xml"):
         load_and_validate_config(config_path)
 
 def test_validate_processing_compact_whitespace_non_bool(tmp_path):
