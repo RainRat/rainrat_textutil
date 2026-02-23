@@ -107,6 +107,7 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 *   `--compact` / `-C`: Compact and clean up whitespace in the combined output to save tokens.
 *   `--sort`: Sort files by `name`, `size`, `modified`, `tokens`, or `depth` before combining.
 *   `--reverse`: Reverse the sort order.
+*   `--limit` / `-L`: Stop processing after this many files.
 *   `--max-tokens`: Stop adding files once this total token limit is reached. (Only works when combining many files into one).
 *   `--estimate-tokens` / `-e`: Calculate token counts without creating any files.
     *   *Note: Slower than a regular dry-run because it must read the file contents.*
@@ -374,6 +375,10 @@ the output for pairs whose primary file exceeds the limit.
 Set `filters.max_total_tokens` to a positive integer to limit the total size of the
 combined output document. This is very helpful when preparing context for
 AI assistants with specific limits.
+
+Set `filters.max_files` to a positive integer to stop processing after a
+specific number of files. This is useful for sampling large projects or
+testing your configuration.
 
 Set `filters.skip_binary` to `true` to ignore files that look like binary data
 (for example, executables or images) even when they match your other filters.
