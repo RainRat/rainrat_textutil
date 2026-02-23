@@ -2219,6 +2219,8 @@ def main():
     if args.reverse:
         output_conf['sort_reverse'] = True
 
+    pairing_enabled = pairing_conf.get('enabled')
+
     # Determine the effective output format. CLI flags take precedence over config.
     if args.markdown:
         args.format = "markdown"
@@ -2226,6 +2228,17 @@ def main():
         args.format = "json"
     elif args.xml:
         args.format = "xml"
+
+    if not args.format:
+        # Auto-detect format from output extension if specified via CLI
+        if not pairing_enabled and args.output and args.output != '-':
+            ext = Path(args.output).suffix.lower()
+            if ext in ('.md', '.markdown'):
+                args.format = 'markdown'
+            elif ext == '.json':
+                args.format = 'json'
+            elif ext == '.xml':
+                args.format = 'xml'
 
     if not args.format:
         args.format = output_conf.get('format', 'text')
@@ -2262,7 +2275,6 @@ def main():
             logging.error("Failed to read file list from '%s': %s", args.files_from, e)
             sys.exit(1)
 
-    pairing_enabled = pairing_conf.get('enabled')
     if pairing_enabled:
         output_path = output_conf.get('folder')
     else:
