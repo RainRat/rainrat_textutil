@@ -24,10 +24,10 @@ Whether you are preparing files for printing, giving context to AI assistants, o
 2.  **Get the code:**
     Clone the repository and enter the folder:
     ```bash
-    git clone https://github.com/RainRat/TextUtilities.git
-    cd TextUtilities
+    git clone https://github.com/RainRat/rainrat_textutil.git
+    cd rainrat_textutil
     ```
-    *Alternatively, [download the ZIP file](https://github.com/RainRat/TextUtilities/archive/refs/heads/main.zip) and extract it.*
+    *Alternatively, [download the ZIP file](https://github.com/RainRat/rainrat_textutil/archive/refs/heads/main.zip) and extract it.*
 
 3.  **Set up a virtual environment (Recommended):**
     This keeps the tool's libraries separate from your other Python projects.
@@ -65,13 +65,13 @@ Whether you are preparing files for printing, giving context to AI assistants, o
 
 ## Quick Start
 
-The easiest way to use SourceCombine is to run it on a folder.
+The easiest way to use SourceCombine is to run it on the current folder.
 
 1.  **Combine files in the current folder:**
     ```bash
-    python sourcecombine.py .
+    python sourcecombine.py
     ```
-    This combines all files in your current folder into `combined_files.txt`.
+    By default, this scans the folder where you run the command and combines all files into `combined_files.txt`. You can also specify a folder or file: `python sourcecombine.py my_folder/`.
 
 2.  **Initialize a configuration file for more control:**
     Generate a starter configuration:
@@ -100,7 +100,7 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 *   `--clipboard` / `-c`: Copy the combined output directly to your clipboard instead of saving a file.
     *   *Note: You cannot use clipboard mode when file pairing is enabled.*
 *   `--format` / `-f`: Choose the output format (`text`, `json`, `markdown`, or `xml`).
-    *   *Note: You can also use the shortcuts `-m` (markdown), `-j` (json), or `-w` (xml). JSON format produces a list of file objects and only works when combining many files into one. Markdown and XML formats automatically use appropriate markers (code blocks for Markdown, tags for XML).*
+    *   *Note: You can also use the shortcuts `-m` (markdown), `-j` (json), or `-w` (xml). JSON format produces a list of file objects and only works when combining many files into one. Markdown and XML formats automatically use appropriate formatting (code blocks for Markdown, tags for XML).*
 *   `--line-numbers` / `-n`: Add line numbers to the beginning of each line in the combined output.
 *   `--toc` / `-T`: Include a Table of Contents at the beginning of the output file. (Only works when combining many files into one).
 *   `--include-tree` / `-p`: Include a visual folder tree at the start of the output. (Only works when combining many files into one).
@@ -138,6 +138,11 @@ python sourcecombine.py src/ --line-numbers
 See the folder structure of all matched files:
 ```bash
 python sourcecombine.py . --tree
+```
+
+**Run on the current folder with default settings:**
+```bash
+python sourcecombine.py
 ```
 
 **Run on a specific folder without a config file:**
@@ -193,7 +198,7 @@ cat combined.txt | python sourcecombine.py --extract - -o restored_project/
 For large combined files, you can enable a Table of Contents (TOC) at the top of the output.
 This is particularly useful when outputting to Markdown or Text formats.
 
-**CLI:**
+**Using your terminal:**
 ```bash
 python sourcecombine.py --toc
 ```
@@ -231,7 +236,7 @@ output:
 
 You can switch back to the older fenced-code-block format by overriding the
 templates in your configuration (Note: SourceCombine automatically uses these
-markers when you choose the Markdown or XML output formats):
+headers when you choose the Markdown or XML output formats):
 
 ```yaml
 output:
@@ -328,6 +333,20 @@ processing:
   line_regex_replacements:
     - pattern: '^\s*\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$'
       replacement: '<data removed>'
+```
+
+### Removing Comments
+
+You can automatically remove C-style comments (`/* ... */`) from your files using the following options:
+
+```yaml
+processing:
+  # Remove all C-style comments throughout the file
+  remove_all_c_style_comments: true
+
+  # Remove only the first C-style comment at the top of the file
+  # (often used for license headers or file descriptions)
+  remove_initial_c_style_comment: true
 ```
 
 See `example.yml`, `concat_simple.yml`, and `example_cpp_h.yml` for more configuration
