@@ -370,7 +370,17 @@ def should_include(
     try:
         file_size = None
         if file_path is not None:
-            file_size = file_path.stat().st_size
+            stat = file_path.stat()
+            file_size = stat.st_size
+            mtime = stat.st_mtime
+
+            since = filter_opts.get('modified_since', 0)
+            if since > 0 and mtime < since:
+                return (False, 'modified_since') if return_reason else False
+
+            until = filter_opts.get('modified_until', 0)
+            if until > 0 and mtime > until:
+                return (False, 'modified_until') if return_reason else False
         elif virtual_content is not None:
             file_size = (
                 len(virtual_content)
@@ -1866,6 +1876,14 @@ def main():
         default=[],
         help="Include only files matching this pattern (like '*.py'). You can use this flag many times.",
     )
+    config_group.add_argument(
+        "--since",
+        help="Include files modified since this time (e.g., '1d', '2h', 'YYYY-MM-DD').",
+    )
+    config_group.add_argument(
+        "--until",
+        help="Include files modified before this time (e.g., '1d', '2h', 'YYYY-MM-DD').",
+    )
 
     # Output Options Group
     output_group = parser.add_argument_group("Output Options")
@@ -2209,6 +2227,19 @@ def main():
         if not isinstance(config.get('filters'), dict):
             config['filters'] = {}
         config['filters']['max_files'] = args.limit
+
+    if args.since or args.until:
+        if not isinstance(config.get('filters'), dict):
+            config['filters'] = {}
+        filters = config['filters']
+        try:
+            if args.since:
+                filters['modified_since'] = utils.parse_time_value(args.since)
+            if args.until:
+                filters['modified_until'] = utils.parse_time_value(args.until)
+        except InvalidConfigError as e:
+            logging.error(e)
+            sys.exit(1)
 
     if args.toc:
         output_conf['table_of_contents'] = True

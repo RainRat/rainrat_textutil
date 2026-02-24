@@ -34,6 +34,8 @@ DEFAULT_CONFIG = {
         'skip_binary': False,
         'max_total_tokens': 0,
         'max_files': 0,
+        'modified_since': 0,
+        'modified_until': 0,
         'exclusions': {
             'filenames': [
                 '*.pyc', '*.pyo', '*.pyd',
@@ -371,6 +373,14 @@ def _validate_filters_section(config):
             raise InvalidConfigError(
                 "filters.max_files must be a non-negative integer"
             )
+
+    for key in ('modified_since', 'modified_until'):
+        val = filters.get(key)
+        if val is not None:
+            if not isinstance(val, (int, float)) or val < 0:
+                raise InvalidConfigError(
+                    f"filters.{key} must be a non-negative number"
+                )
 
     skip_binary = filters.get('skip_binary')
     if skip_binary is not None and not isinstance(skip_binary, bool):
@@ -816,3 +826,56 @@ def format_size(size_bytes: int) -> str:
             return f"{size_bytes:,.2f} {unit}"
         size_bytes /= 1024.0
     return f"{size_bytes:,.2f} YB"
+
+
+def parse_time_value(value: str) -> float:
+    """Convert a time string into a Unix timestamp.
+
+    Supports relative durations (e.g., '1h', '2d', '4w') and absolute dates
+    in 'YYYY-MM-DD' format.
+    """
+    if not value:
+        return 0.0
+
+    import time
+    from datetime import datetime, timedelta
+
+    value = value.lower().strip()
+
+    # Try absolute date YYYY-MM-DD
+    if re.match(r'^\d{4}-\d{2}-\d{2}$', value):
+        try:
+            dt = datetime.strptime(value, '%Y-%m-%d')
+            return dt.timestamp()
+        except ValueError:
+            raise InvalidConfigError(f"Invalid date format: '{value}'. Use YYYY-MM-DD.")
+
+    # Try relative durations
+    match = re.match(r'^(\d+)([smhdw])$', value)
+    if match:
+        amount = int(match.group(1))
+        unit = match.group(2)
+        now = datetime.now()
+
+        if unit == 's':
+            delta = timedelta(seconds=amount)
+        elif unit == 'm':
+            delta = timedelta(minutes=amount)
+        elif unit == 'h':
+            delta = timedelta(hours=amount)
+        elif unit == 'd':
+            delta = timedelta(days=amount)
+        elif unit == 'w':
+            delta = timedelta(weeks=amount)
+        else:
+            raise InvalidConfigError(f"Unknown time unit: '{unit}' in '{value}'")
+
+        return (now - delta).timestamp()
+
+    # Try raw number (seconds)
+    if value.isdigit():
+        return float(value)
+
+    raise InvalidConfigError(
+        f"Invalid time value: '{value}'. Use '1h', '2d', 'YYYY-MM-DD', or seconds."
+    )
