@@ -423,7 +423,7 @@ def collect_file_paths(root_folder, recursive, exclude_folders, progress=None):
         if not exclude_patterns:
             return False
         rel_str = relative_path.as_posix()
-        parts = tuple(relative_path.parts)
+        parts = relative_path.parts
         excluded = _matches_folder_glob_cached(rel_str, parts, exclude_patterns)
         if excluded:
             logging.debug("Skipping folder: %s", rel_str)
