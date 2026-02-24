@@ -180,3 +180,36 @@ def test_validate_output_sort_reverse_non_bool(tmp_path):
     )
     with pytest.raises(InvalidConfigError, match="'output.sort_reverse' must be a boolean value"):
         load_and_validate_config(config_path)
+
+def test_validate_filters_max_files_invalid(tmp_path):
+    """Ensure InvalidConfigError is raised if filters.max_files is invalid."""
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "filters": {
+                "max_files": -1
+            }
+        }
+    )
+    with pytest.raises(InvalidConfigError, match="filters.max_files must be a non-negative integer"):
+        load_and_validate_config(config_path)
+
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "filters": {
+                "max_files": "not_an_int"
+            }
+        }
+    )
+    with pytest.raises(InvalidConfigError, match="filters.max_files must be a non-negative integer"):
+        load_and_validate_config(config_path)
+
+def test_validate_config_nested_not_dict(tmp_path):
+    """Ensure InvalidConfigError is raised if a required nested section is not a dictionary."""
+    from utils import validate_config
+    config = {"search": "not_a_dict"}
+    with pytest.raises(InvalidConfigError, match="'search' section must be a dictionary with keys: root_folders"):
+        validate_config(config, nested_required={"search": ["root_folders"]})

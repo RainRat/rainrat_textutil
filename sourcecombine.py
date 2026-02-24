@@ -1282,10 +1282,17 @@ def find_and_combine_files(
 
                 # Apply limit to list/tree
                 max_files = filter_opts.get('max_files', 0)
-                if max_files > 0 and len(paths_to_list) > max_files:
-                    stats['filter_reasons']['file_limit'] = stats['filter_reasons'].get('file_limit', 0) + (len(paths_to_list) - max_files)
-                    paths_to_list = paths_to_list[:max_files]
-                    stats['limit_reached'] = True
+                if max_files > 0:
+                    remaining_budget = max_files - stats['total_files']
+                    if remaining_budget <= 0:
+                        stats['filter_reasons']['file_limit'] = stats['filter_reasons'].get('file_limit', 0) + len(paths_to_list)
+                        paths_to_list = []
+                        stats['limit_reached'] = True
+                        continue
+                    elif len(paths_to_list) > remaining_budget:
+                        stats['filter_reasons']['file_limit'] = stats['filter_reasons'].get('file_limit', 0) + (len(paths_to_list) - remaining_budget)
+                        paths_to_list = paths_to_list[:remaining_budget]
+                        stats['limit_reached'] = True
 
                 # Update stats for listed files
                 for p in paths_to_list:
