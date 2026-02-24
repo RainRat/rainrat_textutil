@@ -80,7 +80,7 @@ class CLILogFormatter(logging.Formatter):
         return f"{prefix}{message}"
 
 
-try:  # Optional dependency for progress reporting
+try:  # Optional software for progress reporting
     from tqdm import tqdm as _tqdm
 except ImportError:  # pragma: no cover - gracefully handle missing tqdm
     _tqdm = None
@@ -167,7 +167,7 @@ def _get_rel_path(path, root_path):
 
 
 def _format_metadata_summary(meta: Mapping[str, Any]) -> str:
-    """Return a formatted string representing file or folder metadata."""
+    """Return a formatted string representing file or folder details."""
     parts = []
     if 'files' in meta:
         count = meta['files']
@@ -205,7 +205,7 @@ def _render_single_pass(template, replacements):
 
 
 def _render_template(template, relative_path, size=None, tokens=None, lines=None, escape_func=None):
-    """Replace placeholders in a template with file metadata.
+    """Replace placeholders in a template with file details.
 
     The placeholders include FILENAME, EXT, STEM, DIR, DIR_SLUG, SIZE,
     TOKENS, and LINE_COUNT.
@@ -244,7 +244,7 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
 
 
 def _render_global_template(template, stats):
-    """Replace placeholders in a global template with project metadata.
+    """Replace placeholders in a global template with project details.
 
     The placeholders include FILE_COUNT, TOTAL_SIZE, TOTAL_TOKENS, and TOTAL_LINES.
     """
@@ -392,7 +392,7 @@ def should_include(
 
 
 def collect_file_paths(root_folder, recursive, exclude_folders, progress=None):
-    """Return all paths in ``root_folder`` while pruning excluded folders.
+    """Return all paths in ``root_folder`` while skipping excluded folders.
 
     If ``root_folder`` is a file, it returns a list containing only that file.
     """
@@ -486,7 +486,7 @@ def filter_file_paths(
     stats=None,
     abs_output_path=None,
 ):
-    """Apply filtering rules to ``file_paths`` and return the matches.
+    """Apply filters to ``file_paths`` and return the matches.
 
     When ``record_size_exclusions`` is ``True`` an additional list of paths
     excluded for exceeding ``max_size_bytes`` is returned.
@@ -766,8 +766,7 @@ class FileProcessor:
     Parameters
     ----------
     config : dict
-        Parsed configuration mapping containing ``processing`` and output
-        settings used to drive file handling.
+        Settings containing ``processing`` and output rules for files.
     output_opts : dict
         Options that control how processed content is emitted, including
         header/footer templates and whether to include line numbers.
@@ -1075,7 +1074,7 @@ def find_and_combine_files(
     tree_view=False,
     explicit_files=None,
 ):
-    """Find, filter, and combine files based on the provided configuration."""
+    """Find, filter, and combine files based on the settings."""
     stats = {
         'total_discovered': 0,
         'total_files': 0,
@@ -1795,9 +1794,9 @@ def main():
     start_time = time.perf_counter()
     parser = argparse.ArgumentParser(
         description=(
-            "Combine many files into one document or into pairs. "
+            "Combine many files into one file or into pairs. "
             "This tool is helpful for providing better context to AI assistants, "
-            "archiving code, or performing code reviews."
+            "saving code, or performing code reviews."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=textwrap.dedent("""
@@ -1887,7 +1886,7 @@ def main():
         help=(
             "Choose the output format. 'json' and 'jsonl' only work when "
             "combining many files into one. 'markdown' and 'xml' formats "
-            "automatically add markers like code blocks or tags."
+            "automatically add formatting like code blocks or tags."
         ),
     )
     output_group.add_argument(
@@ -1924,7 +1923,7 @@ def main():
         "--include-tree",
         "-p",
         action="store_true",
-        help="Include a visual folder tree with file metadata at the start of the output. (Only when combining many files into one)",
+        help="Include a visual folder tree with file details at the start of the output. (Only when combining many files into one)",
     )
     output_group.add_argument(
         "--compact",
@@ -1967,7 +1966,7 @@ def main():
         "--tree",
         "-t",
         action="store_true",
-        help="Show a visual folder tree of all included files with metadata and then stop.",
+        help="Show a visual folder tree of all included files with file details and then stop.",
     )
     preview_group.add_argument(
         "--limit",
@@ -2328,7 +2327,7 @@ def main():
                 content = pyperclip.paste()
                 source_name = "clipboard"
             except ImportError:
-                logging.error("The 'pyperclip' library is required for clipboard support. Install it with: pip install pyperclip")
+                logging.error("The 'pyperclip' software is required for clipboard support. Install it with: pip install pyperclip")
                 sys.exit(1)
         elif remaining_targets and remaining_targets[0] == "-":
             content = sys.stdin.read()
@@ -2575,7 +2574,7 @@ def extract_files(content, output_folder, dry_run=False, source_name="archive", 
 
 
 def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None, duration=None):
-    """Print a formatted summary of the execution statistics to stderr."""
+    """Print a summary of the totals to your terminal."""
 
     total_included = stats.get('total_files', 0)
     total_discovered = stats.get('total_discovered', 0)
@@ -2662,7 +2661,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             filled = min(bar_len, int((percent / 100) * bar_len))
             bar = f"[{'#' * filled}{'-' * (bar_len - filled)}]"
             bar_color = C_YELLOW if percent > 90 else C_GREEN
-            print(f"    {C_BOLD}{'Budget Usage:':<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_CYAN}{percent:>6.1f}%{C_RESET}", file=sys.stderr)
+            print(f"    {C_BOLD}{'Token Limit Usage:':<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_CYAN}{percent:>6.1f}%{C_RESET}", file=sys.stderr)
 
     if duration is not None:
         print(f"    {C_BOLD}{'Duration:':<{label_width}}{C_RESET}{C_CYAN}{duration:.2f}s{C_RESET}", file=sys.stderr)

@@ -130,7 +130,7 @@ def test_load_and_validate_config_rejects_allowed_extensions_with_inclusion_grou
     with pytest.raises(InvalidConfigError) as excinfo:
         load_and_validate_config(config_path)
 
-    assert "mutually exclusive" in str(excinfo.value)
+    assert "cannot be used at the same time" in str(excinfo.value)
 
     pairing_path = _write_config(
         tmp_path,
@@ -314,7 +314,7 @@ def test_load_and_validate_config_rejects_invalid_size_filters(tmp_path, field, 
 
     message = str(excinfo.value)
     assert f"filters.{field}" in message
-    assert "non-negative integer" in message
+    assert "0 or more" in message
 
 
 @pytest.mark.parametrize(

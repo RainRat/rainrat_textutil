@@ -59,11 +59,11 @@ def test_validate_processing_section_not_a_dict():
 
 def test_validate_processing_section_non_bool():
     config = {"processing": {"apply_in_place": "not a bool"}}
-    with pytest.raises(InvalidConfigError, match="'processing.apply_in_place' must be a boolean value"):
+    with pytest.raises(InvalidConfigError, match="'processing.apply_in_place' must be true or false"):
         validate_config(config)
 
     config = {"processing": {"create_backups": "not a bool"}}
-    with pytest.raises(InvalidConfigError, match="'processing.create_backups' must be a boolean value"):
+    with pytest.raises(InvalidConfigError, match="'processing.create_backups' must be true or false"):
         validate_config(config)
 
 def test_validate_config_missing_nested_key():
@@ -311,7 +311,7 @@ def test_validate_output_table_of_contents_not_bool():
         "output": {"table_of_contents": "not_a_bool"},
         "search": {"root_folders": ["."]}
     }
-    with pytest.raises(InvalidConfigError, match="'output.table_of_contents' must be a boolean value"):
+    with pytest.raises(InvalidConfigError, match="'output.table_of_contents' must be true or false"):
         validate_config(config)
 
 def test_validate_config_deprecated_in_place_groups():
@@ -319,7 +319,7 @@ def test_validate_config_deprecated_in_place_groups():
         "processing": {"in_place_groups": ["something"]},
         "search": {"root_folders": ["."]}
     }
-    with pytest.raises(InvalidConfigError, match="'processing.in_place_groups' has been deprecated"):
+    with pytest.raises(InvalidConfigError, match="'processing.in_place_groups' is no longer used"):
         validate_config(config)
 
 def test_validate_filters_max_total_tokens_invalid():
@@ -327,7 +327,7 @@ def test_validate_filters_max_total_tokens_invalid():
         "filters": {"max_total_tokens": -1},
         "search": {"root_folders": ["."]}
     }
-    with pytest.raises(InvalidConfigError, match="filters.max_total_tokens must be a non-negative integer"):
+    with pytest.raises(InvalidConfigError, match="filters.max_total_tokens must be 0 or more"):
         validate_config(config)
 
 def test_validate_filters_search_not_dict():

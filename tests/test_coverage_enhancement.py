@@ -104,7 +104,7 @@ def test_budget_bar_no_color(temp_cwd, capsys):
         _print_execution_summary(stats, args, pairing_enabled=False)
 
     captured = capsys.readouterr()
-    assert "Budget Usage:" in captured.err
+    assert "Token Limit Usage:" in captured.err
     assert "[#####-----]" in captured.err
 
 def test_summary_terminal_size_fallback(temp_cwd, capsys):
