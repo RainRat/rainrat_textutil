@@ -21,8 +21,8 @@ Whether you are preparing files for printing, giving context to AI assistants, o
     python --version
     ```
 
-2.  **Get the code:**
-    Clone the repository and enter the folder:
+2.  **Download the code:**
+    Clone the repository and go into the folder:
     ```bash
     git clone https://github.com/RainRat/rainrat_textutil.git
     cd rainrat_textutil
@@ -30,34 +30,26 @@ Whether you are preparing files for printing, giving context to AI assistants, o
     *Alternatively, [download the ZIP file](https://github.com/RainRat/rainrat_textutil/archive/refs/heads/main.zip) and extract it.*
 
 3.  **Set up a virtual environment (Recommended):**
-    This keeps the tool's libraries separate from your other Python projects.
-    *   **Windows (Command Prompt):**
+    This keeps SourceCombine's software separate from your other projects.
+    *   **Windows:**
         ```bash
         python -m venv venv
         venv\Scripts\activate
         ```
-    *   **Windows (PowerShell):**
-        ```bash
-        python -m venv venv
-        .\venv\Scripts\Activate.ps1
-        ```
+        *If you use PowerShell, use `.\venv\Scripts\Activate.ps1` instead.*
     *   **macOS/Linux:**
         ```bash
         python3 -m venv venv
         source venv/bin/activate
         ```
 
-4.  **Install libraries:**
-    Install the necessary software libraries:
+4.  **Install the required software:**
     ```bash
     pip install -r requirements.txt
     ```
-    *(Optional) For accurate token counting, also install `tiktoken`:*
-    ```bash
-    pip install tiktoken
-    ```
+    *(Optional) For better token counting:* `pip install tiktoken`
 
-5.  **Verify installation:**
+5.  **Verify it works:**
     Check that the tool runs:
     ```bash
     python sourcecombine.py --help
@@ -314,7 +306,7 @@ processing:
       replacement: ''
 ```
 
-You can keep only the text between custom markers by using a capture group in
+You can keep only the text between custom labels by using a capture group in
 your pattern and referencing it in the replacement string:
 
 ```yaml
