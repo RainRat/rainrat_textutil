@@ -124,7 +124,7 @@ def test_cli_extract_clipboard_import_error_coverage(monkeypatch, caplog):
         with pytest.raises(SystemExit) as excinfo:
             sourcecombine.main()
     assert excinfo.value.code == 1
-    assert "The 'pyperclip' library is required" in caplog.text
+    assert "The 'pyperclip' software is required" in caplog.text
 
 def test_utils_tiktoken_import_error_coverage():
     """Cover utils.py lines 12-13: tiktoken ImportError."""

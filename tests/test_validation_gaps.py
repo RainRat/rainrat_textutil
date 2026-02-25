@@ -136,7 +136,7 @@ def test_validate_processing_compact_whitespace_non_bool(tmp_path):
             }
         }
     )
-    with pytest.raises(InvalidConfigError, match="'processing.compact_whitespace' must be a boolean value"):
+    with pytest.raises(InvalidConfigError, match="'processing.compact_whitespace' must be true or false"):
         load_and_validate_config(config_path)
 
 def test_validate_processing_apply_in_place_non_bool(tmp_path):
@@ -150,7 +150,7 @@ def test_validate_processing_apply_in_place_non_bool(tmp_path):
             }
         }
     )
-    with pytest.raises(InvalidConfigError, match="'processing.apply_in_place' must be a boolean value"):
+    with pytest.raises(InvalidConfigError, match="'processing.apply_in_place' must be true or false"):
         load_and_validate_config(config_path)
 
 def test_validate_output_sort_by_invalid(tmp_path):
@@ -178,7 +178,7 @@ def test_validate_output_sort_reverse_non_bool(tmp_path):
             }
         }
     )
-    with pytest.raises(InvalidConfigError, match="'output.sort_reverse' must be a boolean value"):
+    with pytest.raises(InvalidConfigError, match="'output.sort_reverse' must be true or false"):
         load_and_validate_config(config_path)
 
 def test_validate_filters_max_files_invalid(tmp_path):
@@ -192,7 +192,7 @@ def test_validate_filters_max_files_invalid(tmp_path):
             }
         }
     )
-    with pytest.raises(InvalidConfigError, match="filters.max_files must be a non-negative integer"):
+    with pytest.raises(InvalidConfigError, match="filters.max_files must be 0 or more"):
         load_and_validate_config(config_path)
 
     config_path = _write_config(
@@ -204,7 +204,7 @@ def test_validate_filters_max_files_invalid(tmp_path):
             }
         }
     )
-    with pytest.raises(InvalidConfigError, match="filters.max_files must be a non-negative integer"):
+    with pytest.raises(InvalidConfigError, match="filters.max_files must be 0 or more"):
         load_and_validate_config(config_path)
 
 def test_validate_config_nested_not_dict(tmp_path):

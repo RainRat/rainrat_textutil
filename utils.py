@@ -7,7 +7,7 @@ from typing import Any, Mapping, Sequence
 from charset_normalizer import from_bytes
 import yaml
 
-try:  # Optional dependency for accurate token counting
+try:  # Optional software for accurate token counting
     import tiktoken
 except ImportError:
     tiktoken = None
@@ -90,7 +90,7 @@ class InvalidConfigError(Exception):
 
 
 def load_yaml_config(config_file_path):
-    """Load a YAML configuration file with basic error handling."""
+    """Load a YAML settings file."""
     logging.info("Loading configuration from: %s", config_file_path)
     try:
         with open(config_file_path, 'r', encoding='utf-8') as f:
@@ -125,11 +125,11 @@ def load_yaml_config(config_file_path):
 
 
 def read_file_best_effort(file_path):
-    """Attempt to read a file trying several encodings.
+    """Try to read a file using several text formats.
 
-    The function first attempts UTF-8 with BOM handling, then relies on
-    ``charset-normalizer`` to identify a likely encoding before falling back to
-    a permissive UTF-8 decode with replacements.
+    The function first tries UTF-8 (handling special markers at the start),
+    then tries to find the likely format before falling back to
+    a basic UTF-8 read.
     """
 
     try:
@@ -143,7 +143,7 @@ def read_file_best_effort(file_path):
     try:
         text = raw_bytes.decode('utf-8-sig')
         if '\x00' in text:
-            raise UnicodeError("Detected NUL bytes; retrying with alternate encodings")
+            raise UnicodeError("Found empty (NUL) characters; trying other ways to read the file")
         return text
     except UnicodeError:
         pass
@@ -177,7 +177,7 @@ def read_file_best_effort(file_path):
 def _looks_binary(
     path: Path | None = None, sample: bytes | None = None, sample_size: int = 4096
 ) -> bool:
-    """Return ``True`` when content appears to contain binary data."""
+    """Return ``True`` if the content looks like it is not text."""
 
     if sample is None:
         if path is None:
@@ -258,7 +258,7 @@ def _validate_compact_whitespace_groups(groups, *, context):
         return
     if not isinstance(groups, dict):
         raise InvalidConfigError(
-            f"'{context}' must be a dictionary mapping group names to booleans or null."
+            f"'{context}' must be a dictionary of group names (set to true, false, or null)."
         )
 
     for key, value in groups.items():
@@ -350,28 +350,28 @@ def _validate_filters_section(config):
     if min_size is not None:
         if not isinstance(min_size, int) or min_size < 0:
             raise InvalidConfigError(
-                "filters.min_size_bytes must be a non-negative integer"
+                "filters.min_size_bytes must be 0 or more"
             )
 
     max_size = filters.get('max_size_bytes')
     if max_size is not None:
         if not isinstance(max_size, int) or max_size < 0:
             raise InvalidConfigError(
-                "filters.max_size_bytes must be a non-negative integer"
+                "filters.max_size_bytes must be 0 or more"
             )
 
     max_total_tokens = filters.get('max_total_tokens')
     if max_total_tokens is not None:
         if not isinstance(max_total_tokens, int) or max_total_tokens < 0:
             raise InvalidConfigError(
-                "filters.max_total_tokens must be a non-negative integer"
+                "filters.max_total_tokens must be 0 or more"
             )
 
     max_files = filters.get('max_files')
     if max_files is not None:
         if not isinstance(max_files, int) or max_files < 0:
             raise InvalidConfigError(
-                "filters.max_files must be a non-negative integer"
+                "filters.max_files must be 0 or more"
             )
 
     for key in ('modified_since', 'modified_until'):
@@ -384,7 +384,7 @@ def _validate_filters_section(config):
 
     skip_binary = filters.get('skip_binary')
     if skip_binary is not None and not isinstance(skip_binary, bool):
-        raise InvalidConfigError("filters.skip_binary must be a boolean value")
+        raise InvalidConfigError("filters.skip_binary must be true or false")
 
     exclusions_conf = filters.get('exclusions', {})
     if isinstance(exclusions_conf, dict):
@@ -417,7 +417,7 @@ def _validate_filters_section(config):
         and config.get('search', {}).get('allowed_extensions')
     ):
         raise InvalidConfigError(
-            "'filters.inclusion_groups' and 'search.allowed_extensions' are mutually exclusive; "
+            "'filters.inclusion_groups' and 'search.allowed_extensions' cannot be used at the same time; "
             "specify file types in your inclusion group patterns instead (e.g., 'src/**/*.py')."
         )
 
@@ -431,19 +431,19 @@ def _validate_processing_section(config, *, source=None):
     apply_in_place = processing_conf.get('apply_in_place')
     if apply_in_place is not None and not isinstance(apply_in_place, bool):
         raise InvalidConfigError(
-            "'processing.apply_in_place' must be a boolean value"
+            "'processing.apply_in_place' must be true or false"
         )
 
     compact_whitespace_val = processing_conf.get('compact_whitespace')
     if compact_whitespace_val is not None and not isinstance(compact_whitespace_val, bool):
         raise InvalidConfigError(
-            "'processing.compact_whitespace' must be a boolean value"
+            "'processing.compact_whitespace' must be true or false"
         )
 
     create_backups = processing_conf.get('create_backups')
     if create_backups is not None and not isinstance(create_backups, bool):
         raise InvalidConfigError(
-            "'processing.create_backups' must be a boolean value"
+            "'processing.create_backups' must be true or false"
         )
 
     _validate_compact_whitespace_groups(
@@ -467,7 +467,7 @@ def _validate_processing_section(config, *, source=None):
 
     if 'in_place_groups' in processing_conf:
         raise InvalidConfigError(
-            "'processing.in_place_groups' has been deprecated. "
+            "'processing.in_place_groups' is no longer used. "
             "Use 'processing.apply_in_place' instead."
         )
 
@@ -521,11 +521,11 @@ def _validate_output_section(config):
     for field in string_fields:
         value = output_conf.get(field)
         if value is not None and not isinstance(value, str):
-            raise InvalidConfigError(f"'output.{field}' must be a string or null.")
+            raise InvalidConfigError(f"'output.{field}' must be text or nothing.")
 
     toc = output_conf.get('table_of_contents')
     if toc is not None and not isinstance(toc, bool):
-        raise InvalidConfigError("'output.table_of_contents' must be a boolean value.")
+        raise InvalidConfigError("'output.table_of_contents' must be true or false.")
 
     placeholder = output_conf.get('max_size_placeholder')
 
@@ -547,7 +547,7 @@ def _validate_output_section(config):
 
     sort_reverse = output_conf.get('sort_reverse')
     if sort_reverse is not None and not isinstance(sort_reverse, bool):
-        raise InvalidConfigError("'output.sort_reverse' must be a boolean value.")
+        raise InvalidConfigError("'output.sort_reverse' must be true or false.")
 
 
 def apply_line_regex_replacements(text, rules):
@@ -577,7 +577,7 @@ def validate_config(
     nested_required: Mapping[str, Sequence[str]] | None = None,
     source: str | Path | None = None,
 ) -> None:
-    """Validate a configuration dictionary and apply defaults in-place.
+    """Check the settings and apply default values.
 
     This function performs the same validation steps as
     :func:`load_and_validate_config` but operates on a dictionary instead of a
