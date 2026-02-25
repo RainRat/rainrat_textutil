@@ -838,6 +838,47 @@ class FileProcessor:
                 f"Failed to create backup for '{file_path}': {exc}"
             ) from exc
 
+    def _emit_entry(
+        self,
+        outfile,
+        content,
+        relative_path,
+        file_size,
+        token_count,
+        is_approx,
+        line_count,
+        include_line_numbers=True,
+    ):
+        """Format and write a single file entry to the output stream."""
+        if self.estimate_tokens:
+            return
+
+        if self.output_format in ("json", "jsonl"):
+            entry = {
+                "path": relative_path.as_posix(),
+                "size_bytes": file_size,
+                "tokens": token_count,
+                "tokens_is_approx": is_approx,
+                "lines": line_count,
+                "content": content,
+            }
+            json.dump(entry, outfile)
+            if self.output_format == "jsonl":
+                outfile.write("\n")
+        else:
+            if include_line_numbers and self.output_opts.get("add_line_numbers", False):
+                content = add_line_numbers(content)
+            if self.output_format == "xml":
+                content = xml_escape(content)
+            self._write_with_templates(
+                outfile,
+                content,
+                relative_path,
+                size=file_size,
+                tokens=token_count,
+                lines=line_count,
+            )
+
     def process_and_write(self, file_path, root_path, outfile, cached_content=None):
         """Read, process, and write a single file.
 
@@ -868,25 +909,15 @@ class FileProcessor:
         token_count, is_approx = utils.estimate_tokens(processed_content)
         line_count = utils.count_lines(processed_content)
 
-        if not self.estimate_tokens:
-            if self.output_format in ('json', 'jsonl'):
-                entry = {
-                    "path": relative_path.as_posix(),
-                    "size_bytes": file_size,
-                    "tokens": token_count,
-                    "tokens_is_approx": is_approx,
-                    "lines": line_count,
-                    "content": processed_content
-                }
-                json.dump(entry, outfile)
-                if self.output_format == 'jsonl':
-                    outfile.write('\n')
-            else:
-                if self.output_opts.get('add_line_numbers', False):
-                    processed_content = add_line_numbers(processed_content)
-                if self.output_format == 'xml':
-                    processed_content = xml_escape(processed_content)
-                self._write_with_templates(outfile, processed_content, relative_path, size=file_size, tokens=token_count, lines=line_count)
+        self._emit_entry(
+            outfile,
+            processed_content,
+            relative_path,
+            file_size,
+            token_count,
+            is_approx,
+            line_count,
+        )
 
         return token_count, is_approx, line_count
 
@@ -918,23 +949,16 @@ class FileProcessor:
         token_count, is_approx = utils.estimate_tokens(rendered)
         line_count = utils.count_lines(rendered)
 
-        if not self.estimate_tokens:
-            if self.output_format in ('json', 'jsonl'):
-                entry = {
-                    "path": relative_path.as_posix(),
-                    "size_bytes": file_size,
-                    "tokens": token_count,
-                    "tokens_is_approx": is_approx,
-                    "lines": line_count,
-                    "content": rendered
-                }
-                json.dump(entry, outfile)
-                if self.output_format == 'jsonl':
-                    outfile.write('\n')
-            else:
-                if self.output_format == 'xml':
-                    rendered = xml_escape(rendered)
-                self._write_with_templates(outfile, rendered, relative_path, size=file_size, tokens=token_count, lines=line_count)
+        self._emit_entry(
+            outfile,
+            rendered,
+            relative_path,
+            file_size,
+            token_count,
+            is_approx,
+            line_count,
+            include_line_numbers=False,
+        )
 
         return token_count, is_approx, line_count
 
