@@ -2705,20 +2705,28 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         if has_tokens:
             print(f"\n  {C_BOLD}Largest Files (by tokens){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[0], x[2]))[:5]
+            total_for_percent = stats.get('total_tokens', 0)
         else:
             print(f"\n  {C_BOLD}Largest Files (by size){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[1], x[2]))[:5]
+            total_for_percent = stats.get('total_size_bytes', 0)
 
         for tokens, f_size, path in top:
+            val = tokens if has_tokens else f_size
+            percent_str = ""
+            if total_for_percent > 0:
+                percent = (val / total_for_percent) * 100
+                percent_str = f"({percent:>5.1f}%)"
+
             token_str = f"{tokens:,}"
             size_str = f"({utils.format_size(f_size)})"
             # Truncate long paths
             display_path = (path[:48] + '...') if len(path) > 51 else path
-            # Align token counts at 10 and sizes at 12 to keep paths consistent
+            # Align token counts at 10, percentages at 8, and sizes at 12 to keep paths consistent
             if has_tokens:
-                print(f"    {C_CYAN}{token_str:>10}{C_RESET}  {C_DIM}{size_str:<12}{C_RESET}  {display_path}", file=sys.stderr)
+                print(f"    {C_CYAN}{token_str:>10} {percent_str}{C_RESET}  {C_DIM}{size_str:<12}{C_RESET}  {display_path}", file=sys.stderr)
             else:
-                print(f"    {C_CYAN}{size_str:<12}{C_RESET}  {display_path}", file=sys.stderr)
+                print(f"    {C_CYAN}{size_str:<12} {percent_str}{C_RESET}  {display_path}", file=sys.stderr)
 
     # Extensions Grid
     if stats['files_by_extension']:
@@ -2729,7 +2737,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         )
 
         formatted_counts = [f"{count:,}" for _, count in sorted_exts]
-        items = [f"{C_CYAN}{ext}{C_RESET}: {c:>5}" for (ext, _), c in zip(sorted_exts, formatted_counts)]
+        items = [f"{C_CYAN}{ext}: {c:>5}{C_RESET}" for (ext, _), c in zip(sorted_exts, formatted_counts)]
         raw_items = [f"{ext}: {c:>5}" for (ext, _), c in zip(sorted_exts, formatted_counts)]
         max_len = max(len(s) for s in raw_items) + 3
 
