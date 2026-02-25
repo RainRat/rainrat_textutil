@@ -1869,14 +1869,9 @@ def main():
         ),
     )
 
-    # Configuration Group
-    config_group = parser.add_argument_group("Configuration")
-    config_group.add_argument(
-        "--init",
-        action="store_true",
-        help="Create a basic 'sourcecombine.yml' file in your current folder to get started.",
-    )
-    config_group.add_argument(
+    # Filtering & Selection Group
+    filtering_group = parser.add_argument_group("Filtering & Selection")
+    filtering_group.add_argument(
         "--exclude-file",
         "-x",
         dest="exclude_file",
@@ -1884,7 +1879,7 @@ def main():
         default=[],
         help="Skip files that match this pattern (e.g., '*.log'). Use many times to skip more.",
     )
-    config_group.add_argument(
+    filtering_group.add_argument(
         "--exclude-folder",
         "-X",
         dest="exclude_folder",
@@ -1892,20 +1887,38 @@ def main():
         default=[],
         help="Skip folders that match this pattern (e.g., 'build'). Use many times to skip more.",
     )
-    config_group.add_argument(
+    filtering_group.add_argument(
         "--include",
         "-i",
         action="append",
         default=[],
         help="Include only files matching this pattern (like '*.py'). You can use this flag many times.",
     )
-    config_group.add_argument(
+    filtering_group.add_argument(
         "--since",
+        "-S",
         help="Include files modified since this time (e.g., '1d', '2h', 'YYYY-MM-DD').",
     )
-    config_group.add_argument(
+    filtering_group.add_argument(
         "--until",
+        "-U",
         help="Include files modified before this time (e.g., '1d', '2h', 'YYYY-MM-DD').",
+    )
+    filtering_group.add_argument(
+        "--limit",
+        "-L",
+        type=int,
+        help="Stop processing after this many files.",
+    )
+    filtering_group.add_argument(
+        "--max-tokens",
+        "-M",
+        type=int,
+        help="Stop adding files once this total token limit is reached. (Only when combining many files into one)",
+    )
+    filtering_group.add_argument(
+        "--files-from",
+        help="Read a list of files from a text file (use '-' for your terminal). This skips folder scanning.",
     )
 
     # Output Options Group
@@ -1975,11 +1988,13 @@ def main():
     )
     output_group.add_argument(
         "--sort",
+        "-s",
         choices=["name", "size", "modified", "tokens", "depth"],
         help="Sort files by name, size, modified time, token count, or path depth before combining.",
     )
     output_group.add_argument(
         "--reverse",
+        "-r",
         action="store_true",
         help="Reverse the sort order.",
     )
@@ -2010,37 +2025,14 @@ def main():
         action="store_true",
         help="Show a visual folder tree of all included files with file details and then stop.",
     )
-    preview_group.add_argument(
-        "--limit",
-        "-L",
-        type=int,
-        help="Stop processing after this many files.",
-    )
-
-    # Runtime Options Group
-    runtime_group = parser.add_argument_group("Runtime Options")
-    runtime_group.add_argument(
-        "--version",
-        action="version",
-        version=f"%(prog)s {__version__}",
-        help="Show the tool's version and exit.",
-    )
-    runtime_group.add_argument(
-        "--max-tokens",
-        type=int,
-        help="Stop adding files once this total token limit is reached. (Only when combining many files into one)",
-    )
-    runtime_group.add_argument(
-        "-v",
-        "--verbose",
+    # Utility Commands Group
+    utility_group = parser.add_argument_group("Utility Commands")
+    utility_group.add_argument(
+        "--init",
         action="store_true",
-        help="Show extra details to help with troubleshooting.",
+        help="Create a basic 'sourcecombine.yml' file in your current folder to get started.",
     )
-    runtime_group.add_argument(
-        "--files-from",
-        help="Read a list of files from a text file (use '-' for your terminal). This skips folder scanning.",
-    )
-    runtime_group.add_argument(
+    utility_group.add_argument(
         "--extract",
         action="store_true",
         help=(
@@ -2049,6 +2041,19 @@ def main():
             "(--include, --exclude-file, --exclude-folder) and preview flags "
             "(--list-files, --tree) are supported."
         ),
+    )
+    utility_group.add_argument(
+        "--version",
+        "-V",
+        action="version",
+        version=f"%(prog)s {__version__}",
+        help="Show the tool's version and exit.",
+    )
+    utility_group.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Show extra details to help with troubleshooting.",
     )
 
     args = parser.parse_args()
