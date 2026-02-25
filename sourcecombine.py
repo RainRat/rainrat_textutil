@@ -259,7 +259,7 @@ def _render_global_template(template, stats):
     token_str = f"{'~' if is_approx else ''}{total_tokens:,}"
 
     replacements = {
-        "{{FILE_COUNT}}": str(file_count),
+        "{{FILE_COUNT}}": f"{file_count:,}",
         "{{TOTAL_SIZE}}": total_size,
         "{{TOTAL_TOKENS}}": token_str,
         "{{TOTAL_LINES}}": f"{total_lines:,}",
