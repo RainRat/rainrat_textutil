@@ -1870,9 +1870,9 @@ def main():
         ),
     )
 
-    # Configuration Group
-    config_group = parser.add_argument_group("Configuration")
-    config_group.add_argument(
+    # Filtering & Selection Group
+    filtering_group = parser.add_argument_group("Filtering & Selection")
+    filtering_group.add_argument(
         "--exclude-file",
         "-x",
         dest="exclude_file",
@@ -1880,7 +1880,7 @@ def main():
         default=[],
         help="Skip files that match this pattern (e.g., '*.log'). Use many times to skip more.",
     )
-    config_group.add_argument(
+    filtering_group.add_argument(
         "--exclude-folder",
         "-X",
         dest="exclude_folder",
@@ -1888,20 +1888,38 @@ def main():
         default=[],
         help="Skip folders that match this pattern (e.g., 'build'). Use many times to skip more.",
     )
-    config_group.add_argument(
+    filtering_group.add_argument(
         "--include",
         "-i",
         action="append",
         default=[],
         help="Include only files matching this pattern (like '*.py'). You can use this flag many times.",
     )
-    config_group.add_argument(
+    filtering_group.add_argument(
         "--since",
+        "-S",
         help="Include files modified since this time (e.g., '1d', '2h', 'YYYY-MM-DD').",
     )
-    config_group.add_argument(
+    filtering_group.add_argument(
         "--until",
+        "-U",
         help="Include files modified before this time (e.g., '1d', '2h', 'YYYY-MM-DD').",
+    )
+    filtering_group.add_argument(
+        "--limit",
+        "-L",
+        type=int,
+        help="Stop processing after this many files.",
+    )
+    filtering_group.add_argument(
+        "--max-tokens",
+        "-M",
+        type=int,
+        help="Stop adding files once this total token limit is reached. (Only when combining many files into one)",
+    )
+    filtering_group.add_argument(
+        "--files-from",
+        help="Read a list of files from a text file (use '-' for your terminal). This skips folder scanning.",
     )
 
     # Output Options Group
@@ -1909,23 +1927,19 @@ def main():
     output_group.add_argument(
         "--output",
         "-o",
-        help="Set the output file or folder. This overrides your configuration file.",
+        help="Save the result to a specific file or folder. This overrides the path in your configuration file.",
     )
     output_group.add_argument(
         "--clipboard",
         "-c",
         action="store_true",
-        help="Copy the result to your clipboard instead of saving a file. (Only when combining many files into one)",
+        help="Copy the combined text to the clipboard instead of creating a file. (Only works in single-file mode)",
     )
     output_group.add_argument(
         "--format",
         "-f",
         choices=["text", "json", "jsonl", "markdown", "xml"],
-        help=(
-            "Choose the output format. 'json' and 'jsonl' only work when "
-            "combining many files into one. 'markdown' and 'xml' formats "
-            "automatically add formatting like code blocks or tags."
-        ),
+        help="Select the output format. 'json' and 'jsonl' only work in single-file mode. 'markdown' and 'xml' add structural formatting.",
     )
     output_group.add_argument(
         "--markdown",
@@ -1971,11 +1985,13 @@ def main():
     )
     output_group.add_argument(
         "--sort",
+        "-s",
         choices=["name", "size", "modified", "tokens", "depth"],
         help="Sort files by name, size, modified time, token count, or path depth before combining.",
     )
     output_group.add_argument(
         "--reverse",
+        "-r",
         action="store_true",
         help="Reverse the sort order.",
     )
@@ -1986,7 +2002,7 @@ def main():
         "--dry-run",
         "-d",
         action="store_true",
-        help="See which files would be included without writing any files.",
+        help="Simulate the process to see which files will be included, without writing any output.",
     )
     preview_group.add_argument(
         "--estimate-tokens",
@@ -2005,36 +2021,6 @@ def main():
         "-t",
         action="store_true",
         help="Show a visual folder tree of all included files with file details and then stop.",
-    )
-    preview_group.add_argument(
-        "--limit",
-        "-L",
-        type=int,
-        help="Stop processing after this many files.",
-    )
-
-    # Runtime Options Group
-    runtime_group = parser.add_argument_group("Runtime Options")
-    runtime_group.add_argument(
-        "--version",
-        action="version",
-        version=f"%(prog)s {__version__}",
-        help="Show the tool's version and exit.",
-    )
-    runtime_group.add_argument(
-        "--max-tokens",
-        type=int,
-        help="Stop adding files once this total token limit is reached. (Only when combining many files into one)",
-    )
-    runtime_group.add_argument(
-        "-v",
-        "--verbose",
-        action="store_true",
-        help="Show extra details to help with troubleshooting.",
-    )
-    runtime_group.add_argument(
-        "--files-from",
-        help="Read a list of files from a text file (use '-' for your terminal). This skips folder scanning.",
     )
 
     # Utility Commands Group
@@ -2058,6 +2044,19 @@ def main():
         "--system-info",
         action="store_true",
         help="Show diagnostic information about your environment and optional software.",
+    )
+    utility_group.add_argument(
+        "--version",
+        "-V",
+        action="version",
+        version=f"%(prog)s {__version__}",
+        help="Show the tool's version and exit.",
+    )
+    utility_group.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Display detailed status messages to help troubleshoot issues.",
     )
 
     args = parser.parse_args()
