@@ -1985,6 +1985,12 @@ def main():
         help="Save the result to a specific file or folder. This overrides the path in your configuration file.",
     )
     output_group.add_argument(
+        "--ai",
+        "-a",
+        action="store_true",
+        help="Preset for AI assistants. Enables Markdown, line numbers, Table of Contents, and Folder Tree. Copies to clipboard by default if no output is specified.",
+    )
+    output_group.add_argument(
         "--clipboard",
         "-c",
         action="store_true",
@@ -2115,6 +2121,19 @@ def main():
     )
 
     args = parser.parse_args()
+
+    # Apply AI preset
+    if args.ai:
+        args.markdown = True
+        args.line_numbers = True
+        args.toc = True
+        args.include_tree = True
+        if not args.output:
+            try:
+                import pyperclip
+                args.clipboard = True
+            except ImportError:
+                pass
 
     # Configure logging *immediately* based on -v.
     # This ensures logging is set up *before* load_and_validate_config (which logs)
