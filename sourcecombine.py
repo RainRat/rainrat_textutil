@@ -2426,16 +2426,16 @@ def main():
         sys.exit(0)
 
     mode_desc = "Pairing" if pairing_enabled else "Combining files"
-    logging.info("SourceCombine starting. Mode: %s", mode_desc)
+    logging.info("%sSourceCombine starting. Mode: %s%s", C_DIM, mode_desc, C_RESET)
 
     if args.list_files:
-        logging.info("Output: Listing files only (no files will be written)")
+        logging.info("%sOutput: Listing files only%s %s(no files will be written)%s", C_CYAN, C_RESET, C_DIM, C_RESET)
     elif args.tree:
-        logging.info("Output: Showing file tree (no files will be written)")
+        logging.info("%sOutput: Showing file tree%s %s(no files will be written)%s", C_CYAN, C_RESET, C_DIM, C_RESET)
     elif args.estimate_tokens:
-        logging.info("Output: Token estimation only (no files will be written)")
+        logging.info("%sOutput: Token estimation only%s %s(no files will be written)%s", C_CYAN, C_RESET, C_DIM, C_RESET)
     else:
-        logging.info("Output: Writing %s", destination_desc)
+        logging.info("%sOutput:%s %s%s%s", C_CYAN, C_RESET, C_BOLD, destination_desc, C_RESET)
 
     try:
         stats = find_and_combine_files(
@@ -2789,7 +2789,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             token_str = f"{tokens:,}"
             size_str = f"({utils.format_size(f_size)})"
             # Truncate long paths
-            display_path = (path[:48] + '...') if len(path) > 51 else path
+            display_path = (path[:40] + '...') if len(path) > 43 else path
             # Align token counts at 10, percentages at 8, and sizes at 12 to keep paths consistent
             if has_tokens:
                 print(f"    {C_CYAN}{token_str:>10} {percent_str}{C_RESET}  {C_DIM}{size_str:<12}{C_RESET}  {display_path}", file=sys.stderr)
