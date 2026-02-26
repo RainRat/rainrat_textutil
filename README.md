@@ -2,16 +2,16 @@
 
 **SourceCombine** is a tool for your terminal that combines many text files into one file or organized pairs. It uses a YAML configuration file to set rules for finding, filtering, and changing text.
 
-Whether you are preparing files for printing, giving context to AI assistants, or making a small archive of your code, SourceCombine makes it easy.
+Whether you are preparing files for printing, giving context to AI assistants, or saving code from your project, SourceCombine makes it easy.
 
 ## Common Use Cases
 
 *   **Context for AI Assistants:** Combine your whole project into one file to give AI assistants better context.
-*   **Code Archiving:** Save a snapshot of your source files for documentation or backup.
-*   **Code Reviews:** Combine scattered files into one document to review or print them easily.
+*   **Saving Code:** Save a snapshot of your source files for documentation or backups.
+*   **Code Reviews:** Combine scattered files into one file to review or print them easily.
 *   **Preparing Files:** Change text with search-and-replace rules or remove comments from many files at once.
 *   **C/C++ Pairing:** Pair source files (`.cpp`) with their headers (`.h`) automatically to keep them organized.
-*   **Restoring Code:** Recreate folders and files from combined archives (JSON, XML, Markdown, or Text).
+*   **Restoring Code:** Recreate folders and files from combined files (JSON, XML, Markdown, or Text).
 
 ## Installation
 
@@ -171,7 +171,7 @@ Put the largest files first in the combined output:
 python sourcecombine.py src/ --sort size --reverse
 ```
 
-**Extract files from a combined archive:**
+**Extract files from a combined file:**
 Recreate your project from a JSON, XML, Markdown, or Text file. You can even
 extract directly from your clipboard or your terminal:
 ```bash
@@ -243,7 +243,7 @@ entire combined file using `output.global_header_template` and
 `output.global_footer_template`. These templates are useful for adding license
 information, project descriptions, or wrapping the output in a specific format.
 
-When combining many files into one, these templates support metadata placeholders for the
+When combining many files into one, these templates support placeholders for file details for the
 entire project:
 
 - `{{FILE_COUNT}}`: The total number of files included in the output.
@@ -259,7 +259,7 @@ output:
 
 The templates are written once around the combined output even when many
 `search.root_folders` are provided. When pairing is enabled, the global header
-and footer are written around each paired output file (though global placeholders
+and footer are written around each paired output file (though placeholders for file details
 are not supported in pairing mode).
 
 ## Customizing paired output filenames
@@ -307,7 +307,7 @@ processing:
 ```
 
 You can keep only the text between custom labels by using a capture group in
-your pattern and referencing it in the replacement string:
+your pattern and referencing it in the replacement text:
 
 ```yaml
 processing:
@@ -318,7 +318,7 @@ processing:
 
 To combine entire blocks of matching lines, use the `processing.line_regex_replacements`
 option. Each rule works line-by-line: lines that follow each other and match the
-search pattern are removed. They can be replaced with a single `replacement` string.
+search pattern are removed. They can be replaced with single `replacement` text.
 
 ```yaml
 processing:
@@ -361,8 +361,8 @@ processing:
 ```
 
 In-place updates are skipped automatically when `--dry-run` is used. Previous
-configurations that relied on `processing.in_place_groups` are deprecated in
-favor of the simpler boolean flag.
+configurations that relied on `processing.in_place_groups` are no longer used in
+favor of the simpler true or false flag.
 
 ### Filtering and Exclusion Rules
 
@@ -376,15 +376,15 @@ checked against every folder name in the path, so a single entry like
 `./src/app/build`.
 
 When `filters.max_size_bytes` is set to a positive number, files that exceed
-the limit are skipped. To leave a marker in the combined output for those
-omitted files, set `output.max_size_placeholder` to a string such as
+the limit are skipped. To include formatting in the combined output for those
+omitted files, set `output.max_size_placeholder` to text such as
 `"[SKIPPED {{FILENAME}}]"`. The `{{FILENAME}}` placeholder is replaced with the
 file's path relative to the root folder. The placeholder is written for
 oversized files whether pairing is enabled or not; in pairing mode, it replaces
 the output for pairs whose primary file exceeds the limit.
 
 Set `filters.max_total_tokens` to a positive integer to limit the total size of the
-combined output document. This is very helpful when preparing context for
+combined output file. This is very helpful when preparing context for
 AI assistants with specific limits.
 
 Set `filters.max_files` to a positive integer to stop processing after a
