@@ -74,7 +74,7 @@ def test_read_file_best_effort_handles_various_encodings(tmp_path):
 
     cjk_text = "漢字仮名"
     cjk_file = tmp_path / "cjk_utf16.txt"
-    cjk_file.write_bytes(cjk_text.encode("utf-16-le"))
+    cjk_file.write_bytes(cjk_text.encode("utf-16"))
 
     assert read_file_best_effort(bom_file) == utf8_bom
     assert read_file_best_effort(latin_file) == latin_text

@@ -274,8 +274,8 @@ def test_extract_security_absolute_paths(tmp_path, caplog):
     with caplog.at_level(logging.WARNING):
         extract_files(content, str(output_dir))
 
-    assert "Skipping potentially unsafe path: /abs/path.txt" in caplog.text
-    assert "Skipping potentially unsafe path: C:\\abs\\path.txt" in caplog.text
+    assert "Skipping absolute path: /abs/path.txt" in caplog.text
+    assert "Skipping absolute path: C:\\abs\\path.txt" in caplog.text
     assert not (output_dir / "abs").exists()
 
 def test_extract_security_windows_traversal(tmp_path, caplog):

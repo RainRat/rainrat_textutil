@@ -71,6 +71,17 @@ class CLILogFormatter(logging.Formatter):
 
         # For multi-line messages, ensure the prefix is only on the first line
         message = record.getMessage()
+        
+        # Include traceback if present
+        if record.exc_info:
+            if not message.endswith('\n'):
+                message += '\n'
+            message += self.formatException(record.exc_info)
+        if record.stack_info:
+            if not message.endswith('\n'):
+                message += '\n'
+            message += self.formatStack(record.stack_info)
+
         if "\n" in message and prefix:
             # Strip ANSI from prefix for correct indentation calculation
             raw_prefix = _ANSI_ESCAPE.sub('', str(prefix))
@@ -607,7 +618,11 @@ def _render_paired_filename(
 
 
 def _group_paths_by_stem_suffix(file_paths, *, root_path):
-    """Group ``file_paths`` by stem and suffix for pairing logic."""
+    """Group ``file_paths`` by stem and suffix for pairing logic.
+    
+    Returns a dict mapping Path stems to a dict of extensions.
+    Each file is represented by its full relative stem.
+    """
 
     grouped = {}
     for file_path in file_paths:
@@ -617,11 +632,7 @@ def _group_paths_by_stem_suffix(file_paths, *, root_path):
             relative = None
 
         stem_path = (relative or file_path).with_suffix("")
-        if relative is not None and len(stem_path.parts) > 1:
-            stem_path = Path(*stem_path.parts[1:])
-
-        stem = stem_path
-        grouped.setdefault(stem, {}).setdefault(file_path.suffix.lower(), []).append(
+        grouped.setdefault(stem_path, {}).setdefault(file_path.suffix.lower(), []).append(
             file_path
         )
     return grouped
@@ -640,23 +651,67 @@ def _select_preferred_path(ext_map, preferred_exts):
 
 
 def _pair_files(filtered_paths, source_exts, header_exts, include_mismatched, *, root_path):
-    """Return a mapping of stems to paired file paths."""
+    """Return a mapping of stems to paired file paths.
+    
+    We use a two-pass approach:
+    1. Exact matches by full relative path.
+    2. Convention-based matches by dropping the top-level directory (e.g. src/ vs include/).
+    """
 
     file_map = _group_paths_by_stem_suffix(filtered_paths, root_path=root_path)
     paired = {}
-    for pairing_key, stem_files in file_map.items():
-        src = _select_preferred_path(stem_files, source_exts)
-        hdr = _select_preferred_path(stem_files, header_exts)
+    used_files = set()
+
+    # Pass 1: Exact matches (Full relative paths)
+    # This handles src/app/main.cpp and tests/app/main.cpp correctly.
+    for stem, ext_map in file_map.items():
+        src = _select_preferred_path(ext_map, source_exts)
+        hdr = _select_preferred_path(ext_map, header_exts)
         if src and hdr:
             pair = [src]
             if hdr != src:
                 pair.append(hdr)
-            pair_key = _get_rel_path(src, root_path).with_suffix("")
-            paired[pair_key] = pair
-        elif include_mismatched and (src or hdr):
-            path = src or hdr
-            pair_key = _get_rel_path(path, root_path).with_suffix("")
-            paired[pair_key] = [path]
+            paired[stem] = pair
+            used_files.update(pair)
+
+    # Pass 2: Convention matches (Truncated paths)
+    # This handles src/main.cpp and include/main.h.
+    remaining_files = [p for p in filtered_paths if p not in used_files]
+    if remaining_files:
+        truncated_map = {}
+        for p in remaining_files:
+            try:
+                relative = p.relative_to(root_path)
+            except ValueError:
+                relative = None
+            
+            stem = (relative or p).with_suffix("")
+            if relative is not None and len(stem.parts) > 1:
+                truncated_stem = Path(*stem.parts[1:])
+                truncated_map.setdefault(truncated_stem, {}).setdefault(p.suffix.lower(), []).append(p)
+        
+        for t_stem, ext_map in truncated_map.items():
+            # Only pair if the truncated stem is unambiguous
+            src = _select_preferred_path(ext_map, source_exts)
+            hdr = _select_preferred_path(ext_map, header_exts)
+            
+            if src and hdr:
+                pair = [src]
+                if hdr != src:
+                    pair.append(hdr)
+                # Use the full path of the source as the key for consistency
+                pair_key = _get_rel_path(src, root_path).with_suffix("")
+                paired[pair_key] = pair
+                used_files.update(pair)
+
+    # Final Pass: Mismatched files if requested
+    if include_mismatched:
+        for p in filtered_paths:
+            if p not in used_files:
+                pair_key = _get_rel_path(p, root_path).with_suffix("")
+                paired[pair_key] = [p]
+                used_files.add(p)
+
     return paired
 
 
@@ -2536,21 +2591,24 @@ def extract_files(content, output_folder, dry_run=False, source_name="archive", 
 
     # 4. Try Markdown if others failed or found nothing
     if not files_to_create:
-        # Find all header starts (## or ###)
-        header_pattern = re.compile(r'^#{2,3}\s+(.+?)\s*$', re.MULTILINE)
-        headers = list(header_pattern.finditer(content))
-
-        for i, match in enumerate(headers):
-            path = match.group(1).strip()
-            start = match.end()
-            end = headers[i + 1].start() if i + 1 < len(headers) else len(content)
-            section = content[start:end]
-
-            # Find the first code block in this section
-            code_pattern = re.compile(r'```(?:\w+)?\n([\s\S]*?)\n```')
-            code_match = code_pattern.search(section)
-            if code_match:
-                files_to_create.append((path, code_match.group(1)))
+        # Match ## FILENAME followed eventually by a code block.
+        # We look for:
+        # 1. Header (## or ###)
+        # 2. Path (the header text)
+        # 3. Some content that DOES NOT contain another header
+        # 4. A code block
+        #
+        # This is more robust than splitting on headers because it ensures
+        # that each "section" we extract actually contains a code block,
+        # and we don't split on headers that are INSIDE code blocks (if they are
+        # properly formatted).
+        pattern = re.compile(
+            r'^#{2,3}\s+(.+?)\s*$\n(?:(?!^#{2,3}\s+)[\s\S])*?^```(?:\w+)?\n([\s\S]*?)\n^```',
+            re.MULTILINE
+        )
+        for match in pattern.finditer(content):
+            path, file_content = match.groups()
+            files_to_create.append((path.strip(), file_content))
 
     if not files_to_create:
         logging.error("Could not find any files to extract in %s. Supported formats are JSON, XML, Markdown, and Text.", source_name)
@@ -2605,23 +2663,32 @@ def extract_files(content, output_folder, dry_run=False, source_name="archive", 
     logging.info("Found %d files to extract from %s", len(files_to_create), source_name)
 
     extracted_count = 0
+    abs_output_folder = output_folder.resolve()
     for rel_path_str, file_content in files_to_create:
         # Security check: prevent path traversal and absolute paths across platforms.
-        # We explicitly check for both Posix and Windows absolute path patterns.
-        # For traversal, we normalize separators to ensure '..' is caught.
-        normalized_path = rel_path_str.replace('\\', '/')
-        is_unsafe = (
-            PurePosixPath(rel_path_str).is_absolute() or
-            PureWindowsPath(rel_path_str).is_absolute() or
-            '..' in PurePosixPath(normalized_path).parts
-        )
-        if is_unsafe:
-            logging.warning("Skipping potentially unsafe path: %s", rel_path_str)
+        try:
+            # We use joinpath and resolve to catch traversal and absolute path attempts.
+            # Malformed paths like 'C:../' or '/etc/passwd' are handled safely.
+            requested_path = Path(rel_path_str)
+            
+            # Absolute paths are always unsafe.
+            if requested_path.is_absolute() or PurePosixPath(rel_path_str).is_absolute() or PureWindowsPath(rel_path_str).is_absolute():
+                logging.warning("Skipping absolute path: %s", rel_path_str)
+                continue
+
+            # Check for '..' in parts across different path flavors to catch bypasses like 'C:../'
+            # We also check the raw string for ':' which is unsafe in relative paths.
+            if ('..' in requested_path.parts or 
+                '..' in PurePosixPath(rel_path_str.replace('\\', '/')).parts or
+                '..' in PureWindowsPath(rel_path_str).parts or
+                ':' in rel_path_str):
+                logging.warning("Skipping potentially unsafe path: %s", rel_path_str)
+                continue
+
+            target_path = (output_folder / requested_path).resolve()
+        except (ValueError, OSError):
+            logging.warning("Skipping invalid path: %s", rel_path_str)
             continue
-
-        rel_path = Path(rel_path_str)
-
-        target_path = output_folder / rel_path
 
         if dry_run:
             logging.info("[DRY RUN] Would create: %s", target_path)
