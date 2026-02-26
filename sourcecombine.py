@@ -1,4 +1,5 @@
 import argparse
+import importlib.util
 import platform
 import time
 from typing import Any, Mapping
@@ -1980,6 +1981,12 @@ def main():
     # Output Options Group
     output_group = parser.add_argument_group("Output Options")
     output_group.add_argument(
+        "--ai",
+        "-a",
+        action="store_true",
+        help="Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, and folder tree. Also copies to clipboard if no output is specified.",
+    )
+    output_group.add_argument(
         "--output",
         "-o",
         help="Save the result to a specific file or folder. This overrides the path in your configuration file.",
@@ -2115,6 +2122,21 @@ def main():
     )
 
     args = parser.parse_args()
+
+    # Handle the AI preset flag by enabling several other flags
+    if args.ai:
+        args.markdown = True
+        args.line_numbers = True
+        args.toc = True
+        args.include_tree = True
+
+        # If no explicit output is provided, attempt to use the clipboard
+        if not args.output and not args.clipboard and not (
+            args.dry_run or args.list_files or args.tree or args.estimate_tokens
+        ):
+            if importlib.util.find_spec("pyperclip"):
+                args.clipboard = True
+                logging.debug("AI preset: Auto-enabled clipboard mode.")
 
     # Configure logging *immediately* based on -v.
     # This ensures logging is set up *before* load_and_validate_config (which logs)
@@ -2709,7 +2731,6 @@ def extract_files(content, output_folder, dry_run=False, source_name="archive", 
 
 def print_system_info():
     """Print environment diagnostics and optional dependency status."""
-    import importlib.util
 
     print(f"\n{C_BOLD}=== SourceCombine System Information ==={C_RESET}")
     print(f"  {C_BOLD}SourceCombine Version:{C_RESET} {__version__}")
