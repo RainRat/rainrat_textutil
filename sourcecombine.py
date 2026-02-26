@@ -13,7 +13,14 @@ import shutil
 import sys
 import json
 import textwrap
-from xml.sax.saxutils import escape as xml_escape
+from xml.sax.saxutils import escape as _xml_escape
+
+
+def xml_escape(data: str) -> str:
+    """Escape &, <, >, \", and ' for safe use in XML."""
+    if not data:
+        return ""
+    return _xml_escape(data, {'"': "&quot;", "'": "&apos;"})
 from functools import lru_cache
 from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 

@@ -32,7 +32,8 @@ def test_xml_output_defaults(tmp_path):
     content = output_file.read_text(encoding="utf-8")
     assert "<repository>" in content
     assert '<file path="a.py">' in content
-    assert "print('a')" in content
+    # Note: apostrophes are escaped in XML output for robustness in attributes
+    assert "print(&apos;a&apos;)" in content
     assert "</file>" in content
     assert "</repository>" in content
 
