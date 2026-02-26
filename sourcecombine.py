@@ -1,4 +1,5 @@
 import argparse
+import platform
 import time
 from typing import Any, Mapping
 from contextlib import nullcontext
@@ -1872,11 +1873,6 @@ def main():
     # Configuration Group
     config_group = parser.add_argument_group("Configuration")
     config_group.add_argument(
-        "--init",
-        action="store_true",
-        help="Create a basic 'sourcecombine.yml' file in your current folder to get started.",
-    )
-    config_group.add_argument(
         "--exclude-file",
         "-x",
         dest="exclude_file",
@@ -2040,7 +2036,15 @@ def main():
         "--files-from",
         help="Read a list of files from a text file (use '-' for your terminal). This skips folder scanning.",
     )
-    runtime_group.add_argument(
+
+    # Utility Commands Group
+    utility_group = parser.add_argument_group("Utility Commands")
+    utility_group.add_argument(
+        "--init",
+        action="store_true",
+        help="Create a basic 'sourcecombine.yml' file in your current folder to get started.",
+    )
+    utility_group.add_argument(
         "--extract",
         action="store_true",
         help=(
@@ -2049,6 +2053,11 @@ def main():
             "(--include, --exclude-file, --exclude-folder) and preview flags "
             "(--list-files, --tree) are supported."
         ),
+    )
+    utility_group.add_argument(
+        "--system-info",
+        action="store_true",
+        help="Show diagnostic information about your environment and optional software.",
     )
 
     args = parser.parse_args()
@@ -2071,6 +2080,10 @@ def main():
     if args.files_from and args.init:
         logging.error("You cannot use --init and --files-from at the same time.")
         sys.exit(1)
+
+    if args.system_info:
+        print_system_info()
+        sys.exit(0)
 
     if args.init:
         target_config = Path("sourcecombine.yml")
@@ -2626,6 +2639,39 @@ def extract_files(content, output_folder, dry_run=False, source_name="archive", 
         logging.info("Extraction complete. %d files created in %s", extracted_count, output_folder)
 
     return stats
+
+
+def print_system_info():
+    """Print environment diagnostics and optional dependency status."""
+    import importlib.util
+
+    print(f"\n{C_BOLD}=== SourceCombine System Information ==={C_RESET}")
+    print(f"  {C_BOLD}SourceCombine Version:{C_RESET} {__version__}")
+    print(f"  {C_BOLD}Python Version:{C_RESET}      {sys.version.split()[0]}")
+    print(f"  {C_BOLD}Platform:{C_RESET}            {platform.platform()}")
+    print(f"  {C_BOLD}Executable:{C_RESET}          {sys.executable}")
+    print(f"  {C_BOLD}Current Folder:{C_RESET}      {Path.cwd()}")
+
+    config_file = Path("sourcecombine.yml")
+    config_status = "Found" if config_file.exists() else "Not found"
+    print(f"  {C_BOLD}Local Config:{C_RESET}        {config_status} ({config_file.resolve() if config_file.exists() else 'N/A'})")
+
+    print(f"\n  {C_BOLD}Optional Dependencies:{C_RESET}")
+
+    deps = [
+        ("tiktoken", "Accurate token counting"),
+        ("pyperclip", "Clipboard support"),
+        ("tqdm", "Progress bars"),
+        ("yaml", "Configuration support (PyYAML)"),
+        ("charset_normalizer", "Encoding detection"),
+    ]
+
+    for dep_name, purpose in deps:
+        spec = importlib.util.find_spec(dep_name)
+        status = f"{C_GREEN}Installed{C_RESET}" if spec else f"{C_YELLOW}Not found{C_RESET}"
+        print(f"    {C_BOLD}{dep_name:<20}{C_RESET} {status:<20} {C_DIM}({purpose}){C_RESET}")
+
+    print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
 
 def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None, duration=None):
