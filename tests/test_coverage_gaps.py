@@ -240,7 +240,7 @@ def test_process_paired_files_full_coverage(tmp_path):
     )
     progress.update.assert_called()
 
-def test_budget_pass_full_coverage(tmp_path):
+def test_limit_pass_full_coverage(tmp_path):
     root = tmp_path / "root"
     root.mkdir()
     f1 = root / "f1.txt"
@@ -383,7 +383,7 @@ def test_group_paths_by_stem_suffix_not_relative():
     assert expected_stem in grouped
     assert grouped[expected_stem][".txt"] == [file_path]
 
-def test_token_budget_with_global_header(tmp_path, monkeypatch):
+def test_token_limit_with_global_header(tmp_path, monkeypatch):
     root = tmp_path / "root"
     root.mkdir()
     (root / "file1.txt").write_text("1234", encoding="utf-8")
@@ -408,7 +408,7 @@ def test_token_budget_with_global_header(tmp_path, monkeypatch):
         output_path=str(out_file)
     )
 
-    assert stats['budget_exceeded'] is True
+    assert stats['token_limit_reached'] is True
 
 
 

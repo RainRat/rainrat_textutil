@@ -36,10 +36,10 @@ def test_shortcuts():
     assert b_idx < a_idx
 
     # Test -M for max-tokens
-    # We use -M 1 to trigger a token budget warning
+    # We use -M 1 to trigger a token limit warning
     result = subprocess.run([sys.executable, "sourcecombine.py", test_dir, "-d", "-M", "1"], capture_output=True, text=True)
     combined_output = result.stdout + result.stderr
-    assert "WARNING: Output truncated due to token budget." in combined_output
+    assert "WARNING: Output truncated due to token limit." in combined_output
 
     # Cleanup
     shutil.rmtree(test_dir)

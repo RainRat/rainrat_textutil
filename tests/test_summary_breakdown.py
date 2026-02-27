@@ -35,7 +35,7 @@ def test_summary_breakdown_reasons(tmp_path):
     assert reasons.get('binary') == 1  # binary.bin
     assert reasons.get('excluded_folder') == 1  # ignored_folder
 
-def test_budget_limit_reason(tmp_path):
+def test_token_limit_reason(tmp_path):
     root = tmp_path / "project"
     root.mkdir()
     (root / "file1.txt").write_text("content 1")
@@ -45,10 +45,10 @@ def test_budget_limit_reason(tmp_path):
     config = utils.DEFAULT_CONFIG.copy()
     config['search'] = {'root_folders': [str(root)]}
     config['filters'] = {
-        'max_total_tokens': 5  # Very small budget
+        'max_total_tokens': 5  # Very small limit
     }
 
     stats = find_and_combine_files(config, str(tmp_path / "out.txt"))
 
-    assert stats['budget_exceeded'] is True
-    assert stats['filter_reasons'].get('budget_limit', 0) > 0
+    assert stats['token_limit_reached'] is True
+    assert stats['filter_reasons'].get('token_limit', 0) > 0

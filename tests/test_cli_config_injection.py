@@ -250,8 +250,8 @@ def test_global_header_footer_tokens_approx_1385_1390(temp_cwd, monkeypatch):
     )
     assert stats['token_count_is_approx'] is True
 
-def test_summary_high_budget_bar_2183(temp_cwd, mock_stats, capsys):
-    """Test yellow budget bar when percent > 90% (line 2183)."""
+def test_summary_high_limit_bar_2183(temp_cwd, mock_stats, capsys):
+    """Test yellow limit bar when percent > 90% (line 2183)."""
     mock_stats['total_tokens'] = 95
     mock_stats['max_total_tokens'] = 100
 
