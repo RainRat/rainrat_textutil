@@ -89,6 +89,7 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 *   `--output` / `-o`: Override the output path specified in the configuration.
 *   `--dry-run` / `-d`: List matched files and planned outputs without writing any files. Useful for previewing changes.
 *   `--verbose` / `-v`: Enable verbose output (DEBUG level) to troubleshoot configuration issues.
+*   `--ai` / `-a`: Enable a preset for AI assistants. This automatically enables Markdown format, line numbers, a Table of Contents, and the folder tree. If no output file is specified, it also attempts to copy the result to your clipboard.
 *   `--clipboard` / `-c`: Copy the combined output directly to your clipboard instead of saving a file.
     *   *Note: You cannot use clipboard mode when file pairing is enabled.*
 *   `--format` / `-f`: Choose the output format (`text`, `json`, `markdown`, or `xml`).
@@ -146,6 +147,12 @@ python sourcecombine.py src/
 **Combine many folders and files:**
 ```bash
 python sourcecombine.py src/ docs/ README.md
+```
+
+**Use the AI assistant preset:**
+Quickly gather context for an AI assistant and copy it to your clipboard:
+```bash
+python sourcecombine.py src/ --ai
 ```
 
 **Use a configuration file with override folders:**
