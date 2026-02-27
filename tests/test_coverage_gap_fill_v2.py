@@ -51,12 +51,9 @@ def test_extract_jsonl_edge_cases(tmp_path):
     assert (extract_dir / "b.txt").read_text() == "b"
 
     # 2437-2438: invalid entry (not a dict with path/content)
-    # If it encounters an invalid entry, it breaks and potential_files becomes []
-    # Then it might fall back to other formats (like Text or Markdown)
+    # Now it skips malformed lines instead of aborting.
     content_invalid_entry = '{"path": "a.txt", "content": "a"}\n{"not_path": "invalid"}\n{"path": "b.txt", "content": "b"}'
     extract_dir = tmp_path / "extract2"
-    # In this case, potential_files will be cleared and it won't extract anything from JSONL
-    # It might fall back to Text format but "{"path": "a.txt"..." doesn't match the Text markers.
-    # We just want to cover the code path.
-    with pytest.raises(SystemExit):
-        extract_files(content_invalid_entry, str(extract_dir), source_name="test2.jsonl")
+    extract_files(content_invalid_entry, str(extract_dir), source_name="test2.jsonl")
+    assert (extract_dir / "a.txt").read_text() == "a"
+    assert (extract_dir / "b.txt").read_text() == "b"

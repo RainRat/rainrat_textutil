@@ -282,6 +282,9 @@ def _render_global_template(template, stats):
     if not template:
         return ""
 
+    if stats is None:
+        return template
+
     file_count = stats.get('total_files', 0)
     total_size = utils.format_size(stats.get('total_size_bytes', 0))
     total_tokens = stats.get('total_tokens', 0)
