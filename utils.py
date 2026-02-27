@@ -36,6 +36,7 @@ DEFAULT_CONFIG = {
         'max_files': 0,
         'modified_since': 0,
         'modified_until': 0,
+        'grep': '',
         'exclusions': {
             'filenames': [
                 '*.pyc', '*.pyo', '*.pyd',
@@ -389,6 +390,10 @@ def _validate_filters_section(config):
     skip_binary = filters.get('skip_binary')
     if skip_binary is not None and not isinstance(skip_binary, bool):
         raise InvalidConfigError("filters.skip_binary must be true or false")
+
+    grep_pattern = filters.get('grep')
+    if grep_pattern:
+        validate_regex_pattern(grep_pattern, context="filters.grep")
 
     exclusions_conf = filters.get('exclusions', {})
     if isinstance(exclusions_conf, dict):

@@ -110,6 +110,7 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 *   `--extract`: Recreate files and folders from a combined JSON, XML, Markdown, or Text file.
 *   `--init`: Generate a default configuration file (`sourcecombine.yml`) in the current folder.
 *   `--include` / `-i`: Include only files matching a specific pattern (e.g., `-i "*.py"`). Can be used many times.
+*   `--grep` / `-g`: Include only files whose content matches a regular expression (e.g., `-g "TODO"`).
 *   `--exclude-file` / `-x`: Exclude specific files (e.g., `-x "secret.txt"`). Can be used many times.
 *   `--exclude-folder` / `-X`: Exclude specific folders (e.g., `-X "build"`). Can be used many times.
 
@@ -170,6 +171,12 @@ python sourcecombine.py config.yml --clipboard
 Combine only Python and Markdown files from the `src/` folder:
 ```bash
 python sourcecombine.py src/ -i "*.py" -i "*.md"
+```
+
+**Find specific text in files:**
+Combine only files that contain the word "TODO":
+```bash
+python sourcecombine.py src/ --grep "TODO"
 ```
 
 **Sort files by size:**

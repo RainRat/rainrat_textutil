@@ -103,6 +103,9 @@ filters:
   # If true, skip files that appear to contain binary data (e.g., executables, images).
   skip_binary: false
 
+  # Only include files whose content matches this regular expression.
+  grep: ""
+
   # --- Inclusion Groups ---
   # Enable specific groups to only include listed filenames or glob patterns.
   # Mutually exclusive with ``search.allowed_extensions``; specify file types within the patterns instead.
