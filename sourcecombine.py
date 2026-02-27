@@ -2776,6 +2776,16 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     total_filtered = max(0, total_discovered - total_included)
     excluded_folders = stats.get('excluded_folder_count', 0)
 
+    total_size_bytes = stats.get('total_size_bytes', 0)
+    total_size_str = utils.format_size(total_size_bytes)
+    token_count = stats.get('total_tokens', 0)
+    is_approx = stats.get('token_count_is_approx', False)
+
+    if token_count > 0:
+        data_hint = f"{'~' if is_approx else ''}{token_count:,}"
+    else:
+        data_hint = total_size_str
+
     if args.dry_run:
         summary_title = f"DRY RUN COMPLETE: Would combine {total_included:,} files {destination_desc or ''}".strip()
         title_color = C_YELLOW
@@ -2794,7 +2804,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         title_color = C_GREEN
 
     # Header
-    print(f"\n{title_color}{C_BOLD}=== {summary_title} ==={C_RESET}", file=sys.stderr)
+    print(f"\n{title_color}{C_BOLD}=== {summary_title} [{data_hint}] ==={C_RESET}", file=sys.stderr)
 
     if stats.get('budget_exceeded'):
         print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to token budget.{C_RESET}", file=sys.stderr)
@@ -2825,7 +2835,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         print(f"    {C_BOLD}{'Excluded Folders:':<{label_width}}{C_RESET}{C_CYAN}{excluded_folders:12,}{C_RESET}", file=sys.stderr)
 
     # Data Section
-    total_size_str = utils.format_size(stats.get('total_size_bytes', 0))
     total_lines = stats.get('total_lines', 0)
     print(f"\n  {C_BOLD}Data{C_RESET}", file=sys.stderr)
     print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_CYAN}{total_size_str:>12}{C_RESET}", file=sys.stderr)
@@ -2833,9 +2842,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
     # Token Counts
     # Show token counts if tokens were estimated
-    token_count = stats.get('total_tokens', 0)
     if token_count > 0:
-        is_approx = stats.get('token_count_is_approx', False)
         token_str = f"{'~' if is_approx else ''}{token_count:,}"
         print(
             f"    {C_BOLD}{'Token Count:':<{label_width}}{C_RESET}{C_CYAN}{token_str:>12}{C_RESET}",
@@ -2881,13 +2888,17 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 percent = (val / total_for_percent) * 100
                 percent_str = f"({percent:>5.1f}%)"
 
-            token_str = f"{tokens:,}"
+            if has_tokens:
+                token_str = f"{'~' if is_approx else ''}{tokens:,}"
+            else:
+                token_str = f"{tokens:,}"
+
             size_str = f"({utils.format_size(f_size)})"
             # Truncate long paths
             display_path = (path[:40] + '...') if len(path) > 43 else path
-            # Align token counts at 10, percentages at 8, and sizes at 12 to keep paths consistent
+            # Align token counts at 11, percentages at 8, and sizes at 12 to keep paths consistent
             if has_tokens:
-                print(f"    {C_CYAN}{token_str:>10} {percent_str}{C_RESET}  {C_DIM}{size_str:<12}{C_RESET}  {display_path}", file=sys.stderr)
+                print(f"    {C_CYAN}{token_str:>11} {percent_str}{C_RESET}  {C_DIM}{size_str:<12}{C_RESET}  {display_path}", file=sys.stderr)
             else:
                 print(f"    {C_CYAN}{size_str:<12} {percent_str}{C_RESET}  {display_path}", file=sys.stderr)
 
@@ -2928,7 +2939,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             print(f"    {''.join(line_parts).rstrip()}", file=sys.stderr)
 
     # Footer
-    print(f"\n{title_color}{'=' * (len(summary_title) + 8)}{C_RESET}", file=sys.stderr)
+    print(f"\n{title_color}{'=' * (len(summary_title) + len(data_hint) + 11)}{C_RESET}", file=sys.stderr)
 
 
 if __name__ == "__main__":
