@@ -429,6 +429,28 @@ def should_include(
                 return (False, reason) if return_reason else False
     except OSError:
         return (False, 'stat_error') if return_reason else False
+
+    grep_pattern = filter_opts.get('grep')
+    if grep_pattern:
+        try:
+            if virtual_content is not None:
+                content = (
+                    virtual_content.decode('utf-8', errors='replace')
+                    if isinstance(virtual_content, bytes)
+                    else virtual_content
+                )
+            elif file_path is not None:
+                # We use read_file_best_effort to be consistent with how files are combined.
+                content, _ = read_file_best_effort(file_path)
+            else:
+                content = ""
+
+            if not re.search(grep_pattern, content):
+                return (False, 'grep_mismatch') if return_reason else False
+        except Exception as exc:
+            logging.warning("Error while checking grep pattern on '%s': %s", rel_str, exc)
+            return (False, 'grep_error') if return_reason else False
+
     return (True, None) if return_reason else True
 
 
@@ -1991,6 +2013,11 @@ def main():
         "--files-from",
         help="Read a list of files from a text file (use '-' for your terminal). This skips looking for files in folders.",
     )
+    filtering_group.add_argument(
+        "--grep",
+        "-g",
+        help="Include only files whose content matches this regular expression.",
+    )
 
     # Output Options Group
     output_group = parser.add_argument_group("Output Options")
@@ -2353,6 +2380,11 @@ def main():
         if not isinstance(config.get('filters'), dict):
             config['filters'] = {}
         config['filters']['max_files'] = args.limit
+
+    if args.grep:
+        if not isinstance(config.get('filters'), dict):
+            config['filters'] = {}
+        config['filters']['grep'] = args.grep
 
     if args.since or args.until:
         if not isinstance(config.get('filters'), dict):

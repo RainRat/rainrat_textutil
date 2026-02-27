@@ -43,7 +43,8 @@ class TestAIPreset(unittest.TestCase):
             reverse=False,
             extract=False,
             system_info=False,
-            init=False
+            init=False,
+            grep=None
         )
         mock_parse_args.return_value = mock_args
         mock_find_spec.return_value = MagicMock() # Simulate pyperclip installed
@@ -97,7 +98,8 @@ class TestAIPreset(unittest.TestCase):
             reverse=False,
             extract=False,
             system_info=False,
-            init=False
+            init=False,
+            grep=None
         )
         mock_parse_args.return_value = mock_args
         mock_find_spec.return_value = MagicMock()
@@ -146,7 +148,8 @@ class TestAIPreset(unittest.TestCase):
             reverse=False,
             extract=False,
             system_info=False,
-            init=False
+            init=False,
+            grep=None
         )
         mock_parse_args.return_value = mock_args
         mock_find_spec.return_value = None # Simulate pyperclip NOT installed
