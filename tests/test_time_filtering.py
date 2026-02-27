@@ -74,7 +74,7 @@ def test_config_validation_for_time_filters():
     }
     with pytest.raises(utils.InvalidConfigError) as excinfo:
         utils.validate_config(config)
-    assert "filters.modified_until must be a non-negative number" in str(excinfo.value)
+    assert "filters.modified_until must be 0 or more" in str(excinfo.value)
 
     config['filters']['modified_until'] = 200
     utils.validate_config(config) # Should pass now

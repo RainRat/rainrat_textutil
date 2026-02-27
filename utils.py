@@ -132,7 +132,7 @@ def read_file_best_effort(file_path):
     before falling back to a basic UTF-8 read.
 
     Returns:
-        (str, str): A tuple of (content, encoding_name)
+        (str, str): The text content and the name of its encoding.
     """
 
     try:
@@ -212,11 +212,11 @@ def compact_whitespace(text, *, groups=None):
     """Compact and normalize whitespace within ``text``.
 
     This function is designed for formatting plain text and may not be suitable
-    for code, especially Python, where significant whitespace is syntactical.
+    for code, especially Python, where whitespace is part of the code's meaning.
 
     Transformations are applied in the following order:
 
-    - Normalize Windows (CRLF) and classic Mac (CR) endings to LF.
+    - Change Windows (CRLF) and classic Mac (CR) line endings to standard newlines (LF).
     - Convert each run of four spaces that follow each other to a tab character. This is
       intended to normalize indentation but may affect other formatting.
     - Trim spaces that surround tabs, which helps collapse mixed indentation.
@@ -384,7 +384,7 @@ def _validate_filters_section(config):
         if val is not None:
             if not isinstance(val, (int, float)) or val < 0:
                 raise InvalidConfigError(
-                    f"filters.{key} must be a non-negative number"
+                    f"filters.{key} must be 0 or more"
                 )
 
     skip_binary = filters.get('skip_binary')

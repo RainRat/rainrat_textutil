@@ -34,8 +34,8 @@ def test_summary_counts_with_filtering(tmp_path):
     # Included should be 2 (file1.txt, file3.txt)
     assert stats['total_files'] == 2
 
-def test_summary_counts_with_budget(tmp_path, monkeypatch):
-    """Verify that included count reflects the budget truncation while total_discovered does not."""
+def test_summary_counts_with_limit(tmp_path, monkeypatch):
+    """Verify that included count reflects the limit truncation while total_discovered does not."""
     root = tmp_path / "root"
     root.mkdir()
     # approx 1 token per 4 chars
@@ -60,6 +60,6 @@ def test_summary_counts_with_budget(tmp_path, monkeypatch):
 
     # Total discovered should be 3
     assert stats['total_discovered'] == 3
-    # Included should be 2 due to budget
+    # Included should be 2 due to limit
     assert stats['total_files'] == 2
-    assert stats['budget_exceeded'] is True
+    assert stats['token_limit_reached'] is True

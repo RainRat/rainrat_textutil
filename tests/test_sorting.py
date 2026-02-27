@@ -176,7 +176,7 @@ def test_sort_by_tokens(test_env, monkeypatch):
 
     assert lines == ["a.txt", "sub/d.txt", "c.txt", "b.txt"]
 
-def test_sort_with_budget(test_env, monkeypatch):
+def test_sort_with_limit(test_env, monkeypatch):
     root, tmp_path = test_env
     monkeypatch.setattr(utils, "tiktoken", None)
 

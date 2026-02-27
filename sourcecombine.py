@@ -222,9 +222,9 @@ def _get_replacement_pattern(keys):
 def _render_single_pass(template, replacements):
     """Replace many placeholders in a template in a single pass.
 
-    Placeholders are matched in order of descending length to ensure that
-    longer, more specific markers (like {{DIR_SLUG}}) are preferred over
-    shorter prefixes (like {{DIR}}).
+    Placeholders are matched in order of longest first to ensure that
+    more specific markers (like {{DIR_SLUG}}) are preferred over
+    shorter ones (like {{DIR}}).
     """
     if not template or not replacements:
         return template or ""
@@ -340,7 +340,7 @@ def should_include(
 ) -> bool | tuple[bool, str | None]:
     """Return ``True`` if ``file_path`` (or ``relative_path``) passes filtering rules.
 
-    When ``return_reason`` is ``True``, it returns a tuple of ``(bool, reason)``.
+    When ``return_reason`` is ``True``, it returns a pair of ``(true or false, reason)``.
     Possible reason codes include: 'not_file', 'output_file', 'excluded',
     'extension', 'not_included', 'binary', 'too_small', 'too_large', and
     'stat_error'.
@@ -875,7 +875,7 @@ class FileProcessor:
     config : dict
         Settings containing ``processing`` and output rules for files.
     output_opts : dict
-        Options that control how processed content is emitted, including
+        Options that control how processed content is written, including
         header/footer templates and whether to include line numbers.
     dry_run : bool, optional
         When ``True``, only log the files that would be processed without
@@ -918,10 +918,10 @@ class FileProcessor:
     def _backup_file(self, file_path):
         """Create a ``.bak`` backup for ``file_path`` when backups are enabled.
 
-        The backup mirrors the original file using :func:`shutil.copy2` to
-        preserve metadata. If ``create_backups`` is ``False`` no action is
-        taken. Failures to copy raise :class:`InvalidConfigError` so callers
-        can halt processing before overwriting the original content.
+        The backup is an exact copy of the original file and keeps its
+        details (like the date it was changed). If ``create_backups`` is ``False``
+        no action is taken. Failures to copy raise ``InvalidConfigError`` so the
+        tool stops before overwriting your code.
         """
 
         if not self.create_backups:
@@ -1061,7 +1061,7 @@ class FileProcessor:
 
 
 def _generate_tree_string(paths, root_path, output_format='text', include_header=True, metadata=None):
-    """Generate a tree structure string of file paths."""
+    """Generate a visual folder tree of file paths."""
     # Convert to relative paths
     try:
         rel_paths = [p.relative_to(root_path) for p in paths]
@@ -1214,7 +1214,7 @@ def find_and_combine_files(
         'total_tokens': 0,
         'total_lines': 0,
         'token_count_is_approx': False,
-        'budget_exceeded': False,
+        'token_limit_reached': False,
         'top_files': [],
         'max_total_tokens': config.get('filters', {}).get('max_total_tokens', 0),
         'filter_reasons': {},
@@ -1413,15 +1413,15 @@ def find_and_combine_files(
                 # Apply limit to list/tree
                 max_files = filter_opts.get('max_files', 0)
                 if max_files > 0:
-                    remaining_budget = max_files - stats['total_files']
-                    if remaining_budget <= 0:
+                    remaining_file_limit = max_files - stats['total_files']
+                    if remaining_file_limit <= 0:
                         stats['filter_reasons']['file_limit'] = stats['filter_reasons'].get('file_limit', 0) + len(paths_to_list)
                         paths_to_list = []
                         stats['limit_reached'] = True
                         continue
-                    elif len(paths_to_list) > remaining_budget:
-                        stats['filter_reasons']['file_limit'] = stats['filter_reasons'].get('file_limit', 0) + (len(paths_to_list) - remaining_budget)
-                        paths_to_list = paths_to_list[:remaining_budget]
+                    elif len(paths_to_list) > remaining_file_limit:
+                        stats['filter_reasons']['file_limit'] = stats['filter_reasons'].get('file_limit', 0) + (len(paths_to_list) - remaining_file_limit)
+                        paths_to_list = paths_to_list[:remaining_file_limit]
                         stats['limit_reached'] = True
 
                 # Update stats for listed files
@@ -1503,7 +1503,7 @@ def find_and_combine_files(
         max_total_tokens = filter_opts.get('max_total_tokens', 0)
         needs_metadata = bool(output_opts.get('include_tree') or output_opts.get('table_of_contents'))
 
-        # We need metadata for sorting (except name), budgeting, TOC/Tree, or global placeholders
+        # We need metadata for sorting (except name), token limit, TOC/Tree, or global placeholders
         global_placeholders = ["{{FILE_COUNT}}", "{{TOTAL_SIZE}}", "{{TOTAL_TOKENS}}", "{{TOTAL_LINES}}"]
         has_global_placeholders = (global_header and any(p in global_header for p in global_placeholders)) or \
                                   (global_footer and any(p in global_footer for p in global_placeholders))
@@ -1583,15 +1583,15 @@ def find_and_combine_files(
                     _update_file_stats(stats, item[0])
 
         if needs_full_pass and not pairing_enabled and not list_files and not tree_view:
-            budgeted_items = []
+            limited_items = []
             current_tokens = 0
             current_lines = 0
             overhead_tokens = 0
             overhead_lines = 0
-            budget_exceeded = False
+            token_limit_reached = False
 
-            # Account for global header and footer tokens in the budget
-            # We estimate these once without placeholders for initial budget.
+            # Account for global header and footer tokens in the limit
+            # We estimate these once without placeholders for initial limit.
             if global_header and output_format in ('text', 'markdown', 'xml'):
                 overhead_tokens += utils.estimate_tokens(global_header)[0]
                 overhead_lines += utils.count_lines(global_header)
@@ -1673,7 +1673,7 @@ def find_and_combine_files(
                     'lines': content_lines
                 }
 
-                # Account for header/footer templates in the budget
+                # Account for header/footer templates in the limit
                 h_template = output_opts.get('header_template', utils.DEFAULT_CONFIG['output']['header_template'])
                 f_template = output_opts.get('footer_template', utils.DEFAULT_CONFIG['output']['footer_template'])
 
@@ -1690,19 +1690,19 @@ def find_and_combine_files(
                 entry_lines = content_lines + header_lines + footer_lines
 
                 if max_total_tokens > 0 and (current_tokens + overhead_tokens + entry_tokens) > max_total_tokens and (current_tokens + overhead_tokens) > 0:
-                    budget_exceeded = True
-                    stats['filter_reasons']['budget_limit'] = len(all_single_mode_items) - i
-                    logging.debug("Budget limit reached; skipping %d remaining files.", len(all_single_mode_items) - i)
+                    token_limit_reached = True
+                    stats['filter_reasons']['token_limit'] = len(all_single_mode_items) - i
+                    logging.debug("Token limit reached; skipping %d remaining files.", len(all_single_mode_items) - i)
                     break
 
                 current_tokens += entry_tokens
                 current_lines += entry_lines
-                budgeted_items.append((file_path, root_path, is_excluded_by_size, processed))
+                limited_items.append((file_path, root_path, is_excluded_by_size, processed))
 
-            all_single_mode_items = budgeted_items
-            stats['budget_exceeded'] = budget_exceeded
+            all_single_mode_items = limited_items
+            stats['token_limit_reached'] = token_limit_reached
 
-            # Recalculate stats based on budgeted items
+            # Recalculate stats based on limited items
             stats['total_files'] = 0
             stats['total_size_bytes'] = 0
             stats['total_tokens'] = current_tokens
@@ -1710,9 +1710,9 @@ def find_and_combine_files(
             stats['files_by_extension'] = {}
             for item in all_single_mode_items:
                 _update_file_stats(stats, item[0])
-            budget_pass_performed = True
+            token_limit_pass_performed = True
         else:
-            budget_pass_performed = False
+            token_limit_pass_performed = False
 
         # Process Paired files if enabled
         if pairing_enabled and not list_files and not tree_view:
@@ -1861,7 +1861,7 @@ def find_and_combine_files(
                         cached_content=cached_processed
                     )
 
-                if not budget_pass_performed and (not dry_run or estimate_tokens):
+                if not token_limit_pass_performed and (not dry_run or estimate_tokens):
                     # Total tokens for this file entry include boundaries
                     h_template = output_opts.get('header_template', utils.DEFAULT_CONFIG['output']['header_template'])
                     f_template = output_opts.get('footer_template', utils.DEFAULT_CONFIG['output']['footer_template'])
@@ -1922,7 +1922,7 @@ def main():
     parser = argparse.ArgumentParser(
         description=(
             "Combine many files into one file or into pairs. "
-            "This tool is helpful for providing better context to AI assistants, "
+            "This tool is helpful for giving better context to AI assistants, "
             "saving code, or performing code reviews."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -2137,7 +2137,7 @@ def main():
         "--extract",
         action="store_true",
         help=(
-            "Restore original files and folders from a combined JSON, XML, Markdown, or Text file. "
+            "Recreate original files and folders from a combined JSON, XML, Markdown, or Text file. "
             "You can read from a file, your terminal ('-'), or your clipboard. Filtering flags "
             "(--include, --exclude-file, --exclude-folder) and preview flags "
             "(--list-files, --tree) are supported."
@@ -2846,8 +2846,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     # Header
     print(f"\n{title_color}{C_BOLD}=== {summary_title} [{data_hint}] ==={C_RESET}", file=sys.stderr)
 
-    if stats.get('budget_exceeded'):
-        print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to token budget.{C_RESET}", file=sys.stderr)
+    if stats.get('token_limit_reached'):
+        print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to token limit.{C_RESET}", file=sys.stderr)
     if stats.get('limit_reached'):
         print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to file limit.{C_RESET}", file=sys.stderr)
 
@@ -2894,7 +2894,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 file=sys.stderr,
             )
 
-        # Budget Usage
+        # Token Limit Usage
         max_tokens = stats.get('max_total_tokens', 0)
         if max_tokens > 0:
             percent = (token_count / max_tokens) * 100

@@ -52,7 +52,7 @@ def test_output_truncated_warning(temp_cwd, capsys):
         'total_files': 1,
         'total_size_bytes': 10,
         'files_by_extension': {'.txt': 1},
-        'budget_exceeded': True,
+        'token_limit_reached': True,
         'total_tokens': 100,
         'max_total_tokens': 50
     }
@@ -66,10 +66,10 @@ def test_output_truncated_warning(temp_cwd, capsys):
         _print_execution_summary(stats, args, pairing_enabled=False)
 
     captured = capsys.readouterr()
-    assert "WARNING: Output truncated due to token budget." in captured.err
+    assert "WARNING: Output truncated due to token limit." in captured.err
 
-def test_budget_bar_no_color(temp_cwd, capsys):
-    """Test budget bar with NO_COLOR=1 (line 2321)."""
+def test_limit_bar_no_color(temp_cwd, capsys):
+    """Test limit bar with NO_COLOR=1 (line 2321)."""
     stats = {
         'total_files': 1,
         'total_size_bytes': 10,
@@ -130,7 +130,7 @@ def test_global_header_footer_token_approx_single_mode(temp_cwd, monkeypatch):
         }
     }
 
-    # Force tiktoken to None and ensure no budgeting pass is performed
+    # Force tiktoken to None and ensure no limiting pass is performed
     monkeypatch.setattr(utils, "tiktoken", None)
 
     stats = find_and_combine_files(

@@ -9,8 +9,8 @@ sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 import utils
 from sourcecombine import find_and_combine_files
 
-def test_token_budget_enforcement(tmp_path, monkeypatch):
-    """Verify that the token budget correctly truncates the file list."""
+def test_token_limit_enforcement(tmp_path, monkeypatch):
+    """Verify that the token limit correctly truncates the file list."""
     root = tmp_path / "root"
     root.mkdir()
     # 1 token approx = 4 chars
@@ -43,15 +43,15 @@ def test_token_budget_enforcement(tmp_path, monkeypatch):
     )
 
     assert stats['total_files'] == 2
-    assert stats['budget_exceeded'] is True
+    assert stats['token_limit_reached'] is True
 
     content = out_file.read_text(encoding="utf-8")
     assert "1234" in content
     assert "5678" in content
     assert "9012" not in content
 
-def test_token_budget_with_toc(tmp_path, monkeypatch):
-    """Verify that the TOC only includes files that fit within the budget."""
+def test_token_limit_with_toc(tmp_path, monkeypatch):
+    """Verify that the TOC only includes files that fit within the limit."""
     root = tmp_path / "root"
     root.mkdir()
     (root / "file1.txt").write_text("1234", encoding="utf-8")
@@ -63,7 +63,7 @@ def test_token_budget_with_toc(tmp_path, monkeypatch):
     out_file = tmp_path / "out.txt"
     config = {
         "search": {"root_folders": [str(root)]},
-        # Budget enough for TOC (~24) + 1 file (1) but not 2 files
+        # Limit enough for TOC (~24) + 1 file (1) but not 2 files
         "filters": {"max_total_tokens": 25},
         "output": {
             "file": str(out_file),
@@ -82,14 +82,14 @@ def test_token_budget_with_toc(tmp_path, monkeypatch):
     )
 
     assert stats['total_files'] == 1
-    assert stats['budget_exceeded'] is True
+    assert stats['token_limit_reached'] is True
 
     content = out_file.read_text(encoding="utf-8")
     assert "Table of Contents:" in content
     assert "file1.txt" in content
     assert "file2.txt" not in content
 
-def test_token_budget_zero_means_unlimited(tmp_path, monkeypatch):
+def test_token_limit_zero_means_unlimited(tmp_path, monkeypatch):
     """Verify that max_total_tokens=0 means no limit."""
     root = tmp_path / "root"
     root.mkdir()
@@ -112,10 +112,10 @@ def test_token_budget_zero_means_unlimited(tmp_path, monkeypatch):
     )
 
     assert stats['total_files'] == 2
-    assert stats['budget_exceeded'] is False
+    assert stats['token_limit_reached'] is False
 
-def test_token_budget_large_first_file(tmp_path, monkeypatch):
-    """Verify that if the first file exceeds the budget, it is still included if it is the only one."""
+def test_token_limit_large_first_file(tmp_path, monkeypatch):
+    """Verify that if the first file exceeds the limit, it is still included if it is the only one."""
     root = tmp_path / "root"
     root.mkdir()
     (root / "large.txt").write_text("12345678", encoding="utf-8") # 2 tokens
@@ -136,13 +136,13 @@ def test_token_budget_large_first_file(tmp_path, monkeypatch):
     )
 
     assert stats['total_files'] == 1
-    # Current implementation doesn't mark budget_exceeded if the FIRST file is what exceeds it
+    # Current implementation doesn't mark token_limit_reached if the FIRST file is what exceeds it
     # and there are no more files to process anyway.
-    assert stats['budget_exceeded'] is False
+    assert stats['token_limit_reached'] is False
 
 
-def test_budget_pass_apply_in_place(tmp_path, monkeypatch):
-    """Verify apply_in_place works during the budgeting pass."""
+def test_limit_pass_apply_in_place(tmp_path, monkeypatch):
+    """Verify apply_in_place works during the limiting pass."""
     root = tmp_path / "root"
     root.mkdir()
     f1 = root / "f1.txt"
@@ -167,8 +167,8 @@ def test_budget_pass_apply_in_place(tmp_path, monkeypatch):
     assert (root / "f1.txt.bak").exists()
 
 
-def test_budget_pass_global_footer(tmp_path, monkeypatch):
-    """Verify global footer tokens are counted during budgeting."""
+def test_limit_pass_global_footer(tmp_path, monkeypatch):
+    """Verify global footer tokens are counted during limiting."""
     root = tmp_path / "root"
     root.mkdir()
     (root / "f1.txt").write_text("1234", encoding="utf-8")  # 1 token
@@ -189,4 +189,4 @@ def test_budget_pass_global_footer(tmp_path, monkeypatch):
 
     stats = find_and_combine_files(config, output_path=str(out_file))
 
-    assert stats["budget_exceeded"] is True
+    assert stats["token_limit_reached"] is True
