@@ -125,11 +125,10 @@ def load_yaml_config(config_file_path):
 
 
 def read_file_best_effort(file_path):
-    """Try to read a file using several text formats.
+    """Try to read a file using different ways.
 
-    The function first tries UTF-8 (handling special markers at the start),
-    then tries to find the likely format before falling back to
-    a basic UTF-8 read.
+    The function first tries UTF-8, then tries to find the likely format
+    before falling back to a basic UTF-8 read.
     """
 
     try:
@@ -177,7 +176,7 @@ def read_file_best_effort(file_path):
 def _looks_binary(
     path: Path | None = None, sample: bytes | None = None, sample_size: int = 4096
 ) -> bool:
-    """Return ``True`` if the content looks like it is not text."""
+    """Return ``True`` if the file seems to contain data that is not text."""
 
     if sample is None:
         if path is None:
@@ -802,9 +801,9 @@ def validate_regex_pattern(pattern, *, context="regex pattern", source=None):
 
 
 def estimate_tokens(text: str, encoding_name: str = "cl100k_base") -> tuple[int, bool]:
-    """Estimate the number of tokens in the text.
+    """Estimate how many tokens are in the text.
 
-    Returns a tuple of (token_count, is_approximate).
+    Returns the token count and whether it is an estimate.
     """
     if tiktoken:
         try:
@@ -818,7 +817,7 @@ def estimate_tokens(text: str, encoding_name: str = "cl100k_base") -> tuple[int,
 
 
 def format_size(size_bytes: int) -> str:
-    """Return a human-readable string representation of a size in bytes."""
+    """Return the file size in an easy-to-read format like KB or MB."""
     if size_bytes < 0:
         return "0 B"
     for unit in ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB']:
@@ -829,7 +828,7 @@ def format_size(size_bytes: int) -> str:
 
 
 def parse_time_value(value: str) -> float:
-    """Convert a time string into a Unix timestamp.
+    """Convert a time like '1h' or '2023-01-01' into a number the computer can use.
 
     Supports relative durations (e.g., '1h', '2d', '4w') and absolute dates
     in 'YYYY-MM-DD' format.

@@ -186,7 +186,7 @@ def _get_rel_path(path, root_path):
 
 
 def _format_metadata_summary(meta: Mapping[str, Any]) -> str:
-    """Return a formatted string representing file or folder details."""
+    """Return file or folder details in an easy-to-read format."""
     parts = []
     if 'files' in meta:
         count = meta['files']
@@ -224,7 +224,7 @@ def _render_single_pass(template, replacements):
 
 
 def _render_template(template, relative_path, size=None, tokens=None, lines=None, escape_func=None):
-    """Replace placeholders in a template with file details.
+    """Replace placeholders in a template with file information.
 
     The placeholders include FILENAME, EXT, STEM, DIR, DIR_SLUG, SIZE,
     TOKENS, and LINE_COUNT.
@@ -263,7 +263,7 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
 
 
 def _render_global_template(template, stats):
-    """Replace placeholders in a global template with project details.
+    """Replace placeholders in a global template with project information.
 
     The placeholders include FILE_COUNT, TOTAL_SIZE, TOTAL_TOKENS, and TOTAL_LINES.
     """
@@ -1907,7 +1907,7 @@ def main():
               # Use a settings file
               python sourcecombine.py my_config.yml
 
-              # Use settings but override the folders to scan
+              # Use settings but override the folders to search
               python sourcecombine.py my_config.yml project_a/ project_b/
 
               # Copy the result to your clipboard
@@ -1971,7 +1971,7 @@ def main():
         "--limit",
         "-L",
         type=int,
-        help="Stop processing after this many files.",
+        help="Stop after finding this many files.",
     )
     filtering_group.add_argument(
         "--max-tokens",
@@ -1981,7 +1981,7 @@ def main():
     )
     filtering_group.add_argument(
         "--files-from",
-        help="Read a list of files from a text file (use '-' for your terminal). This skips folder scanning.",
+        help="Read a list of files from a text file (use '-' for your terminal). This skips looking for files in folders.",
     )
 
     # Output Options Group
@@ -2001,7 +2001,7 @@ def main():
         "--format",
         "-f",
         choices=["text", "json", "jsonl", "markdown", "xml"],
-        help="Select the output format. 'json' and 'jsonl' only work in single-file mode. 'markdown' and 'xml' add structural formatting.",
+        help="Choose how the output is organized. 'json' and 'jsonl' only work when combining files. 'markdown' and 'xml' add helpful structure.",
     )
     output_group.add_argument(
         "--markdown",
@@ -2049,7 +2049,7 @@ def main():
         "--sort",
         "-s",
         choices=["name", "size", "modified", "tokens", "depth"],
-        help="Sort files by name, size, modified time, token count, or path depth before combining.",
+        help="Sort files by name, size, modified time, token count, or folder depth before combining.",
     )
     output_group.add_argument(
         "--reverse",
@@ -2064,7 +2064,7 @@ def main():
         "--dry-run",
         "-d",
         action="store_true",
-        help="Simulate the process to see which files will be included, without writing any output.",
+        help="Show what would happen without actually making any changes.",
     )
     preview_group.add_argument(
         "--estimate-tokens",
@@ -2105,7 +2105,7 @@ def main():
     utility_group.add_argument(
         "--system-info",
         action="store_true",
-        help="Show diagnostic information about your environment and optional software.",
+        help="Show details about your computer and the software you are using.",
     )
     utility_group.add_argument(
         "--version",
