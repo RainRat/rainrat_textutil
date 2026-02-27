@@ -14,14 +14,14 @@ def test_read_file_best_effort_retries_on_null_bytes_in_utf8(tmp_path):
     # We patch read_bytes to ensure we actually hit the fallback path.
     # If the initial open() worked and returned, read_bytes wouldn't be called.
     with patch("pathlib.Path.read_bytes", return_value=content_bytes) as mock_read:
-        content = read_file_best_effort(f)
+        content, _ = read_file_best_effort(f)
         assert content == "hello\x00world"
         mock_read.assert_called_once()
 
 def test_read_file_raises_file_not_found(tmp_path):
     f = tmp_path / "nonexistent.txt"
     with pytest.raises(FileNotFoundError):
-        read_file_best_effort(f)
+        _, _ = read_file_best_effort(f)
 
 def test_read_file_handles_read_bytes_exception(tmp_path):
     f = tmp_path / "unreadable.txt"
@@ -29,7 +29,7 @@ def test_read_file_handles_read_bytes_exception(tmp_path):
 
     with patch("pathlib.Path.read_bytes", side_effect=PermissionError("Boom")), \
          patch("logging.warning") as mock_log:
-        content = read_file_best_effort(f)
+        content, _ = read_file_best_effort(f)
         assert content == ""
 
         # Ensure log was called
@@ -49,7 +49,7 @@ def test_read_file_heuristic_small_utf16_no_nulls(tmp_path):
     mock_guess.best.return_value.encoding = "utf-16" # Hyphenated!
 
     with patch("utils.from_bytes", return_value=mock_guess):
-        content = read_file_best_effort(f)
+        content, _ = read_file_best_effort(f)
         # Should use latin-1 because of the fix
         # b"\x20\xAC".decode("latin-1") -> " \u00ac"
         assert content == " \u00ac"
@@ -67,7 +67,7 @@ def test_read_file_heuristic_small_utf16_with_nulls(tmp_path):
     mock_guess.best.return_value.encoding = "utf-16"
 
     with patch("utils.from_bytes", return_value=mock_guess):
-        content = read_file_best_effort(f)
+        content, _ = read_file_best_effort(f)
         assert content == "a"
 
 def test_read_file_fallback_lookup_error(tmp_path):
@@ -79,7 +79,7 @@ def test_read_file_fallback_lookup_error(tmp_path):
 
     with patch("utils.from_bytes", return_value=mock_guess), \
          patch("logging.warning") as mock_log:
-        content = read_file_best_effort(f)
+        content, _ = read_file_best_effort(f)
         assert content == "\ufffd"
 
         # Check that we logged the lookup error
@@ -96,7 +96,7 @@ def test_read_file_fallback_no_guess(tmp_path):
 
     with patch("utils.from_bytes", return_value=mock_guess), \
          patch("logging.warning") as mock_log:
-        content = read_file_best_effort(f)
+        content, _ = read_file_best_effort(f)
         assert content == "\ufffd"
         found = any("Could not detect encoding" in str(arg) for call in mock_log.call_args_list for arg in call.args)
         assert found

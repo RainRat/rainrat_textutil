@@ -76,9 +76,12 @@ def test_read_file_best_effort_handles_various_encodings(tmp_path):
     cjk_file = tmp_path / "cjk_utf16.txt"
     cjk_file.write_bytes(cjk_text.encode("utf-16"))
 
-    assert read_file_best_effort(bom_file) == utf8_bom
-    assert read_file_best_effort(latin_file) == latin_text
-    assert read_file_best_effort(cjk_file) == cjk_text
+    content, _ = read_file_best_effort(bom_file)
+    assert content == utf8_bom
+    content, _ = read_file_best_effort(latin_file)
+    assert content == latin_text
+    content, _ = read_file_best_effort(cjk_file)
+    assert content == cjk_text
 
 
 def test_read_file_best_effort_handles_utf16_edge_cases(tmp_path):
@@ -88,8 +91,10 @@ def test_read_file_best_effort_handles_utf16_edge_cases(tmp_path):
     without_bom = tmp_path / "utf16_no_bom.txt"
     without_bom.write_bytes("A".encode("utf-16-le"))
 
-    assert read_file_best_effort(bom_only) == ""
-    assert read_file_best_effort(without_bom) == "A"
+    content, _ = read_file_best_effort(bom_only)
+    assert content == ""
+    content, _ = read_file_best_effort(without_bom)
+    assert content == "A"
 
 
 def _write_config(tmp_path: Path, data: dict) -> Path:

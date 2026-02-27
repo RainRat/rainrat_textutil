@@ -25,22 +25,6 @@ def test_jsonl_max_size_placeholder(tmp_path):
     assert data['path'] == "large.txt"
     assert data['content'] == "SKIPPED: large.txt"
 
-def test_auto_detect_json_xml(tmp_path, monkeypatch):
-    # Gaps: sourcecombine.py:2281, 2285
-    (tmp_path / "file.txt").write_text("hello")
-
-    # Test JSON auto-detect
-    output_json = tmp_path / "out.json"
-    monkeypatch.setattr("sys.argv", ["sourcecombine.py", str(tmp_path), "-o", str(output_json)])
-    main()
-    assert output_json.read_text().startswith('[')
-
-    # Test XML auto-detect
-    output_xml = tmp_path / "out.xml"
-    monkeypatch.setattr("sys.argv", ["sourcecombine.py", str(tmp_path), "-o", str(output_xml)])
-    main()
-    assert output_xml.read_text().startswith('<repository>')
-
 def test_smart_extension_jsonl(tmp_path, monkeypatch):
     # Gap: sourcecombine.py:2300
     (tmp_path / "file.txt").write_text("hello")

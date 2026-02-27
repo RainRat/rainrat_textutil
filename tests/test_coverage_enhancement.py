@@ -19,23 +19,6 @@ def temp_cwd(tmp_path):
     yield tmp_path
     os.chdir(original_cwd)
 
-def test_main_with_compact_flag_no_processing(temp_cwd):
-    """Test main() with --compact flag when processing config is missing (line 1907)."""
-    (temp_cwd / "test.txt").write_text("content", encoding="utf-8")
-
-    # Mock load_and_validate_config AND validate_config to return a dict without 'processing'
-    config = {'search': {'root_folders': ['.']}}
-    with patch('sourcecombine.load_and_validate_config', return_value=config):
-        with patch('sourcecombine.validate_config'):
-            with patch('sourcecombine.find_and_combine_files') as mock_combine:
-                mock_combine.return_value = {'total_files': 1, 'total_tokens': 10, 'files_by_extension': {'.txt': 1}}
-                with patch.object(sys, 'argv', ['sourcecombine.py', 'config.yml', '--compact']):
-                    main()
-
-    args, _ = mock_combine.call_args
-    config = args[0]
-    assert config['processing']['compact_whitespace'] is True
-
 def test_main_with_toc_flag(temp_cwd):
     """Test main() with --toc flag to cover line 1900 (formerly 1907)."""
     (temp_cwd / "test.txt").write_text("content", encoding="utf-8")

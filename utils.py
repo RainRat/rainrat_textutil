@@ -129,6 +129,9 @@ def read_file_best_effort(file_path):
 
     The function first tries UTF-8, then tries to find the likely format
     before falling back to a basic UTF-8 read.
+
+    Returns:
+        (str, str): A tuple of (content, encoding_name)
     """
 
     try:
@@ -137,13 +140,15 @@ def read_file_best_effort(file_path):
         raise
     except OSError:
         logging.warning("Could not read %s.", file_path)
-        return ""
+        return "", 'utf-8'
 
     try:
         text = raw_bytes.decode('utf-8-sig')
         if '\x00' in text:
             raise UnicodeError("Found empty (NUL) characters; trying other ways to read the file")
-        return text
+        # Only return utf-8-sig if it actually had a BOM
+        encoding = 'utf-8-sig' if raw_bytes.startswith(b'\xef\xbb\xbf') else 'utf-8'
+        return text, encoding
     except UnicodeError:
         pass
 
@@ -160,7 +165,7 @@ def read_file_best_effort(file_path):
                 else:
                     encoding = 'utf-16'
         try:
-            return raw_bytes.decode(encoding, errors='replace').lstrip('\ufeff')
+            return raw_bytes.decode(encoding, errors='replace').lstrip('\ufeff'), encoding
         except LookupError:
             logging.warning(
                 "Detected encoding '%s' is not supported.", best_guess.encoding
@@ -170,7 +175,7 @@ def read_file_best_effort(file_path):
         "Could not detect encoding for %s; decoding with UTF-8 replacements.",
         file_path,
     )
-    return raw_bytes.decode('utf-8', errors='replace').lstrip('\ufeff')
+    return raw_bytes.decode('utf-8', errors='replace').lstrip('\ufeff'), 'utf-8'
 
 
 def _looks_binary(

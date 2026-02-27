@@ -36,16 +36,27 @@ class _LazyColor:
         self.code = code
 
     def __str__(self):
+        return self._render(only_stderr=False)
+
+    def _render(self, only_stderr=False):
         # We check isatty and NO_COLOR on every string conversion so it
         # works correctly even if sys.stdout/stderr is redirected mid-run or
         # in tests.
-        stream = sys.stderr if sys.stderr.isatty() else sys.stdout
-        if stream.isatty() and not os.getenv("NO_COLOR"):
+        if os.getenv("NO_COLOR"):
+            return ""
+
+        if only_stderr:
+            return self.code if sys.stderr.isatty() else ""
+
+        # Default: check if either is a TTY
+        if sys.stderr.isatty() or sys.stdout.isatty():
             return self.code
+
         return ""
 
     def __format__(self, format_spec):
-        return format(str(self), format_spec)
+        only_stderr = (format_spec == "only_stderr")
+        return self._render(only_stderr=only_stderr)
 
 
 C_BOLD = _LazyColor("\033[1m")
@@ -69,11 +80,11 @@ class CLILogFormatter(logging.Formatter):
 
     def format(self, record):
         if record.levelno == logging.WARNING:
-            prefix = f"{C_YELLOW}WARNING:{C_RESET} "
+            prefix = f"{C_YELLOW:only_stderr}WARNING:{C_RESET:only_stderr} "
         elif record.levelno >= logging.ERROR:
-            prefix = f"{C_RED}ERROR:{C_RESET} "
+            prefix = f"{C_RED:only_stderr}ERROR:{C_RESET:only_stderr} "
         elif record.levelno == logging.DEBUG:
-            prefix = f"{C_DIM}DEBUG:{C_RESET} "
+            prefix = f"{C_DIM:only_stderr}DEBUG:{C_RESET:only_stderr} "
         else:
             prefix = ""
 
@@ -959,12 +970,12 @@ class FileProcessor:
         if cached_content is not None:
             processed_content = cached_content
         else:
-            content = read_file_best_effort(file_path)
+            content, encoding = read_file_best_effort(file_path)
             processed_content = process_content(content, self.processing_opts)
             if self.apply_in_place and processed_content != content and not self.estimate_tokens:
-                logging.info("Updating in place: %s", file_path)
+                logging.info("Updating in place: %s (encoding: %s)", file_path, encoding)
                 self._backup_file(file_path)
-                file_path.write_text(processed_content, encoding='utf8', newline='')
+                file_path.write_text(processed_content, encoding=encoding, newline='')
 
         relative_path = _get_rel_path(file_path, root_path)
         file_size = file_path.stat().st_size if file_path.exists() else 0
@@ -1403,7 +1414,7 @@ def find_and_combine_files(
                     is_approx = True
 
                     if estimate_tokens:
-                        content = read_file_best_effort(p)
+                        content, _ = read_file_best_effort(p)
                         processed = process_content(content, processor.processing_opts)
                         tokens, is_approx = utils.estimate_tokens(processed)
                         lines = utils.count_lines(processed)
@@ -1493,7 +1504,7 @@ def find_and_combine_files(
                     elif sort_by == 'depth':
                         val = len(rel_p.parts)
                     elif sort_by == 'tokens':
-                        content = read_file_best_effort(primary_path)
+                        content, _ = read_file_best_effort(primary_path)
                         processed = process_content(content, processor.processing_opts)
                         val, _ = utils.estimate_tokens(processed)
                     else:
@@ -1583,7 +1594,7 @@ def find_and_combine_files(
                         rendered = _render_template(placeholder, rel_p, size=file_path.stat().st_size if file_path.exists() else 0)
                         tokens, _ = utils.estimate_tokens(rendered)
                     else:
-                        content = read_file_best_effort(file_path)
+                        content, _ = read_file_best_effort(file_path)
                         processed = process_content(content, processor.processing_opts)
                         tokens, _ = utils.estimate_tokens(processed)
                     token_data.append((tokens, rel_p.as_posix()))
@@ -1601,18 +1612,6 @@ def find_and_combine_files(
                 stats['filter_reasons']['file_limit'] = len(all_single_mode_items) - max_files
                 all_single_mode_items = all_single_mode_items[:max_files]
                 stats['limit_reached'] = True
-
-                # Recalculate stats after truncation
-                stats['total_files'] = 0
-                stats['total_size_bytes'] = 0
-                stats['total_tokens'] = 0
-                stats['total_lines'] = 0
-                stats['files_by_extension'] = {}
-                for item in all_single_mode_items:
-                    _update_file_stats(stats, item[0])
-                    meta = file_metadata.get(item[0], {})
-                    stats['total_tokens'] += meta.get('tokens', 0)
-                    stats['total_lines'] += meta.get('lines', 0)
 
             for i, item in enumerate(all_single_mode_items):
                 file_path, root_path, is_excluded_by_size = item
@@ -1632,12 +1631,12 @@ def find_and_combine_files(
                         if is_approx:
                             stats['token_count_is_approx'] = True
                 else:
-                    content = read_file_best_effort(file_path)
+                    content, encoding = read_file_best_effort(file_path)
                     processed = process_content(content, processor.processing_opts)
                     if processor.apply_in_place and processed != content and not estimate_tokens and not dry_run:
-                        logging.info("Updating in place: %s", file_path)
+                        logging.info("Updating in place: %s (encoding: %s)", file_path, encoding)
                         processor._backup_file(file_path)
-                        file_path.write_text(processed, encoding='utf8', newline='')
+                        file_path.write_text(processed, encoding=encoding, newline='')
                     content_tokens, is_approx = utils.estimate_tokens(processed)
                     content_lines = utils.count_lines(processed)
                     if is_approx:
@@ -2423,8 +2422,9 @@ def main():
     pairing_enabled = pairing_conf.get('enabled')
 
     # Auto-detect format from extension if not explicitly set via CLI flags
-    if not args.format and not pairing_enabled and args.output and args.output != '-':
-        ext = Path(args.output).suffix.lower()
+    effective_output = args.output if (args.output and args.output != '-') else output_conf.get('file')
+    if not args.format and not pairing_enabled and effective_output:
+        ext = Path(effective_output).suffix.lower()
         if ext in ('.md', '.markdown'):
             args.format = 'markdown'
         elif ext == '.json':
@@ -2488,7 +2488,7 @@ def main():
             if not input_path.exists():
                 logging.error("Input file not found: %s", input_path)
                 sys.exit(1)
-            content = read_file_best_effort(input_path)
+            content, _ = read_file_best_effort(input_path)
             source_name = str(input_path)
         else:
             logging.error("No input specified for extraction. Use a file path, '-' for your terminal, or --clipboard.")
