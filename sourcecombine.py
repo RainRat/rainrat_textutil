@@ -464,7 +464,9 @@ def collect_file_paths(root_folder, recursive, exclude_folders, progress=None):
         if root_path.is_file():
             if progress is not None:
                 progress.update(1)
-            return [root_path], root_path.parent, 0
+            # Use parent as root for absolute paths, but preserve context for relative paths
+            root = root_path.parent if root_path.is_absolute() else Path('.')
+            return [root_path], root, 0
         is_directory = root_path.is_dir()
     except OSError as exc:
         logging.warning(
@@ -820,7 +822,7 @@ def _process_paired_files(
 
         with pair_out_ctx as pair_out:
             if global_header and not estimate_tokens:
-                pair_out.write(global_header)
+                pair_out.write(_render_global_template(global_header, stats))
 
             if primary_path in size_excluded_set:
                 token_count, is_approx, line_count = processor.write_max_size_placeholder(primary_path, root_path, pair_out)
@@ -854,7 +856,7 @@ def _process_paired_files(
                         processing_bar.update(1)
 
             if global_footer and not estimate_tokens:
-                pair_out.write(global_footer)
+                pair_out.write(_render_global_template(global_footer, stats))
 
 
 def _update_file_stats(stats, file_path):
@@ -2614,22 +2616,22 @@ def extract_files(content, output_folder, dry_run=False, source_name="archive", 
 
     # 1.5 Try JSONL if JSON failed
     if not files_to_create:
-        try:
-            potential_files = []
-            for line in content.splitlines():
-                line = line.strip()
-                if not line:
-                    continue
+        potential_files = []
+        for line in content.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
                 entry = json.loads(line)
                 if isinstance(entry, dict) and 'path' in entry and 'content' in entry:
                     potential_files.append((entry['path'], entry['content']))
                 else:
-                    potential_files = []
-                    break
-            if potential_files:
-                files_to_create = potential_files
-        except (json.JSONDecodeError, TypeError):
-            pass
+                    logging.warning("Skipping malformed JSONL line in %s: %s", source_name, line)
+            except (json.JSONDecodeError, TypeError):
+                logging.warning("Skipping invalid JSON line in %s: %s", source_name, line)
+        
+        if potential_files:
+            files_to_create = potential_files
 
     # 2. Try XML if JSON failed or found nothing
     if not files_to_create:
@@ -2660,24 +2662,23 @@ def extract_files(content, output_folder, dry_run=False, source_name="archive", 
 
     # 4. Try Markdown if others failed or found nothing
     if not files_to_create:
-        # Match ## FILENAME followed eventually by a code block.
-        # We look for:
-        # 1. Header (## or ###)
-        # 2. Path (the header text)
-        # 3. Some content that DOES NOT contain another header
-        # 4. A code block
-        #
-        # This is more robust than splitting on headers because it ensures
-        # that each "section" we extract actually contains a code block,
-        # and we don't split on headers that are INSIDE code blocks (if they are
-        # properly formatted).
-        pattern = re.compile(
-            r'^#{2,3}\s+(.+?)\s*$\n(?:(?!^#{2,3}\s+)[\s\S])*?^```(?:\w+)?\n([\s\S]*?)\n^```',
-            re.MULTILINE
-        )
-        for match in pattern.finditer(content):
-            path, file_content = match.groups()
-            files_to_create.append((path.strip(), file_content))
+        # Find all code blocks and their preceding headers.
+        # We associate each code block with the FIRST header that appears after the previous
+        # code block (or start of file). This is robust against headers inside code blocks
+        # and sub-headers in the description text.
+        code_block_pattern = re.compile(r'^```(?:\S+)?\n([\s\S]*?)\n^```', re.MULTILINE)
+        header_pattern = re.compile(r'^#{2,3}\s+(.+?)\s*$', re.MULTILINE)
+
+        last_pos = 0
+        for cb_match in code_block_pattern.finditer(content):
+            # Look for headers between last_pos and cb_match.start()
+            search_space = content[last_pos:cb_match.start()]
+            h_match = header_pattern.search(search_space)
+            if h_match:
+                path = h_match.group(1).strip()
+                file_content = cb_match.group(1)
+                files_to_create.append((path, file_content))
+            last_pos = cb_match.end()
 
     if not files_to_create:
         logging.error("Could not find any files to extract in %s. Supported formats are JSON, XML, Markdown, and Text.", source_name)
