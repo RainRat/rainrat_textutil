@@ -1564,23 +1564,25 @@ def find_and_combine_files(
             budgeted_items = []
             current_tokens = 0
             current_lines = 0
+            overhead_tokens = 0
+            overhead_lines = 0
             budget_exceeded = False
 
             # Account for global header and footer tokens in the budget
             # We estimate these once without placeholders for initial budget.
             if global_header and output_format in ('text', 'markdown', 'xml'):
-                current_tokens += utils.estimate_tokens(global_header)[0]
-                current_lines += utils.count_lines(global_header)
+                overhead_tokens += utils.estimate_tokens(global_header)[0]
+                overhead_lines += utils.count_lines(global_header)
             if global_footer and output_format in ('text', 'markdown', 'xml'):
-                current_tokens += utils.estimate_tokens(global_footer)[0]
-                current_lines += utils.count_lines(global_footer)
+                overhead_tokens += utils.estimate_tokens(global_footer)[0]
+                overhead_lines += utils.count_lines(global_footer)
 
             # Estimate TOC and Tree tokens if enabled (rough estimation per file)
             if output_format in ('text', 'markdown'):
                 if output_opts.get('include_tree'):
-                    current_tokens += len(all_single_mode_items) * 12
+                    overhead_tokens += len(all_single_mode_items) * 12
                 if output_opts.get('table_of_contents'):
-                    current_tokens += len(all_single_mode_items) * 12
+                    overhead_tokens += len(all_single_mode_items) * 12
 
             # If sorting by tokens, we must calculate tokens for all files first
             if sort_by == 'tokens':
@@ -1665,7 +1667,7 @@ def find_and_combine_files(
                 entry_tokens = content_tokens + header_tokens + footer_tokens
                 entry_lines = content_lines + header_lines + footer_lines
 
-                if max_total_tokens > 0 and current_tokens + entry_tokens > max_total_tokens and current_tokens > 0:
+                if max_total_tokens > 0 and (current_tokens + overhead_tokens + entry_tokens) > max_total_tokens and (current_tokens + overhead_tokens) > 0:
                     budget_exceeded = True
                     stats['filter_reasons']['budget_limit'] = len(all_single_mode_items) - i
                     logging.debug("Budget limit reached; skipping %d remaining files.", len(all_single_mode_items) - i)
@@ -1729,18 +1731,12 @@ def find_and_combine_files(
 
         # Process Single File Mode items (including Global Header, TOC, Tree, and Footer)
         if not pairing_enabled and not list_files and not tree_view:
-            # Add global header/footer tokens if budget pass was skipped
-            if not budget_pass_performed and (not dry_run or estimate_tokens) and output_format in ('text', 'markdown', 'xml'):
+            # Update global header tokens if they will be included in the output or estimation
+            if (not dry_run or estimate_tokens) and output_format in ('text', 'markdown', 'xml'):
                 if global_header:
-                    tokens, is_approx = utils.estimate_tokens(global_header)
-                    lines = utils.count_lines(global_header)
-                    stats['total_tokens'] += tokens
-                    stats['total_lines'] += lines
-                    if is_approx:
-                        stats['token_count_is_approx'] = True
-                if global_footer:
-                    tokens, is_approx = utils.estimate_tokens(global_footer)
-                    lines = utils.count_lines(global_footer)
+                    rendered_h = _render_global_template(global_header, stats)
+                    tokens, is_approx = utils.estimate_tokens(rendered_h)
+                    lines = utils.count_lines(rendered_h)
                     stats['total_tokens'] += tokens
                     stats['total_lines'] += lines
                     if is_approx:
@@ -1785,6 +1781,7 @@ def find_and_combine_files(
                         if not dry_run or estimate_tokens:
                             token_count, is_approx = utils.estimate_tokens(tree_content)
                             line_count = utils.count_lines(tree_content)
+                            stats['total_tokens'] += token_count
                             stats['total_lines'] += line_count
                             if is_approx:
                                 stats['token_count_is_approx'] = True
@@ -1801,6 +1798,7 @@ def find_and_combine_files(
                 if not dry_run or estimate_tokens:
                     token_count, is_approx = utils.estimate_tokens(toc_content)
                     line_count = utils.count_lines(toc_content)
+                    stats['total_tokens'] += token_count
                     stats['total_lines'] += line_count
                     if is_approx:
                         stats['token_count_is_approx'] = True
@@ -1867,9 +1865,19 @@ def find_and_combine_files(
 
             processing_bar.close()
 
-        # Write global footer only for text, markdown, and xml output
-        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and global_footer and output_format in ('text', 'markdown', 'xml'):
-            outfile.write(_render_global_template(global_footer, stats))
+        # Process global footer and update stats
+        if not pairing_enabled and not list_files and not tree_view and global_footer and output_format in ('text', 'markdown', 'xml'):
+            if not dry_run or estimate_tokens:
+                rendered_f = _render_global_template(global_footer, stats)
+                tokens, is_approx = utils.estimate_tokens(rendered_f)
+                lines = utils.count_lines(rendered_f)
+                stats['total_tokens'] += tokens
+                stats['total_lines'] += lines
+                if is_approx:
+                    stats['token_count_is_approx'] = True
+
+            if not dry_run and not estimate_tokens:
+                outfile.write(_render_global_template(global_footer, stats))
 
         if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and output_format == 'json':
             outfile.write(']')
