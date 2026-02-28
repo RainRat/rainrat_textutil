@@ -181,3 +181,28 @@ def test_list_files_tree_estimate_tokens(capsys, tmp_path):
     assert "tokens" in captured.out
     # When estimate_tokens is set, it takes precedence in summary title
     assert "TOKEN ESTIMATION COMPLETE" in captured.err
+
+def test_list_files_with_token_estimation_approx(tmp_path, capsys):
+    """Cover sourcecombine.py line 1213: stats['token_count_is_approx'] = True in list_files mode."""
+    import sourcecombine
+    from unittest.mock import patch
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "file1.txt").write_text("content", encoding="utf-8")
+
+    config = {
+        "search": {"root_folders": [str(root)]},
+        "output": {"file": str(tmp_path / "out.txt")}
+    }
+
+    # Mock estimate_tokens to return is_approx=True
+    with patch("utils.estimate_tokens", return_value=(10, True)):
+        stats = sourcecombine.find_and_combine_files(
+            config,
+            output_path=str(tmp_path / "out.txt"),
+            list_files=True,
+            estimate_tokens=True,
+            tree_view=False
+        )
+
+    assert stats['token_count_is_approx'] is True

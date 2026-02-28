@@ -2,6 +2,7 @@ import sys
 import os
 import shutil
 import logging
+import runpy
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 import pytest
@@ -196,3 +197,83 @@ def test_config_missing_root_folders_fallback(temp_cwd, mock_argv, caplog):
     # Verify the config passed has root_folders set to ['.']
     args, _ = mock_combine.call_args
     assert args[0]['search']['root_folders'] == ['.']
+
+def test_main_entry_point():
+    """Cover sourcecombine.py line 2385: if __name__ == "__main__": main()."""
+    with patch.object(sys, 'argv', ['sourcecombine.py', '--version']):
+        with pytest.raises(SystemExit) as excinfo:
+            runpy.run_path("sourcecombine.py", run_name="__main__")
+        assert excinfo.value.code == 0
+
+def test_line_numbers_flag_in_main_coverage(tmp_path, monkeypatch):
+    """Cover sourcecombine.py line 1907: --line-numbers flag in main()."""
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "file1.txt").write_text("content", encoding="utf-8")
+
+    out_file = tmp_path / "out.txt"
+    monkeypatch.setattr(sys, "argv", ["sourcecombine.py", str(root), "-o", str(out_file), "--line-numbers"])
+
+    try:
+        main()
+    except SystemExit as e:
+        assert e.code == 0
+
+    assert out_file.exists()
+    content = out_file.read_text(encoding="utf-8")
+    assert "1: content" in content
+
+def test_smart_extension_jsonl(tmp_path, temp_cwd, monkeypatch):
+    """Cover sourcecombine.py: --format jsonl produces combined_files.jsonl by default."""
+    (tmp_path / "file.txt").write_text("hello")
+
+    # Use a non-default filename by format
+    monkeypatch.setattr("sys.argv", ["sourcecombine.py", "--format", "jsonl"])
+    try:
+        main()
+    except SystemExit:
+        pass
+    # Default filename for jsonl should be combined_files.jsonl
+    assert Path("combined_files.jsonl").exists()
+
+def test_main_time_filtering_cli_since(tmp_path, mock_argv):
+    out_file = tmp_path / "out.txt"
+    with patch('sourcecombine.find_and_combine_files', return_value={}) as mock_combine:
+        with mock_argv(['.', '-o', str(out_file), '--since', '2024-01-01']):
+            main()
+            config = mock_combine.call_args[0][0]
+            assert config['filters']['modified_since'] == utils.parse_time_value('2024-01-01')
+
+def test_main_time_filtering_cli_until(tmp_path, mock_argv):
+    out_file = tmp_path / "out.txt"
+    with patch('sourcecombine.find_and_combine_files', return_value={}) as mock_combine:
+        with mock_argv(['.', '-o', str(out_file), '--until', '1h']):
+            main()
+            config = mock_combine.call_args[0][0]
+            assert config['filters']['modified_until'] == pytest.approx(utils.parse_time_value('1h'), abs=2)
+
+def test_main_time_filtering_cli_error_handling(caplog, mock_argv):
+    caplog.set_level(logging.ERROR)
+    with mock_argv(['--since', 'invalid']):
+        with pytest.raises(SystemExit) as exc:
+            main()
+        assert exc.value.code == 1
+        assert "Invalid time value" in caplog.text
+
+def test_main_time_filtering_no_filters_dict(tmp_path, mock_argv):
+    out_file = tmp_path / "out.txt"
+    with patch('sourcecombine.load_and_validate_config', return_value={'search': {'root_folders': ['.']}, 'output': {}}):
+        with patch('sourcecombine.find_and_combine_files', return_value={}) as mock_combine:
+            with mock_argv(['.', '-o', str(out_file), '--since', '2024-01-01']):
+                main()
+                config = mock_combine.call_args[0][0]
+                assert 'filters' in config
+                assert config['filters']['modified_since'] == utils.parse_time_value('2024-01-01')
+
+def test_main_system_info_exit_behavior():
+    with patch.object(sys, "argv", ["sourcecombine.py", "--system-info"]):
+        with patch("sourcecombine.print_system_info") as mock_info:
+            with pytest.raises(SystemExit) as exc:
+                main()
+            assert exc.value.code == 0
+            mock_info.assert_called_once()

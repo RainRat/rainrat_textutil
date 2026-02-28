@@ -19,6 +19,12 @@ from utils import (
     process_content,
     read_file_best_effort,
     format_size,
+    validate_config,
+    _validate_pairing_section,
+    load_yaml_config,
+    _validate_regex_list,
+    _validate_glob_list,
+    validate_glob_pattern,
 )
 
 
@@ -517,3 +523,397 @@ def test_format_size_large_values():
     assert format_size(1024**7) == "1.00 ZB"
     assert format_size(1024**8) == "1.00 YB"
     assert format_size(1024**9) == "1,024.00 YB"
+
+def test_utils_tiktoken_import_error_coverage():
+    """Cover utils.py lines 12-13: tiktoken ImportError."""
+    import runpy
+    from unittest.mock import patch
+    with patch.dict(sys.modules, {'tiktoken': None}):
+        # runpy executes the module in a fresh namespace without reloading it in sys.modules
+        utils_namespace = runpy.run_path("utils.py")
+        assert 'tiktoken' in utils_namespace
+
+def test_looks_binary_no_args_coverage():
+    """Cover utils.py line 179: _looks_binary with no args."""
+    from utils import _looks_binary
+    assert _looks_binary() is False
+
+def test_parse_time_value_empty_string():
+    from utils import parse_time_value
+    assert parse_time_value("") == 0.0
+
+def test_parse_time_value_invalid_date_format():
+    from utils import parse_time_value
+    with pytest.raises(InvalidConfigError) as exc:
+        parse_time_value("2024-13-45")
+    assert "Invalid date format" in str(exc.value)
+
+@pytest.mark.parametrize("value,expected_delta", [
+    ("10s", 10),
+    ("2m", 120),
+    ("1w", 7 * 24 * 3600),
+])
+def test_parse_time_value_units(value, expected_delta):
+    import time
+    from utils import parse_time_value
+    val = parse_time_value(value)
+    assert time.time() - val == pytest.approx(expected_delta, abs=10)
+
+def test_parse_time_value_unknown_unit_unreachable_branch():
+    from unittest.mock import patch, MagicMock
+    from utils import parse_time_value
+    with patch('re.match') as mock_match:
+        mock_m = MagicMock()
+        mock_m.group.side_effect = lambda i: "10" if i == 1 else "x"
+        mock_match.side_effect = [None, mock_m]
+        with pytest.raises(InvalidConfigError) as exc:
+            parse_time_value("10x")
+        assert "Unknown time unit: 'x'" in str(exc.value)
+
+def test_validate_regex_list_not_a_list():
+    with pytest.raises(InvalidConfigError, match="'test' must be a list"):
+        _validate_regex_list("not a list", "test", None)
+
+def test_validate_regex_list_item_not_a_dict():
+    with pytest.raises(InvalidConfigError, match="Item 0 in 'test' must be a dictionary"):
+        _validate_regex_list(["not a dict"], "test", None)
+
+def test_validate_glob_list_not_a_list():
+    with pytest.raises(InvalidConfigError, match="'test' must be a list"):
+        _validate_glob_list("not a list", "test")
+
+def test_validate_glob_list_none():
+    _validate_glob_list(None, "test")
+
+def test_validate_filters_section_not_a_dict():
+    config = {"filters": "not a dict"}
+    validate_config(config)
+
+def test_validate_processing_section_not_a_dict():
+    config = {"processing": "not a dict"}
+    validate_config(config)
+
+def test_validate_processing_section_non_bool():
+    config = {"processing": {"apply_in_place": "not a bool"}}
+    with pytest.raises(InvalidConfigError, match="'processing.apply_in_place' must be true or false"):
+        validate_config(config)
+
+    config = {"processing": {"create_backups": "not a bool"}}
+    with pytest.raises(InvalidConfigError, match="'processing.create_backups' must be true or false"):
+        validate_config(config)
+
+def test_validate_config_missing_nested_key():
+    config = {"search": {}}
+    nested_required = {"search": ["root_folders"]}
+    with pytest.raises(InvalidConfigError, match="'search' section is missing keys: root_folders"):
+        validate_config(config, nested_required=nested_required)
+
+def test_process_content_regex_missing_fields():
+    text = "hello world"
+    options = {
+        "regex_replacements": [
+            {"pattern": "hello"},
+            {"replacement": "bye"},
+        ]
+    }
+    assert process_content(text, options) == text
+
+def test_process_content_compact_whitespace_unknown_key():
+    text = "a   b"
+    options = {
+        "compact_whitespace": True,
+        "compact_whitespace_groups": {
+            "unknown": True,
+            "compact_space_runs": True
+        }
+    }
+    assert process_content(text, options) == "a  b"
+
+def test_process_content_compact_whitespace_all_unknown():
+    text = "a   b"
+    options = {
+        "compact_whitespace": True,
+        "compact_whitespace_groups": {
+            "unknown": True
+        }
+    }
+    assert process_content(text, options) == "a  b"
+
+def test_process_content_compact_whitespace_with_none():
+    text = "a   b"
+    options = {
+        "compact_whitespace": True,
+        "compact_whitespace_groups": {
+            "compact_space_runs": None
+        }
+    }
+    assert process_content(text, options) == "a  b"
+
+def test_validate_glob_pattern_mismatched_brackets(caplog):
+    with caplog.at_level(logging.WARNING):
+        validate_glob_pattern("file[a-z.txt", context="test")
+    assert "mismatched brackets" in caplog.text
+
+def test_validate_compact_whitespace_groups_not_dict(tmp_path):
+    """Ensure InvalidConfigError is raised if compact_whitespace_groups is not a dictionary."""
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "processing": {
+                "compact_whitespace_groups": "not_a_dict"
+            }
+        }
+    )
+    with pytest.raises(InvalidConfigError, match="'processing.compact_whitespace_groups' must be a dictionary"):
+        load_and_validate_config(config_path)
+
+def test_validate_compact_whitespace_groups_unknown_key(tmp_path, caplog):
+    """Ensure a warning is logged for unknown keys in compact_whitespace_groups."""
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "processing": {
+                "compact_whitespace_groups": {
+                    "unknown_group": True
+                }
+            }
+        }
+    )
+    with caplog.at_level(logging.WARNING):
+        load_and_validate_config(config_path)
+
+    assert "Unknown compact_whitespace_groups entry 'unknown_group'" in caplog.text
+
+def test_validate_compact_whitespace_groups_invalid_value(tmp_path):
+    """Ensure InvalidConfigError is raised for non-boolean/non-null values in compact_whitespace_groups."""
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "processing": {
+                "compact_whitespace_groups": {
+                    "spaces_to_tabs": "invalid_value"
+                }
+            }
+        }
+    )
+    with pytest.raises(InvalidConfigError, match="Values in 'processing.compact_whitespace_groups' must be true, false, or null"):
+        load_and_validate_config(config_path)
+
+def test_apply_line_regex_replacements_block_at_eof():
+    """Ensure that a matching block at the very end of the string is correctly replaced."""
+    text = "line1\nmatch\nmatch"
+    rules = [{"pattern": "^match$", "replacement": "replaced"}]
+
+    # The block "match\nmatch" is at the end of the input.
+    # The function should detect the end of the block at EOF and append the replacement.
+    result = apply_line_regex_replacements(text, rules)
+    assert result == "line1\nreplaced"
+
+def test_validate_regex_replacements_invalid_regex(tmp_path):
+    """Ensure InvalidConfigError is raised for invalid regex in regex_replacements."""
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "processing": {
+                "regex_replacements": [
+                    {"pattern": "[invalid_regex", "replacement": "test"}
+                ]
+            }
+        }
+    )
+    with pytest.raises(InvalidConfigError, match="Invalid regex pattern in processing.regex_replacements\\[0\\]"):
+        load_and_validate_config(config_path)
+
+def test_validate_line_regex_replacements_invalid_regex(tmp_path):
+    """Ensure InvalidConfigError is raised for invalid regex in line_regex_replacements."""
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "processing": {
+                "line_regex_replacements": [
+                    {"pattern": "(unclosed group", "replacement": "test"}
+                ]
+            }
+        }
+    )
+    with pytest.raises(InvalidConfigError, match="Invalid regex pattern in processing.line_regex_replacements\\[0\\]"):
+        load_and_validate_config(config_path)
+
+def test_validate_output_format_invalid(tmp_path):
+    """Ensure InvalidConfigError is raised for an unsupported output format."""
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "output": {
+                "format": "invalid_format"
+            }
+        }
+    )
+    with pytest.raises(InvalidConfigError, match="'output.format' must be one of: text, json, jsonl, markdown, xml"):
+        load_and_validate_config(config_path)
+
+def test_validate_processing_compact_whitespace_non_bool(tmp_path):
+    """Ensure InvalidConfigError is raised if processing.compact_whitespace is not a boolean."""
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "processing": {
+                "compact_whitespace": "not_a_bool"
+            }
+        }
+    )
+    with pytest.raises(InvalidConfigError, match="'processing.compact_whitespace' must be true or false"):
+        load_and_validate_config(config_path)
+
+def test_validate_processing_apply_in_place_non_bool(tmp_path):
+    """Ensure InvalidConfigError is raised if processing.apply_in_place is not a boolean."""
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "processing": {
+                "apply_in_place": "not_a_bool"
+            }
+        }
+    )
+    with pytest.raises(InvalidConfigError, match="'processing.apply_in_place' must be true or false"):
+        load_and_validate_config(config_path)
+
+def test_validate_output_sort_by_invalid(tmp_path):
+    """Ensure InvalidConfigError is raised for an unsupported sort_by value."""
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "output": {
+                "sort_by": "invalid_sort"
+            }
+        }
+    )
+    with pytest.raises(InvalidConfigError, match="'output.sort_by' must be one of: name, size, modified, tokens, depth"):
+        load_and_validate_config(config_path)
+
+def test_validate_output_sort_reverse_non_bool(tmp_path):
+    """Ensure InvalidConfigError is raised if output.sort_reverse is not a boolean."""
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "output": {
+                "sort_reverse": "not_a_bool"
+            }
+        }
+    )
+    with pytest.raises(InvalidConfigError, match="'output.sort_reverse' must be true or false"):
+        load_and_validate_config(config_path)
+
+def test_validate_filters_max_files_invalid(tmp_path):
+    """Ensure InvalidConfigError is raised if filters.max_files is invalid."""
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "filters": {
+                "max_files": -1
+            }
+        }
+    )
+    with pytest.raises(InvalidConfigError, match="filters.max_files must be 0 or more"):
+        load_and_validate_config(config_path)
+
+    config_path = _write_config(
+        tmp_path,
+        {
+            "search": {"root_folders": ["."]},
+            "filters": {
+                "max_files": "not_an_int"
+            }
+        }
+    )
+    with pytest.raises(InvalidConfigError, match="filters.max_files must be 0 or more"):
+        load_and_validate_config(config_path)
+
+def test_validate_config_nested_not_dict(tmp_path):
+    """Ensure InvalidConfigError is raised if a required nested section is not a dictionary."""
+    from utils import validate_config
+    config = {"search": "not_a_dict"}
+    with pytest.raises(InvalidConfigError, match="'search' section must be a dictionary with keys: root_folders"):
+        validate_config(config, nested_required={"search": ["root_folders"]})
+
+def test_validate_config_missing_required_keys():
+    config = {"key1": "val1"}
+    required_keys = ["key1", "key2"]
+    with pytest.raises(InvalidConfigError, match="Config is missing required keys: key2"):
+        validate_config(config, required_keys=required_keys)
+
+def test_validate_config_output_not_dict():
+    config = {"output": "not_a_dict", "search": {"root_folders": ["."]}}
+    validate_config(config)
+
+def test_validate_config_search_not_dict():
+    config = {"pairing": {"enabled": True}, "search": None}
+    validate_config(config)
+    assert isinstance(config["search"], dict)
+
+def test_validate_pairing_section_search_not_dict():
+    config = {"pairing": {"enabled": True}, "search": None}
+    _validate_pairing_section(config)
+    assert isinstance(config["search"], dict)
+
+def test_validate_output_table_of_contents_not_bool():
+    config = {
+        "output": {"table_of_contents": "not_a_bool"},
+        "search": {"root_folders": ["."]}
+    }
+    with pytest.raises(InvalidConfigError, match="'output.table_of_contents' must be true or false"):
+        validate_config(config)
+
+def test_validate_config_deprecated_in_place_groups():
+    config = {
+        "processing": {"in_place_groups": ["something"]},
+        "search": {"root_folders": ["."]}
+    }
+    with pytest.raises(InvalidConfigError, match="'processing.in_place_groups' is no longer used"):
+        validate_config(config)
+
+def test_validate_filters_max_total_tokens_invalid():
+    config = {
+        "filters": {"max_total_tokens": -1},
+        "search": {"root_folders": ["."]}
+    }
+    with pytest.raises(InvalidConfigError, match="filters.max_total_tokens must be 0 or more"):
+        validate_config(config)
+
+def test_validate_filters_search_not_dict():
+    config = {
+        "filters": {"inclusion_groups": {"test": {"filenames": ["*.py"]}}},
+        "search": None
+    }
+    validate_config(config)
+    assert isinstance(config["search"], dict)
+
+def test_load_yaml_config_empty(tmp_path):
+    empty_file = tmp_path / "empty.yml"
+    empty_file.write_text("", encoding="utf-8")
+    with pytest.raises(InvalidConfigError, match="Configuration file is empty or invalid"):
+        load_yaml_config(empty_file)
+
+def test_compact_whitespace_group_none():
+    text = "    "
+    result = compact_whitespace(text, groups={"spaces_to_tabs": None, "trim_trailing_whitespace": False})
+    assert result == "\t"
+
+def test_validate_pairing_section_conflict():
+    config = {
+        "pairing": {"enabled": True},
+        "search": {"root_folders": ["."], "allowed_extensions": [".txt"]}
+    }
+    with pytest.raises(InvalidConfigError, match="'allowed_extensions' cannot be used when pairing is enabled"):
+        validate_config(config)

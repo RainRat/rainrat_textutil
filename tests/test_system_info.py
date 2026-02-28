@@ -1,6 +1,7 @@
 import sys
 import subprocess
 from pathlib import Path
+from unittest.mock import patch, MagicMock
 
 def test_system_info_flag():
     """Verify that --system-info prints environment details and exits successfully."""
@@ -39,3 +40,15 @@ def test_system_info_shortcut_not_exists():
     assert "--system-info" in result.stdout
     # Check that it doesn't have a short flag like -S or something (unless we added one)
     # We didn't add a short flag.
+
+def test_print_system_info_with_and_without_optional_dependencies(capsys):
+    from sourcecombine import print_system_info
+    with patch("importlib.util.find_spec", side_effect=lambda name: MagicMock() if name == "tiktoken" else None):
+        print_system_info()
+
+    captured = capsys.readouterr()
+    assert "SourceCombine System Information" in captured.out
+    assert "tiktoken" in captured.out
+    assert "Installed" in captured.out
+    assert "pyperclip" in captured.out
+    assert "Not found" in captured.out

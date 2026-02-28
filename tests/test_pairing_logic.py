@@ -183,3 +183,12 @@ def test_process_paired_files_writes_outputs(tmp_path):
     output_file = out_folder / "src/example.cpp.hpp.out"
     assert output_file.exists()
     assert output_file.read_text(encoding="utf-8") == "srchdr"
+
+def test_pair_files_unrooted_path_value_error_branch():
+    from pathlib import Path
+    from sourcecombine import _pair_files
+    root_path = Path("/root")
+    filtered_paths = [Path("/other/file.cpp")]
+
+    result = _pair_files(filtered_paths, (), (), False, root_path=root_path)
+    assert result == {}

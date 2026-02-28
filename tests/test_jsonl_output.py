@@ -83,3 +83,22 @@ def test_format_override_auto_detection(tmp_path, monkeypatch):
     assert content.startswith('[')
     data = json.loads(content)
     assert data[0]['path'] == "test.txt"
+
+def test_jsonl_max_size_placeholder(tmp_path):
+    # Gap: sourcecombine.py:924
+    (tmp_path / "large.txt").write_text("very large content")
+
+    config = DEFAULT_CONFIG.copy()
+    config['search'] = {'root_folders': [str(tmp_path)]}
+    config['filters'] = {'max_size_bytes': 5} # "very large content" is more than 5 bytes
+    config['output'] = {'max_size_placeholder': "SKIPPED: {{FILENAME}}"}
+
+    output_path = tmp_path / "output.jsonl"
+    find_and_combine_files(config, str(output_path), output_format='jsonl')
+
+    content = output_path.read_text()
+    # Each entry in JSONL should end with a newline
+    assert content.endswith('\n')
+    data = json.loads(content.strip())
+    assert data['path'] == "large.txt"
+    assert data['content'] == "SKIPPED: large.txt"

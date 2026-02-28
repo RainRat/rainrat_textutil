@@ -6,6 +6,7 @@ import sys
 import subprocess
 import types
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
@@ -24,8 +25,11 @@ from sourcecombine import (
     _pair_files,
     _process_paired_files,
     _progress_enabled,
+    _update_file_stats,
+    _group_paths_by_stem_suffix,
+    _get_rel_path,
 )
-from utils import compact_whitespace
+from utils import compact_whitespace, DEFAULT_CONFIG
 
 
 def test_progress_enabled_behavior(monkeypatch, caplog):
@@ -705,3 +709,255 @@ def test_write_max_size_placeholder_edge_cases(tmp_path, caplog):
     tokens, approx, lines = processor.write_max_size_placeholder(tmp_path / "large.txt", tmp_path, None)
     assert tokens == 0
     assert approx is True
+
+def test_collect_file_paths_not_found(caplog):
+    """Cover sourcecombine.py: collect_file_paths when folder is not found."""
+    import sourcecombine
+    import logging
+    with caplog.at_level(logging.WARNING):
+        paths, root, excluded = sourcecombine.collect_file_paths("non_existent_folder", recursive=True, exclude_folders=[])
+    assert paths == []
+    assert "not found" in caplog.text
+
+def test_collect_file_paths_os_error_initial(tmp_path, caplog):
+    """Cover sourcecombine.py: collect_file_paths when root_path.is_dir() raises OSError."""
+    import sourcecombine
+    import logging
+    from unittest.mock import patch
+    with patch("pathlib.Path.is_dir", side_effect=OSError("Access denied")):
+        with caplog.at_level(logging.WARNING):
+            paths, root, excluded = sourcecombine.collect_file_paths(str(tmp_path), recursive=True, exclude_folders=[])
+    assert paths == []
+    assert "Could not access" in caplog.text
+
+def test_render_template_escaping_coverage():
+    """Cover sourcecombine.py: _render_template with escape_func."""
+    from pathlib import Path
+    from sourcecombine import _render_template
+
+    rel_path = Path("src/a & b.txt")
+    template = "File: {{FILENAME}}"
+
+    def mock_escape(s):
+        return s.replace("&", "&amp;")
+
+    rendered = _render_template(template, rel_path, escape_func=mock_escape)
+    assert rendered == "File: src/a &amp; b.txt"
+
+def test_should_include_excluded_reason_coverage():
+    """Cover sourcecombine.py line 272 and 278: return (False, 'excluded') for both filename and folder."""
+    from pathlib import Path
+    from sourcecombine import should_include
+
+    # Filename exclusion
+    filter_opts = {'exclusions': {'filenames': ['*.log']}}
+    search_opts = {}
+    rel_path = Path("test.log")
+    include, reason = should_include(None, rel_path, filter_opts, search_opts, return_reason=True)
+    assert include is False
+    assert reason == 'excluded'
+
+    # Folder exclusion
+    filter_opts = {'exclusions': {'folders': ['dist']}}
+    rel_path = Path("dist/app.py")
+    include, reason = should_include(None, rel_path, filter_opts, search_opts, return_reason=True)
+    assert include is False
+    assert reason == 'excluded'
+
+def test_xml_escape_empty_and_none():
+    from sourcecombine import xml_escape
+    assert xml_escape("") == ""
+    assert xml_escape(None) == ""
+
+def test_cli_log_formatter_exc_and_stack():
+    import logging
+    import sys
+    from sourcecombine import CLILogFormatter
+    formatter = CLILogFormatter()
+
+    try:
+        raise ValueError("test exception")
+    except ValueError:
+        exc_info = sys.exc_info()
+
+    record = logging.LogRecord(
+        name="test", level=logging.ERROR, pathname="test.py", lineno=1,
+        msg="Error message", args=(), exc_info=exc_info
+    )
+    formatted = formatter.format(record)
+    assert "ValueError: test exception" in formatted
+
+    record = logging.LogRecord(
+        name="test", level=logging.ERROR, pathname="test.py", lineno=1,
+        msg="Error message", args=(), exc_info=None
+    )
+    record.stack_info = "Stack trace info"
+    formatted = formatter.format(record)
+    assert "Stack trace info" in formatted
+
+def test_get_rel_path_fallback():
+    p = Path("/outside/file.txt")
+    root = Path("/app/project")
+    assert _get_rel_path(p, root) == p
+
+def test_find_and_combine_with_explicit_dir(tmp_path):
+    tmp_dir = tmp_path / "explicit_dir"
+    tmp_dir.mkdir()
+
+    config = {
+        "search": {"root_folders": [str(tmp_path)], "recursive": True},
+        "output": {"file": str(tmp_path / "out.txt")}
+    }
+
+    stats = find_and_combine_files(
+        config,
+        output_path=str(tmp_path / "out.txt"),
+        explicit_files=[tmp_dir]
+    )
+
+    assert stats['total_files'] == 0
+
+def test_collect_file_paths_file(tmp_path):
+    tmp_file = tmp_path / "test.txt"
+    tmp_file.write_text("content", encoding="utf-8")
+
+    progress = MagicMock()
+    paths, root, excluded = collect_file_paths(
+        str(tmp_file), recursive=True, exclude_folders=[], progress=progress
+    )
+
+    assert paths == [tmp_file]
+    assert root == tmp_path
+    progress.update.assert_called_once_with(1)
+
+def test_collect_file_paths_oserror_it(tmp_path):
+    root = tmp_path / "restricted"
+    root.mkdir()
+
+    with patch('pathlib.Path.iterdir', side_effect=OSError("Access denied")):
+        paths, root_out, excluded = collect_file_paths(
+            str(root), recursive=False, exclude_folders=[]
+        )
+
+    assert paths == []
+    assert excluded == 0
+
+def test_update_file_stats_oserror():
+    stats = {
+        'total_files': 0,
+        'total_size_bytes': 0,
+        'files_by_extension': {}
+    }
+    file_path = MagicMock(spec=Path)
+    file_path.stat.side_effect = OSError("Permission denied")
+    file_path.suffix = ".txt"
+
+    _update_file_stats(stats, file_path)
+
+    assert stats['total_files'] == 1
+    assert stats['total_size_bytes'] == 0
+    assert stats['files_by_extension'][".txt"] == 1
+
+def test_group_paths_by_stem_suffix_not_relative():
+    root_path = Path("/app/project")
+    file_path = Path("/other/outside.txt")
+
+    grouped = _group_paths_by_stem_suffix([file_path], root_path=root_path)
+
+    expected_stem = Path("/other/outside")
+    assert expected_stem in grouped
+    assert grouped[expected_stem][".txt"] == [file_path]
+
+def test_sort_by_tokens_with_size_exclusion_placeholder(tmp_path):
+    root = tmp_path / "project"
+    root.mkdir()
+    (root / "small.txt").write_text("small")
+    (root / "large.txt").write_text("large content" * 10)
+
+    out_file = tmp_path / "out1.txt"
+
+    config = {
+        "search": {"root_folders": [str(root)]},
+        "filters": {"max_size_bytes": 10},
+        "output": {
+            "file": str(out_file),
+            "sort_by": "tokens",
+            "max_size_placeholder": "Too big: {{FILENAME}}"
+        }
+    }
+
+    stats = find_and_combine_files(config, output_path=str(out_file))
+    assert stats['total_files'] == 2
+
+def test_integration_find_and_combine_files_estimates_tokens(tmp_path, monkeypatch):
+    """Verify that find_and_combine_files correctly aggregates token counts in stats."""
+    import utils
+    # Setup files
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "file1.txt").write_text("1234", encoding="utf-8") # 4 chars -> 1 token (approx)
+    (root / "file2.txt").write_text("5678", encoding="utf-8") # 4 chars -> 1 token (approx)
+
+    # Force fallback mode so we have deterministic counts
+    monkeypatch.setattr(utils, "tiktoken", None)
+
+    config = {
+        "search": {"root_folders": [str(root)]},
+        "output": {
+            "file": str(tmp_path / "out.txt"),
+            "header_template": "",
+            "footer_template": "",
+        }
+    }
+
+    stats = find_and_combine_files(
+        config,
+        output_path=str(tmp_path / "out.txt"),
+        estimate_tokens=True
+    )
+
+    # 1 token per file * 2 files = 2 tokens
+    assert stats['total_tokens'] == 2
+    assert stats['token_count_is_approx'] is True
+    assert stats['total_files'] == 2
+
+def test_token_limit_enforcement(tmp_path, monkeypatch):
+    """Verify that the token limit correctly truncates the file list."""
+    import utils
+    root = tmp_path / "root"
+    root.mkdir()
+    # 1 token approx = 4 chars
+    (root / "file1.txt").write_text("1234", encoding="utf-8") # 1 token
+    (root / "file2.txt").write_text("5678", encoding="utf-8") # 1 token
+    (root / "file3.txt").write_text("9012", encoding="utf-8") # 1 token
+
+    # Force fallback mode for deterministic counts
+    monkeypatch.setattr(utils, "tiktoken", None)
+    monkeypatch.chdir(tmp_path)
+
+    out_file = tmp_path / "out.txt"
+    config = {
+        "search": {"root_folders": [str(root)], "recursive": False},
+        "filters": {"max_total_tokens": 2},
+        "output": {
+            "file": str(out_file),
+            "header_template": None,
+            "footer_template": None
+        }
+    }
+
+    explicit = [tmp_path / "root/file1.txt", tmp_path / "root/file2.txt", tmp_path / "root/file3.txt"]
+
+    stats = find_and_combine_files(
+        config,
+        output_path=str(out_file),
+        explicit_files=explicit
+    )
+
+    assert stats['total_files'] == 2
+    assert stats['token_limit_reached'] is True
+
+    content = out_file.read_text(encoding="utf-8")
+    assert "1234" in content
+    assert "5678" in content
+    assert "9012" not in content

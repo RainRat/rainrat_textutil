@@ -421,3 +421,56 @@ def test_extract_respects_binary_filter(tmp_path):
     assert not (output_dir / "binary.bin").exists()
     assert stats['total_files'] == 1
     assert stats['filter_reasons']['binary'] == 1
+
+def test_extract_files_empty_content(caplog):
+    """Cover sourcecombine.py: extract_files with empty content."""
+    import sourcecombine
+    with caplog.at_level(logging.ERROR):
+        with pytest.raises(SystemExit) as excinfo:
+            sourcecombine.extract_files("", "out_folder")
+    assert excinfo.value.code == 1
+    assert "Input content is empty" in caplog.text
+
+def test_cli_extract_clipboard_import_error_coverage(monkeypatch, caplog):
+    """Cover sourcecombine.py lines 1998-2000: pyperclip ImportError."""
+    import sourcecombine
+    with patch.dict(sys.modules, {'pyperclip': None}):
+        monkeypatch.setattr(sys, 'argv', ['sourcecombine.py', '--extract', '--clipboard'])
+        with pytest.raises(SystemExit) as excinfo:
+            sourcecombine.main()
+    assert excinfo.value.code == 1
+    assert "The 'pyperclip' software is required" in caplog.text
+
+def test_extract_jsonl_edge_cases(tmp_path):
+    from sourcecombine import extract_files
+    # 2432: empty line in JSONL
+    content_with_empty_line = '{"path": "a.txt", "content": "a"}\n\n{"path": "b.txt", "content": "b"}'
+    extract_dir = tmp_path / "extract1"
+    extract_files(content_with_empty_line, str(extract_dir), source_name="test1.jsonl")
+    assert (extract_dir / "a.txt").read_text() == "a"
+    assert (extract_dir / "b.txt").read_text() == "b"
+
+    # 2437-2438: invalid entry (not a dict with path/content)
+    # Now it skips malformed lines instead of aborting.
+    content_invalid_entry = '{"path": "a.txt", "content": "a"}\n{"not_path": "invalid"}\n{"path": "b.txt", "content": "b"}'
+    extract_dir = tmp_path / "extract2"
+    extract_files(content_invalid_entry, str(extract_dir), source_name="test2.jsonl")
+    assert (extract_dir / "a.txt").read_text() == "a"
+    assert (extract_dir / "b.txt").read_text() == "b"
+
+def test_extract_files_invalid_path_error_handling(caplog):
+    from sourcecombine import extract_files
+    caplog.set_level(logging.WARNING)
+    content = "--- test.txt ---\ncontent\n--- end test.txt ---"
+
+    original_resolve = Path.resolve
+
+    def side_effect(self, *args, **kwargs):
+        if str(self) == "out":
+            return original_resolve(self, *args, **kwargs)
+        raise ValueError("invalid path")
+
+    with patch("sourcecombine.Path.resolve", side_effect):
+        extract_files(content, Path("out"))
+
+    assert "Skipping invalid path" in caplog.text
