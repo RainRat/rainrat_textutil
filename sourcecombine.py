@@ -457,7 +457,7 @@ def should_include(
     return (True, None) if return_reason else True
 
 
-def collect_file_paths(root_folder, recursive, exclude_folders, progress=None):
+def collect_file_paths(root_folder, recursive, exclude_folders, progress=None, max_depth=0):
     """Return all paths in ``root_folder`` while skipping excluded folders.
 
     If ``root_folder`` is a file, it returns a list containing only that file.
@@ -501,6 +501,11 @@ def collect_file_paths(root_folder, recursive, exclude_folders, progress=None):
         try:
             for dirpath, dirnames, filenames in os.walk(root_path):
                 rel_dir = Path(dirpath).relative_to(root_path)
+                current_depth = len(rel_dir.parts)
+
+                if max_depth > 0 and current_depth >= max_depth:
+                    dirnames[:] = []
+                    continue
 
                 original_dir_count = len(dirnames)
                 dirnames[:] = [
@@ -1348,7 +1353,11 @@ def find_and_combine_files(
                 )
                 try:
                     paths, root, excluded = collect_file_paths(
-                        root_folder, recursive, exclude_folders, progress=finding_bar
+                        root_folder,
+                        recursive,
+                        exclude_folders,
+                        progress=finding_bar,
+                        max_depth=search_opts.get('max_depth', 0),
                     )
                 finally:
                     finding_bar.close()
@@ -2023,6 +2032,12 @@ def main():
         "-g",
         help="Include only files whose content matches this regular expression.",
     )
+    filtering_group.add_argument(
+        "--max-depth",
+        "-D",
+        type=int,
+        help="Limit folder scanning to this depth (0 for no limit).",
+    )
 
     # Output Options Group
     output_group = parser.add_argument_group("Output Options")
@@ -2385,6 +2400,11 @@ def main():
         if not isinstance(config.get('filters'), dict):
             config['filters'] = {}
         config['filters']['max_files'] = args.limit
+
+    if args.max_depth is not None:
+        if not isinstance(config.get('search'), dict):
+            config['search'] = {}
+        config['search']['max_depth'] = args.max_depth
 
     if args.grep:
         if not isinstance(config.get('filters'), dict):

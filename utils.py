@@ -30,6 +30,9 @@ DEFAULT_CONFIG = {
     'logging': {
         'level': 'INFO',
     },
+    'search': {
+        'max_depth': 0,
+    },
     'filters': {
         'skip_binary': False,
         'max_total_tokens': 0,
@@ -345,6 +348,20 @@ def _validate_glob_list(filenames, context_prefix):
             filenames[i] = sanitized
 
 
+def _validate_search_section(config):
+    """Validate the 'search' section of the configuration."""
+    search = config.get('search')
+    if not isinstance(search, dict):
+        return
+
+    max_depth = search.get('max_depth')
+    if max_depth is not None:
+        if not isinstance(max_depth, int) or max_depth < 0:
+            raise InvalidConfigError(
+                "search.max_depth must be 0 or more"
+            )
+
+
 def _validate_filters_section(config):
     """Validate the 'filters' section of the configuration."""
     filters = config.get('filters')
@@ -626,6 +643,7 @@ def validate_config(
                     f"'{key}' section is missing keys: {', '.join(missing_sub)}"
                 )
 
+    _validate_search_section(config)
     _validate_filters_section(config)
     _validate_processing_section(config, source=source)
     _validate_pairing_section(config)

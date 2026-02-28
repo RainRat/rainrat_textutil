@@ -101,6 +101,7 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 *   `--sort`: Sort files by `name`, `size`, `modified`, `tokens`, or `depth` before combining.
 *   `--reverse`: Reverse the sort order.
 *   `--limit` / `-L`: Stop processing after this many files.
+*   `--max-depth` / `-D`: Limit folder scanning to this depth (e.g., `-D 1` for root files only).
 *   `--max-tokens`: Stop adding files once this total token limit is reached. (Only works when combining many files into one).
 *   `--estimate-tokens` / `-e`: Calculate token counts without creating any files.
     *   *Note: Slower than a regular dry-run because it must read the file contents.*
