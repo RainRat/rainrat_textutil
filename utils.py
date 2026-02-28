@@ -483,7 +483,11 @@ def _validate_processing_section(config, *, source=None):
 
 def _validate_pairing_section(config):
     """Validate the 'pairing' section and its interaction with 'search'."""
-    pairing_conf = config.get('pairing', {}) or {}
+    pairing_conf = config.get('pairing')
+    if pairing_conf is not None and not isinstance(pairing_conf, dict):
+        return
+    if not pairing_conf:
+        pairing_conf = {}
     search_conf = config.get('search')
     if not isinstance(search_conf, dict):
         search_conf = {}
