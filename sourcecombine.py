@@ -197,6 +197,27 @@ def _get_rel_path(path, root_path):
         return path
 
 
+def _truncate_path(path: str, max_width: int) -> str:
+    """Truncate a path by removing characters from the middle.
+
+    This ensures that both the beginning of the path and the filename
+    remain visible when space is limited.
+    """
+    if len(path) <= max_width:
+        return path
+
+    # If the path is very short, just return it truncated
+    if max_width <= 10:
+        return path[:max_width-3] + "..."
+
+    # Determine how much to keep from the start and end
+    # We want to favor the end (filename) more
+    tail_len = min(len(path) // 2, max_width // 2)
+    head_len = max_width - tail_len - 3
+
+    return f"{path[:head_len]}...{path[-tail_len:]}"
+
+
 def _format_metadata_summary(meta: Mapping[str, Any]) -> str:
     """Return file or folder details in an easy-to-read format."""
     parts = []
@@ -2826,7 +2847,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     is_approx = stats.get('token_count_is_approx', False)
 
     if token_count > 0:
-        data_hint = f"{'~' if is_approx else ''}{token_count:,}"
+        data_hint = f"{'~' if is_approx else ''}{token_count:,} tokens"
     else:
         data_hint = total_size_str
 
@@ -2914,16 +2935,28 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
     # Largest Files
     if stats.get('top_files'):
+        # Determine available width for path truncation
+        term_width = 80
+        if sys.stderr.isatty():
+            try:
+                term_width = shutil.get_terminal_size((80, 20)).columns
+            except Exception:
+                pass
+
         # Fallback to sorting by size if no token counts are available
         has_tokens = any(f[0] > 0 for f in stats['top_files'])
         if has_tokens:
             print(f"\n  {C_BOLD}Largest Files (by tokens){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[0], x[2]))[:5]
             total_for_percent = stats.get('total_tokens', 0)
+            # Indent(4) + TokenCount(11) + Space(1) + Percent(8) + Space(2) + Size(12) + Space(2) = 40
+            path_width = max(30, term_width - 40)
         else:
             print(f"\n  {C_BOLD}Largest Files (by size){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[1], x[2]))[:5]
             total_for_percent = stats.get('total_size_bytes', 0)
+            # Indent(4) + Size(12) + Space(1) + Percent(8) + Space(2) = 27
+            path_width = max(30, term_width - 27)
 
         for tokens, f_size, path in top:
             val = tokens if has_tokens else f_size
@@ -2938,8 +2971,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 token_str = f"{tokens:,}"
 
             size_str = f"({utils.format_size(f_size)})"
-            # Truncate long paths
-            display_path = (path[:40] + '...') if len(path) > 43 else path
+            # Use smart middle-truncation for paths
+            display_path = _truncate_path(path, path_width)
+
             # Align token counts at 11, percentages at 8, and sizes at 12 to keep paths consistent
             if has_tokens:
                 print(f"    {C_CYAN}{token_str:>11} {percent_str}{C_RESET}  {C_DIM}{size_str:<12}{C_RESET}  {display_path}", file=sys.stderr)
