@@ -1927,8 +1927,8 @@ def main():
     parser = argparse.ArgumentParser(
         description=(
             "Combine many files into one file or into pairs. "
-            "This tool is helpful for giving better context to AI assistants, "
-            "saving code, or performing code reviews."
+            "Use this software to give better context to AI assistants, "
+            "save code, or perform code reviews."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=textwrap.dedent("""
@@ -1962,8 +1962,8 @@ def main():
         nargs="*",
         metavar="TARGET",
         help=(
-            "Folders, files, or a settings file to process. "
-            "If you provide a .yml or .yaml file first, the tool will use it for settings."
+            "Folders, files, or a settings file. "
+            "If the first target is a .yml or .yaml file, the software uses it for settings."
         ),
     )
 
@@ -2021,7 +2021,7 @@ def main():
     filtering_group.add_argument(
         "--grep",
         "-g",
-        help="Include only files whose content matches this regular expression.",
+        help="Include only files whose content matches this search pattern.",
     )
 
     # Output Options Group
@@ -2030,7 +2030,7 @@ def main():
         "--ai",
         "-a",
         action="store_true",
-        help="Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, and folder tree. Also copies to clipboard if no output is specified.",
+        help="Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, and folder tree. This also copies to your clipboard if you do not specify an output.",
     )
     output_group.add_argument(
         "--output",
@@ -2142,9 +2142,9 @@ def main():
         "--extract",
         action="store_true",
         help=(
-            "Recreate original files and folders from a combined JSON, XML, Markdown, or Text file. "
-            "You can read from a file, your terminal ('-'), or your clipboard. Filtering flags "
-            "(--include, --exclude-file, --exclude-folder) and preview flags "
+            "Recreate original files and folders from a combined JSON, JSONL, XML, Markdown, or Text file. "
+            "You can read from a file, your terminal ('-'), or your clipboard. Filtering options "
+            "(--include, --exclude-file, --exclude-folder) and preview options "
             "(--list-files, --tree) are supported."
         ),
     )
@@ -2164,7 +2164,7 @@ def main():
         "-v",
         "--verbose",
         action="store_true",
-        help="Display detailed status messages to help troubleshoot issues.",
+        help="Show detailed status messages to help troubleshoot issues.",
     )
 
     args = parser.parse_args()
