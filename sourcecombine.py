@@ -837,11 +837,13 @@ def _process_paired_files(
         if dry_run:
             logging.info("[PAIR %s] -> %s", stem, out_file)
             for path in paths:
-                rel_path = _get_rel_path(path, root_path)
-                logging.info("  - %s", rel_path)
+                logging.info("  - %s", _get_rel_path(path, root_path))
+
+            if not estimate_tokens:
                 if stats is not None:
-                    stats['top_files'].append((0, path.stat().st_size if path.exists() else 0, rel_path.as_posix()))
-            continue
+                    for path in paths:
+                        stats['top_files'].append((0, path.stat().st_size if path.exists() else 0, _get_rel_path(path, root_path).as_posix()))
+                continue
 
         if estimate_tokens:
             pair_out_ctx = _DevNull()
