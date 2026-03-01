@@ -1270,6 +1270,11 @@ def find_and_combine_files(
     if output_format in ('json', 'jsonl') and pairing_enabled:
         raise InvalidConfigError(f"You cannot use {output_format.upper()} format when pairing files.")
 
+    if not pairing_enabled and output_path and output_path != '-':
+        out_p = Path(output_path)
+        if out_p.is_dir():
+            raise InvalidConfigError(f"The output path '{output_path}' is an existing folder. Please specify a file name.")
+
     # Apply default Markdown templates if requested and not overridden
     if output_format == 'markdown':
         default_header = utils.DEFAULT_CONFIG['output']['header_template']
@@ -1325,6 +1330,8 @@ def find_and_combine_files(
     elif output_path == '-':
         outfile_ctx = nullcontext(sys.stdout)
     else:
+        # Automatically create parent folders for the output file.
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
         outfile_ctx = open(output_path, 'w', encoding='utf8', newline='')
 
     # We only want true dry-run behavior (skipping reading) if we are NOT estimating tokens.
@@ -2311,7 +2318,10 @@ def main():
             logging.error("Could not find the configuration file '%s'.", config_path)
             sys.exit(1)
         except InvalidConfigError as e:
-            logging.error("The configuration is not valid: %s", e)
+            if args.verbose:
+                logging.error("The configuration is not valid: %s", e, exc_info=True)
+            else:
+                logging.error("The configuration is not valid: %s", e)
             sys.exit(1)
 
     # Initialize with defaults if no config was loaded
@@ -2342,7 +2352,10 @@ def main():
         try:
             validate_config(config, nested_required={'search': ['root_folders']})
         except InvalidConfigError as e:
-            logging.error("The configuration is not valid: %s", e)
+            if args.verbose:
+                logging.error("The configuration is not valid: %s", e, exc_info=True)
+            else:
+                logging.error("The configuration is not valid: %s", e)
             sys.exit(1)
 
     # Re-configure level based on config, *unless* -v was used.
@@ -2442,7 +2455,10 @@ def main():
             if args.until:
                 filters['modified_until'] = utils.parse_time_value(args.until)
         except InvalidConfigError as e:
-            logging.error(e)
+            if args.verbose:
+                logging.error(e, exc_info=True)
+            else:
+                logging.error(e)
             sys.exit(1)
 
     if args.toc:
@@ -2620,7 +2636,10 @@ def main():
             explicit_files=explicit_files,
         )
     except InvalidConfigError as exc:
-        logging.error(exc, exc_info=True)
+        if args.verbose:
+            logging.error(exc, exc_info=True)
+        else:
+            logging.error(exc)
         sys.exit(1)
 
     if stats:
