@@ -97,21 +97,25 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 *   `--line-numbers` / `-n`: Add line numbers to the beginning of each line in the combined output.
 *   `--toc` / `-T`: Include a Table of Contents at the beginning of the output file. (Only works when combining many files into one).
 *   `--include-tree` / `-p`: Include a visual folder tree at the start of the output. (Only works when combining many files into one).
-*   `--compact` / `-C`: Compact and clean up whitespace in the combined output to save tokens.
-*   `--sort`: Sort files by `name`, `size`, `modified`, `tokens`, or `depth` before combining.
-*   `--reverse`: Reverse the sort order.
+*   `--compact` / `-C`: Clean up extra spaces and blank lines in the combined output to save tokens.
+*   `--sort` / `-s`: Sort files by `name`, `size`, `modified`, `tokens`, or `depth` before combining.
+*   `--reverse` / `-r`: Reverse the sort order.
 *   `--limit` / `-L`: Stop processing after this many files.
-*   `--max-depth` / `-D`: Limit folder scanning to this depth (e.g., `-D 1` for root files only).
-*   `--max-tokens`: Stop adding files once this total token limit is reached. (Only works when combining many files into one).
+*   `--since` / `-S`: Include files modified since this time (e.g., '1d', '2h', 'YYYY-MM-DD').
+*   `--until` / `-U`: Include files modified before this time.
+*   `--max-depth` / `-D`: Limit folder scanning to this depth (e.g., `-D 1` for root files only; 0 for no limit).
+*   `--max-tokens` / `-M`: Stop adding files once this total token limit is reached. (Only works when combining many files into one).
 *   `--estimate-tokens` / `-e`: Calculate token counts without creating any files.
     *   *Note: Slower than a regular dry-run because it must read the file contents.*
 *   `--list-files` / `-l`: Print a list of files that would be processed to your terminal and exit.
 *   `--tree` / `-t`: Show a visual folder tree of all included files and exit.
 *   `--files-from`: Read a list of files to process from a text file (or `-` for your terminal). Overrides normal folder scanning.
-*   `--extract`: Recreate files and folders from a combined JSON, XML, Markdown, or Text file.
+*   `--extract`: Recreate original files and folders from a combined JSON, JSONL, XML, Markdown, or Text file.
 *   `--init`: Generate a default configuration file (`sourcecombine.yml`) in the current folder.
+*   `--system-info`: Show details about your computer and the software you are using.
+*   `--version` / `-V`: Show the tool's version and exit.
 *   `--include` / `-i`: Include only files matching a specific pattern (e.g., `-i "*.py"`). Can be used many times.
-*   `--grep` / `-g`: Include only files whose content matches a regular expression (e.g., `-g "TODO"`).
+*   `--grep` / `-g`: Include only files whose content matches a search pattern (e.g., `-g "TODO"`).
 *   `--exclude-file` / `-x`: Exclude specific files (e.g., `-x "secret.txt"`). Can be used many times.
 *   `--exclude-folder` / `-X`: Exclude specific folders (e.g., `-X "build"`). Can be used many times.
 
@@ -174,6 +178,12 @@ Combine only Python and Markdown files from the `src/` folder:
 python sourcecombine.py src/ -i "*.py" -i "*.md"
 ```
 
+**Include only recently changed files:**
+Combine files in the `src/` folder that were modified in the last 24 hours:
+```bash
+python sourcecombine.py src/ --since 1d
+```
+
 **Find specific text in files:**
 Combine only files that contain the word "TODO":
 ```bash
@@ -187,10 +197,10 @@ python sourcecombine.py src/ --sort size --reverse
 ```
 
 **Extract files from a combined file:**
-Recreate your project from a JSON, XML, Markdown, or Text file. You can even
+Recreate original files and folders from a combined JSON, JSONL, XML, Markdown, or Text file. You can even
 extract directly from your clipboard or your terminal:
 ```bash
-# Extract from a JSON file
+# Extract from a JSON or JSONL file
 python sourcecombine.py --extract combined.json -o restored_project/
 
 # Extract directly from your clipboard
@@ -445,7 +455,7 @@ Using double quotes would require adding an extra backslash for each one (`"C:\\
 ## Troubleshooting
 
 **"Command not found" or "Module not found" errors:**
-Ensure you have activated your virtual environment (Step 3 in Installation) and installed the dependencies.
+Ensure you have activated your virtual environment (Step 3 in Installation) and installed the software.
 
 **Permission errors:**
 If you see permission errors, check that you have permission to read the files you are trying to combine and permission to write to the output location.
