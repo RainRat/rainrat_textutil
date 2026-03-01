@@ -68,7 +68,15 @@ def test_line_count_in_summary(capsys, tmp_path):
         'files_by_extension': {'.txt': 1}
     }
 
-    args = argparse.Namespace(dry_run=False, estimate_tokens=False, list_files=False, tree=False, max_depth=None)
+    args = argparse.Namespace(
+        dry_run=False,
+        estimate_tokens=False,
+        list_files=False,
+        tree=False,
+        max_depth=None,
+        min_size=None,
+        max_size=None
+    )
 
     _print_execution_summary(stats, args, pairing_enabled=False)
 

@@ -91,10 +91,13 @@ output:
 
 # --- File Filtering ---
 filters:
-  # Files smaller than this (bytes) are skipped.
+  # Include only files larger than this size.
+  # Supports human-readable strings like '10KB', '1.5MB', or raw bytes as an integer.
   min_size_bytes: 0
 
-  # Files larger than this (bytes) are skipped. Omit, set to null, or set to 0 for no limit (0 is treated as unlimited).
+  # Include only files smaller than this size.
+  # Supports human-readable strings like '10KB', '1.5MB', or raw bytes as an integer.
+  # Omit, set to null, or set to 0 for no limit (0 is treated as unlimited).
   max_size_bytes: 0
 
   # Stop adding files to the combined output once this total token limit is reached.
