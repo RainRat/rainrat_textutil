@@ -33,6 +33,8 @@ def test_summary_redesign_largest_files(monkeypatch, capsys):
     # Force NO_COLOR to avoid ANSI codes in test check
     monkeypatch.setenv("NO_COLOR", "1")
 
+    # Force extract=False for this test to match "Combined"
+    args.extract = False
     sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
 
     captured = capsys.readouterr()
@@ -75,6 +77,7 @@ def test_summary_printing(monkeypatch, capsys):
     args.estimate_tokens = False
     args.list_files = False
     args.tree = False
+    args.extract = False
 
     # Force NO_COLOR to avoid ANSI codes in test check
     monkeypatch.setenv("NO_COLOR", "1")
@@ -108,6 +111,7 @@ def test_summary_printing_dry_run(monkeypatch, capsys):
     args.estimate_tokens = False
     args.list_files = False
     args.tree = False
+    args.extract = False
 
     monkeypatch.setenv("NO_COLOR", "1")
 
@@ -136,6 +140,7 @@ def test_output_truncated_warning(capsys):
     args = MagicMock()
     args.list_files = False
     args.tree = False
+    args.extract = False
 
     with patch.dict(os.environ, {"NO_COLOR": "1"}):
         _print_execution_summary(stats, args, pairing_enabled=False)
@@ -158,6 +163,7 @@ def test_limit_bar_no_color(capsys):
     args = MagicMock()
     args.list_files = False
     args.tree = False
+    args.extract = False
 
     with patch.dict(os.environ, {"NO_COLOR": "1"}):
         _print_execution_summary(stats, args, pairing_enabled=False)
@@ -179,6 +185,7 @@ def test_summary_terminal_size_fallback(capsys):
     args = MagicMock()
     args.list_files = False
     args.tree = False
+    args.extract = False
 
     with patch('sys.stderr.isatty', return_value=True):
         with patch.dict(os.environ, {"NO_COLOR": "1"}):
