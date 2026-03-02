@@ -1978,10 +1978,10 @@ def main():
               # Combine files from a specific folder
               python sourcecombine.py src/
 
-              # Use a settings file
+              # Use a configuration file
               python sourcecombine.py my_config.yml
 
-              # Use settings but override the folders to search
+              # Use a configuration but override the folders to search
               python sourcecombine.py my_config.yml project_a/ project_b/
 
               # Copy the result to your clipboard
@@ -2001,8 +2001,8 @@ def main():
         nargs="*",
         metavar="TARGET",
         help=(
-            "Folders, files, or a settings file. "
-            "If the first target is a .yml or .yaml file, the software uses it for settings."
+            "Folders, files, or a configuration file. "
+            "If the first target is a .yml or .yaml file, the software uses it for its configuration."
         ),
     )
 
@@ -2014,7 +2014,7 @@ def main():
         dest="exclude_file",
         action="append",
         default=[],
-        help="Skip files that match this pattern (e.g., '*.log'). Use many times to skip more.",
+        help="Skip files that match this search pattern (for example, '*.log'). Repeat this option to skip more.",
     )
     filtering_group.add_argument(
         "--exclude-folder",
@@ -2022,32 +2022,32 @@ def main():
         dest="exclude_folder",
         action="append",
         default=[],
-        help="Skip folders that match this pattern (e.g., 'build'). Use many times to skip more.",
+        help="Skip folders that match this search pattern (for example, 'build'). Repeat this option to skip more.",
     )
     filtering_group.add_argument(
         "--include",
         "-i",
         action="append",
         default=[],
-        help="Include only files matching this pattern (like '*.py'). You can use this flag many times.",
+        help="Include only files matching this search pattern (for example, '*.py'). Repeat this option to include more.",
     )
     filtering_group.add_argument(
         "--since",
         "-S",
-        help="Include files modified since this time (e.g., '1d', '2h', 'YYYY-MM-DD').",
+        help="Include files modified since this time (for example, '1d', '2h', 'YYYY-MM-DD').",
     )
     filtering_group.add_argument(
         "--until",
         "-U",
-        help="Include files modified before this time (e.g., '1d', '2h', 'YYYY-MM-DD').",
+        help="Include files modified before this time (for example, '1d', '2h', 'YYYY-MM-DD').",
     )
     filtering_group.add_argument(
         "--min-size",
-        help="Include only files larger than this size (e.g., '10KB', '1MB').",
+        help="Include only files larger than this size (for example, '10KB', '1MB').",
     )
     filtering_group.add_argument(
         "--max-size",
-        help="Include only files smaller than this size (e.g., '10KB', '1MB').",
+        help="Include only files smaller than this size (for example, '10KB', '1MB').",
     )
     filtering_group.add_argument(
         "--limit",
