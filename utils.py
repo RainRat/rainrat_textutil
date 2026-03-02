@@ -36,6 +36,7 @@ DEFAULT_CONFIG = {
     'filters': {
         'skip_binary': False,
         'max_total_tokens': 0,
+        'max_total_size_bytes': 0,
         'max_files': 0,
         'modified_since': 0,
         'modified_until': 0,
@@ -387,6 +388,13 @@ def _validate_filters_section(config):
         if not isinstance(max_total_tokens, int) or max_total_tokens < 0:
             raise InvalidConfigError(
                 "filters.max_total_tokens must be 0 or more"
+            )
+
+    max_total_size = filters.get('max_total_size_bytes')
+    if max_total_size is not None:
+        if not isinstance(max_total_size, int) or max_total_size < 0:
+            raise InvalidConfigError(
+                "filters.max_total_size_bytes must be 0 or more"
             )
 
     max_files = filters.get('max_files')

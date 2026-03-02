@@ -104,6 +104,11 @@ filters:
   # (Only when combining many files into one). Omit or set to 0 for no limit.
   max_total_tokens: 0
 
+  # Stop adding files to the combined output once this total size limit is reached.
+  # Supports human-readable strings like '10KB', '1.5MB', or raw bytes as an integer.
+  # (Only when combining many files into one). Omit or set to 0 for no limit.
+  max_total_size_bytes: 0
+
   # Stop processing after this many files. Omit or set to 0 for no limit.
   max_files: 0
 
