@@ -104,10 +104,16 @@ filters:
   # Stop processing after this many files. Omit or set to 0 for no limit.
   max_files: 0
 
+  # Include files modified since this time (e.g., '1d', '2h', 'YYYY-MM-DD').
+  modified_since: 0
+
+  # Include files modified before this time.
+  modified_until: 0
+
   # If true, skip files that appear to contain binary data (e.g., executables, images).
   skip_binary: false
 
-  # Only include files whose content matches this regular expression.
+  # Only include files whose content matches this search pattern.
   grep: ""
 
   # --- Inclusion Groups ---
