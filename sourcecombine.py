@@ -2042,6 +2042,14 @@ def main():
         help="Include files modified before this time (e.g., '1d', '2h', 'YYYY-MM-DD').",
     )
     filtering_group.add_argument(
+        "--min-size",
+        help="Include only files larger than this size (e.g., '10KB', '1MB').",
+    )
+    filtering_group.add_argument(
+        "--max-size",
+        help="Include only files smaller than this size (e.g., '10KB', '1MB').",
+    )
+    filtering_group.add_argument(
         "--limit",
         "-L",
         type=int,
@@ -2461,6 +2469,19 @@ def main():
                 logging.error(e, exc_info=True)
             else:
                 logging.error(e)
+            sys.exit(1)
+
+    if args.min_size or args.max_size:
+        if not isinstance(config.get('filters'), dict):
+            config['filters'] = {}
+        filters = config['filters']
+        try:
+            if args.min_size:
+                filters['min_size_bytes'] = utils.parse_size_value(args.min_size)
+            if args.max_size:
+                filters['max_size_bytes'] = utils.parse_size_value(args.max_size)
+        except InvalidConfigError as e:
+            logging.error(e)
             sys.exit(1)
 
     if args.toc:

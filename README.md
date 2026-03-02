@@ -103,6 +103,8 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 *   `--limit` / `-L`: Stop processing after this many files.
 *   `--since` / `-S`: Include files modified since this time (e.g., '1d', '2h', 'YYYY-MM-DD').
 *   `--until` / `-U`: Include files modified before this time.
+*   `--min-size`: Include only files larger than this size (e.g., '10KB', '1MB').
+*   `--max-size`: Include only files smaller than this size (e.g., '10KB', '1MB').
 *   `--max-depth` / `-D`: Limit folder scanning to this depth (e.g., `-D 1` for root files only; 0 for no limit).
 *   `--max-tokens` / `-M`: Stop adding files once this total token limit is reached. (Only works when combining many files into one).
 *   `--estimate-tokens` / `-e`: Calculate token counts without creating any files.
@@ -194,6 +196,12 @@ python sourcecombine.py src/ --grep "TODO"
 Put the largest files first in the combined output:
 ```bash
 python sourcecombine.py src/ --sort size --reverse
+```
+
+**Filter by file size:**
+Include only files between 1 KB and 1 MB:
+```bash
+python sourcecombine.py src/ --min-size 1KB --max-size 1MB
 ```
 
 **Extract files from a combined file:**

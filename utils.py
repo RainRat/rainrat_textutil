@@ -910,3 +910,39 @@ def parse_time_value(value: str) -> float:
     raise InvalidConfigError(
         f"Invalid time value: '{value}'. Use '1h', '2d', 'YYYY-MM-DD', or seconds."
     )
+
+
+def parse_size_value(value: str) -> int:
+    """Convert a human-readable size like '10KB' or '1.5MB' into bytes.
+
+    Supports units: B, K, KB, M, MB, G, GB, T, TB (case-insensitive).
+    """
+    if not value:
+        return 0
+
+    value = value.strip().upper()
+    match = re.match(r'^([\d.]+)\s*([A-Z]*)$', value)
+    if not match:
+        raise InvalidConfigError(f"Invalid size value: '{value}'. Use '10KB', '1.5MB', etc.")
+
+    number = float(match.group(1))
+    unit = match.group(2)
+
+    if not unit or unit == 'B':
+        return int(number)
+
+    units = {
+        'K': 1024,
+        'KB': 1024,
+        'M': 1024**2,
+        'MB': 1024**2,
+        'G': 1024**3,
+        'GB': 1024**3,
+        'T': 1024**4,
+        'TB': 1024**4,
+    }
+
+    if unit not in units:
+        raise InvalidConfigError(f"Unknown size unit: '{unit}' in '{value}'")
+
+    return int(number * units[unit])
