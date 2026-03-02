@@ -1248,8 +1248,10 @@ def find_and_combine_files(
         'total_lines': 0,
         'token_count_is_approx': False,
         'token_limit_reached': False,
+        'size_limit_reached': False,
         'top_files': [],
         'max_total_tokens': config.get('filters', {}).get('max_total_tokens', 0),
+        'max_total_size_bytes': config.get('filters', {}).get('max_total_size_bytes', 0),
         'filter_reasons': {},
     }
     search_opts = config.get('search', {})
@@ -1545,15 +1547,16 @@ def find_and_combine_files(
         sort_reverse = output_opts.get('sort_reverse', False)
 
         max_total_tokens = filter_opts.get('max_total_tokens', 0)
+        max_total_size = filter_opts.get('max_total_size_bytes', 0)
         needs_metadata = bool(output_opts.get('include_tree') or output_opts.get('table_of_contents'))
 
-        # We need metadata for sorting (except name), token limit, TOC/Tree, or global placeholders
+        # We need metadata for sorting (except name), token limit, size limit, TOC/Tree, or global placeholders
         global_placeholders = ["{{FILE_COUNT}}", "{{TOTAL_SIZE}}", "{{TOTAL_TOKENS}}", "{{TOTAL_LINES}}"]
         has_global_placeholders = (global_header and any(p in global_header for p in global_placeholders)) or \
                                   (global_footer and any(p in global_footer for p in global_placeholders))
 
-        needs_full_pass = (sort_by != 'name' or max_total_tokens > 0 or needs_metadata or
-                           has_global_placeholders or estimate_tokens)
+        needs_full_pass = (sort_by != 'name' or max_total_tokens > 0 or max_total_size > 0 or
+                           needs_metadata or has_global_placeholders or estimate_tokens)
 
         # Global Sort
         if pairing_enabled:
@@ -1630,25 +1633,32 @@ def find_and_combine_files(
             limited_items = []
             current_tokens = 0
             current_lines = 0
+            current_size = 0
             overhead_tokens = 0
             overhead_lines = 0
+            overhead_size = 0
             token_limit_reached = False
+            size_limit_reached = False
 
-            # Account for global header and footer tokens in the limit
+            # Account for global header and footer in the limit
             # We estimate these once without placeholders for initial limit.
             if global_header and output_format in ('text', 'markdown', 'xml'):
                 overhead_tokens += utils.estimate_tokens(global_header)[0]
                 overhead_lines += utils.count_lines(global_header)
+                overhead_size += len(global_header.encode('utf-8'))
             if global_footer and output_format in ('text', 'markdown', 'xml'):
                 overhead_tokens += utils.estimate_tokens(global_footer)[0]
                 overhead_lines += utils.count_lines(global_footer)
+                overhead_size += len(global_footer.encode('utf-8'))
 
-            # Estimate TOC and Tree tokens if enabled (rough estimation per file)
+            # Estimate TOC and Tree overhead if enabled
             if output_format in ('text', 'markdown'):
                 if output_opts.get('include_tree'):
                     overhead_tokens += len(all_single_mode_items) * 12
+                    overhead_size += len(all_single_mode_items) * 50
                 if output_opts.get('table_of_contents'):
                     overhead_tokens += len(all_single_mode_items) * 12
+                    overhead_size += len(all_single_mode_items) * 50
 
             # If sorting by tokens, we must calculate tokens for all files first
             if sort_by == 'tokens':
@@ -1685,6 +1695,7 @@ def find_and_combine_files(
                 file_path, root_path, is_excluded_by_size = item
                 content_tokens = 0
                 content_lines = 0
+                content_size = 0
                 processed = None
                 file_size = file_path.stat().st_size if file_path.exists() else 0
 
@@ -1696,6 +1707,7 @@ def find_and_combine_files(
                         rendered = _render_template(placeholder, rel_p, size=file_size)
                         content_tokens, is_approx = utils.estimate_tokens(rendered)
                         content_lines = utils.count_lines(rendered)
+                        content_size = len(rendered.encode('utf-8'))
                         if is_approx:
                             stats['token_count_is_approx'] = True
                 else:
@@ -1707,10 +1719,11 @@ def find_and_combine_files(
                         file_path.write_text(processed, encoding=encoding, newline='')
                     content_tokens, is_approx = utils.estimate_tokens(processed)
                     content_lines = utils.count_lines(processed)
+                    content_size = len(processed.encode('utf-8'))
                     if is_approx:
                         stats['token_count_is_approx'] = True
 
-                # Store content tokens and lines for TOC/Tree
+                # Store content details for TOC/Tree
                 file_metadata[file_path] = {
                     'size': file_size,
                     'tokens': content_tokens,
@@ -1728,10 +1741,13 @@ def find_and_combine_files(
                 footer_tokens = utils.estimate_tokens(rendered_f)[0]
                 header_lines = utils.count_lines(rendered_h)
                 footer_lines = utils.count_lines(rendered_f)
+                header_size = len(rendered_h.encode('utf-8'))
+                footer_size = len(rendered_f.encode('utf-8'))
 
-                # Total tokens for this file entry including its boundaries
+                # Total metrics for this file entry including its boundaries
                 entry_tokens = content_tokens + header_tokens + footer_tokens
                 entry_lines = content_lines + header_lines + footer_lines
+                entry_size = content_size + header_size + footer_size
 
                 if max_total_tokens > 0 and (current_tokens + overhead_tokens + entry_tokens) > max_total_tokens and (current_tokens + overhead_tokens) > 0:
                     token_limit_reached = True
@@ -1739,12 +1755,20 @@ def find_and_combine_files(
                     logging.debug("Token limit reached; skipping %d remaining files.", len(all_single_mode_items) - i)
                     break
 
+                if max_total_size > 0 and (current_size + overhead_size + entry_size) > max_total_size and (current_size + overhead_size) > 0:
+                    size_limit_reached = True
+                    stats['filter_reasons']['size_limit'] = len(all_single_mode_items) - i
+                    logging.debug("Total size limit reached; skipping %d remaining files.", len(all_single_mode_items) - i)
+                    break
+
                 current_tokens += entry_tokens
                 current_lines += entry_lines
+                current_size += entry_size
                 limited_items.append((file_path, root_path, is_excluded_by_size, processed))
 
             all_single_mode_items = limited_items
             stats['token_limit_reached'] = token_limit_reached
+            stats['size_limit_reached'] = size_limit_reached
 
             # Recalculate stats based on limited items
             stats['total_files'] = 0
@@ -2060,6 +2084,10 @@ def main():
         "-M",
         type=int,
         help="Stop adding files once this total token limit is reached. (Only when combining many files into one)",
+    )
+    filtering_group.add_argument(
+        "--max-total-size",
+        help="Stop adding files once this total size limit is reached (e.g., '5MB'). (Only when combining many files into one)",
     )
     filtering_group.add_argument(
         "--files-from",
@@ -2439,6 +2467,15 @@ def main():
         if not isinstance(config.get('filters'), dict):
             config['filters'] = {}
         config['filters']['max_total_tokens'] = args.max_tokens
+
+    if args.max_total_size is not None:
+        if not isinstance(config.get('filters'), dict):
+            config['filters'] = {}
+        try:
+            config['filters']['max_total_size_bytes'] = utils.parse_size_value(args.max_total_size)
+        except InvalidConfigError as e:
+            logging.error(e)
+            sys.exit(1)
 
     if args.limit is not None:
         if not isinstance(config.get('filters'), dict):
@@ -2935,6 +2972,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
     if stats.get('token_limit_reached'):
         print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to token limit.{C_RESET}", file=sys.stderr)
+    if stats.get('size_limit_reached'):
+        print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to total size limit.{C_RESET}", file=sys.stderr)
     if stats.get('limit_reached'):
         print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to file limit.{C_RESET}", file=sys.stderr)
 
@@ -2991,6 +3030,17 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             bar = f"[{'#' * filled}{'-' * (bar_len - filled)}]"
             bar_color = C_YELLOW if percent > 90 else C_GREEN
             print(f"    {C_BOLD}{'Token Limit Usage:':<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_CYAN}{percent:>6.1f}%{C_RESET}", file=sys.stderr)
+
+        # Total Size Limit Usage
+        max_total_size = stats.get('max_total_size_bytes', 0)
+        if max_total_size > 0:
+            percent = (total_size_bytes / max_total_size) * 100
+            # Create a 10-character ASCII bar
+            bar_len = 10
+            filled = min(bar_len, int((percent / 100) * bar_len))
+            bar = f"[{'#' * filled}{'-' * (bar_len - filled)}]"
+            bar_color = C_YELLOW if percent > 90 else C_GREEN
+            print(f"    {C_BOLD}{'Size Limit Usage:':<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_CYAN}{percent:>6.1f}%{C_RESET}", file=sys.stderr)
 
     if duration is not None:
         print(f"    {C_BOLD}{'Duration:':<{label_width}}{C_RESET}{C_CYAN}{duration:.2f}s{C_RESET}", file=sys.stderr)
