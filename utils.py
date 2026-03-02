@@ -352,7 +352,7 @@ def _validate_search_section(config):
     """Validate the 'search' section of the configuration."""
     search = config.get('search')
     if not isinstance(search, dict):
-        return
+        raise InvalidConfigError("'search' section must be a dictionary.")
 
     max_depth = search.get('max_depth')
     if max_depth is not None:
@@ -366,7 +366,7 @@ def _validate_filters_section(config):
     """Validate the 'filters' section of the configuration."""
     filters = config.get('filters')
     if not isinstance(filters, dict):
-        return
+        raise InvalidConfigError("'filters' section must be a dictionary.")
 
     min_size = filters.get('min_size_bytes')
     if min_size is not None:
@@ -452,7 +452,7 @@ def _validate_processing_section(config, *, source=None):
     """Validate the 'processing' section of the configuration."""
     processing_conf = config.get('processing')
     if not isinstance(processing_conf, dict):
-        return
+        raise InvalidConfigError("'processing' section must be a dictionary.")
 
     apply_in_place = processing_conf.get('apply_in_place')
     if apply_in_place is not None and not isinstance(apply_in_place, bool):
@@ -501,10 +501,9 @@ def _validate_processing_section(config, *, source=None):
 def _validate_pairing_section(config):
     """Validate the 'pairing' section and its interaction with 'search'."""
     pairing_conf = config.get('pairing')
-    if pairing_conf is not None and not isinstance(pairing_conf, dict):
-        return
-    if not pairing_conf:
-        pairing_conf = {}
+    if not isinstance(pairing_conf, dict):
+        raise InvalidConfigError("'pairing' section must be a dictionary.")
+
     search_conf = config.get('search')
     if not isinstance(search_conf, dict):
         search_conf = {}
@@ -535,7 +534,7 @@ def _validate_output_section(config):
 
     output_conf = config.get('output')
     if not isinstance(output_conf, dict):
-        return
+        raise InvalidConfigError("'output' section must be a dictionary.")
 
     string_fields = [
         'file',
@@ -625,13 +624,15 @@ def validate_config(
         def apply_defaults(cfg, defs):
             for key, value in defs.items():
                 if isinstance(value, dict):
-                    node = cfg.setdefault(key, {})
+                    if cfg.get(key) is None:
+                        cfg[key] = {}
+                    node = cfg[key]
                     if isinstance(node, dict):
                         apply_defaults(node, value)
-                else:
+                elif cfg.get(key) is None:
                     # Use deepcopy to prevent shared references to mutable defaults (lists/dicts)
                     # polluting the global DEFAULT_CONFIG when 'cfg' is modified later.
-                    cfg.setdefault(key, copy.deepcopy(value))
+                    cfg[key] = copy.deepcopy(value)
 
         apply_defaults(config, defaults)
 

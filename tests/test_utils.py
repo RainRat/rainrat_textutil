@@ -587,11 +587,13 @@ def test_validate_glob_list_none():
 
 def test_validate_filters_section_not_a_dict():
     config = {"filters": "not a dict"}
-    validate_config(config)
+    with pytest.raises(InvalidConfigError, match="'filters' section must be a dictionary."):
+        validate_config(config)
 
 def test_validate_processing_section_not_a_dict():
     config = {"processing": "not a dict"}
-    validate_config(config)
+    with pytest.raises(InvalidConfigError, match="'processing' section must be a dictionary."):
+        validate_config(config)
 
 def test_validate_processing_section_non_bool():
     config = {"processing": {"apply_in_place": "not a bool"}}
@@ -855,7 +857,8 @@ def test_validate_config_missing_required_keys():
 
 def test_validate_config_output_not_dict():
     config = {"output": "not_a_dict", "search": {"root_folders": ["."]}}
-    validate_config(config)
+    with pytest.raises(InvalidConfigError, match="'output' section must be a dictionary."):
+        validate_config(config)
 
 def test_validate_config_search_not_dict():
     config = {"pairing": {"enabled": True}, "search": None}

@@ -2378,8 +2378,6 @@ def main():
 
     # Inject CLI exclusions into config
     if args.exclude_file or args.exclude_folder:
-        if not isinstance(config.get('filters'), dict):
-            config['filters'] = {}
         filters = config['filters']
 
         if not isinstance(filters.get('exclusions'), dict):
@@ -2407,9 +2405,6 @@ def main():
 
     # Inject CLI inclusions into config
     if args.include:
-        # Ensure filters exists and is a dictionary
-        if not isinstance(config.get('filters'), dict):
-            config['filters'] = {}
         filters = config['filters']
 
         # Ensure inclusion_groups exists and is a dictionary
@@ -2436,28 +2431,18 @@ def main():
             output_conf['file'] = args.output
 
     if args.max_tokens is not None:
-        if not isinstance(config.get('filters'), dict):
-            config['filters'] = {}
         config['filters']['max_total_tokens'] = args.max_tokens
 
     if args.limit is not None:
-        if not isinstance(config.get('filters'), dict):
-            config['filters'] = {}
         config['filters']['max_files'] = args.limit
 
     if args.max_depth is not None:
-        if not isinstance(config.get('search'), dict):
-            config['search'] = {}
         config['search']['max_depth'] = args.max_depth
 
     if args.grep:
-        if not isinstance(config.get('filters'), dict):
-            config['filters'] = {}
         config['filters']['grep'] = args.grep
 
     if args.since or args.until:
-        if not isinstance(config.get('filters'), dict):
-            config['filters'] = {}
         filters = config['filters']
         try:
             if args.since:
@@ -2472,8 +2457,6 @@ def main():
             sys.exit(1)
 
     if args.min_size or args.max_size:
-        if not isinstance(config.get('filters'), dict):
-            config['filters'] = {}
         filters = config['filters']
         try:
             if args.min_size:
@@ -2494,8 +2477,6 @@ def main():
         output_conf['include_tree'] = True
 
     if args.compact:
-        if not isinstance(config.get('processing'), dict):
-            config['processing'] = {}
         config['processing']['compact_whitespace'] = True
 
     if args.sort:
