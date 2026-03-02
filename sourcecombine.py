@@ -2429,7 +2429,7 @@ def main():
     config['pairing'] = pairing_conf
     config['output'] = output_conf
 
-    if args.output:
+    if args.output and not args.extract:
         if pairing_conf.get('enabled'):
             output_conf['folder'] = args.output
         else:
@@ -2616,8 +2616,22 @@ def main():
             content, _ = read_file_best_effort(input_path)
             source_name = str(input_path)
         else:
-            logging.error("No input specified for extraction. Use a file path, '-' for your terminal, or --clipboard.")
-            sys.exit(1)
+            # Fallback: look for the default combined file
+            input_path = Path(output_path)
+            if not input_path.is_file():
+                # Try common format-specific defaults if the standard one doesn't exist
+                for alt in ['combined_files.md', 'combined_files.json', 'combined_files.xml', 'combined_files.jsonl']:
+                    if Path(alt).is_file():
+                        input_path = Path(alt)
+                        break
+
+            if input_path.is_file():
+                logging.info("No input specified for extraction. Using found file: %s", input_path)
+                content, _ = read_file_best_effort(input_path)
+                source_name = str(input_path)
+            else:
+                logging.error("No input specified for extraction. Use a file path, '-' for your terminal, or --clipboard.")
+                sys.exit(1)
 
         stats = extract_files(
             content,
@@ -2677,6 +2691,7 @@ def extract_files(content, output_folder, dry_run=False, source_name="archive", 
         'total_discovered': 0,
         'total_files': 0,
         'total_size_bytes': 0,
+        'total_lines': 0,
         'files_by_extension': {},
         'filter_reasons': {},
     }
@@ -2712,9 +2727,9 @@ def extract_files(content, output_folder, dry_run=False, source_name="archive", 
                 if isinstance(entry, dict) and 'path' in entry and 'content' in entry:
                     potential_files.append((entry['path'], entry['content']))
                 else:
-                    logging.warning("Skipping malformed JSONL line in %s: %s", source_name, line)
+                    logging.debug("Skipping malformed JSONL line in %s: %s", source_name, line)
             except (json.JSONDecodeError, TypeError):
-                logging.warning("Skipping invalid JSON line in %s: %s", source_name, line)
+                logging.debug("Skipping invalid JSON line in %s: %s", source_name, line)
         
         if potential_files:
             files_to_create = potential_files
@@ -2803,6 +2818,7 @@ def extract_files(content, output_folder, dry_run=False, source_name="archive", 
         ext = rel_path.suffix.lower() or '.no_extension'
         stats['files_by_extension'][ext] = stats['files_by_extension'].get(ext, 0) + 1
         stats['total_size_bytes'] += len(file_content.encode('utf-8'))
+        stats['total_lines'] += utils.count_lines(file_content)
 
     files_to_create = filtered_files
 
@@ -2820,7 +2836,15 @@ def extract_files(content, output_folder, dry_run=False, source_name="archive", 
 
     extracted_count = 0
     abs_output_folder = output_folder.resolve()
-    for rel_path_str, file_content in files_to_create:
+
+    extraction_bar = _progress_bar(
+        files_to_create,
+        desc="Extracting files",
+        unit="file",
+        enabled=_progress_enabled(dry_run)
+    )
+
+    for rel_path_str, file_content in extraction_bar:
         # Security check: prevent path traversal and absolute paths across platforms.
         try:
             # We use joinpath and resolve to catch traversal and absolute path attempts.
@@ -2927,7 +2951,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         title_color = C_CYAN
     else:
         file_word = "file" if total_included == 1 else "files"
-        summary_title = f"SUCCESS: Combined {total_included:,} {file_word} {destination_desc or ''}".strip()
+        action = "Extracted" if getattr(args, 'extract', False) else "Combined"
+        summary_title = f"SUCCESS: {action} {total_included:,} {file_word} {destination_desc or ''}".strip()
         title_color = C_GREEN
 
     # Header

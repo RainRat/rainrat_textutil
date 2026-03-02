@@ -342,8 +342,10 @@ def test_cli_extract_file_not_found(caplog, monkeypatch):
     assert excinfo.value.code == 1
     assert "Input file not found" in caplog.text
 
-def test_cli_extract_no_input(caplog, monkeypatch):
-    """Test extraction with no input specified."""
+def test_cli_extract_no_input(caplog, monkeypatch, tmp_path):
+    """Test extraction with no input specified, ensuring it falls back to combined_files.txt."""
+    # Ensure we are in an empty directory so there's no combined_files.txt
+    monkeypatch.chdir(tmp_path)
     monkeypatch.setattr('sys.argv', ['sourcecombine.py', '--extract'])
 
     with pytest.raises(SystemExit) as excinfo:
@@ -351,6 +353,16 @@ def test_cli_extract_no_input(caplog, monkeypatch):
 
     assert excinfo.value.code == 1
     assert "No input specified for extraction" in caplog.text
+
+    # Now create the default file and it should succeed
+    default_file = tmp_path / "combined_files.txt"
+    default_file.write_text("--- a.txt ---\ncontent\n--- end a.txt ---", encoding="utf-8")
+
+    with pytest.raises(SystemExit) as excinfo:
+        main()
+
+    assert excinfo.value.code == 0
+    assert "Using found file: combined_files.txt" in caplog.text
 
 def test_extract_write_failure(tmp_path, caplog):
     """Test handling of OSError during file write in extraction."""
