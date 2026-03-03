@@ -67,7 +67,7 @@ def test_grep_invalid_regex():
     from utils import validate_config, InvalidConfigError
     with pytest.raises(InvalidConfigError) as excinfo:
         validate_config(config)
-    assert "Invalid regex pattern in filters.grep" in str(excinfo.value)
+    assert "Invalid search pattern in filters.grep" in str(excinfo.value)
 
 def test_should_include_grep_empty_content_coverage():
     """Cover sourcecombine.py line 449: fallback to empty string when no content/path."""

@@ -396,13 +396,13 @@ processing:
 
 In-place updates are skipped automatically when `--dry-run` is used. Previous
 configurations that relied on `processing.in_place_groups` are no longer used in
-favor of the simpler true or false flag.
+favor of the simpler true or false option.
 
 ### Filtering and Exclusion Rules
 
-Use glob patterns in `filters.exclusions.filenames` to skip specific files.
+Use search patterns in `filters.exclusions.filenames` to skip specific files.
 Patterns can match an extension (`'*.bak'`), a complete filename (`'test.py'`),
-or a relative path glob (`'tests/*'`).
+or a relative path pattern (`'tests/*'`).
 
 Exclude entire folders with `filters.exclusions.folders`. Each pattern is
 checked against every folder name in the path, so a single entry like
@@ -432,7 +432,7 @@ Set `filters.skip_binary` to `true` to ignore files that look like binary data
 
 Enable selective opt-in filtering by configuring `filters.inclusion_groups`.
 Each group defines a set of filename patterns and can be toggled on or off via
-its `enabled` flag. When at least one group is enabled, only files matching the
+its `enabled` option. When at least one group is enabled, only files matching the
 enabled groups' patterns are included in the search results.
 
 ### Case-insensitive pattern matching

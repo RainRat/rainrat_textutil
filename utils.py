@@ -777,11 +777,11 @@ def add_line_numbers(text):
     return "\n".join(numbered)
 
 
-def validate_glob_pattern(pattern, *, context="glob pattern"):
-    """Warn about potentially problematic glob patterns."""
+def validate_glob_pattern(pattern, *, context="search pattern"):
+    """Warn about potentially problematic search patterns."""
     if not isinstance(pattern, str):
         raise InvalidConfigError(
-            f"Glob pattern in {context} must be a string, but got: {type(pattern).__name__}"
+            f"Search pattern in {context} must be text, but got: {type(pattern).__name__}"
         )
 
     normalized = pattern
@@ -789,14 +789,14 @@ def validate_glob_pattern(pattern, *, context="glob pattern"):
         normalized = pattern.replace('\\', '/')
         normalized = re.sub(r'/+', '/', normalized)
         logging.warning(
-            "Glob pattern in %s ('%s') uses backslashes; treating them as '/' for cross-platform matching.",
+            "Search pattern in %s ('%s') uses backslashes; treating them as '/' for cross-platform matching.",
             context,
             pattern,
         )
 
     if Path(normalized).is_absolute():
         logging.warning(
-            "Glob pattern in %s ('%s') looks like an absolute path. "
+            "Search pattern in %s ('%s') looks like an absolute path. "
             "Patterns are matched against relative paths and filenames. This may not work as expected.",
             context,
             pattern,
@@ -804,16 +804,16 @@ def validate_glob_pattern(pattern, *, context="glob pattern"):
 
     if '(' in normalized or ')' in normalized or '+' in normalized:
         logging.warning(
-            "Glob pattern in %s ('%s') contains characters that may be "
-            "interpreted as regular expression syntax, but this tool uses glob patterns. "
-            "Special glob characters are *, ?, [].",
+            "Search pattern in %s ('%s') contains characters that may be "
+            "interpreted as regular expression syntax, but this tool uses search patterns. "
+            "Special characters are *, ?, [].",
             context,
             pattern,
         )
 
     if normalized.count('[') != normalized.count(']'):
         logging.warning(
-            "Glob pattern in %s ('%s') has mismatched brackets '[' and ']'. "
+            "Search pattern in %s ('%s') has mismatched brackets '[' and ']'. "
             "This may cause unexpected matching behavior.",
             context,
             pattern,
@@ -822,7 +822,7 @@ def validate_glob_pattern(pattern, *, context="glob pattern"):
     return normalized
 
 
-def validate_regex_pattern(pattern, *, context="regex pattern", source=None):
+def validate_regex_pattern(pattern, *, context="search pattern", source=None):
     """Return a compiled regex after validating ``pattern``.
 
     Raises ``InvalidConfigError`` with a helpful message when ``pattern`` is
@@ -833,7 +833,7 @@ def validate_regex_pattern(pattern, *, context="regex pattern", source=None):
     try:
         return re.compile(pattern)
     except re.error as exc:
-        location = f"Invalid regex pattern in {context}"
+        location = f"Invalid search pattern in {context}"
         if source:
             location += f" (from '{source}')"
         raise InvalidConfigError(
