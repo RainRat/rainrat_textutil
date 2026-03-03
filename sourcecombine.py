@@ -2940,6 +2940,14 @@ def print_system_info():
 def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None, duration=None):
     """Print a summary of the totals to your terminal."""
 
+    # Determine available width for layout and truncation
+    term_width = 80
+    if sys.stderr.isatty():
+        try:
+            term_width = shutil.get_terminal_size((80, 20)).columns
+        except Exception:
+            pass
+
     total_included = stats.get('total_files', 0)
     total_discovered = stats.get('total_discovered', 0)
     total_filtered = max(0, total_discovered - total_included)
@@ -3053,14 +3061,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
     # Largest Files
     if stats.get('top_files'):
-        # Determine available width for path truncation
-        term_width = 80
-        if sys.stderr.isatty():
-            try:
-                term_width = shutil.get_terminal_size((80, 20)).columns
-            except Exception:
-                pass
-
         # Fallback to sorting by size if no token counts are available
         has_tokens = any(f[0] > 0 for f in stats['top_files'])
         if has_tokens:
@@ -3110,14 +3110,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         items = [f"{C_CYAN}{ext}: {c:>5}{C_RESET}" for (ext, _), c in zip(sorted_exts, formatted_counts)]
         raw_items = [f"{ext}: {c:>5}" for (ext, _), c in zip(sorted_exts, formatted_counts)]
         max_len = max(len(s) for s in raw_items) + 3
-
-        # Determine available width
-        term_width = 80
-        if sys.stderr.isatty():
-            try:
-                term_width = shutil.get_terminal_size((80, 20)).columns
-            except Exception:
-                pass
 
         # Indent is 4
         avail_width = max(40, term_width - 4)
