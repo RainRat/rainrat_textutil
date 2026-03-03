@@ -109,6 +109,10 @@ filters:
   # (Only when combining many files into one). Omit or set to 0 for no limit.
   max_total_size_bytes: 0
 
+  # Stop adding files to the combined output once this total line limit is reached.
+  # (Only when combining many files into one). Omit or set to 0 for no limit.
+  max_total_lines: 0
+
   # Stop processing after this many files. Omit or set to 0 for no limit.
   max_files: 0
 
