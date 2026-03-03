@@ -1314,7 +1314,7 @@ def find_and_combine_files(
 
     if not pairing_enabled and not dry_run and not estimate_tokens and not clipboard and not list_files and not tree_view and output_path is None:
         raise InvalidConfigError(
-            "You must set an output file in your configuration or use the --output flag."
+            "You must set an output file in your configuration or use the --output option."
         )
 
     abs_output_path = None
@@ -2434,7 +2434,7 @@ def main():
             filenames = exclusions['filenames']
             for pattern in args.exclude_file:
                 # Validate/sanitize the pattern
-                sanitized = utils.validate_glob_pattern(pattern, context="CLI --exclude-file")
+                sanitized = utils.validate_glob_pattern(pattern, context="--exclude-file")
                 filenames.append(sanitized)
             logging.debug("Added CLI file exclusions: %s", args.exclude_file)
 
@@ -2443,7 +2443,7 @@ def main():
                 exclusions['folders'] = []
             folders = exclusions['folders']
             for pattern in args.exclude_folder:
-                sanitized = utils.validate_glob_pattern(pattern, context="CLI --exclude-folder")
+                sanitized = utils.validate_glob_pattern(pattern, context="--exclude-folder")
                 folders.append(sanitized)
             logging.debug("Added CLI folder exclusions: %s", args.exclude_folder)
 
@@ -2459,7 +2459,7 @@ def main():
         # Create a unique group for CLI inclusions and enable it
         groups['_cli_includes'] = {
             'enabled': True,
-            'filenames': [utils.validate_glob_pattern(p, context="CLI --include") for p in args.include]
+            'filenames': [utils.validate_glob_pattern(p, context="--include") for p in args.include]
         }
         logging.debug("Added CLI file inclusions: %s", args.include)
 
@@ -2735,7 +2735,7 @@ def main():
         _print_execution_summary(stats, args, pairing_enabled, destination_desc, duration=duration, source_desc=source_desc)
 
 
-def extract_files(content, output_folder, dry_run=False, source_name="archive", config=None, list_files=False, tree_view=False, limit=0):
+def extract_files(content, output_folder, dry_run=False, source_name="combined file", config=None, list_files=False, tree_view=False, limit=0):
     """Recreate the original folder structure and files from a combined file content."""
     output_folder = Path(output_folder)
     stats = {

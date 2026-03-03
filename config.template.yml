@@ -60,12 +60,12 @@ output:
 
   # Template written before each file's content.
   # Placeholders: {{FILENAME}}, {{EXT}}, {{STEM}}, {{DIR}}, {{DIR_SLUG}}, {{SIZE}}, {{TOKENS}}, {{LINE_COUNT}}.
-  # Set to null or an empty string to omit the header.
+  # Set to null or an empty text to omit the header.
   header_template: "--- {{FILENAME}} ---\n"
 
   # Template written after each file's content.
   # Placeholders: Same as header_template.
-  # Set to null or an empty string to omit the footer/separator.
+  # Set to null or an empty text to omit the footer/separator.
   footer_template: "\n--- end {{FILENAME}} ---\n"
 
   # Template written at the very beginning of the combined output file.
@@ -79,7 +79,7 @@ output:
   global_footer_template: null
 
   # Optional placeholder to write when a file is skipped because it exceeds
-  # filters.max_size_bytes. The string may use placeholders like {{FILENAME}} and {{SIZE}}.
+  # filters.max_size_bytes. The text may use placeholders like {{FILENAME}} and {{SIZE}}.
   max_size_placeholder: null
 
   # Global sorting options for both single-file and pairing modes.
@@ -92,11 +92,11 @@ output:
 # --- File Filtering ---
 filters:
   # Include only files larger than this size.
-  # Supports human-readable strings like '10KB', '1.5MB', or raw bytes as an integer.
+  # Supports human-readable text like '10KB', '1.5MB', or raw bytes as an integer.
   min_size_bytes: 0
 
   # Include only files smaller than this size.
-  # Supports human-readable strings like '10KB', '1.5MB', or raw bytes as an integer.
+  # Supports human-readable text like '10KB', '1.5MB', or raw bytes as an integer.
   # Omit, set to null, or set to 0 for no limit (0 is treated as unlimited).
   max_size_bytes: 0
 
@@ -105,7 +105,7 @@ filters:
   max_total_tokens: 0
 
   # Stop adding files to the combined output once this total size limit is reached.
-  # Supports human-readable strings like '10KB', '1.5MB', or raw bytes as an integer.
+  # Supports human-readable text like '10KB', '1.5MB', or raw bytes as an integer.
   # (Only when combining many files into one). Omit or set to 0 for no limit.
   max_total_size_bytes: 0
 
@@ -129,8 +129,8 @@ filters:
   grep: ""
 
   # --- Inclusion Groups ---
-  # Enable specific groups to only include listed filenames or glob patterns.
-  # Mutually exclusive with ``search.allowed_extensions``; specify file types within the patterns instead.
+  # Enable specific groups to only include listed filenames or search patterns.
+  # Cannot be used at the same time with ``search.allowed_extensions``; specify file types within the patterns instead.
   inclusion_groups:
     example_group:
       enabled: false
@@ -138,7 +138,7 @@ filters:
 
   # --- Exclusion Rules ---
   exclusions:
-    # Skip files matching glob patterns.
+    # Skip files matching search patterns.
     # Defaults include: *.pyc, .DS_Store, Thumbs.db, .coverage, .tox, .nox
     filenames:
       - '*.pyc'

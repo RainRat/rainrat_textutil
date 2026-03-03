@@ -476,7 +476,7 @@ def test_validate_glob_pattern_warns_on_regex_like_syntax(caplog, tmp_path):
 
 
 def test_validate_glob_pattern_raises_on_non_string_pattern(tmp_path):
-    with pytest.raises(InvalidConfigError, match="must be a string"):
+    with pytest.raises(InvalidConfigError, match="must be text"):
         load_and_validate_config(
             _write_config(
                 tmp_path,
@@ -727,7 +727,7 @@ def test_validate_regex_replacements_invalid_regex(tmp_path):
             }
         }
     )
-    with pytest.raises(InvalidConfigError, match="Invalid regex pattern in processing.regex_replacements\\[0\\]"):
+    with pytest.raises(InvalidConfigError, match="Invalid search pattern in processing.regex_replacements\\[0\\]"):
         load_and_validate_config(config_path)
 
 def test_validate_line_regex_replacements_invalid_regex(tmp_path):
@@ -743,7 +743,7 @@ def test_validate_line_regex_replacements_invalid_regex(tmp_path):
             }
         }
     )
-    with pytest.raises(InvalidConfigError, match="Invalid regex pattern in processing.line_regex_replacements\\[0\\]"):
+    with pytest.raises(InvalidConfigError, match="Invalid search pattern in processing.line_regex_replacements\\[0\\]"):
         load_and_validate_config(config_path)
 
 def test_validate_output_format_invalid(tmp_path):
