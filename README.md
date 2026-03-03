@@ -108,6 +108,7 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 *   `--max-depth` / `-D`: Limit folder scanning to this depth (e.g., `-D 1` for root files only; 0 for no limit).
 *   `--max-tokens` / `-M`: Stop adding files once this total token limit is reached. (Only works when combining many files into one).
 *   `--max-total-size`: Stop adding files once this total size limit is reached (e.g., '1MB'). (Only works when combining many files into one).
+*   `--max-total-lines`: Stop adding files once this total line limit is reached. (Only when combining many files into one).
 *   `--estimate-tokens` / `-e`: Calculate token counts without creating any files.
     *   *Note: Slower than a regular dry-run because it must read the file contents.*
 *   `--list-files` / `-l`: Print a list of files that would be processed to your terminal and exit.

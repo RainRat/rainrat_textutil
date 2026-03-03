@@ -1249,9 +1249,11 @@ def find_and_combine_files(
         'token_count_is_approx': False,
         'token_limit_reached': False,
         'size_limit_reached': False,
+        'line_limit_reached': False,
         'top_files': [],
         'max_total_tokens': config.get('filters', {}).get('max_total_tokens', 0),
         'max_total_size_bytes': config.get('filters', {}).get('max_total_size_bytes', 0),
+        'max_total_lines': config.get('filters', {}).get('max_total_lines', 0),
         'filter_reasons': {},
     }
     search_opts = config.get('search', {})
@@ -1548,6 +1550,7 @@ def find_and_combine_files(
 
         max_total_tokens = filter_opts.get('max_total_tokens', 0)
         max_total_size = filter_opts.get('max_total_size_bytes', 0)
+        max_total_lines = filter_opts.get('max_total_lines', 0)
         needs_metadata = bool(output_opts.get('include_tree') or output_opts.get('table_of_contents'))
 
         # We need metadata for sorting (except name), token limit, size limit, TOC/Tree, or global placeholders
@@ -1555,7 +1558,7 @@ def find_and_combine_files(
         has_global_placeholders = (global_header and any(p in global_header for p in global_placeholders)) or \
                                   (global_footer and any(p in global_footer for p in global_placeholders))
 
-        needs_full_pass = (sort_by != 'name' or max_total_tokens > 0 or max_total_size > 0 or
+        needs_full_pass = (sort_by != 'name' or max_total_tokens > 0 or max_total_size > 0 or max_total_lines > 0 or
                            needs_metadata or has_global_placeholders or estimate_tokens)
 
         # Global Sort
@@ -1639,6 +1642,7 @@ def find_and_combine_files(
             overhead_size = 0
             token_limit_reached = False
             size_limit_reached = False
+            line_limit_reached = False
 
             # Account for global header and footer in the limit
             # We estimate these once without placeholders for initial limit.
@@ -1761,6 +1765,12 @@ def find_and_combine_files(
                     logging.debug("Total size limit reached; skipping %d remaining files.", len(all_single_mode_items) - i)
                     break
 
+                if max_total_lines > 0 and (current_lines + overhead_lines + entry_lines) > max_total_lines and (current_lines + overhead_lines) > 0:
+                    line_limit_reached = True
+                    stats['filter_reasons']['line_limit'] = len(all_single_mode_items) - i
+                    logging.debug("Total line limit reached; skipping %d remaining files.", len(all_single_mode_items) - i)
+                    break
+
                 current_tokens += entry_tokens
                 current_lines += entry_lines
                 current_size += entry_size
@@ -1769,6 +1779,7 @@ def find_and_combine_files(
             all_single_mode_items = limited_items
             stats['token_limit_reached'] = token_limit_reached
             stats['size_limit_reached'] = size_limit_reached
+            stats['line_limit_reached'] = line_limit_reached
 
             # Recalculate stats based on limited items
             stats['total_files'] = 0
@@ -2088,6 +2099,11 @@ def main():
     filtering_group.add_argument(
         "--max-total-size",
         help="Stop adding files once this total size limit is reached (e.g., '5MB'). (Only when combining many files into one)",
+    )
+    filtering_group.add_argument(
+        "--max-total-lines",
+        type=int,
+        help="Stop adding files once this total line limit is reached. (Only when combining many files into one)",
     )
     filtering_group.add_argument(
         "--files-from",
@@ -2469,6 +2485,11 @@ def main():
         except InvalidConfigError as e:
             logging.error(e)
             sys.exit(1)
+
+    if args.max_total_lines is not None:
+        if not isinstance(config.get('filters'), dict):
+            config['filters'] = {}
+        config['filters']['max_total_lines'] = args.max_total_lines
 
     if args.limit is not None:
         config['filters']['max_files'] = args.limit
@@ -2980,6 +3001,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to token limit.{C_RESET}", file=sys.stderr)
     if stats.get('size_limit_reached'):
         print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to total size limit.{C_RESET}", file=sys.stderr)
+    if stats.get('line_limit_reached'):
+        print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to total line limit.{C_RESET}", file=sys.stderr)
     if stats.get('limit_reached'):
         print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to file limit.{C_RESET}", file=sys.stderr)
 
@@ -3047,6 +3070,17 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             bar = f"[{'#' * filled}{'-' * (bar_len - filled)}]"
             bar_color = C_YELLOW if percent > 90 else C_GREEN
             print(f"    {C_BOLD}{'Size Limit Usage:':<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_CYAN}{percent:>6.1f}%{C_RESET}", file=sys.stderr)
+
+        # Total Line Limit Usage
+        max_total_lines = stats.get('max_total_lines', 0)
+        if max_total_lines > 0:
+            percent = (total_lines / max_total_lines) * 100
+            # Create a 10-character ASCII bar
+            bar_len = 10
+            filled = min(bar_len, int((percent / 100) * bar_len))
+            bar = f"[{'#' * filled}{'-' * (bar_len - filled)}]"
+            bar_color = C_YELLOW if percent > 90 else C_GREEN
+            print(f"    {C_BOLD}{'Line Limit Usage:':<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_CYAN}{percent:>6.1f}%{C_RESET}", file=sys.stderr)
 
     if duration is not None:
         print(f"    {C_BOLD}{'Duration:':<{label_width}}{C_RESET}{C_CYAN}{duration:.2f}s{C_RESET}", file=sys.stderr)
