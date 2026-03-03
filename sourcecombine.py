@@ -2662,8 +2662,9 @@ def main():
             limit=config.get('filters', {}).get('max_files', 0)
         )
         dest = f"to '{output_folder}'"
+        source_desc = f"from '{source_name}'"
         duration = time.perf_counter() - start_time
-        _print_execution_summary(stats, args, pairing_enabled=False, destination_desc=dest, duration=duration)
+        _print_execution_summary(stats, args, pairing_enabled=False, destination_desc=dest, duration=duration, source_desc=source_desc)
         sys.exit(0)
 
     mode_desc = "Pairing" if pairing_enabled else "Combining files"
@@ -2698,8 +2699,19 @@ def main():
         sys.exit(1)
 
     if stats:
+        # Determine source description
+        actual_roots = config.get('search', {}).get('root_folders') or []
+        if args.files_from:
+            source_desc = "from file list"
+        elif len(actual_roots) == 1:
+            source_desc = f"from '{actual_roots[0]}'"
+        elif len(actual_roots) > 1:
+            source_desc = f"from {len(actual_roots)} targets"
+        else:
+            source_desc = ""
+
         duration = time.perf_counter() - start_time
-        _print_execution_summary(stats, args, pairing_enabled, destination_desc, duration=duration)
+        _print_execution_summary(stats, args, pairing_enabled, destination_desc, duration=duration, source_desc=source_desc)
 
 
 def extract_files(content, output_folder, dry_run=False, source_name="archive", config=None, list_files=False, tree_view=False, limit=0):
@@ -2937,7 +2949,7 @@ def print_system_info():
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
 
-def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None, duration=None):
+def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None, duration=None, source_desc=None):
     """Print a summary of the totals to your terminal."""
 
     total_included = stats.get('total_files', 0)
@@ -2956,7 +2968,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         data_hint = total_size_str
 
     if args.dry_run:
-        summary_title = f"DRY RUN COMPLETE: Would combine {total_included:,} files {destination_desc or ''}".strip()
+        summary_title = f"DRY RUN COMPLETE: Would combine {total_included:,} files {source_desc or ''} {destination_desc or ''}".strip()
         title_color = C_YELLOW
     elif args.estimate_tokens:
         summary_title = "TOKEN ESTIMATION COMPLETE"
@@ -2970,7 +2982,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     else:
         file_word = "file" if total_included == 1 else "files"
         action = "Extracted" if getattr(args, 'extract', False) else "Combined"
-        summary_title = f"SUCCESS: {action} {total_included:,} {file_word} {destination_desc or ''}".strip()
+        summary_title = f"SUCCESS: {action} {total_included:,} {file_word} {source_desc or ''} {destination_desc or ''}".strip()
         title_color = C_GREEN
 
     # Header
@@ -3010,7 +3022,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     total_lines = stats.get('total_lines', 0)
     print(f"\n  {C_BOLD}Data{C_RESET}", file=sys.stderr)
     print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_CYAN}{total_size_str:>12}{C_RESET}", file=sys.stderr)
-    print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_CYAN}{total_lines:12,}{C_RESET}", file=sys.stderr)
+    if total_lines > 0:
+        print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_CYAN}{total_lines:12,}{C_RESET}", file=sys.stderr)
 
     # Token Counts
     # Show token counts if tokens were estimated
@@ -3025,6 +3038,14 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 f"      {C_DIM}(Install 'tiktoken' for accurate counts){C_RESET}",
                 file=sys.stderr,
             )
+
+    # Execution Section
+    has_limits = any(stats.get(k, 0) > 0 for k in ('max_total_tokens', 'max_total_size_bytes'))
+    if duration is not None or has_limits:
+        print(f"\n  {C_BOLD}Execution{C_RESET}", file=sys.stderr)
+
+        if duration is not None:
+            print(f"    {C_BOLD}{'Duration:':<{label_width}}{C_RESET}{C_CYAN}{duration:.2f}s{C_RESET}", file=sys.stderr)
 
         # Token Limit Usage
         max_tokens = stats.get('max_total_tokens', 0)
@@ -3047,9 +3068,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             bar = f"[{'#' * filled}{'-' * (bar_len - filled)}]"
             bar_color = C_YELLOW if percent > 90 else C_GREEN
             print(f"    {C_BOLD}{'Size Limit Usage:':<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_CYAN}{percent:>6.1f}%{C_RESET}", file=sys.stderr)
-
-    if duration is not None:
-        print(f"    {C_BOLD}{'Duration:':<{label_width}}{C_RESET}{C_CYAN}{duration:.2f}s{C_RESET}", file=sys.stderr)
 
     # Largest Files
     if stats.get('top_files'):
