@@ -2997,24 +2997,35 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         data_hint = total_size_str
 
     if args.dry_run:
-        summary_title = f"DRY RUN COMPLETE: Would combine {total_included:,} files {source_desc or ''} {destination_desc or ''}".strip()
         title_color = C_YELLOW
     elif args.estimate_tokens:
-        summary_title = "TOKEN ESTIMATION COMPLETE"
         title_color = C_CYAN
     elif args.list_files:
-        summary_title = "FILE LISTING COMPLETE"
         title_color = C_CYAN
     elif args.tree:
-        summary_title = "TREE VIEW COMPLETE"
         title_color = C_CYAN
+    else:
+        title_color = C_GREEN
+
+    # Highlight destination in the summary title
+    highlighted_dest = f"{C_CYAN}{destination_desc}{title_color}" if destination_desc else ""
+
+    if args.dry_run:
+        summary_title = f"DRY RUN COMPLETE: Would combine {total_included:,} files {source_desc or ''} {highlighted_dest}".strip()
+    elif args.estimate_tokens:
+        summary_title = "TOKEN ESTIMATION COMPLETE"
+    elif args.list_files:
+        summary_title = "FILE LISTING COMPLETE"
+    elif args.tree:
+        summary_title = "TREE VIEW COMPLETE"
     else:
         file_word = "file" if total_included == 1 else "files"
         action = "Extracted" if getattr(args, 'extract', False) else "Combined"
-        summary_title = f"SUCCESS: {action} {total_included:,} {file_word} {source_desc or ''} {destination_desc or ''}".strip()
-        title_color = C_GREEN
+        summary_title = f"SUCCESS: {action} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
 
     # Header
+    # We use _ANSI_ESCAPE to correctly calculate the visible length of the title for the border
+    raw_title = _ANSI_ESCAPE.sub('', f"=== {summary_title} [{data_hint}] ===")
     print(f"\n{title_color}{C_BOLD}=== {summary_title} [{data_hint}] ==={C_RESET}", file=sys.stderr)
 
     if stats.get('token_limit_reached'):
@@ -3052,6 +3063,12 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     # Data Section
     total_lines = stats.get('total_lines', 0)
     print(f"\n  {C_BOLD}Data{C_RESET}", file=sys.stderr)
+
+    # Show output format if not extracting or listing
+    if not getattr(args, 'extract', False) and not (args.list_files or args.tree):
+        fmt_name = (getattr(args, 'format', None) or stats.get('output_format', 'text')).upper()
+        print(f"    {C_BOLD}{'Output Format:':<{label_width}}{C_RESET}{C_CYAN}{str(fmt_name):>12}{C_RESET}", file=sys.stderr)
+
     print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_CYAN}{total_size_str:>12}{C_RESET}", file=sys.stderr)
     if total_lines > 0:
         print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_CYAN}{total_lines:12,}{C_RESET}", file=sys.stderr)
@@ -3086,7 +3103,12 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             bar_len = 10
             filled = min(bar_len, int((percent / 100) * bar_len))
             bar = f"[{'#' * filled}{'-' * (bar_len - filled)}]"
-            bar_color = C_YELLOW if percent > 90 else C_GREEN
+            if percent >= 100:
+                bar_color = C_RED
+            elif percent > 90:
+                bar_color = C_YELLOW
+            else:
+                bar_color = C_GREEN
             print(f"    {C_BOLD}{'Token Limit Usage:':<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_CYAN}{percent:>6.1f}%{C_RESET}", file=sys.stderr)
 
         # Total Size Limit Usage
@@ -3097,7 +3119,12 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             bar_len = 10
             filled = min(bar_len, int((percent / 100) * bar_len))
             bar = f"[{'#' * filled}{'-' * (bar_len - filled)}]"
-            bar_color = C_YELLOW if percent > 90 else C_GREEN
+            if percent >= 100:
+                bar_color = C_RED
+            elif percent > 90:
+                bar_color = C_YELLOW
+            else:
+                bar_color = C_GREEN
             print(f"    {C_BOLD}{'Size Limit Usage:':<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_CYAN}{percent:>6.1f}%{C_RESET}", file=sys.stderr)
 
         # Total Line Limit Usage
@@ -3108,7 +3135,12 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             bar_len = 10
             filled = min(bar_len, int((percent / 100) * bar_len))
             bar = f"[{'#' * filled}{'-' * (bar_len - filled)}]"
-            bar_color = C_YELLOW if percent > 90 else C_GREEN
+            if percent >= 100:
+                bar_color = C_RED
+            elif percent > 90:
+                bar_color = C_YELLOW
+            else:
+                bar_color = C_GREEN
             print(f"    {C_BOLD}{'Line Limit Usage:':<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_CYAN}{percent:>6.1f}%{C_RESET}", file=sys.stderr)
 
     # Largest Files
@@ -3159,7 +3191,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         )
 
         formatted_counts = [f"{count:,}" for _, count in sorted_exts]
-        items = [f"{C_CYAN}{ext}: {c:>5}{C_RESET}" for (ext, _), c in zip(sorted_exts, formatted_counts)]
+        items = [f"{ext}{C_DIM}:{C_RESET} {C_CYAN}{c:>5}{C_RESET}" for (ext, _), c in zip(sorted_exts, formatted_counts)]
         raw_items = [f"{ext}: {c:>5}" for (ext, _), c in zip(sorted_exts, formatted_counts)]
         max_len = max(len(s) for s in raw_items) + 3
 
@@ -3179,7 +3211,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             print(f"    {''.join(line_parts).rstrip()}", file=sys.stderr)
 
     # Footer
-    print(f"\n{title_color}{'=' * (len(summary_title) + len(data_hint) + 11)}{C_RESET}", file=sys.stderr)
+    print(f"\n{title_color}{'=' * len(raw_title)}{C_RESET}", file=sys.stderr)
 
 
 if __name__ == "__main__":
