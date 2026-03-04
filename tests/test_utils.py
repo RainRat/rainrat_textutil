@@ -920,3 +920,8 @@ def test_validate_pairing_section_conflict():
     }
     with pytest.raises(InvalidConfigError, match="'allowed_extensions' cannot be used when pairing is enabled"):
         validate_config(config)
+
+def test_validate_config_not_a_dict():
+    """Ensure InvalidConfigError is raised if the config is not a dictionary."""
+    with pytest.raises(InvalidConfigError, match="Configuration must be a dictionary."):
+        validate_config(["not", "a", "dictionary"])

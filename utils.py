@@ -628,6 +628,8 @@ def validate_config(
     :func:`load_and_validate_config` but operates on a dictionary instead of a
     file path.
     """
+    if not isinstance(config, dict):
+        raise InvalidConfigError("Configuration must be a dictionary.")
 
     if required_keys:
         missing_keys = [key for key in required_keys if key not in config]
