@@ -363,6 +363,14 @@ def _validate_search_section(config):
                 "search.max_depth must be 0 or more"
             )
 
+    root_folders = search.get('root_folders')
+    if root_folders is not None and not isinstance(root_folders, list):
+        raise InvalidConfigError("search.root_folders must be a list of folders.")
+
+    allowed_exts = search.get('allowed_extensions')
+    if allowed_exts is not None and not isinstance(allowed_exts, list):
+        raise InvalidConfigError("search.allowed_extensions must be a list.")
+
 
 def _validate_filters_section(config):
     """Validate the 'filters' section of the configuration."""
@@ -428,23 +436,30 @@ def _validate_filters_section(config):
     if grep_pattern:
         validate_regex_pattern(grep_pattern, context="filters.grep")
 
-    exclusions_conf = filters.get('exclusions', {})
-    if isinstance(exclusions_conf, dict):
+    exclusions_conf = filters.get('exclusions')
+    if exclusions_conf is not None:
+        if not isinstance(exclusions_conf, dict):
+            raise InvalidConfigError("filters.exclusions must be a dictionary.")
         filenames = exclusions_conf.get('filenames', [])
         _validate_glob_list(filenames, "filters.exclusions.filenames")
         folders = exclusions_conf.get('folders', [])
         _validate_glob_list(folders, "filters.exclusions.folders")
 
-    groups = filters.get('inclusion_groups', {})
-    if isinstance(groups, dict):
+    groups = filters.get('inclusion_groups')
+    if groups is not None:
+        if not isinstance(groups, dict):
+            raise InvalidConfigError("filters.inclusion_groups must be a dictionary.")
         for group_name, group in groups.items():
-            if isinstance(group, dict):
-                group.setdefault('enabled', False)
-                group.setdefault('filenames', [])
-                filenames = group.get('filenames', [])
-                _validate_glob_list(
-                    filenames, f"filters.inclusion_groups.{group_name}.filenames"
+            if not isinstance(group, dict):
+                raise InvalidConfigError(
+                    f"filters.inclusion_groups.{group_name} must be a dictionary."
                 )
+            group.setdefault('enabled', False)
+            group.setdefault('filenames', [])
+            filenames = group.get('filenames', [])
+            _validate_glob_list(
+                filenames, f"filters.inclusion_groups.{group_name}.filenames"
+            )
 
     search_conf = config.get('search')
     if not isinstance(search_conf, dict):
@@ -530,11 +545,20 @@ def _validate_pairing_section(config):
             raise InvalidConfigError(
                 "'allowed_extensions' cannot be used when pairing is enabled; remove it or disable pairing."
             )
+
+        source_ext_list = pairing_conf.get('source_extensions')
+        if source_ext_list is not None and not isinstance(source_ext_list, list):
+            raise InvalidConfigError("pairing.source_extensions must be a list.")
+
+        header_ext_list = pairing_conf.get('header_extensions')
+        if header_ext_list is not None and not isinstance(header_ext_list, list):
+            raise InvalidConfigError("pairing.header_extensions must be a list.")
+
         source_exts = tuple(
-            e.lower() for e in (pairing_conf.get('source_extensions') or [])
+            e.lower() for e in (source_ext_list or [])
         )
         header_exts = tuple(
-            e.lower() for e in (pairing_conf.get('header_extensions') or [])
+            e.lower() for e in (header_ext_list or [])
         )
         effective_allowed_extensions = source_exts + header_exts
     else:
