@@ -41,7 +41,7 @@ def test_summary_redesign_largest_files(monkeypatch, capsys):
     stderr = captured.err
 
     # Check for the new sections
-    assert "TOKEN ESTIMATION COMPLETE" in stderr
+    assert "TOKEN ESTIMATION COMPLETE: 10 files" in stderr
     assert "Largest Files" in stderr
     
     # Check for values
@@ -120,7 +120,7 @@ def test_summary_printing_dry_run(monkeypatch, capsys):
     captured = capsys.readouterr()
     stderr = captured.err
 
-    assert "DRY RUN COMPLETE" in stderr
+    assert "DRY RUN COMPLETE: Would combine 0 files" in stderr
     assert "Included:                        0" in stderr
     assert "Token Count" not in stderr
 
