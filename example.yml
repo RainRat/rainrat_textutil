@@ -54,13 +54,13 @@ filters:
   # --- Exclusion Rules ---
   # Files and folders matching these rules will be skipped.
   exclusions:
-    # Exclude files matching these glob patterns (e.g., 'test.py', '*.log').
+    # Exclude files matching these glob patterns (for example, 'test.py', '*.log').
     filenames:
       - 'test.py'
       - '*.log'
 
     # Exclude folders if any folder name in the path matches one of these
-    # patterns (e.g., 'build' excludes ./build and ./src/app/build). Case-insensitive.
+    # patterns (for example, 'build' excludes ./build and ./src/app/build). Case-insensitive.
     folders:
       - '.git'
 

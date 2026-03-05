@@ -10,7 +10,7 @@ search:
   root_folders:
     - '/path/to/project'
 
-  # Limit folder scanning to this depth (e.g., 1 for root files only).
+  # Limit folder scanning to this depth (for example, 1 for root files only).
   # Use 0 for no limit.
   max_depth: 0
 
@@ -42,9 +42,9 @@ output:
   # When pairing is enabled, this template determines the name of each
   # combined output file.
   # Available placeholders:
-  #   {{STEM}}       - The base name of the file (e.g., 'main' from 'main.cpp')
-  #   {{SOURCE_EXT}} - The extension of the source file (e.g., '.cpp')
-  #   {{HEADER_EXT}} - The extension of the header file (e.g., '.h')
+  #   {{STEM}}       - The base name of the file (for example, 'main' from 'main.cpp')
+  #   {{SOURCE_EXT}} - The extension of the source file (for example, '.cpp')
+  #   {{HEADER_EXT}} - The extension of the header file (for example, '.h')
   #   {{DIR}}        - The relative folder path using forward slashes (or '.' for the root folder)
   #   {{DIR_SLUG}}   - A simplified name for {{DIR}} ('root' when DIR is '.')
   paired_filename_template: '{{STEM}}.combined'
@@ -121,13 +121,13 @@ filters:
   # Stop processing after this many files. Omit or set to 0 for no limit.
   max_files: 0
 
-  # Include files modified since this time (e.g., '1d', '2h', 'YYYY-MM-DD').
+  # Include files modified since this time (for example, '1d', '2h', 'YYYY-MM-DD').
   modified_since: 0
 
   # Include files modified before this time.
   modified_until: 0
 
-  # If true, skip files that appear to contain binary data (e.g., executables, images).
+  # If true, skip files that appear to contain binary data (for example, executables, images).
   skip_binary: false
 
   # Only include files whose content matches this search pattern.
@@ -209,5 +209,5 @@ processing:
 pairing:
   enabled: false
   include_mismatched: false         # Include files without a pair
-  source_extensions: []             # e.g., ['.cpp', '.c']
-  header_extensions: []             # e.g., ['.h', '.hpp']
+  source_extensions: []             # for example, ['.cpp', '.c']
+  header_extensions: []             # for example, ['.h', '.hpp']

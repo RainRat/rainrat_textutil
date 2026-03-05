@@ -1,481 +1,93 @@
-# SourceCombine
+# rainrat_textutil
 
-**SourceCombine** is a tool for your terminal that combines many text files into one file or organized pairs. It uses a YAML configuration file to set rules for finding, filtering, and changing text.
+A versatile CLI tool for searching, filtering, and combining source code files from a project into a single output file (or folder). Perfect for providing context to LLMs, generating documentation, or creating backups.
 
-Whether you are preparing files for printing, giving context to AI assistants, or saving code from your project, SourceCombine makes it easy.
+## Key Features
 
-## Common Use Cases
-
-*   **Context for AI Assistants:** Combine your whole project into one file to give AI assistants better context.
-*   **Saving Code:** Save a snapshot of your source files for documentation or backups.
-*   **Code Reviews:** Combine scattered files into one file to review or print them easily.
-*   **Preparing Files:** Change text with search-and-replace rules or remove comments from many files at once.
-*   **C/C++ Pairing:** Pair source files (`.cpp`) with their headers (`.h`) automatically to keep them organized.
-*   **Restoring Code:** Recreate folders and files from combined files (JSON, XML, Markdown, or Text).
+*   **Recursion & Root Folders:** Search recursively from multiple root folders.
+*   **Filtering:** Exclude folders, files, or specific filename patterns using standard globs.
+*   **Include Groups:** Define specific groups of files to always include, even if they would otherwise be filtered.
+*   **Sorting:** Order files by name, size, modification date, tokens, or depth.
+*   **Limiting:** Restrict output by file count, total tokens, or total file size.
+*   **In-Place Processing:** Option to apply whitespace compaction and other processing directly to the source files.
+*   **Smart Combining:** Option to combine files while respecting file headers and structural markers.
+*   **Estimation:** Perform a dry-run or estimate token counts without writing files.
+*   **Configuration:** Use a `sourcecombine.yml` file to store your project-specific settings.
 
 ## Installation
 
-1.  **Check your Python version:**
-    SourceCombine requires Python 3.10 or newer.
-    ```bash
-    python --version
-    ```
-
-2.  **Download the code:**
-    Clone the repository and go into the folder:
-    ```bash
-    git clone https://github.com/RainRat/rainrat_textutil.git
-    cd rainrat_textutil
-    ```
-    *Alternatively, [download the ZIP file](https://github.com/RainRat/rainrat_textutil/archive/refs/heads/main.zip) and extract it.*
-
-3.  **Set up a virtual environment (Recommended):**
-    This keeps SourceCombine's software separate from your other projects.
-    *   **Windows:**
-        ```bash
-        python -m venv venv
-        venv\Scripts\activate
-        ```
-        *If you use PowerShell, use `.\venv\Scripts\Activate.ps1` instead.*
-    *   **macOS/Linux:**
-        ```bash
-        python3 -m venv venv
-        source venv/bin/activate
-        ```
-
-4.  **Install the required software:**
-    ```bash
-    pip install -r requirements.txt
-    ```
-    *(Optional) For better token counting:* `pip install tiktoken`
-
-5.  **Verify it works:**
-    Check that the tool runs:
-    ```bash
-    python sourcecombine.py --help
-    ```
+```bash
+git clone https://github.com/RainRat/rainrat_textutil.git
+cd rainrat_textutil
+pip install -r requirements.txt
+```
 
 ## Quick Start
 
-The easiest way to use SourceCombine is to run it on the current folder.
+Combine all Python files in the current folder into `combined.txt`:
 
-1.  **Combine files in the current folder:**
-    ```bash
-    python sourcecombine.py
-    ```
-    By default, this scans the folder where you run the command and combines all files into `combined_files.txt`. You can also specify a folder or file: `python sourcecombine.py my_folder/`.
+```bash
+python sourcecombine.py . -o combined.txt --include "*.py"
+```
 
-2.  **Initialize a configuration file for more control:**
-    Generate a starter configuration:
-    ```bash
-    python sourcecombine.py --init
-    ```
-    Edit the created `sourcecombine.yml` to set your own rules. Then, simply run the tool:
-    ```bash
-    python sourcecombine.py
-    ```
-    *SourceCombine will automatically find and use `sourcecombine.yml` in your current folder.*
+Combine all files in `src/` and `lib/`, excluding anything in `test/`, and estimate the total token count:
 
-## Usage
+```bash
+python sourcecombine.py src lib -o output/ --exclude-folder "test" --estimate-tokens
+```
 
-Run the script from your terminal. You can pass one or more folders, files, or a configuration file.
+## Configuration
+
+`sourcecombine.py` looks for a `sourcecombine.yml` file in the current directory or the root folders you specify. You can use this to define complex exclusion rules, inclusion groups, and default output paths.
+
+See `config.template.yml` for a fully documented example.
+
+## Command Line Arguments
 
 ```bash
 python sourcecombine.py [TARGET ...] [OPTIONS]
 ```
 
-### Options
+### Targets
+List one or more folders or files to search. If none are provided, the tool defaults to the current directory.
 
-*   `--output` / `-o`: Override the output path specified in the configuration.
-*   `--dry-run` / `-d`: List matched files and planned outputs without writing any files. Useful for previewing changes.
-*   `--verbose` / `-v`: Enable verbose output (DEBUG level) to troubleshoot configuration issues.
-*   `--ai` / `-a`: Enable a preset for AI assistants. This automatically enables Markdown format, line numbers, a Table of Contents, and the folder tree. If no output file is specified, it also attempts to copy the result to your clipboard.
-*   `--clipboard` / `-c`: Copy the combined output directly to your clipboard instead of saving a file.
-    *   *Note: You cannot use clipboard mode when file pairing is enabled.*
-*   `--format` / `-f`: Choose the output format (`text`, `json`, `markdown`, or `xml`).
-    *   *Note: You can also use the shortcuts `-m` (markdown), `-j` (json), or `-w` (xml). JSON format produces a list of file objects and only works when combining many files into one. Markdown and XML formats automatically use appropriate formatting (code blocks for Markdown, tags for XML).*
-*   `--line-numbers` / `-n`: Add line numbers to the beginning of each line in the combined output.
-*   `--toc` / `-T`: Include a Table of Contents at the beginning of the output file. (Only works when combining many files into one).
-*   `--include-tree` / `-p`: Include a visual folder tree at the start of the output. (Only works when combining many files into one).
-*   `--compact` / `-C`: Clean up extra spaces and blank lines in the combined output to save tokens.
+### Core Options
+*   `-o` / `--output`: Path to the output file or folder.
+*   `--dry-run`: Show which files would be processed without actually combining them.
+*   `--verbose` / `-v`: Show detailed information about each file found and its processing status.
+*   `--config`: Path to a specific configuration file.
+
+### Search & Filtering
+*   `-i` / `--include`: Glob patterns for files to include (for example, `*.py`, `*.js`).
+*   `-x` / `--exclude`: Glob patterns for files to exclude.
+*   `-X` / `--exclude-folder`: Folder names to skip entirely (for example, `node_modules`, `.git`, `__pycache__`).
+*   `--grep` / `-g`: Only include files whose *content* matches this regular expression.
+
+### Sorting & Limiting
 *   `--sort` / `-s`: Sort files by `name`, `size`, `modified`, `tokens`, or `depth` before combining.
 *   `--reverse` / `-r`: Reverse the sort order.
 *   `--limit` / `-L`: Stop processing after this many files.
-*   `--since` / `-S`: Include files modified since this time (e.g., '1d', '2h', 'YYYY-MM-DD').
-*   `--until` / `-U`: Include files modified before this time.
-*   `--min-size`: Include only files larger than this size (e.g., '10KB', '1MB').
-*   `--max-size`: Include only files smaller than this size (e.g., '10KB', '1MB').
-*   `--max-depth` / `-D`: Limit folder scanning to this depth (e.g., `-D 1` for root files only; 0 for no limit).
+*   `--since` / `-S`: Include files modified since this time (for example, '1d', '2h', 'YYYY-MM-DD').
+*   `--until` / `-U`: Include files modified before this time (for example, '1d', '2h', 'YYYY-MM-DD').
+*   `--min-size`: Include only files larger than this size (for example, '10KB', '1MB').
+*   `--max-size`: Include only files smaller than this size (for example, '10KB', '1MB').
+*   `--max-depth` / `-D`: Limit folder scanning to this depth (for example, `-D 1` for root files only; 0 for no limit).
 *   `--git-files` / `-G`: Use `git ls-files` to find files. This automatically respects your `.gitignore` and includes both tracked and untracked files. If the folder is not a Git repository, it falls back to standard scanning.
 *   `--max-tokens` / `-M`: Stop adding files once this total token limit is reached. (Only works when combining many files into one).
-*   `--max-total-size`: Stop adding files once this total size limit is reached (e.g., '1MB'). (Only works when combining many files into one).
+*   `--max-total-size`: Stop adding files once this total size limit is reached (for example, '1MB'). (Only works when combining many files into one).
 *   `--max-total-lines`: Stop adding files once this total line limit is reached. (Only when combining many files into one).
 *   `--estimate-tokens` / `-e`: Calculate token counts without creating any files.
     *   *Note: Slower than a regular dry-run because it must read the file contents.*
-*   `--list-files` / `-l`: Print a list of files that would be processed to your terminal and exit.
-*   `--tree` / `-t`: Show a visual folder tree of all included files and exit.
-*   `--files-from`: Read a list of files to process from a text file (or `-` for your terminal). Overrides normal folder scanning.
-*   `--extract`: Recreate original files and folders from a combined JSON, JSONL, XML, Markdown, or Text file.
-*   `--init`: Generate a default configuration file (`sourcecombine.yml`) in the current folder.
-*   `--system-info`: Show details about your computer and the software you are using.
-*   `--version` / `-V`: Show the tool's version and exit.
-*   `--include` / `-i`: Include only files matching a specific pattern (e.g., `-i "*.py"`). Can be used many times.
-*   `--grep` / `-g`: Include only files whose content matches a search pattern (e.g., `-g "TODO"`).
-*   `--exclude-file` / `-x`: Exclude specific files (e.g., `-x "secret.txt"`). Can be used many times.
-*   `--exclude-folder` / `-X`: Exclude specific folders (e.g., `-X "build"`). Can be used many times.
 
-### Examples
+### Display
+*   `--list-files`: Print a flat list of all files that would be included.
+*   `--tree`: Print a tree-style view of the project structure and included files.
 
-**Simulate a run:**
-See exactly which files would be included without writing anything:
-```bash
-python sourcecombine.py my_config.yml --dry-run
-```
+### Processing
+*   `--compact-whitespace`: Remove redundant blank lines and leading/trailing whitespace.
+*   `--apply-in-place`: Apply whitespace compaction directly to the source files (WARNING: modifies your source files!).
+*   `--create-backups`: When using `--apply-in-place`, create `.bak` copies of the original files.
 
-**Combine files with line numbers:**
-Useful for code reviews or providing context to AI assistants:
-```bash
-python sourcecombine.py src/ --line-numbers
-```
+## License
 
-**View included files as a tree:**
-See the folder structure of all matched files:
-```bash
-python sourcecombine.py . --tree
-```
-
-**Run on the current folder with default settings:**
-```bash
-python sourcecombine.py
-```
-
-**Run on a specific folder without a config file:**
-Use default settings to combine files in `src/`:
-```bash
-python sourcecombine.py src/
-```
-
-**Combine many folders and files:**
-```bash
-python sourcecombine.py src/ docs/ README.md
-```
-
-**Use the AI assistant preset:**
-Quickly gather context for an AI assistant and copy it to your clipboard:
-```bash
-python sourcecombine.py src/ --ai
-```
-
-**Use a configuration file with override folders:**
-```bash
-python sourcecombine.py config.yml project_a/ project_b/
-```
-
-**Copy output to clipboard:**
-Combine files defined in `config.yml` and copy the result:
-```bash
-python sourcecombine.py config.yml --clipboard
-```
-
-**Include only specific file types:**
-Combine only Python and Markdown files from the `src/` folder:
-```bash
-python sourcecombine.py src/ -i "*.py" -i "*.md"
-```
-
-**Include only recently changed files:**
-Combine files in the `src/` folder that were modified in the last 24 hours:
-```bash
-python sourcecombine.py src/ --since 1d
-```
-
-**Find specific text in files:**
-Combine only files that contain the word "TODO":
-```bash
-python sourcecombine.py src/ --grep "TODO"
-```
-
-**Sort files by size:**
-Put the largest files first in the combined output:
-```bash
-python sourcecombine.py src/ --sort size --reverse
-```
-
-**Filter by file size:**
-Include only files between 1 KB and 1 MB:
-```bash
-python sourcecombine.py src/ --min-size 1KB --max-size 1MB
-```
-
-**Use Git for file discovery:**
-Combine only tracked and untracked files in a Git repository while respecting `.gitignore`:
-```bash
-python sourcecombine.py . --git-files
-```
-
-**Extract files from a combined file:**
-Recreate original files and folders from a combined JSON, JSONL, XML, Markdown, or Text file. You can even
-extract directly from your clipboard or your terminal:
-```bash
-# Extract from a JSON or JSONL file
-python sourcecombine.py --extract combined.json -o restored_project/
-
-# Extract directly from your clipboard
-python sourcecombine.py --extract --clipboard -o restored_project/
-
-# Extract from your terminal
-cat combined.txt | python sourcecombine.py --extract - -o restored_project/
-```
-
-## Table of Contents
-
-For large combined files, you can enable a Table of Contents (TOC) at the top of the output.
-This is particularly useful when outputting to Markdown or Text formats.
-
-**Using your terminal:**
-```bash
-python sourcecombine.py --toc
-```
-
-**Configuration:**
-```yaml
-output:
-  table_of_contents: true
-```
-
-The Table of Contents lists all included files with their sizes and estimated token counts. In Markdown mode (`--format markdown`), it also creates links to each file section. (This feature only works when combining many files into one).
-
-## Customizing file boundaries
-
-The `output.header_template` and `output.footer_template` options control the
-text written before and after each file's content. The following placeholders are
-available for these templates:
-
-- `{{FILENAME}}`: The file's path relative to the configured root folder.
-- `{{EXT}}`: The file's extension (without the dot).
-- `{{STEM}}`: The file name without the extension.
-- `{{DIR}}`: The relative folder path using forward slashes.
-- `{{DIR_SLUG}}`: A filesystem-safe simplified name for `{{DIR}}` (uses `root` for the project root).
-- `{{SIZE}}`: The human-readable size of the file (e.g., `1.20 KB`).
-- `{{TOKENS}}`: The estimated number of tokens in the file.
-- `{{LINE_COUNT}}`: The number of lines in the file.
-
-By default, SourceCombine writes a simple divider around each file:
-
-```yaml
-output:
-  header_template: "--- {{FILENAME}} ---\n"
-  footer_template: "\n--- end {{FILENAME}} ---\n"
-```
-
-You can switch back to the older fenced-code-block format by overriding the
-templates in your configuration (Note: SourceCombine automatically uses these
-headers when you choose the Markdown or XML output formats):
-
-```yaml
-output:
-  header_template: "{{FILENAME}}:\n```\n"
-  footer_template: "\n```\n\n"
-```
-
-## Global Header and Footer
-
-You can add a custom header at the beginning and a footer at the end of the
-entire combined file using `output.global_header_template` and
-`output.global_footer_template`. These templates are useful for adding license
-information, project descriptions, or wrapping the output in a specific format.
-
-When combining many files into one, these templates support placeholders for file details for the
-entire project:
-
-- `{{FILE_COUNT}}`: The total number of files included in the output.
-- `{{TOTAL_SIZE}}`: The human-readable total size of all included files.
-- `{{TOTAL_TOKENS}}`: The total estimated token count.
-- `{{TOTAL_LINES}}`: The total line count of all included content.
-
-```yaml
-output:
-  global_header_template: "# Project: {{FILE_COUNT}} files, {{TOTAL_TOKENS}} tokens\n\n"
-  global_footer_template: "\n# End of Project Source Code\n"
-```
-
-The templates are written once around the combined output even when many
-`search.root_folders` are provided. When pairing is enabled, the global header
-and footer are written around each paired output file (though placeholders for file details
-are not supported in pairing mode).
-
-## Customizing paired output filenames
-
-When pairing is enabled, you can control the naming of the output files with
-the `output.paired_filename_template` option. The template supports the
-following placeholders:
-
-- `{{STEM}}`: The base name of the file (e.g., `main` from `main.cpp`).
-- `{{SOURCE_EXT}}`: The extension of the source file (e.g., `.cpp`).
-- `{{HEADER_EXT}}`: The extension of the header file (e.g., `.h`).
-- `{{DIR}}`: The file's relative folder path using forward slashes (or `.` for
-  files located directly in the root folder being processed).
-- `{{DIR_SLUG}}`: A filesystem-safe simplified name for `{{DIR}}`, lowercased and
-  with unsafe characters converted to dashes while preserving the folder
-  structure. When `{{DIR}}` is `.`, the simplified name is `root`.
-
-The default template is `'{{STEM}}.combined'`. You can customize it to match
-your project's conventions:
-
-```yaml
-output:
-  paired_filename_template: '{{STEM}}{{SOURCE_EXT}}.txt'
-```
-
-To preserve folder structure when writing paired outputs to a folder, use
-the `{{DIR_SLUG}}` placeholder:
-
-```yaml
-output:
-  folder: './paired'
-  paired_filename_template: '{{DIR_SLUG}}/{{STEM}}.combined'
-```
-
-## Search-and-replace rules
-
-The `processing.regex_replacements` option lets you apply search-and-replace
-rules to each file's content. Each rule specifies a `pattern` and a `replacement`.
-
-```yaml
-processing:
-  regex_replacements:
-    - pattern: '^\s*#\s*TODO:.*$'
-      replacement: ''
-```
-
-You can keep only the text between custom labels by using a capture group in
-your pattern and referencing it in the replacement text:
-
-```yaml
-processing:
-  regex_replacements:
-    - pattern: '(?s).*BEGIN_SNIP(.*)END_SNIP.*'
-      replacement: '\1'
-```
-
-To combine entire blocks of matching lines, use the `processing.line_regex_replacements`
-option. Each rule works line-by-line: lines that follow each other and match the
-search pattern are removed. They can be replaced with single `replacement` text.
-
-```yaml
-processing:
-  line_regex_replacements:
-    - pattern: '^\s*\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$'
-      replacement: '<data removed>'
-```
-
-### Removing Comments
-
-You can automatically remove C-style comments (`/* ... */`) from your files using the following options:
-
-```yaml
-processing:
-  # Remove all C-style comments throughout the file
-  remove_all_c_style_comments: true
-
-  # Remove only the first C-style comment at the top of the file
-  # (often used for license headers or file descriptions)
-  remove_initial_c_style_comment: true
-```
-
-See `example.yml`, `concat_simple.yml`, and `example_cpp_h.yml` for more configuration
-examples.
-
-### Applying transformations back to source files
-
-To rewrite the original files with the same transformations used for the
-combined output, set `processing.apply_in_place` to `true`. When enabled, the
-file is processed and rewritten before it is included in the combined output.
-Backups with the `.bak` extension are created by default before any
-modification occurs. You can disable the backup behavior by setting
-`processing.create_backups` to `false`.
-
-```yaml
-processing:
-  apply_in_place: true
-  create_backups: false  # Optional – defaults to true when apply_in_place is enabled
-  compact_whitespace: true
-```
-
-In-place updates are skipped automatically when `--dry-run` is used. Previous
-configurations that relied on `processing.in_place_groups` are no longer used in
-favor of the simpler true or false option.
-
-### Filtering and Exclusion Rules
-
-Use search patterns in `filters.exclusions.filenames` to skip specific files.
-Patterns can match an extension (`'*.bak'`), a complete filename (`'test.py'`),
-or a relative path pattern (`'tests/*'`).
-
-Exclude entire folders with `filters.exclusions.folders`. Each pattern is
-checked against every folder name in the path, so a single entry like
-`'build'` will exclude both `./build` and nested folders such as
-`./src/app/build`.
-
-When `filters.max_size_bytes` is set to a positive number, files that exceed
-the limit are skipped. To include formatting in the combined output for those
-omitted files, set `output.max_size_placeholder` to text such as
-`"[SKIPPED {{FILENAME}}]"`. The `{{FILENAME}}` placeholder is replaced with the
-file's path relative to the root folder. The placeholder is written for
-oversized files whether pairing is enabled or not; in pairing mode, it replaces
-the output for pairs whose primary file exceeds the limit.
-
-Set `filters.max_total_tokens` to a positive integer to limit the total size of the
-combined output file. This is very helpful when preparing context for
-AI assistants with specific limits.
-
-Set `filters.max_files` to a positive integer to stop processing after a
-specific number of files. This is useful for sampling large projects or
-testing your configuration.
-
-Set `filters.skip_binary` to `true` to ignore files that look like binary data
-(for example, executables or images) even when they match your other filters.
-
-### Inclusion Groups
-
-Enable selective opt-in filtering by configuring `filters.inclusion_groups`.
-Each group defines a set of filename patterns and can be toggled on or off via
-its `enabled` option. When at least one group is enabled, only files matching the
-enabled groups' patterns are included in the search results.
-
-### Case-insensitive pattern matching
-
-Filename and folder filters defined in the configuration are matched without
-regard to case, so patterns like `src/*` will include `SRC/Example.py` on
-case-sensitive filesystems.
-
-### Windows path note
-
-When specifying Windows paths in YAML, wrap them in single quotes so backslashes
-are treated exactly as they are:
-
-```yaml
-root_folders:
-  - 'C:\Users\Guest\GitHub\myproject'
-```
-
-Using double quotes would require adding an extra backslash for each one (`"C:\\Users\\Guest"`).
-
-## Example configurations
-
-- `concat_simple.yml`: basic text file concatenation with minimal options.
-- `example.yml`: a full-featured configuration showcasing filtering groups and
-  search-and-replace rules.
-- `example_cpp_h.yml`: demonstrates pairing C/C++ source files with their
-  corresponding headers.
-
-## Troubleshooting
-
-**"Command not found" or "Module not found" errors:**
-Ensure you have activated your virtual environment (Step 3 in Installation) and installed the software.
-
-**Permission errors:**
-If you see permission errors, check that you have permission to read the files you are trying to combine and permission to write to the output location.
-
-**Encoding issues:**
-SourceCombine tries to detect the file encoding, but some files might not work correctly. Try converting them to UTF-8 if you have problems.
+This project is licensed under the MIT License - see the `LICENSE` file for details.

@@ -792,7 +792,7 @@ def _pair_files(filtered_paths, source_exts, header_exts, include_mismatched, *,
     
     We use a two-pass approach:
     1. Exact matches by full relative path.
-    2. Convention-based matches by dropping the top-level directory (e.g. src/ vs include/).
+    2. Convention-based matches by dropping the top-level folder (for example, src/ vs include/).
     """
 
     file_map = _group_paths_by_stem_suffix(filtered_paths, root_path=root_path)
@@ -2164,7 +2164,7 @@ def main():
     )
     filtering_group.add_argument(
         "--max-total-size",
-        help="Stop adding files once this total size limit is reached (e.g., '5MB'). (Only when combining many files into one)",
+        help="Stop adding files once this total size limit is reached (for example, '5MB'). (Only when combining many files into one)",
     )
     filtering_group.add_argument(
         "--max-total-lines",
@@ -3085,16 +3085,16 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     # Highlight destination in the summary title
     highlighted_dest = f"{C_CYAN}{destination_desc}{title_color}" if destination_desc else ""
 
+    file_word = "file" if total_included == 1 else "files"
     if args.dry_run:
-        summary_title = f"DRY RUN COMPLETE: Would combine {total_included:,} files {source_desc or ''} {highlighted_dest}".strip()
+        summary_title = f"DRY RUN COMPLETE: Would combine {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
     elif args.estimate_tokens:
-        summary_title = "TOKEN ESTIMATION COMPLETE"
+        summary_title = f"TOKEN ESTIMATION COMPLETE: {total_included:,} {file_word} {source_desc or ''}".strip()
     elif args.list_files:
-        summary_title = "FILE LISTING COMPLETE"
+        summary_title = f"FILE LISTING COMPLETE: {total_included:,} {file_word} {source_desc or ''}".strip()
     elif args.tree:
-        summary_title = "TREE VIEW COMPLETE"
+        summary_title = f"TREE VIEW COMPLETE: {total_included:,} {file_word} {source_desc or ''}".strip()
     else:
-        file_word = "file" if total_included == 1 else "files"
         action = "Extracted" if getattr(args, 'extract', False) else "Combined"
         summary_title = f"SUCCESS: {action} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
 
