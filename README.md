@@ -106,6 +106,7 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 *   `--min-size`: Include only files larger than this size (e.g., '10KB', '1MB').
 *   `--max-size`: Include only files smaller than this size (e.g., '10KB', '1MB').
 *   `--max-depth` / `-D`: Limit folder scanning to this depth (e.g., `-D 1` for root files only; 0 for no limit).
+*   `--git-files` / `-G`: Use `git ls-files` to find files. This automatically respects your `.gitignore` and includes both tracked and untracked files. If the folder is not a Git repository, it falls back to standard scanning.
 *   `--max-tokens` / `-M`: Stop adding files once this total token limit is reached. (Only works when combining many files into one).
 *   `--max-total-size`: Stop adding files once this total size limit is reached (e.g., '1MB'). (Only works when combining many files into one).
 *   `--max-total-lines`: Stop adding files once this total line limit is reached. (Only when combining many files into one).
@@ -204,6 +205,12 @@ python sourcecombine.py src/ --sort size --reverse
 Include only files between 1 KB and 1 MB:
 ```bash
 python sourcecombine.py src/ --min-size 1KB --max-size 1MB
+```
+
+**Use Git for file discovery:**
+Combine only tracked and untracked files in a Git repository while respecting `.gitignore`:
+```bash
+python sourcecombine.py . --git-files
 ```
 
 **Extract files from a combined file:**

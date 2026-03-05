@@ -1,6 +1,7 @@
 import argparse
 import importlib.util
 import platform
+import subprocess
 import time
 from typing import Any, Mapping
 from contextlib import nullcontext
@@ -478,7 +479,44 @@ def should_include(
     return (True, None) if return_reason else True
 
 
-def collect_file_paths(root_folder, recursive, exclude_folders, progress=None, max_depth=0):
+def collect_git_files(root_folder, progress=None):
+    """Use git ls-files to find files in the repository.
+
+    Returns (file_paths, root_path, excluded_folder_count) if successful, else None.
+    """
+    root_path = Path(root_folder)
+    try:
+        # Run git ls-files to get all tracked and untracked files (ignoring those in .gitignore)
+        # --cached: show tracked files
+        # --others: show untracked files
+        # --exclude-standard: use standard git exclusion rules (.gitignore, etc.)
+        result = subprocess.run(
+            ['git', 'ls-files', '--cached', '--others', '--exclude-standard'],
+            cwd=root_path,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        file_paths = []
+        for line in result.stdout.splitlines():
+            if line:
+                file_paths.append(root_path / line)
+                if progress:
+                    progress.update(1)
+
+        # Sort for deterministic output
+        file_paths.sort()
+        return file_paths, root_path, 0
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError) as exc:
+        logging.warning(
+            "Git discovery failed in '%s': %s. Falling back to standard scanning.",
+            root_folder,
+            exc,
+        )
+        return None
+
+
+def collect_file_paths(root_folder, recursive, exclude_folders, progress=None, max_depth=0, use_git=False):
     """Return all paths in ``root_folder`` while skipping excluded folders.
 
     If ``root_folder`` is a file, it returns a list containing only that file.
@@ -491,6 +529,33 @@ def collect_file_paths(root_folder, recursive, exclude_folders, progress=None, m
             # Use parent as root for absolute paths, but preserve context for relative paths
             root = root_path.parent if root_path.is_absolute() else Path('.')
             return [root_path], root, 0
+
+        if use_git:
+            git_results = collect_git_files(root_folder, progress=progress)
+            if git_results is not None:
+                file_paths, root, excluded = git_results
+
+                # Apply max_depth if requested
+                if max_depth > 0:
+                    file_paths = [
+                        p for p in file_paths
+                        if len(p.relative_to(root).parts) <= max_depth
+                    ]
+
+                # Apply folder exclusions if requested (matching standard scan behavior)
+                exclude_patterns = _normalize_patterns(exclude_folders)
+                if exclude_patterns:
+                    def _is_excluded(p):
+                        rel_p = p.relative_to(root)
+                        # Check each parent folder against exclusion patterns
+                        return _matches_folder_glob_cached(rel_p.parent.as_posix(), rel_p.parent.parts, exclude_patterns)
+
+                    original_count = len(file_paths)
+                    file_paths = [p for p in file_paths if not _is_excluded(p)]
+                    # Note: We don't accurately count excluded FOLDERS here,
+                    # but we've filtered the files.
+
+                return file_paths, root, excluded
         is_directory = root_path.is_dir()
     except OSError as exc:
         logging.warning(
@@ -1392,6 +1457,7 @@ def find_and_combine_files(
                         exclude_folders,
                         progress=finding_bar,
                         max_depth=search_opts.get('max_depth', 0),
+                        use_git=search_opts.get('use_git', False),
                     )
                 finally:
                     finding_bar.close()
@@ -2120,6 +2186,12 @@ def main():
         type=int,
         help="Limit folder scanning to this depth (0 for no limit).",
     )
+    filtering_group.add_argument(
+        "--git-files",
+        "-G",
+        action="store_true",
+        help="Use 'git ls-files' to find files. This respects your .gitignore settings.",
+    )
 
     # Output Options Group
     output_group = parser.add_argument_group("Output Options")
@@ -2499,6 +2571,9 @@ def main():
 
     if args.grep:
         config['filters']['grep'] = args.grep
+
+    if args.git_files:
+        config['search']['use_git'] = True
 
     if args.since or args.until:
         filters = config['filters']
