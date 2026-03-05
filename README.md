@@ -101,13 +101,13 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 *   `--sort` / `-s`: Sort files by `name`, `size`, `modified`, `tokens`, or `depth` before combining.
 *   `--reverse` / `-r`: Reverse the sort order.
 *   `--limit` / `-L`: Stop processing after this many files.
-*   `--since` / `-S`: Include files modified since this time (e.g., '1d', '2h', 'YYYY-MM-DD').
-*   `--until` / `-U`: Include files modified before this time.
-*   `--min-size`: Include only files larger than this size (e.g., '10KB', '1MB').
-*   `--max-size`: Include only files smaller than this size (e.g., '10KB', '1MB').
-*   `--max-depth` / `-D`: Limit folder scanning to this depth (e.g., `-D 1` for root files only; 0 for no limit).
+*   `--since` / `-S`: Include files modified since this time (for example, '1d', '2h', 'YYYY-MM-DD').
+*   `--until` / `-U`: Include files modified before this time (for example, '1d', '2h', 'YYYY-MM-DD').
+*   `--min-size`: Include only files larger than this size (for example, '10KB', '1MB').
+*   `--max-size`: Include only files smaller than this size (for example, '10KB', '1MB').
+*   `--max-depth` / `-D`: Limit folder scanning to this depth (for example, `-D 1` for root files only; 0 for no limit).
 *   `--max-tokens` / `-M`: Stop adding files once this total token limit is reached. (Only works when combining many files into one).
-*   `--max-total-size`: Stop adding files once this total size limit is reached (e.g., '1MB'). (Only works when combining many files into one).
+*   `--max-total-size`: Stop adding files once this total size limit is reached (for example, '1MB'). (Only works when combining many files into one).
 *   `--max-total-lines`: Stop adding files once this total line limit is reached. (Only when combining many files into one).
 *   `--estimate-tokens` / `-e`: Calculate token counts without creating any files.
     *   *Note: Slower than a regular dry-run because it must read the file contents.*
@@ -118,10 +118,10 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 *   `--init`: Generate a default configuration file (`sourcecombine.yml`) in the current folder.
 *   `--system-info`: Show details about your computer and the software you are using.
 *   `--version` / `-V`: Show the tool's version and exit.
-*   `--include` / `-i`: Include only files matching a specific pattern (e.g., `-i "*.py"`). Can be used many times.
-*   `--grep` / `-g`: Include only files whose content matches a search pattern (e.g., `-g "TODO"`).
-*   `--exclude-file` / `-x`: Exclude specific files (e.g., `-x "secret.txt"`). Can be used many times.
-*   `--exclude-folder` / `-X`: Exclude specific folders (e.g., `-X "build"`). Can be used many times.
+*   `--include` / `-i`: Include only files matching a specific pattern (for example, `-i "*.py"`). Can be used many times.
+*   `--grep` / `-g`: Include only files whose content matches a search pattern (for example, `-g "TODO"`).
+*   `--exclude-file` / `-x`: Exclude specific files (for example, `-x "secret.txt"`). Can be used many times.
+*   `--exclude-folder` / `-X`: Exclude specific folders (for example, `-X "build"`). Can be used many times.
 
 ### Examples
 
@@ -249,7 +249,7 @@ available for these templates:
 - `{{STEM}}`: The file name without the extension.
 - `{{DIR}}`: The relative folder path using forward slashes.
 - `{{DIR_SLUG}}`: A filesystem-safe simplified name for `{{DIR}}` (uses `root` for the project root).
-- `{{SIZE}}`: The human-readable size of the file (e.g., `1.20 KB`).
+- `{{SIZE}}`: The human-readable size of the file (for example, `1.20 KB`).
 - `{{TOKENS}}`: The estimated number of tokens in the file.
 - `{{LINE_COUNT}}`: The number of lines in the file.
 
@@ -303,9 +303,9 @@ When pairing is enabled, you can control the naming of the output files with
 the `output.paired_filename_template` option. The template supports the
 following placeholders:
 
-- `{{STEM}}`: The base name of the file (e.g., `main` from `main.cpp`).
-- `{{SOURCE_EXT}}`: The extension of the source file (e.g., `.cpp`).
-- `{{HEADER_EXT}}`: The extension of the header file (e.g., `.h`).
+- `{{STEM}}`: The base name of the file (for example, `main` from `main.cpp`).
+- `{{SOURCE_EXT}}`: The extension of the source file (for example, `.cpp`).
+- `{{HEADER_EXT}}`: The extension of the header file (for example, `.h`).
 - `{{DIR}}`: The file's relative folder path using forward slashes (or `.` for
   files located directly in the root folder being processed).
 - `{{DIR_SLUG}}`: A filesystem-safe simplified name for `{{DIR}}`, lowercased and

@@ -727,7 +727,7 @@ def _pair_files(filtered_paths, source_exts, header_exts, include_mismatched, *,
     
     We use a two-pass approach:
     1. Exact matches by full relative path.
-    2. Convention-based matches by dropping the top-level directory (e.g. src/ vs include/).
+    2. Convention-based matches by dropping the top-level folder (for example, src/ vs include/).
     """
 
     file_map = _group_paths_by_stem_suffix(filtered_paths, root_path=root_path)
@@ -2098,7 +2098,7 @@ def main():
     )
     filtering_group.add_argument(
         "--max-total-size",
-        help="Stop adding files once this total size limit is reached (e.g., '5MB'). (Only when combining many files into one)",
+        help="Stop adding files once this total size limit is reached (for example, '5MB'). (Only when combining many files into one)",
     )
     filtering_group.add_argument(
         "--max-total-lines",
