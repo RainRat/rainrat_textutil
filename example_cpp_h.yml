@@ -10,9 +10,9 @@ output:
 
 filters:
   exclusions:
-    filenames: []  # e.g., ['*.log']
+    filenames: []  # for example, ['*.log']
     # Exclude folders if any folder name in the path matches one of these
-    # patterns (e.g., 'build' excludes ./build and ./src/app/build). Case-insensitive.
+    # patterns (for example, 'build' excludes ./build and ./src/app/build). Case-insensitive.
     folders: []
 
 processing:

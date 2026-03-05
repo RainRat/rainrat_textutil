@@ -96,7 +96,7 @@ class InvalidConfigError(Exception):
 
 
 def load_yaml_config(config_file_path):
-    """Load a YAML settings file."""
+    """Load a YAML configuration file."""
     logging.info("Loading configuration from: %s", config_file_path)
     try:
         with open(config_file_path, 'r', encoding='utf-8') as f:
@@ -475,7 +475,7 @@ def _validate_filters_section(config):
     ):
         raise InvalidConfigError(
             "'filters.inclusion_groups' and 'search.allowed_extensions' cannot be used at the same time; "
-            "specify file types in your inclusion group patterns instead (e.g., 'src/**/*.py')."
+            "specify file types in your inclusion group patterns instead (for example, 'src/**/*.py')."
         )
 
 
@@ -729,7 +729,7 @@ def process_content(buffer: str, options: Mapping[str, Any]) -> str:
     - ``remove_all_c_style_comments`` (bool)
     - ``regex_replacements`` (list of dicts): each rule must contain ``pattern`` (str)
       and ``replacement`` (str). Rules are applied sequentially. Capture groups
-      can be referenced in the replacement string (e.g., ``"\\1"``).
+      can be referenced in the replacement string (for example, ``"\\1"``).
     - ``line_regex_replacements`` (list of dicts): like ``regex_replacements`` but
       applied to whole lines. Blocks of matching lines that follow each other
       collapse into a single ``replacement`` entry (or are removed if
@@ -905,7 +905,7 @@ def format_size(size_bytes: int) -> str:
 def parse_time_value(value: str) -> float:
     """Convert a time like '1h' or '2023-01-01' into a number the computer can use.
 
-    Supports relative durations (e.g., '1h', '2d', '4w') and absolute dates
+    Supports relative durations (for example, '1h', '2d', '4w') and absolute dates
     in 'YYYY-MM-DD' format.
     """
     if not value:
