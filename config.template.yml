@@ -14,6 +14,11 @@ search:
   # Use 0 for no limit.
   max_depth: 0
 
+  # Use 'git ls-files' to find files. This automatically respects your .gitignore
+  # and includes both tracked and untracked files. If the folder is not a
+  # Git repository, it falls back to standard scanning.
+  use_git: false
+
   # Search folders recursively.
   recursive: true
 

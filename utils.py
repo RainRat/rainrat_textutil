@@ -32,6 +32,7 @@ DEFAULT_CONFIG = {
     },
     'search': {
         'max_depth': 0,
+        'use_git': False,
     },
     'filters': {
         'skip_binary': False,
@@ -362,6 +363,12 @@ def _validate_search_section(config):
             raise InvalidConfigError(
                 "search.max_depth must be 0 or more"
             )
+
+    use_git = search.get('use_git')
+    if use_git is not None and not isinstance(use_git, bool):
+        raise InvalidConfigError(
+            "search.use_git must be true or false"
+        )
 
     root_folders = search.get('root_folders')
     if root_folders is not None and not isinstance(root_folders, list):
