@@ -2113,6 +2113,7 @@ def main():
     # Filtering & Selection Group
     filtering_group = parser.add_argument_group("Filtering & Selection")
     filtering_group.add_argument(
+        "--exclude",
         "--exclude-file",
         "-x",
         dest="exclude_file",
@@ -2122,6 +2123,7 @@ def main():
     )
     filtering_group.add_argument(
         "--exclude-folder",
+        "--exclude-dir",
         "-X",
         dest="exclude_folder",
         action="append",
@@ -2130,6 +2132,7 @@ def main():
     )
     filtering_group.add_argument(
         "--include",
+        "--include-file",
         "-i",
         action="append",
         default=[],
