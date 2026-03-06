@@ -88,6 +88,12 @@ List one or more folders or files to search. If none are provided, the tool defa
 *   `--apply-in-place`: Apply whitespace compaction directly to the source files (WARNING: modifies your source files!).
 *   `--create-backups`: When using `--apply-in-place`, create `.bak` copies of the original files.
 
+### Utility Commands
+*   `--extract`: Recreate original files and folders from a combined JSON, JSONL, XML, Markdown, or Text file. You can read from a file, your terminal (`-`), or your clipboard. Sorting, token estimation, filtering options (`--include`, `--exclude-file`, `--exclude-folder`), and preview options (`--list-files`, `--tree`) are supported. Extraction from structured formats (JSON, XML) automatically preserves original token counts and sizes.
+*   `--init`: Create a basic `sourcecombine.yml` file in your current folder to get started.
+*   `--system-info`: Show details about your computer and the software you are using.
+*   `--version`: Show the tool's version and exit.
+
 ## License
 
 This project is licensed under the MIT License - see the `LICENSE` file for details.
