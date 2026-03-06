@@ -1204,6 +1204,9 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
         else:
             lines.append("Project Structure:")
 
+    dim = str(C_DIM) if output_format == 'text' else ""
+    reset = str(C_RESET) if output_format == 'text' else ""
+
     def _add_node(node, prefix="", rel_parts=()):
         items = sorted(node.keys())
         for i, item in enumerate(items):
@@ -1219,13 +1222,13 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
                 if children:
                     # It's a folder - show totals
                     if current_rel_path in folder_metadata:
-                        meta_str = f"{C_DIM}{_format_metadata_summary(folder_metadata[current_rel_path])}{C_RESET}"
+                        meta_str = f"{dim}{_format_metadata_summary(folder_metadata[current_rel_path])}{reset}"
                 elif current_rel_path in rel_to_orig:
                     # It's a file - show individual stats
                     orig_path = rel_to_orig[current_rel_path]
                     file_meta = metadata.get(orig_path)
                     if file_meta:
-                        meta_str = f"{C_DIM}{_format_metadata_summary(file_meta)}{C_RESET}"
+                        meta_str = f"{dim}{_format_metadata_summary(file_meta)}{reset}"
 
             lines.append(f"{prefix}{connector}{item}{meta_str}")
 
@@ -1237,7 +1240,7 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
     # Add the root folder name first
     root_meta_str = ""
     if metadata and Path('.') in folder_metadata:
-        root_meta_str = f"{C_DIM}{_format_metadata_summary(folder_metadata[Path('.')])}{C_RESET}"
+        root_meta_str = f"{dim}{_format_metadata_summary(folder_metadata[Path('.')])}{reset}"
 
     lines.append(f"{root_path.name or str(root_path)}/{root_meta_str}")
     _add_node(tree)
