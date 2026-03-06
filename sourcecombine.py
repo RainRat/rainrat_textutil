@@ -229,7 +229,7 @@ def _format_metadata_summary(meta: Mapping[str, Any]) -> str:
         parts.append(utils.format_size(meta['size']))
     if 'lines' in meta and meta['lines'] > 0:
         parts.append(f"{meta['lines']:,} {'line' if meta['lines'] == 1 else 'lines'}")
-    if 'tokens' in meta and meta['tokens'] > 0:
+    if 'tokens' in meta and meta['tokens'] is not None and meta['tokens'] > 0:
         parts.append(f"{meta['tokens']:,} tokens")
 
     return f" ({', '.join(parts)})" if parts else ""
@@ -1191,9 +1191,9 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
             for parent in rel_p.parents:
                 if parent not in folder_metadata:
                     folder_metadata[parent] = {'size': 0, 'tokens': 0, 'lines': 0, 'files': 0}
-                folder_metadata[parent]['size'] += file_meta.get('size', 0)
-                folder_metadata[parent]['tokens'] += file_meta.get('tokens', 0)
-                folder_metadata[parent]['lines'] += file_meta.get('lines', 0)
+                    folder_metadata[parent]['size'] += (file_meta.get('size') or 0)
+                    folder_metadata[parent]['tokens'] += (file_meta.get('tokens') or 0)
+                    folder_metadata[parent]['lines'] += (file_meta.get('lines') or 0)
                 folder_metadata[parent]['files'] += 1
 
     lines = []
@@ -2312,8 +2312,8 @@ def main():
         action="store_true",
         help=(
             "Recreate original files and folders from a combined JSON, JSONL, XML, Markdown, or Text file. "
-            "You can read from a file, your terminal ('-'), or your clipboard. Filtering options "
-            "(--include, --exclude-file, --exclude-folder) and preview options "
+            "You can read from a file, your terminal ('-'), or your clipboard. Sorting, token estimation, "
+            "filtering options (--include, --exclude-file, --exclude-folder), and preview options "
             "(--list-files, --tree) are supported."
         ),
     )
@@ -2755,7 +2755,10 @@ def main():
             config=config,
             list_files=args.list_files,
             tree_view=args.tree,
-            limit=config.get('filters', {}).get('max_files', 0)
+            limit=config.get('filters', {}).get('max_files', 0),
+            estimate_tokens=args.estimate_tokens,
+            sort_by=config.get('output', {}).get('sort_by', 'name'),
+            sort_reverse=config.get('output', {}).get('sort_reverse', False)
         )
         dest = f"to '{output_folder}'"
         source_desc = f"from '{source_name}'"
@@ -2810,7 +2813,7 @@ def main():
         _print_execution_summary(stats, args, pairing_enabled, destination_desc, duration=duration, source_desc=source_desc)
 
 
-def extract_files(content, output_folder, dry_run=False, source_name="combined file", config=None, list_files=False, tree_view=False, limit=0):
+def extract_files(content, output_folder, dry_run=False, source_name="combined file", config=None, list_files=False, tree_view=False, limit=0, estimate_tokens=False, sort_by='name', sort_reverse=False):
     """Recreate the original folder structure and files from a combined file content."""
     output_folder = Path(output_folder)
     stats = {
@@ -2818,6 +2821,9 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
         'total_files': 0,
         'total_size_bytes': 0,
         'total_lines': 0,
+        'total_tokens': 0,
+        'token_count_is_approx': False,
+        'top_files': [],
         'files_by_extension': {},
         'filter_reasons': {},
     }
@@ -2837,7 +2843,13 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
         if isinstance(data, list):
             for entry in data:
                 if isinstance(entry, dict) and 'path' in entry and 'content' in entry:
-                    files_to_create.append((entry['path'], entry['content']))
+                    meta = {
+                        'tokens': entry.get('tokens'),
+                        'size': entry.get('size_bytes'),
+                        'lines': entry.get('lines'),
+                        'is_approx': entry.get('tokens_is_approx', False)
+                    }
+                    files_to_create.append((entry['path'], entry['content'], meta))
     except json.JSONDecodeError:
         pass
 
@@ -2851,12 +2863,18 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
             try:
                 entry = json.loads(line)
                 if isinstance(entry, dict) and 'path' in entry and 'content' in entry:
-                    potential_files.append((entry['path'], entry['content']))
+                    meta = {
+                        'tokens': entry.get('tokens'),
+                        'size': entry.get('size_bytes'),
+                        'lines': entry.get('lines'),
+                        'is_approx': entry.get('tokens_is_approx', False)
+                    }
+                    potential_files.append((entry['path'], entry['content'], meta))
                 else:
                     logging.debug("Skipping malformed JSONL line in %s: %s", source_name, line)
             except (json.JSONDecodeError, TypeError):
                 logging.debug("Skipping invalid JSON line in %s: %s", source_name, line)
-        
+
         if potential_files:
             files_to_create = potential_files
 
@@ -2874,7 +2892,18 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
                     # If it starts and ends with a newline, it's likely from the template
                     if file_content.startswith('\n') and file_content.endswith('\n'):
                         file_content = file_content[1:-1]
-                    files_to_create.append((path, file_content))
+
+                    tokens_val = file_node.get('tokens')
+                    size_val = file_node.get('size')
+                    lines_val = file_node.get('lines')
+
+                    meta = {
+                        'tokens': int(tokens_val.lstrip('~').replace(',', '')) if tokens_val else None,
+                        'size': utils.parse_size_value(size_val) if size_val else None,
+                        'lines': int(lines_val.replace(',', '')) if lines_val else None,
+                        'is_approx': tokens_val.startswith('~') if tokens_val else False
+                    }
+                    files_to_create.append((path, file_content, meta))
         except (ET.ParseError, ImportError):
             pass
 
@@ -2885,7 +2914,7 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
         pattern = re.compile(r'^---\s+(.+?)\s+---\n([\s\S]*?)\n--- end \1 ---', re.MULTILINE)
         for match in pattern.finditer(content):
             path, file_content = match.groups()
-            files_to_create.append((path.strip(), file_content))
+            files_to_create.append((path.strip(), file_content, {}))
 
     # 4. Try Markdown if others failed or found nothing
     if not files_to_create:
@@ -2904,7 +2933,7 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
             if h_match:
                 path = h_match.group(1).strip()
                 file_content = cb_match.group(1)
-                files_to_create.append((path, file_content))
+                files_to_create.append((path, file_content, {}))
             last_pos = cb_match.end()
 
     if not files_to_create:
@@ -2916,7 +2945,7 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
     search_opts = config.get('search', {})
 
     filtered_files = []
-    for path_str, file_content in files_to_create:
+    for path_str, file_content, meta in files_to_create:
         rel_path = PurePath(path_str)
         include, reason = should_include(
             None,
@@ -2928,7 +2957,7 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
         )
 
         if include:
-            filtered_files.append((path_str, file_content))
+            filtered_files.append((path_str, file_content, meta))
         else:
             if reason:
                 stats['filter_reasons'][reason] = stats['filter_reasons'].get(reason, 0) + 1
@@ -2938,24 +2967,81 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
         filtered_files = filtered_files[:limit]
         stats['limit_reached'] = True
 
-    for path_str, file_content in filtered_files:
+    # Metadata and Stats Pass
+    for path_str, file_content, meta in filtered_files:
         rel_path = PurePath(path_str)
         stats['total_files'] += 1
         ext = rel_path.suffix.lower() or '.no_extension'
         stats['files_by_extension'][ext] = stats['files_by_extension'].get(ext, 0) + 1
-        stats['total_size_bytes'] += len(file_content.encode('utf-8'))
-        stats['total_lines'] += utils.count_lines(file_content)
+
+        # Use existing metadata or calculate it
+        if meta.get('size') is None:
+            meta['size'] = len(file_content.encode('utf-8'))
+        if meta.get('lines') is None:
+            meta['lines'] = utils.count_lines(file_content)
+
+        stats['total_size_bytes'] += meta['size']
+        stats['total_lines'] += meta['lines']
+
+    # Token Estimation Pass
+    if estimate_tokens:
+        needs_estimation = [f for f in filtered_files if f[2].get('tokens') is None]
+        if needs_estimation:
+            est_bar = _progress_bar(
+                needs_estimation,
+                desc="Estimating tokens",
+                unit="file",
+                enabled=_progress_enabled(False)
+            )
+            for path_str, file_content, meta in est_bar:
+                tokens, is_approx = utils.estimate_tokens(file_content)
+                meta['tokens'] = tokens
+                meta['is_approx'] = is_approx
+            est_bar.close()
+
+    for path_str, file_content, meta in filtered_files:
+        tokens = meta.get('tokens')
+        if tokens is not None:
+            stats['total_tokens'] += tokens
+            if meta.get('is_approx'):
+                stats['token_count_is_approx'] = True
+
+    # Global Sort
+    if sort_by != 'name' or sort_reverse:
+        def get_extract_sort_key(item):
+            path_str, file_content, meta = item
+            if sort_by == 'size':
+                val = meta['size']
+            elif sort_by == 'tokens':
+                val = meta.get('tokens', 0)
+            elif sort_by == 'modified':
+                # Modification time is not typically preserved in combined files
+                val = 0
+            elif sort_by == 'depth':
+                val = len(PurePath(path_str).parts)
+            else:
+                val = path_str
+            return (val, path_str)
+
+        filtered_files.sort(key=get_extract_sort_key, reverse=sort_reverse)
+
+    for path_str, file_content, meta in filtered_files:
+        stats['top_files'].append((meta.get('tokens') or 0, meta['size'], path_str))
 
     files_to_create = filtered_files
 
     if list_files:
-        for path_str, _ in files_to_create:
+        for path_str, _, _ in files_to_create:
             print(path_str)
         return stats
 
     if tree_view:
-        tree_paths = [Path(source_name) / p for p, _ in files_to_create]
-        print(_generate_tree_string(tree_paths, Path(source_name), include_header=False))
+        tree_paths = [Path(source_name) / p for p, _, _ in files_to_create]
+        metadata_lookup = {
+            Path(source_name) / p: {'size': m['size'], 'tokens': m.get('tokens', 0), 'lines': m['lines']}
+            for p, _, m in files_to_create
+        }
+        print(_generate_tree_string(tree_paths, Path(source_name), include_header=False, metadata=metadata_lookup))
         return stats
 
     logging.info("Found %d files to extract from %s", len(files_to_create), source_name)
@@ -2970,7 +3056,7 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
         enabled=_progress_enabled(dry_run)
     )
 
-    for rel_path_str, file_content in extraction_bar:
+    for rel_path_str, file_content, meta in extraction_bar:
         # Security check: prevent path traversal and absolute paths across platforms.
         try:
             # We use joinpath and resolve to catch traversal and absolute path attempts.
