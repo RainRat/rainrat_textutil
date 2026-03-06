@@ -1191,9 +1191,9 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
             for parent in rel_p.parents:
                 if parent not in folder_metadata:
                     folder_metadata[parent] = {'size': 0, 'tokens': 0, 'lines': 0, 'files': 0}
-                    folder_metadata[parent]['size'] += (file_meta.get('size') or 0)
-                    folder_metadata[parent]['tokens'] += (file_meta.get('tokens') or 0)
-                    folder_metadata[parent]['lines'] += (file_meta.get('lines') or 0)
+                folder_metadata[parent]['size'] += (file_meta.get('size') or 0)
+                folder_metadata[parent]['tokens'] += (file_meta.get('tokens') or 0)
+                folder_metadata[parent]['lines'] += (file_meta.get('lines') or 0)
                 folder_metadata[parent]['files'] += 1
 
     lines = []
