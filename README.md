@@ -1,25 +1,31 @@
-# rainrat_textutil
+# SourceCombine
 
-A versatile CLI tool for searching, filtering, and combining source code files from a project into a single output file (or folder). Perfect for providing context to LLMs, generating documentation, or creating backups.
+A versatile tool for your terminal to find, filter, and combine source code files from a project into one file (or folder). Use it to give better context to AI assistants, generate documentation, or save your work.
 
 ## Key Features
 
-*   **Recursion & Root Folders:** Search recursively from multiple root folders.
-*   **Filtering:** Exclude folders, files, or specific filename patterns using standard globs.
-*   **Include Groups:** Define specific groups of files to always include, even if they would otherwise be filtered.
-*   **Sorting:** Order files by name, size, modification date, tokens, or depth.
-*   **Limiting:** Restrict output by file count, total tokens, or total file size.
-*   **In-Place Processing:** Option to apply whitespace compaction and other processing directly to the source files.
-*   **Smart Combining:** Option to combine files while respecting file headers and structural markers.
-*   **Estimation:** Perform a dry-run or estimate token counts without writing files.
-*   **Configuration:** Use a `sourcecombine.yml` file to store your project-specific settings.
+*   **Recursion & Root Folders:** Find files in many folders at once.
+*   **Filtering:** Skip folders, files, or specific names using search patterns.
+*   **Include Groups:** Group specific files to always include, even if you filter others.
+*   **Sorting:** Order files by name, size, modification date, token count, or folder depth.
+*   **Limiting:** Stop at a specific file count, total token limit, or total file size.
+*   **In-Place Processing:** Clean up extra spaces or blank lines directly in your source files.
+*   **Smart Combining:** Combine files while keeping headers and structural markers.
+*   **Estimation:** See the total token count without writing any files.
+*   **Configuration:** Save your settings in a `sourcecombine.yml` file.
 
-## Installation
+## Download the code
 
 ```bash
 git clone https://github.com/RainRat/rainrat_textutil.git
 cd rainrat_textutil
 pip install -r requirements.txt
+```
+
+### Verify it works
+
+```bash
+python sourcecombine.py --version
 ```
 
 ## Quick Start
@@ -30,7 +36,7 @@ Combine all Python files in the current folder into `combined.txt`:
 python sourcecombine.py . -o combined.txt --include "*.py"
 ```
 
-Combine all files in `src/` and `lib/`, excluding anything in `test/`, and estimate the total token count:
+Combine all files in `src/` and `lib/`, skip the `test/` folder, and estimate the token count:
 
 ```bash
 python sourcecombine.py src lib -o output/ --exclude-folder "test" --estimate-tokens
@@ -38,7 +44,7 @@ python sourcecombine.py src lib -o output/ --exclude-folder "test" --estimate-to
 
 ## Configuration
 
-`sourcecombine.py` looks for a `sourcecombine.yml` file in the current directory or the root folders you specify. You can use this to define complex exclusion rules, inclusion groups, and default output paths.
+`sourcecombine.py` looks for a `sourcecombine.yml` file in the current folder or the folders you choose. Use it to set complex exclusion rules, inclusion groups, and default output paths.
 
 See `config.template.yml` for a fully documented example.
 
@@ -49,44 +55,61 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 ```
 
 ### Targets
-List one or more folders or files to search. If none are provided, the tool defaults to the current directory.
+List one or more folders or files to search. If you do not provide any, the tool uses the current folder. If the first target is a `.yml` or `.yaml` file, the tool uses it as its configuration.
 
 ### Core Options
-*   `-o` / `--output`: Path to the output file or folder.
-*   `--dry-run`: Show which files would be processed without actually combining them.
-*   `--verbose` / `-v`: Show detailed information about each file found and its processing status.
-*   `--config`: Path to a specific configuration file.
+*   `-o` / `--output`: Save the result to a specific file or folder.
+*   `--dry-run` / `-d`: Show what would happen without making changes.
+*   `--verbose` / `-v`: Show detailed status messages to help troubleshoot issues.
+*   `--config`: Use a specific configuration file.
 
-### Search & Filtering
-*   `-i` / `--include`: Glob patterns for files to include (for example, `*.py`, `*.js`).
-*   `-x` / `--exclude`: Glob patterns for files to exclude.
-*   `-X` / `--exclude-folder`: Folder names to skip entirely (for example, `node_modules`, `.git`, `__pycache__`).
-*   `--grep` / `-g`: Only include files whose *content* matches this regular expression.
-
-### Sorting & Limiting
-*   `--sort` / `-s`: Sort files by `name`, `size`, `modified`, `tokens`, or `depth` before combining.
-*   `--reverse` / `-r`: Reverse the sort order.
-*   `--limit` / `-L`: Stop processing after this many files.
+### Filtering & Selection
+*   `-i` / `--include`: Include only files matching this search pattern (for example, `*.py`, `*.js`).
+*   `-x` / `--exclude-file`: Skip files matching this search pattern (for example, `*.log`).
+*   `-X` / `--exclude-folder`: Skip folders matching this search pattern (for example, `node_modules`, `.git`).
+*   `--grep` / `-g`: Include only files whose content matches this search pattern.
 *   `--since` / `-S`: Include files modified since this time (for example, '1d', '2h', 'YYYY-MM-DD').
 *   `--until` / `-U`: Include files modified before this time (for example, '1d', '2h', 'YYYY-MM-DD').
 *   `--min-size`: Include only files larger than this size (for example, '10KB', '1MB').
 *   `--max-size`: Include only files smaller than this size (for example, '10KB', '1MB').
 *   `--max-depth` / `-D`: Limit folder scanning to this depth (for example, `-D 1` for root files only; 0 for no limit).
-*   `--git-files` / `-G`: Use `git ls-files` to find files. This automatically respects your `.gitignore` and includes both tracked and untracked files. If the folder is not a Git repository, it falls back to standard scanning.
-*   `--max-tokens` / `-M`: Stop adding files once this total token limit is reached. (Only works when combining many files into one).
-*   `--max-total-size`: Stop adding files once this total size limit is reached (for example, '1MB'). (Only works when combining many files into one).
-*   `--max-total-lines`: Stop adding files once this total line limit is reached. (Only when combining many files into one).
-*   `--estimate-tokens` / `-e`: Calculate token counts without creating any files.
-    *   *Note: Slower than a regular dry-run because it must read the file contents.*
+*   `--git-files` / `-G`: Use `git ls-files` to find files. This respects your `.gitignore` settings.
 
-### Display
-*   `--list-files`: Print a flat list of all files that would be included.
-*   `--tree`: Print a tree-style view of the project structure and included files.
+### Sorting & Limiting
+*   `--sort` / `-s`: Sort files by `name`, `size`, `modified`, `tokens`, or `depth` before combining.
+*   `--reverse` / `-r`: Reverse the sort order.
+*   `--limit` / `-L`: Stop after finding this many files.
+*   `--max-tokens` / `-M`: Stop adding files once this total token limit is reached.
+*   `--max-total-size`: Stop adding files once this total size limit is reached (for example, '1MB').
+*   `--max-total-lines`: Stop adding files once this total line limit is reached.
+
+### Output Options
+*   `-a` / `--ai`: Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, and folder tree.
+*   `-c` / `--clipboard`: Copy the result to your clipboard instead of creating a file.
+*   `-f` / `--format`: Choose the output format (`text`, `json`, `jsonl`, `markdown`, `xml`).
+*   `-m` / `--markdown`: Shortcut for `--format markdown`.
+*   `-j` / `--json`: Shortcut for `--format json`.
+*   `-w` / `--xml`: Shortcut for `--format xml`.
+*   `-n` / `--line-numbers`: Add line numbers to each file in the output.
+*   `-T` / `--toc`: Add a Table of Contents to the start of the output.
+*   `-p` / `--include-tree`: Add a visual folder tree to the start of the output.
+
+### Display & Preview
+*   `--list-files` / `-l`: Show a list of all files that would be included and then stop.
+*   `--tree` / `-t`: Show a visual folder tree of all included files and then stop.
+*   `--estimate-tokens` / `-e`: Calculate token counts without writing any files.
+    *   *Note: Slower than a dry-run because the tool must read every file.*
 
 ### Processing
-*   `--compact-whitespace`: Remove redundant blank lines and leading/trailing whitespace.
-*   `--apply-in-place`: Apply whitespace compaction directly to the source files (WARNING: modifies your source files!).
-*   `--create-backups`: When using `--apply-in-place`, create `.bak` copies of the original files.
+*   `--compact` / `-C`: Clean up extra spaces and blank lines in the output.
+*   `--apply-in-place`: Apply processing rules directly to your source files (WARNING: modifies your files!).
+*   `--create-backups`: Create `.bak` copies of your original files when using `--apply-in-place`.
+
+### Utility Commands
+*   `--init`: Create a basic `sourcecombine.yml` file in your current folder to get started.
+*   `--extract`: Recreate original files and folders from a combined file.
+*   `--system-info`: Show details about your computer and software environment.
+*   `-V` / `--version`: Show the tool's version and exit.
 
 ### Utility Commands
 *   `--extract`: Recreate original files and folders from a combined JSON, JSONL, XML, Markdown, or Text file. You can read from a file, your terminal (`-`), or your clipboard. Sorting, token estimation, filtering options (`--include`, `--exclude-file`, `--exclude-folder`), and preview options (`--list-files`, `--tree`) are supported. Extraction from structured formats (JSON, XML) automatically preserves original token counts and sizes.
