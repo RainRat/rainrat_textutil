@@ -2099,15 +2099,34 @@ def main():
         """),
     )
 
-    # Positional arguments
-    parser.add_argument(
+    # Core Options Group
+    core_group = parser.add_argument_group("Core Options")
+    core_group.add_argument(
         "targets",
         nargs="*",
         metavar="TARGET",
-        help=(
-            "Folders, files, or a configuration file. "
-            "If the first target is a .yml or .yaml file, the software uses it for its configuration."
-        ),
+        help="Folders or files to search. If you do not provide any, the current folder is used.",
+    )
+    core_group.add_argument(
+        "--config",
+        help="Use a specific configuration file. This skips auto-detecting a configuration from your target list.",
+    )
+    core_group.add_argument(
+        "--output",
+        "-o",
+        help="Save the result to a specific file or folder. This overrides the path in your configuration file.",
+    )
+    core_group.add_argument(
+        "--dry-run",
+        "-d",
+        action="store_true",
+        help="Show what would happen without actually making any changes.",
+    )
+    core_group.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Show detailed status messages to help troubleshoot issues.",
     )
 
     # Filtering & Selection Group
@@ -2208,11 +2227,6 @@ def main():
         help="Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, and folder tree. This also copies to your clipboard if you do not specify an output.",
     )
     output_group.add_argument(
-        "--output",
-        "-o",
-        help="Save the result to a specific file or folder. This overrides the path in your configuration file.",
-    )
-    output_group.add_argument(
         "--clipboard",
         "-c",
         action="store_true",
@@ -2261,12 +2275,6 @@ def main():
         help="Include a visual folder tree with file details at the start of the output. (Only when combining many files into one)",
     )
     output_group.add_argument(
-        "--compact",
-        "-C",
-        action="store_true",
-        help="Clean up extra spaces and blank lines in the output to save tokens.",
-    )
-    output_group.add_argument(
         "--sort",
         "-s",
         choices=["name", "size", "modified", "tokens", "depth"],
@@ -2279,14 +2287,27 @@ def main():
         help="Reverse the sort order.",
     )
 
+    # Processing Group
+    processing_group = parser.add_argument_group("Processing")
+    processing_group.add_argument(
+        "--compact",
+        "-C",
+        action="store_true",
+        help="Clean up extra spaces and blank lines in the output to save tokens.",
+    )
+    processing_group.add_argument(
+        "--apply-in-place",
+        action="store_true",
+        help="Apply processing rules directly to your source files (WARNING: modifies your files!).",
+    )
+    processing_group.add_argument(
+        "--create-backups",
+        action="store_true",
+        help="Create '.bak' copies of your original files when using --apply-in-place.",
+    )
+
     # Preview & Estimation Group
     preview_group = parser.add_argument_group("Preview & Estimation")
-    preview_group.add_argument(
-        "--dry-run",
-        "-d",
-        action="store_true",
-        help="Show what would happen without actually making any changes.",
-    )
     preview_group.add_argument(
         "--estimate-tokens",
         "-e",
@@ -2335,13 +2356,6 @@ def main():
         version=f"%(prog)s {__version__}",
         help="Show the tool's version and exit.",
     )
-    utility_group.add_argument(
-        "-v",
-        "--verbose",
-        action="store_true",
-        help="Show detailed status messages to help troubleshoot issues.",
-    )
-
     args = parser.parse_args()
 
     # Handle the AI preset flag by enabling several other flags
@@ -2411,15 +2425,16 @@ def main():
 
     targets = args.targets
     config = None
-    config_path = None
+    config_path = args.config
     remaining_targets = []
 
     if targets:
         first = targets[0]
-        # If the first target is a YAML file, it's our configuration
-        # We don't check for existence here so that missing config files
-        # trigger a proper "Config not found" error later.
-        if first.lower().endswith(('.yml', '.yaml')) and not Path(first).is_dir():
+        # Auto-detect config only if --config wasn't used and we aren't extracting.
+        # This keeps the behavior consistent for simple cases while adding
+        # explicit control for advanced ones.
+        if (not config_path and not args.extract and
+            first.lower().endswith(('.yml', '.yaml')) and not Path(first).is_dir()):
             config_path = first
             remaining_targets = targets[1:]
         else:
@@ -2617,6 +2632,12 @@ def main():
 
     if args.compact:
         config['processing']['compact_whitespace'] = True
+
+    if args.apply_in_place:
+        config['processing']['apply_in_place'] = True
+
+    if args.create_backups:
+        config['processing']['create_backups'] = True
 
     if args.sort:
         output_conf['sort_by'] = args.sort
