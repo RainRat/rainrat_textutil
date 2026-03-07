@@ -2345,6 +2345,11 @@ def main():
         ),
     )
     utility_group.add_argument(
+        "--restore",
+        action="store_true",
+        help="Undo 'apply-in-place' changes by restoring original files from their .bak copies. This command scans your target folders recursively for backup files.",
+    )
+    utility_group.add_argument(
         "--system-info",
         action="store_true",
         help="Show details about your computer and the software you are using.",
@@ -2443,6 +2448,12 @@ def main():
     # Initially, we don't strictly require root_folders in the config file
     # because we can fall back to the current folder later.
     nested_required = {}
+
+    if args.restore:
+        # Use targets from CLI if provided, otherwise fallback to config root_folders
+        restore_targets = remaining_targets if remaining_targets else config.get('search', {}).get('root_folders', ["."])
+        restore_backups(restore_targets, dry_run=args.dry_run)
+        sys.exit(0)
 
     if not config_path and not remaining_targets:
         # Case 1: No positional targets. Use auto-finding
@@ -3124,6 +3135,61 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
         logging.info("Extraction complete. %d files created in %s", extracted_count, output_folder)
 
     return stats
+
+
+def restore_backups(targets, dry_run=False):
+    """Scan targets recursively for .bak files and restore them."""
+    if not targets:
+        targets = ["."]
+
+    restored_count = 0
+    error_count = 0
+
+    for target in targets:
+        root_path = Path(target)
+        if not root_path.exists():
+            logging.warning("Target folder not found: %s", target)
+            continue
+
+        if root_path.is_file():
+            # If a single file is targeted, check if it's a backup or has one
+            backup_files = []
+            if root_path.suffix == ".bak":
+                backup_files = [root_path]
+            elif Path(f"{root_path}.bak").is_file():
+                backup_files = [Path(f"{root_path}.bak")]
+        else:
+            # Recursive scan for .bak files
+            backup_files = sorted(root_path.rglob("*.bak"))
+
+        if not backup_files:
+            logging.info("No backup files (.bak) found in '%s'.", target)
+            continue
+
+        for backup_path in backup_files:
+            original_path = backup_path.with_suffix("")
+            rel_path = _get_rel_path(original_path, root_path)
+
+            if dry_run:
+                logging.info("[DRY RUN] Would restore: %s", rel_path)
+                restored_count += 1
+            else:
+                try:
+                    # Move the backup back to the original location, overwriting the processed file
+                    shutil.move(backup_path, original_path)
+                    logging.info("Restored: %s", rel_path)
+                    restored_count += 1
+                except OSError as e:
+                    logging.error("Failed to restore %s: %s", rel_path, e)
+                    error_count += 1
+
+    if restored_count > 0 or error_count > 0:
+        action = "Would restore" if dry_run else "Restored"
+        logging.info("%s %d files. Errors: %d", action, restored_count, error_count)
+    else:
+        logging.info("No files were restored.")
+
+    return restored_count, error_count
 
 
 def print_system_info():
