@@ -74,6 +74,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--max-size`: Include only files smaller than this size (for example, '10KB', '1MB').
 *   `--max-depth` / `-D`: Limit folder scanning to this depth (for example, `-D 1` for root files only; 0 for no limit).
 *   `--git-files` / `-G`: Use `git ls-files` to find files. This respects your `.gitignore` settings.
+*   `--files-from`: Read a list of files to include from a text file (use `-` for your terminal). This skips scanning folders.
 
 ### Sorting & Limiting
 *   `--sort` / `-s`: Sort files by `name`, `size`, `modified`, `tokens`, or `depth` before combining.
