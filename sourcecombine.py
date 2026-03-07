@@ -3137,6 +3137,24 @@ def print_system_info():
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
 
+def _print_limit_usage_bar(label, current, maximum, label_width):
+    """Print an ASCII progress bar for limit usage."""
+    if maximum <= 0:
+        return
+    percent = (current / maximum) * 100
+    # Create a 10-character ASCII bar
+    bar_len = 10
+    filled = min(bar_len, int((percent / 100) * bar_len))
+    bar = f"[{'#' * filled}{'-' * (bar_len - filled)}]"
+    if percent >= 100:
+        bar_color = C_RED
+    elif percent > 90:
+        bar_color = C_YELLOW
+    else:
+        bar_color = C_GREEN
+    print(f"    {C_BOLD}{label:<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_CYAN}{percent:>6.1f}%{C_RESET}", file=sys.stderr)
+
+
 def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None, duration=None, source_desc=None):
     """Print a summary of the totals to your terminal."""
 
@@ -3262,53 +3280,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         if duration is not None:
             print(f"    {C_BOLD}{'Duration:':<{label_width}}{C_RESET}{C_CYAN}{duration:.2f}s{C_RESET}", file=sys.stderr)
 
-        # Token Limit Usage
-        max_tokens = stats.get('max_total_tokens', 0)
-        if max_tokens > 0:
-            percent = (token_count / max_tokens) * 100
-            # Create a 10-character ASCII bar
-            bar_len = 10
-            filled = min(bar_len, int((percent / 100) * bar_len))
-            bar = f"[{'#' * filled}{'-' * (bar_len - filled)}]"
-            if percent >= 100:
-                bar_color = C_RED
-            elif percent > 90:
-                bar_color = C_YELLOW
-            else:
-                bar_color = C_GREEN
-            print(f"    {C_BOLD}{'Token Limit Usage:':<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_CYAN}{percent:>6.1f}%{C_RESET}", file=sys.stderr)
-
-        # Total Size Limit Usage
-        max_total_size = stats.get('max_total_size_bytes', 0)
-        if max_total_size > 0:
-            percent = (total_size_bytes / max_total_size) * 100
-            # Create a 10-character ASCII bar
-            bar_len = 10
-            filled = min(bar_len, int((percent / 100) * bar_len))
-            bar = f"[{'#' * filled}{'-' * (bar_len - filled)}]"
-            if percent >= 100:
-                bar_color = C_RED
-            elif percent > 90:
-                bar_color = C_YELLOW
-            else:
-                bar_color = C_GREEN
-            print(f"    {C_BOLD}{'Size Limit Usage:':<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_CYAN}{percent:>6.1f}%{C_RESET}", file=sys.stderr)
-
-        # Total Line Limit Usage
-        max_total_lines = stats.get('max_total_lines', 0)
-        if max_total_lines > 0:
-            percent = (total_lines / max_total_lines) * 100
-            # Create a 10-character ASCII bar
-            bar_len = 10
-            filled = min(bar_len, int((percent / 100) * bar_len))
-            bar = f"[{'#' * filled}{'-' * (bar_len - filled)}]"
-            if percent >= 100:
-                bar_color = C_RED
-            elif percent > 90:
-                bar_color = C_YELLOW
-            else:
-                bar_color = C_GREEN
-            print(f"    {C_BOLD}{'Line Limit Usage:':<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_CYAN}{percent:>6.1f}%{C_RESET}", file=sys.stderr)
+        _print_limit_usage_bar('Token Limit Usage:', token_count, stats.get('max_total_tokens', 0), label_width)
+        _print_limit_usage_bar('Size Limit Usage:', total_size_bytes, stats.get('max_total_size_bytes', 0), label_width)
+        _print_limit_usage_bar('Line Limit Usage:', total_lines, stats.get('max_total_lines', 0), label_width)
 
     # Largest Files
     if stats.get('top_files'):
