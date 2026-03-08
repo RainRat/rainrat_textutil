@@ -73,7 +73,7 @@ _ANSI_ESCAPE = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
 
 
 class CLILogFormatter(logging.Formatter):
-    """A clean logging formatter for the CLI.
+    """A clean logging formatter for your terminal.
 
     Removes the 'INFO:' prefix for standard messages and adds semantic colors
     to WARNING and ERROR levels.
@@ -112,7 +112,7 @@ class CLILogFormatter(logging.Formatter):
         return f"{prefix}{message}"
 
 
-try:  # Optional software for progress reporting
+try:  # Optional tool for progress reporting
     from tqdm import tqdm as _tqdm
 except ImportError:  # pragma: no cover - gracefully handle missing tqdm
     _tqdm = None
@@ -482,7 +482,7 @@ def should_include(
 def collect_git_files(root_folder, progress=None):
     """Use git ls-files to find files in the repository.
 
-    Returns (file_paths, root_path, excluded_folder_count) if successful, else None.
+    Returns (file_paths, root_path, excluded_folder_count) if successful; otherwise returns None.
     """
     root_path = Path(root_folder)
     try:
@@ -509,7 +509,7 @@ def collect_git_files(root_folder, progress=None):
         return file_paths, root_path, 0
     except (subprocess.CalledProcessError, FileNotFoundError, OSError) as exc:
         logging.warning(
-            "Git discovery failed in '%s': %s. Falling back to standard scanning.",
+            "Git search failed in '%s': %s. Falling back to standard scanning.",
             root_folder,
             exc,
         )
@@ -2070,7 +2070,7 @@ def main():
     parser = argparse.ArgumentParser(
         description=(
             "Combine many files into one file or into pairs. "
-            "Use this software to give better context to AI assistants, "
+            "Use this tool to give better context to AI assistants, "
             "save code, or perform code reviews."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -2105,7 +2105,7 @@ def main():
         "targets",
         nargs="*",
         metavar="TARGET",
-        help="Folders or files to search. If you do not provide any, the current folder is used.",
+        help="Folders or files to search. If the first target is a .yml or .yaml file, the tool uses it as its configuration. If no targets are provided, the tool uses the current folder.",
     )
     core_group.add_argument(
         "--config",
@@ -2176,27 +2176,6 @@ def main():
         help="Include only files smaller than this size (for example, '10KB', '1MB').",
     )
     filtering_group.add_argument(
-        "--limit",
-        "-L",
-        type=int,
-        help="Stop after finding this many files.",
-    )
-    filtering_group.add_argument(
-        "--max-tokens",
-        "-M",
-        type=int,
-        help="Stop adding files once this total token limit is reached. (Only when combining many files into one)",
-    )
-    filtering_group.add_argument(
-        "--max-total-size",
-        help="Stop adding files once this total size limit is reached (for example, '5MB'). (Only when combining many files into one)",
-    )
-    filtering_group.add_argument(
-        "--max-total-lines",
-        type=int,
-        help="Stop adding files once this total line limit is reached. (Only when combining many files into one)",
-    )
-    filtering_group.add_argument(
         "--files-from",
         help="Read a list of files from a text file (use '-' for your terminal). This skips looking for files in folders.",
     )
@@ -2216,6 +2195,42 @@ def main():
         "-G",
         action="store_true",
         help="Use 'git ls-files' to find files. This respects your .gitignore settings.",
+    )
+
+    # Sorting & Limiting Group
+    sorting_group = parser.add_argument_group("Sorting & Limiting")
+    sorting_group.add_argument(
+        "--sort",
+        "-s",
+        choices=["name", "size", "modified", "tokens", "depth"],
+        help="Sort files by name, size, modified time, token count, or folder depth before combining.",
+    )
+    sorting_group.add_argument(
+        "--reverse",
+        "-r",
+        action="store_true",
+        help="Reverse the sort order.",
+    )
+    sorting_group.add_argument(
+        "--limit",
+        "-L",
+        type=int,
+        help="Stop after finding this many files.",
+    )
+    sorting_group.add_argument(
+        "--max-tokens",
+        "-M",
+        type=int,
+        help="Stop adding files once this total token limit is reached. (Only when combining many files into one)",
+    )
+    sorting_group.add_argument(
+        "--max-total-size",
+        help="Stop adding files once this total size limit is reached (for example, '5MB'). (Only when combining many files into one)",
+    )
+    sorting_group.add_argument(
+        "--max-total-lines",
+        type=int,
+        help="Stop adding files once this total line limit is reached. (Only when combining many files into one)",
     )
 
     # Output Options Group
@@ -2274,19 +2289,6 @@ def main():
         action="store_true",
         help="Include a visual folder tree with file details at the start of the output. (Only when combining many files into one)",
     )
-    output_group.add_argument(
-        "--sort",
-        "-s",
-        choices=["name", "size", "modified", "tokens", "depth"],
-        help="Sort files by name, size, modified time, token count, or folder depth before combining.",
-    )
-    output_group.add_argument(
-        "--reverse",
-        "-r",
-        action="store_true",
-        help="Reverse the sort order.",
-    )
-
     # Processing Group
     processing_group = parser.add_argument_group("Processing")
     processing_group.add_argument(
@@ -2306,8 +2308,8 @@ def main():
         help="Create '.bak' copies of your original files when using --apply-in-place.",
     )
 
-    # Preview & Estimation Group
-    preview_group = parser.add_argument_group("Preview & Estimation")
+    # Display & Preview Group
+    preview_group = parser.add_argument_group("Display & Preview")
     preview_group.add_argument(
         "--estimate-tokens",
         "-e",
@@ -2352,7 +2354,7 @@ def main():
     utility_group.add_argument(
         "--system-info",
         action="store_true",
-        help="Show details about your computer and the software you are using.",
+        help="Show details about your computer and the tool you are using.",
     )
     utility_group.add_argument(
         "--version",
@@ -2755,7 +2757,7 @@ def main():
                 content = pyperclip.paste()
                 source_name = "clipboard"
             except ImportError:
-                logging.error("The 'pyperclip' software is required for clipboard support. Install it with: pip install pyperclip")
+                logging.error("The 'pyperclip' tool is required for clipboard support. Install it with: pip install pyperclip")
                 sys.exit(1)
         elif remaining_targets and remaining_targets[0] == "-":
             content = sys.stdin.read()

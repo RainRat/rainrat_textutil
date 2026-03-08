@@ -451,7 +451,7 @@ def test_cli_extract_clipboard_import_error_coverage(monkeypatch, caplog):
         with pytest.raises(SystemExit) as excinfo:
             sourcecombine.main()
     assert excinfo.value.code == 1
-    assert "The 'pyperclip' software is required" in caplog.text
+    assert "The 'pyperclip' tool is required" in caplog.text
 
 def test_extract_jsonl_edge_cases(tmp_path):
     from sourcecombine import extract_files
