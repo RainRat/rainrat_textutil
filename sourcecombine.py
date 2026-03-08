@@ -2109,10 +2109,11 @@ def main():
         "targets",
         nargs="*",
         metavar="TARGET",
-        help="Folders or files to search. If you do not provide any, the current folder is used.",
+        help="Folders or files to search. If you do not provide any, the current folder is used. If the first target is a '.yml' or '.yaml' file, it will be used as the configuration.",
     )
     core_group.add_argument(
         "--config",
+        "-k",
         help="Use a specific configuration file. This skips auto-detecting a configuration from your target list.",
     )
     core_group.add_argument(
@@ -2180,27 +2181,6 @@ def main():
         help="Include only files smaller than this size (for example, '10KB', '1MB').",
     )
     filtering_group.add_argument(
-        "--limit",
-        "-L",
-        type=int,
-        help="Stop after finding this many files.",
-    )
-    filtering_group.add_argument(
-        "--max-tokens",
-        "-M",
-        type=int,
-        help="Stop adding files once this total token limit is reached. (Only when combining many files into one)",
-    )
-    filtering_group.add_argument(
-        "--max-total-size",
-        help="Stop adding files once this total size limit is reached (for example, '5MB'). (Only when combining many files into one)",
-    )
-    filtering_group.add_argument(
-        "--max-total-lines",
-        type=int,
-        help="Stop adding files once this total line limit is reached. (Only when combining many files into one)",
-    )
-    filtering_group.add_argument(
         "--files-from",
         help="Read a list of files from a text file (use '-' for your terminal). This skips looking for files in folders.",
     )
@@ -2220,6 +2200,42 @@ def main():
         "-G",
         action="store_true",
         help="Use 'git ls-files' to find files. This respects your .gitignore settings.",
+    )
+
+    # Sorting & Limiting Group
+    sorting_group = parser.add_argument_group("Sorting & Limiting")
+    sorting_group.add_argument(
+        "--sort",
+        "-s",
+        choices=["name", "size", "modified", "tokens", "depth"],
+        help="Sort files by name, size, modified time, token count, or folder depth before combining.",
+    )
+    sorting_group.add_argument(
+        "--reverse",
+        "-r",
+        action="store_true",
+        help="Reverse the sort order.",
+    )
+    sorting_group.add_argument(
+        "--limit",
+        "-L",
+        type=int,
+        help="Stop after finding this many files.",
+    )
+    sorting_group.add_argument(
+        "--max-tokens",
+        "-M",
+        type=int,
+        help="Stop adding files once this total token limit is reached. (Only when combining many files into one)",
+    )
+    sorting_group.add_argument(
+        "--max-total-size",
+        help="Stop adding files once this total size limit is reached (for example, '5MB'). (Only when combining many files into one)",
+    )
+    sorting_group.add_argument(
+        "--max-total-lines",
+        type=int,
+        help="Stop adding files once this total line limit is reached. (Only when combining many files into one)",
     )
 
     # Output Options Group
@@ -2278,17 +2294,26 @@ def main():
         action="store_true",
         help="Include a visual folder tree with file details at the start of the output. (Only when combining many files into one)",
     )
-    output_group.add_argument(
-        "--sort",
-        "-s",
-        choices=["name", "size", "modified", "tokens", "depth"],
-        help="Sort files by name, size, modified time, token count, or folder depth before combining.",
-    )
-    output_group.add_argument(
-        "--reverse",
-        "-r",
+
+    # Display & Preview Group
+    display_group = parser.add_argument_group("Display & Preview")
+    display_group.add_argument(
+        "--estimate-tokens",
+        "-e",
         action="store_true",
-        help="Reverse the sort order.",
+        help="Estimate how many tokens the output will use. This is slower because the tool must read every file.",
+    )
+    display_group.add_argument(
+        "--list-files",
+        "-l",
+        action="store_true",
+        help="Show a list of all files that would be included and then stop.",
+    )
+    display_group.add_argument(
+        "--tree",
+        "-t",
+        action="store_true",
+        help="Show a visual folder tree of all included files with file details and then stop.",
     )
 
     # Processing Group
@@ -2308,27 +2333,6 @@ def main():
         "--create-backups",
         action="store_true",
         help="Create '.bak' copies of your original files when using --apply-in-place.",
-    )
-
-    # Preview & Estimation Group
-    preview_group = parser.add_argument_group("Preview & Estimation")
-    preview_group.add_argument(
-        "--estimate-tokens",
-        "-e",
-        action="store_true",
-        help="Estimate how many tokens the output will use. This is slower because the tool must read every file.",
-    )
-    preview_group.add_argument(
-        "--list-files",
-        "-l",
-        action="store_true",
-        help="Show a list of all files that would be included and then stop.",
-    )
-    preview_group.add_argument(
-        "--tree",
-        "-t",
-        action="store_true",
-        help="Show a visual folder tree of all included files with file details and then stop.",
     )
 
     # Utility Commands Group
@@ -3330,7 +3334,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             if count > 0:
                 display_reason = reason.replace('_', ' ')
                 # Use dim for less visual noise in the breakdown
-                print(f"      {C_DIM}- {display_reason:<{label_width - 4}}{C_RESET}{C_CYAN}{count:12,}{C_RESET}", file=sys.stderr)
+                print(f"      {C_DIM}- {display_reason:<{label_width - 2}}{C_RESET}{C_CYAN}{count:12,}{C_RESET}", file=sys.stderr)
 
     print(f"    {C_BOLD}{'Total Found:':<{label_width}}{C_RESET}{C_CYAN}{total_discovered:12,}{C_RESET}", file=sys.stderr)
     if excluded_folders > 0:
