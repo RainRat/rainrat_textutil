@@ -2350,6 +2350,11 @@ def main():
         help="Undo 'apply-in-place' changes by restoring original files from their .bak copies. This command scans your target folders recursively for backup files.",
     )
     utility_group.add_argument(
+        "--show-config",
+        action="store_true",
+        help="Show the final combined configuration and exit. This includes defaults, your configuration file, and any CLI options you provide.",
+    )
+    utility_group.add_argument(
         "--system-info",
         action="store_true",
         help="Show details about your computer and the software you are using.",
@@ -2713,6 +2718,22 @@ def main():
 
     if not args.format:
         args.format = output_conf.get('format', 'text')
+    output_conf['format'] = args.format
+
+    if args.show_config:
+        import yaml
+
+        def _convert_to_json_friendly(obj):
+            if isinstance(obj, dict):
+                return {k: _convert_to_json_friendly(v) for k, v in obj.items()}
+            elif isinstance(obj, (list, tuple)):
+                return [_convert_to_json_friendly(i) for i in obj]
+            return obj
+
+        logging.info("Final merged configuration:")
+        yaml.dump(_convert_to_json_friendly(config), sys.stdout, sort_keys=False)
+        sys.exit(0)
+
     if pairing_enabled:
         output_path = output_conf.get('folder')
     else:

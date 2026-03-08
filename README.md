@@ -110,6 +110,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--init`: Create a basic `sourcecombine.yml` file in your current folder to get started.
 *   `--extract`: Recreate original files and folders from a combined JSON, JSONL, XML, Markdown, or Text file. You can read from a file, your terminal (`-`), or your clipboard. Sorting, token estimation, filtering options (`--include`, `--exclude-file`, `--exclude-folder`), and preview options (`--list-files`, `--tree`) are supported. Extraction from structured formats (JSON, XML) automatically preserves original token counts and sizes.
 *   `--restore`: Undo 'apply-in-place' changes by restoring original files from their `.bak` copies. This command scans your target folders recursively for backup files.
+*   `--show-config`: Show the final combined configuration (including defaults, files, and CLI options) and exit.
 *   `--system-info`: Show details about your computer and software environment.
 *   `-V` / `--version`: Show the tool's version and exit.
 
