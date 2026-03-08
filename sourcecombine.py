@@ -207,7 +207,11 @@ def _truncate_path(path: str, max_width: int) -> str:
     if len(path) <= max_width:
         return path
 
-    # If the path is very short, just return it truncated
+    # If the width is too small for ellipses, just return the first characters
+    if max_width < 4:
+        return path[:max_width]
+
+    # If the width is small, just return it truncated from the end
     if max_width <= 10:
         return path[:max_width-3] + "..."
 
