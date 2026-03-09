@@ -2190,6 +2190,12 @@ def main():
         help="Include only files whose content matches this search pattern.",
     )
     filtering_group.add_argument(
+        "--skip-binary",
+        "-B",
+        action="store_true",
+        help="Skip files that contain non-text data (binary files).",
+    )
+    filtering_group.add_argument(
         "--max-depth",
         "-D",
         type=int,
@@ -2382,6 +2388,7 @@ def main():
         args.line_numbers = True
         args.toc = True
         args.include_tree = True
+        args.skip_binary = True
 
         # If no explicit output is provided, attempt to use the clipboard
         if not args.output and not args.clipboard and not (
@@ -2616,6 +2623,9 @@ def main():
 
     if args.grep:
         config['filters']['grep'] = args.grep
+
+    if args.skip_binary:
+        config['filters']['skip_binary'] = True
 
     if args.git_files:
         config['search']['use_git'] = True

@@ -68,6 +68,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `-x` / `--exclude-file`: Skip files matching this search pattern (for example, `*.log`).
 *   `-X` / `--exclude-folder`: Skip folders matching this search pattern (for example, `node_modules`, `.git`).
 *   `--grep` / `-g`: Include only files whose content matches this search pattern.
+*   `--skip-binary` / `-B`: Skip files that contain non-text data (binary files).
 *   `--since` / `-S`: Include files modified since this time (for example, '1d', '2h', 'YYYY-MM-DD').
 *   `--until` / `-U`: Include files modified before this time (for example, '1d', '2h', 'YYYY-MM-DD').
 *   `--min-size`: Include only files larger than this size (for example, '10KB', '1MB').
@@ -85,7 +86,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--max-total-lines`: Stop adding files once this total line limit is reached.
 
 ### Output Options
-*   `-a` / `--ai`: Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, and folder tree.
+*   `-a` / `--ai`: Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, folder tree, and skipping binary files.
 *   `-c` / `--clipboard`: Copy the result to your clipboard instead of creating a file.
 *   `-f` / `--format`: Choose the output format (`text`, `json`, `jsonl`, `markdown`, `xml`).
 *   `-m` / `--markdown`: Shortcut for `--format markdown`.
