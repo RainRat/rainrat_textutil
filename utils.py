@@ -7,7 +7,7 @@ from typing import Any, Mapping, Sequence
 from charset_normalizer import from_bytes
 import yaml
 
-try:  # Optional software for accurate token counting
+try:  # Optional tool for accurate token counting
     import tiktoken
 except ImportError:
     tiktoken = None
