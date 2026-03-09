@@ -2462,12 +2462,6 @@ def main():
     # because we can fall back to the current folder later.
     nested_required = {}
 
-    if args.restore:
-        # Use targets from CLI if provided, otherwise fallback to config root_folders
-        restore_targets = remaining_targets if remaining_targets else config.get('search', {}).get('root_folders', ["."])
-        restore_backups(restore_targets, dry_run=args.dry_run)
-        sys.exit(0)
-
     if not config_path and not remaining_targets:
         # Case 1: No positional targets. Use auto-finding
         defaults = ['sourcecombine.yml', 'sourcecombine.yaml', 'config.yml', 'config.yaml']
@@ -2528,6 +2522,12 @@ def main():
             else:
                 logging.error("The configuration is not valid: %s", e)
             sys.exit(1)
+
+    if args.restore:
+        # Use the finalized root folders for restoration
+        restore_targets = config.get('search', {}).get('root_folders', ["."])
+        restore_backups(restore_targets, dry_run=args.dry_run)
+        sys.exit(0)
 
     # Re-configure level based on config, *unless* -v was used.
     # The -v (DEBUG) flag always overrides the config file's setting.
