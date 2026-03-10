@@ -3408,36 +3408,36 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             print(f"\n  {C_BOLD}Largest Files (by tokens){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[0], x[2]))[:5]
             total_for_percent = stats.get('total_tokens', 0)
-            # Indent(4) + TokenCount(11) + Space(1) + Percent(8) + Space(2) + Size(12) + Space(2) = 40
-            path_width = max(30, term_width - 40)
+            # Indent(4) + TokenCount(11) + Space(2) + Percent(6) + Space(2) + Size(10) + Space(2) = 37
+            path_width = max(30, term_width - 37)
         else:
             print(f"\n  {C_BOLD}Largest Files (by size){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[1], x[2]))[:5]
             total_for_percent = stats.get('total_size_bytes', 0)
-            # Indent(4) + Size(12) + Space(1) + Percent(8) + Space(2) = 27
-            path_width = max(30, term_width - 27)
+            # Indent(4) + Size(10) + Space(2) + Percent(6) + Space(2) = 24
+            path_width = max(30, term_width - 24)
 
         for tokens, f_size, path in top:
             val = tokens if has_tokens else f_size
-            percent_str = ""
+            percent_str = "  0.0%"
             if total_for_percent > 0:
                 percent = (val / total_for_percent) * 100
-                percent_str = f"({percent:>5.1f}%)"
+                percent_str = f"{percent:>5.1f}%"
 
             if has_tokens:
                 token_str = f"{'~' if is_approx else ''}{tokens:,}"
             else:
                 token_str = f"{tokens:,}"
 
-            size_str = f"({utils.format_size(f_size)})"
+            size_str = utils.format_size(f_size)
             # Use smart middle-truncation for paths
             display_path = _truncate_path(path, path_width)
 
-            # Align token counts at 11, percentages at 8, and sizes at 12 to keep paths consistent
+            # Align token counts at 11, percentages at 6, and sizes at 10 to keep paths consistent
             if has_tokens:
-                print(f"    {C_CYAN}{token_str:>11} {percent_str}{C_RESET}  {C_DIM}{size_str:<12}{C_RESET}  {display_path}", file=sys.stderr)
+                print(f"    {C_CYAN}{token_str:>11}  {percent_str}{C_RESET}  {C_DIM}{size_str:>10}{C_RESET}  {display_path}", file=sys.stderr)
             else:
-                print(f"    {C_CYAN}{size_str:<12} {percent_str}{C_RESET}  {display_path}", file=sys.stderr)
+                print(f"    {C_CYAN}{size_str:>10}  {percent_str}{C_RESET}  {display_path}", file=sys.stderr)
 
     # Extensions Grid
     if stats['files_by_extension']:

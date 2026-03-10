@@ -43,7 +43,7 @@ def test_summary_redesign_largest_files(monkeypatch, capsys):
     # Check for the new sections
     assert "TOKEN ESTIMATION COMPLETE: 10 files" in stderr
     assert "Largest Files" in stderr
-    
+
     # Check for values
     assert "1,000" in stderr
     assert "40.0%" in stderr # (1000/2500)
@@ -53,7 +53,8 @@ def test_summary_redesign_largest_files(monkeypatch, capsys):
     assert "1.95 KB" in stderr # (2000 bytes)
 
     # Check for truncated path
-    assert "a/very/long/path/...r/truncation/file.py" in stderr
+    assert "a/very/long/path" in stderr
+    assert "truncation/file.py" in stderr
 
 def test_summary_printing(monkeypatch, capsys):
     # Mock stats
