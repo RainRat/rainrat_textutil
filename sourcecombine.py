@@ -3350,9 +3350,11 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
     # Files Section
     label_width = 22
-    print(f"  {C_BOLD}Files{C_RESET}", file=sys.stderr)
-    print(f"    {C_BOLD}{'Included:':<{label_width}}{C_RESET}{C_CYAN}{total_included:12,}{C_RESET}", file=sys.stderr)
-    print(f"    {C_BOLD}{'Filtered:':<{label_width}}{C_RESET}{C_CYAN}{total_filtered:12,}{C_RESET}", file=sys.stderr)
+    print(f"  {C_BOLD}{C_CYAN}Files{C_RESET}", file=sys.stderr)
+    included_color = C_GREEN if total_included > 0 else C_RESET
+    filtered_color = C_YELLOW if total_filtered > 0 else C_RESET
+    print(f"    {C_BOLD}{'Included:':<{label_width}}{C_RESET}{included_color}{total_included:12,}{C_RESET}", file=sys.stderr)
+    print(f"    {C_BOLD}{'Filtered:':<{label_width}}{C_RESET}{filtered_color}{total_filtered:12,}{C_RESET}", file=sys.stderr)
 
     # Detailed breakdown of filtering reasons
     if stats.get('filter_reasons'):
@@ -3365,7 +3367,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             if count > 0:
                 display_reason = reason.replace('_', ' ')
                 # Use dim for less visual noise in the breakdown
-                print(f"      {C_DIM}- {display_reason:<{label_width - 2}}{C_RESET}{C_CYAN}{count:12,}{C_RESET}", file=sys.stderr)
+                # Align with 'Included/Filtered' by adjusting for the bullet indent
+                print(f"      {C_DIM}- {display_reason:<{label_width - 4}}{C_RESET}{C_DIM}{count:12,}{C_RESET}", file=sys.stderr)
 
     print(f"    {C_BOLD}{'Total Found:':<{label_width}}{C_RESET}{C_CYAN}{total_discovered:12,}{C_RESET}", file=sys.stderr)
     if excluded_folders > 0:
@@ -3373,7 +3376,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
     # Data Section
     total_lines = stats.get('total_lines', 0)
-    print(f"\n  {C_BOLD}Data{C_RESET}", file=sys.stderr)
+    print(f"\n  {C_BOLD}{C_CYAN}Data{C_RESET}", file=sys.stderr)
 
     # Show output format if not extracting or listing
     if not getattr(args, 'extract', False) and not (args.list_files or args.tree):
@@ -3401,7 +3404,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     # Execution Section
     has_limits = any(stats.get(k, 0) > 0 for k in ('max_total_tokens', 'max_total_size_bytes', 'max_total_lines'))
     if duration is not None or has_limits:
-        print(f"\n  {C_BOLD}Execution{C_RESET}", file=sys.stderr)
+        print(f"\n  {C_BOLD}{C_CYAN}Execution{C_RESET}", file=sys.stderr)
 
         if duration is not None:
             print(f"    {C_BOLD}{'Duration:':<{label_width}}{C_RESET}{C_CYAN}{duration:.2f}s{C_RESET}", file=sys.stderr)
@@ -3415,13 +3418,13 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         # Fallback to sorting by size if no token counts are available
         has_tokens = any(f[0] > 0 for f in stats['top_files'])
         if has_tokens:
-            print(f"\n  {C_BOLD}Largest Files (by tokens){C_RESET}", file=sys.stderr)
+            print(f"\n  {C_BOLD}{C_CYAN}Largest Files (by tokens){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[0], x[2]))[:5]
             total_for_percent = stats.get('total_tokens', 0)
             # Indent(4) + TokenCount(11) + Space(2) + Percent(6) + Space(2) + Size(10) + Space(2) = 37
             path_width = max(30, term_width - 37)
         else:
-            print(f"\n  {C_BOLD}Largest Files (by size){C_RESET}", file=sys.stderr)
+            print(f"\n  {C_BOLD}{C_CYAN}Largest Files (by size){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[1], x[2]))[:5]
             total_for_percent = stats.get('total_size_bytes', 0)
             # Indent(4) + Size(10) + Space(2) + Percent(6) + Space(2) = 24
@@ -3457,16 +3460,26 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             key=lambda item: (-item[1], item[0])
         )
 
-        formatted_counts = [f"{count:,}" for _, count in sorted_exts]
-        items = [f"{ext}{C_DIM}:{C_RESET} {C_CYAN}{c:>5}{C_RESET}" for (ext, _), c in zip(sorted_exts, formatted_counts)]
-        raw_items = [f"{ext}: {c:>5}" for (ext, _), c in zip(sorted_exts, formatted_counts)]
+        items = []
+        raw_items = []
+        for ext, count in sorted_exts:
+            percent_str = ""
+            raw_percent_str = ""
+            if total_included > 0:
+                percent = (count / total_included) * 100
+                percent_str = f" {C_DIM}({percent:>5.1f}%){C_RESET}"
+                raw_percent_str = f" ({percent:>5.1f}%)"
+
+            items.append(f"{ext}{C_DIM}:{C_RESET} {C_CYAN}{count:>5,}{C_RESET}{percent_str}")
+            raw_items.append(f"{ext}: {count:>5,}{raw_percent_str}")
+
         max_len = max(len(s) for s in raw_items) + 3
 
         # Indent is 4
         avail_width = max(40, term_width - 4)
         cols = max(1, avail_width // max_len)
 
-        print(f"\n  {C_BOLD}Extensions{C_RESET}", file=sys.stderr)
+        print(f"\n  {C_BOLD}{C_CYAN}Extensions{C_RESET}", file=sys.stderr)
 
         for i in range(0, len(items), cols):
             chunk = items[i:i + cols]
