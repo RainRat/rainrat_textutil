@@ -2996,9 +2996,9 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
     # 4. Try Markdown if others failed or found nothing
     if not files_to_create:
         # Find all code blocks and their preceding headers.
-        # We associate each code block with the FIRST header that appears after the previous
-        # code block (or start of file). This is robust against headers inside code blocks
-        # and sub-headers in the description text.
+        # We associate each code block with the last header that appears before it.
+        # This is robust against global headers (like a Table of Contents) and
+        # ensures the header closest to the code block is used as the filename.
         code_block_pattern = re.compile(r'^```(?:\S+)?\n([\s\S]*?)\n^```', re.MULTILINE)
         header_pattern = re.compile(r'^#{2,3}\s+(.+?)\s*$', re.MULTILINE)
 
@@ -3006,9 +3006,10 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
         for cb_match in code_block_pattern.finditer(content):
             # Look for headers between last_pos and cb_match.start()
             search_space = content[last_pos:cb_match.start()]
-            h_match = header_pattern.search(search_space)
-            if h_match:
-                path = h_match.group(1).strip()
+            h_matches = list(header_pattern.finditer(search_space))
+            if h_matches:
+                # Use the last header found in the search space, as it's closest to the code block.
+                path = h_matches[-1].group(1).strip()
                 file_content = cb_match.group(1)
                 files_to_create.append((path, file_content, {}))
             last_pos = cb_match.end()
