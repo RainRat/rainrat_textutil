@@ -936,7 +936,6 @@ def parse_time_value(value: str) -> float:
     if match:
         amount = int(match.group(1))
         unit = match.group(2)
-        now = datetime.now()
 
         if unit == 's':
             delta = timedelta(seconds=amount)
@@ -951,7 +950,7 @@ def parse_time_value(value: str) -> float:
         else:
             raise InvalidConfigError(f"Unknown time unit: '{unit}' in '{value}'")
 
-        return (now - delta).timestamp()
+        return time.time() - delta.total_seconds()
 
     # Try raw number (seconds)
     if value.isdigit():
