@@ -90,7 +90,7 @@ def test_should_include_grep_error_coverage(caplog):
 
     assert include is False
     assert reason == 'grep_error'
-    assert "Error while checking grep pattern" in caplog.text
+    assert "Error while checking content patterns" in caplog.text
 
 def test_cli_grep_config_injection(tmp_path, monkeypatch):
     """Cover sourcecombine.py lines 2390-2392: CLI grep flag and config initialization."""
