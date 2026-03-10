@@ -2073,9 +2073,9 @@ def main():
     start_time = time.perf_counter()
     parser = argparse.ArgumentParser(
         description=(
-            "Combine many files into one file or into pairs. "
-            "Use this tool to give better context to AI assistants, "
-            "save code, or perform code reviews."
+            "A versatile tool for your terminal to find, filter, and combine source code files "
+            "from a project into one file (or folder). Use it to give better context to AI "
+            "assistants, generate documentation, or save your work."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=textwrap.dedent("""
@@ -2250,7 +2250,7 @@ def main():
         "--ai",
         "-a",
         action="store_true",
-        help="Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, and folder tree. This also copies to your clipboard if you do not specify an output.",
+        help="Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, folder tree, and skipping binary files. This also copies to your terminal's clipboard if you do not specify an output.",
     )
     output_group.add_argument(
         "--clipboard",
