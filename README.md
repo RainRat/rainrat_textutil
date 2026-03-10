@@ -68,6 +68,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `-x` / `--exclude-file`: Skip files matching this search pattern (for example, `*.log`).
 *   `-X` / `--exclude-folder`: Skip folders matching this search pattern (for example, `node_modules`, `.git`).
 *   `--grep` / `-g`: Include only files whose content matches this search pattern.
+*   `--exclude-grep` / `-E`: Skip files whose content matches this search pattern.
 *   `--skip-binary` / `-B`: Skip files that contain non-text data (binary files).
 *   `--since` / `-S`: Include files modified since this time (for example, '1d', '2h', 'YYYY-MM-DD').
 *   `--until` / `-U`: Include files modified before this time (for example, '1d', '2h', 'YYYY-MM-DD').

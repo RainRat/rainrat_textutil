@@ -43,6 +43,7 @@ DEFAULT_CONFIG = {
         'modified_since': 0,
         'modified_until': 0,
         'grep': '',
+        'exclude_grep': '',
         'exclusions': {
             'filenames': [
                 '*.pyc', '*.pyo', '*.pyd',
@@ -442,6 +443,10 @@ def _validate_filters_section(config):
     grep_pattern = filters.get('grep')
     if grep_pattern:
         validate_regex_pattern(grep_pattern, context="filters.grep")
+
+    exclude_grep_pattern = filters.get('exclude_grep')
+    if exclude_grep_pattern:
+        validate_regex_pattern(exclude_grep_pattern, context="filters.exclude_grep")
 
     exclusions_conf = filters.get('exclusions')
     if exclusions_conf is not None:

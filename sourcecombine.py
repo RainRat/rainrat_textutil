@@ -460,7 +460,9 @@ def should_include(
         return (False, 'stat_error') if return_reason else False
 
     grep_pattern = filter_opts.get('grep')
-    if grep_pattern:
+    exclude_grep_pattern = filter_opts.get('exclude_grep')
+
+    if grep_pattern or exclude_grep_pattern:
         try:
             if virtual_content is not None:
                 content = (
@@ -474,10 +476,14 @@ def should_include(
             else:
                 content = ""
 
-            if not re.search(grep_pattern, content):
+            if grep_pattern and not re.search(grep_pattern, content):
                 return (False, 'grep_mismatch') if return_reason else False
+
+            if exclude_grep_pattern and re.search(exclude_grep_pattern, content):
+                return (False, 'exclude_grep_match') if return_reason else False
+
         except Exception as exc:
-            logging.warning("Error while checking grep pattern on '%s': %s", rel_str, exc)
+            logging.warning("Error while checking content patterns on '%s': %s", rel_str, exc)
             return (False, 'grep_error') if return_reason else False
 
     return (True, None) if return_reason else True
@@ -2190,6 +2196,11 @@ def main():
         help="Include only files whose content matches this search pattern.",
     )
     filtering_group.add_argument(
+        "--exclude-grep",
+        "-E",
+        help="Skip files whose content matches this search pattern.",
+    )
+    filtering_group.add_argument(
         "--skip-binary",
         "-B",
         action="store_true",
@@ -2623,6 +2634,9 @@ def main():
 
     if args.grep:
         config['filters']['grep'] = args.grep
+
+    if args.exclude_grep:
+        config['filters']['exclude_grep'] = args.exclude_grep
 
     if args.skip_binary:
         config['filters']['skip_binary'] = True

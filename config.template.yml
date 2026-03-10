@@ -133,6 +133,9 @@ filters:
   # Only include files whose content matches this search pattern.
   grep: ""
 
+  # Skip files whose content matches this search pattern.
+  exclude_grep: ""
+
   # --- Inclusion Groups ---
   # Enable specific groups to only include listed filenames or search patterns.
   # Cannot be used at the same time with ``search.allowed_extensions``; specify file types within the patterns instead.
