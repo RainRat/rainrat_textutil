@@ -112,7 +112,7 @@ class CLILogFormatter(logging.Formatter):
         return f"{prefix}{message}"
 
 
-try:  # Optional software for progress reporting
+try:  # Optional tool for progress reporting
     from tqdm import tqdm as _tqdm
 except ImportError:  # pragma: no cover - gracefully handle missing tqdm
     _tqdm = None
@@ -2074,7 +2074,7 @@ def main():
     parser = argparse.ArgumentParser(
         description=(
             "Combine many files into one file or into pairs. "
-            "Use this software to give better context to AI assistants, "
+            "Use this tool to give better context to AI assistants, "
             "save code, or perform code reviews."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -2360,12 +2360,12 @@ def main():
     utility_group.add_argument(
         "--show-config",
         action="store_true",
-        help="Show the final combined configuration and exit. This includes defaults, your configuration file, and any CLI options you provide.",
+        help="Show the final combined configuration and exit. This includes defaults, your configuration file, and any options you provide.",
     )
     utility_group.add_argument(
         "--system-info",
         action="store_true",
-        help="Show details about your computer and the software you are using.",
+        help="Show details about your computer and the tool you are using.",
     )
     utility_group.add_argument(
         "--version",
@@ -2784,7 +2784,7 @@ def main():
                 content = pyperclip.paste()
                 source_name = "clipboard"
             except ImportError:
-                logging.error("The 'pyperclip' software is required for clipboard support. Install it with: pip install pyperclip")
+                logging.error("The 'pyperclip' tool is required for clipboard support. Install it with: pip install pyperclip")
                 sys.exit(1)
         elif remaining_targets and remaining_targets[0] == "-":
             content = sys.stdin.read()
