@@ -937,6 +937,7 @@ def _process_paired_files(
                     stats['total_lines'] = stats.get('total_lines', 0) + line_count
                     if is_approx:
                         stats['token_count_is_approx'] = True
+                    _update_token_stats(stats, primary_path, token_count)
                     stats['top_files'].append((token_count, primary_path.stat().st_size if primary_path.exists() else 0, _get_rel_path(primary_path, root_path).as_posix()))
                 if processing_bar:
                     processing_bar.update(len(paths))
@@ -957,6 +958,7 @@ def _process_paired_files(
                         stats['total_lines'] = stats.get('total_lines', 0) + line_count
                         if is_approx:
                             stats['token_count_is_approx'] = True
+                        _update_token_stats(stats, file_path, token_count)
                         stats['top_files'].append((token_count, file_path.stat().st_size if file_path.exists() else 0, _get_rel_path(file_path, root_path).as_posix()))
                     if processing_bar:
                         processing_bar.update(1)
@@ -965,14 +967,26 @@ def _process_paired_files(
                 pair_out.write(_render_global_template(global_footer, stats))
 
 
-def _update_file_stats(stats, file_path):
+def _update_file_stats(stats, file_path, size=None):
     stats['total_files'] += 1
-    try:
-        stats['total_size_bytes'] += file_path.stat().st_size
-    except OSError:
-        pass
+    if size is None:
+        try:
+            size = file_path.stat().st_size
+        except OSError:
+            size = 0
+    stats['total_size_bytes'] += size
+
     ext = file_path.suffix.lower() or '.no_extension'
     stats['files_by_extension'][ext] = stats['files_by_extension'].get(ext, 0) + 1
+    if 'size_by_extension' in stats:
+        stats['size_by_extension'][ext] = stats['size_by_extension'].get(ext, 0) + size
+
+
+def _update_token_stats(stats, file_path, tokens):
+    if not tokens or 'tokens_by_extension' not in stats:
+        return
+    ext = file_path.suffix.lower() or '.no_extension'
+    stats['tokens_by_extension'][ext] = stats['tokens_by_extension'].get(ext, 0) + tokens
 
 
 class FileProcessor:
@@ -1322,6 +1336,8 @@ def find_and_combine_files(
         'total_files': 0,
         'total_size_bytes': 0,
         'files_by_extension': {},
+        'tokens_by_extension': {},
+        'size_by_extension': {},
         'total_tokens': 0,
         'total_lines': 0,
         'token_count_is_approx': False,
@@ -1571,6 +1587,7 @@ def find_and_combine_files(
                         stats['total_lines'] += lines
                         if is_approx:
                             stats['token_count_is_approx'] = True
+                        _update_token_stats(stats, p, tokens)
 
                     view_metadata[p] = {'size': f_size, 'tokens': tokens, 'lines': lines}
                     stats['top_files'].append((tokens, f_size, _get_rel_path(p, root_path).as_posix()))
@@ -1806,6 +1823,8 @@ def find_and_combine_files(
                     if is_approx:
                         stats['token_count_is_approx'] = True
 
+                _update_token_stats(stats, file_path, content_tokens)
+
                 # Store content details for TOC/Tree
                 file_metadata[file_path] = {
                     'size': file_size,
@@ -2038,6 +2057,7 @@ def find_and_combine_files(
                     stats['total_lines'] += line_count + header_lines + footer_lines
                     if is_approx:
                         stats['token_count_is_approx'] = True
+                    _update_token_stats(stats, file_path, token_count)
 
                 stats['top_files'].append((token_count, file_path.stat().st_size if file_path.exists() else 0, _get_rel_path(file_path, root_path).as_posix()))
 
@@ -2911,8 +2931,10 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
         'total_discovered': 0,
         'total_files': 0,
         'total_size_bytes': 0,
+        'size_by_extension': {},
         'total_lines': 0,
         'total_tokens': 0,
+        'tokens_by_extension': {},
         'token_count_is_approx': False,
         'top_files': [],
         'files_by_extension': {},
@@ -3073,6 +3095,7 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
             meta['lines'] = utils.count_lines(file_content)
 
         stats['total_size_bytes'] += meta['size']
+        stats['size_by_extension'][ext] = stats['size_by_extension'].get(ext, 0) + meta['size']
         stats['total_lines'] += meta['lines']
 
     # Token Estimation Pass
@@ -3095,6 +3118,8 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
         tokens = meta.get('tokens')
         if tokens is not None:
             stats['total_tokens'] += tokens
+            ext = PurePath(path_str).suffix.lower() or '.no_extension'
+            stats['tokens_by_extension'][ext] = stats['tokens_by_extension'].get(ext, 0) + tokens
             if meta.get('is_approx'):
                 stats['token_count_is_approx'] = True
 
@@ -3477,16 +3502,37 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
         items = []
         raw_items = []
-        for ext, count in sorted_exts:
-            percent_str = ""
-            raw_percent_str = ""
-            if total_included > 0:
-                percent = (count / total_included) * 100
-                percent_str = f" {C_DIM}({percent:>5.1f}%){C_RESET}"
-                raw_percent_str = f" ({percent:>5.1f}%)"
 
-            items.append(f"{ext}{C_DIM}:{C_RESET} {C_CYAN}{count:>5,}{C_RESET}{percent_str}")
-            raw_items.append(f"{ext}: {count:>5,}{raw_percent_str}")
+        # Decide whether to show tokens percentage or size percentage as weight
+        # Prefer tokens if they were estimated
+        tokens_by_ext = stats.get('tokens_by_extension', {})
+        size_by_ext = stats.get('size_by_extension', {})
+        has_ext_tokens = any(v > 0 for v in tokens_by_ext.values())
+
+        for ext, count in sorted_exts:
+            # File count percentage (existing behavior)
+            file_percent = (count / total_included) * 100 if total_included > 0 else 0
+
+            # Weight percentage (new behavior)
+            weight_str = ""
+            raw_weight_str = ""
+
+            if has_ext_tokens:
+                total_tokens = stats.get('total_tokens', 0)
+                if total_tokens > 0:
+                    weight_percent = (tokens_by_ext.get(ext, 0) / total_tokens) * 100
+                    weight_str = f"{C_DIM}/{weight_percent:>5.1f}%T{C_RESET}"
+                    raw_weight_str = f"/{weight_percent:>5.1f}%T"
+            else:
+                total_size = stats.get('total_size_bytes', 0)
+                if total_size > 0:
+                    weight_percent = (size_by_ext.get(ext, 0) / total_size) * 100
+                    weight_str = f"{C_DIM}/{weight_percent:>5.1f}%S{C_RESET}"
+                    raw_weight_str = f"/{weight_percent:>5.1f}%S"
+
+            # Combine count, percentage of files, and weight
+            items.append(f"{ext}{C_DIM}:{C_RESET} {C_CYAN}{count:>5,}{C_RESET} {C_DIM}({file_percent:>5.1f}%{weight_str}){C_RESET}")
+            raw_items.append(f"{ext}: {count:>5,} ({file_percent:>5.1f}%{raw_weight_str})")
 
         max_len = max(len(s) for s in raw_items) + 3
 
