@@ -4,11 +4,11 @@ A versatile tool for your terminal to find, filter, and combine source code file
 
 ## Key Features
 
-*   **Recursion & Root Folders:** Find files in many folders at once.
+*   **Find files in many folders:** Find files in many folders at once. Supports Git discovery to automatically respect your `.gitignore` settings.
 *   **Filtering:** Skip folders, files, or specific names using search patterns.
 *   **Include Groups:** Group specific files to always include, even if you filter others.
 *   **Sorting:** Order files by name, size, modification date, token count, or folder depth.
-*   **Limiting:** Stop at a specific file count, total token limit, or total file size.
+*   **Limiting:** Stop at a specific file count, total token limit, total line count, or total file size.
 *   **In-Place Processing:** Clean up extra spaces or blank lines directly in your source files.
 *   **Smart Combining:** Combine files while keeping headers and structural markers.
 *   **Estimation:** See the total token count without writing any files.
@@ -21,6 +21,8 @@ git clone https://github.com/RainRat/rainrat_textutil.git
 cd rainrat_textutil
 pip install -r requirements.txt
 ```
+
+*Note: Install the optional `tiktoken` package for more accurate token counting.*
 
 ### Verify it works
 
@@ -64,9 +66,9 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--config`: Use a specific configuration file.
 
 ### Filtering & Selection
-*   `-i` / `--include`: Include only files matching this search pattern (for example, `*.py`, `*.js`).
-*   `-x` / `--exclude-file`: Skip files matching this search pattern (for example, `*.log`).
-*   `-X` / `--exclude-folder`: Skip folders matching this search pattern (for example, `node_modules`, `.git`).
+*   `-i` / `--include` / `--include-file`: Include only files matching this search pattern (for example, `*.py`, `*.js`).
+*   `-x` / `--exclude-file` / `--exclude`: Skip files matching this search pattern (for example, `*.log`).
+*   `-X` / `--exclude-folder` / `--exclude-dir`: Skip folders matching this search pattern (for example, `node_modules`, `.git`).
 *   `--grep` / `-g`: Include only files whose content matches this search pattern.
 *   `--exclude-grep` / `-E`: Skip files whose content matches this search pattern.
 *   `--skip-binary` / `-B`: Skip files that contain non-text data (binary files).
@@ -87,7 +89,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--max-total-lines`: Stop adding files once this total line limit is reached.
 
 ### Output Options
-*   `-a` / `--ai`: Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, folder tree, and skipping binary files.
+*   `-a` / `--ai`: Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, folder tree, and skipping binary files. This also copies to your terminal's clipboard if you do not specify an output.
 *   `-c` / `--clipboard`: Copy the result to your clipboard instead of creating a file.
 *   `-f` / `--format`: Choose the output format (`text`, `json`, `jsonl`, `markdown`, `xml`).
 *   `-m` / `--markdown`: Shortcut for `--format markdown`.
@@ -110,7 +112,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 
 ### Utility Commands
 *   `--init`: Create a basic `sourcecombine.yml` file in your current folder to get started.
-*   `--extract`: Recreate original files and folders from a combined JSON, JSONL, XML, Markdown, or Text file. You can read from a file, your terminal (`-`), or your clipboard. Sorting, token estimation, filtering options (`--include`, `--exclude-file`, `--exclude-folder`), and preview options (`--list-files`, `--tree`) are supported. Extraction from structured formats (JSON, XML) automatically preserves original token counts and sizes.
+*   `--extract`: Recreate original files and folders from a combined JSON, JSONL, XML, Markdown, or Text file. You can read from a file, your terminal (`-`), or your clipboard. For example: `python sourcecombine.py --extract combined.json`. Sorting, token estimation, filtering options (`--include`, `--exclude-file`, `--exclude-folder`), and preview options (`--list-files`, `--tree`) are supported. Extraction from structured formats (JSON, XML) automatically preserves original token counts and sizes.
 *   `--restore`: Undo 'apply-in-place' changes by restoring original files from their `.bak` copies. This command scans your target folders recursively for backup files.
 *   `--show-config`: Show the final combined configuration (including defaults, files, and options) and exit.
 *   `--system-info`: Show details about your computer and the environment.
