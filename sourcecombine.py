@@ -855,7 +855,7 @@ def _pair_files(filtered_paths, source_exts, header_exts, include_mismatched, *,
     if include_mismatched:
         for p in filtered_paths:
             if p not in used_files:
-                pair_key = _get_rel_path(p, root_path).with_suffix("")
+                pair_key = _get_rel_path(p, root_path)
                 paired[pair_key] = [p]
                 used_files.add(p)
 

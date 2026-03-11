@@ -27,12 +27,12 @@ def test_pair_files_logic(tmp_path):
     mismatched_src = _pair_files(
         [src], (".cpp",), (".h",), include_mismatched=True, root_path=base
     )
-    assert mismatched_src == {Path("file"): [src]}
+    assert mismatched_src == {Path("file.cpp"): [src]}
 
     lonely_hdr = _pair_files(
         [hdr], (".cpp",), (".h",), include_mismatched=True, root_path=base
     )
-    assert lonely_hdr == {Path("file"): [hdr]}
+    assert lonely_hdr == {Path("file.h"): [hdr]}
 
     other_hdr = base / "lonely.h"
     other_hdr.write_text("", encoding="utf-8")
