@@ -4,7 +4,7 @@ A versatile tool for your terminal to find, filter, and combine source code file
 
 ## Key Features
 
-*   **Find files in many folders:** Find files in many folders at once. Supports Git discovery to automatically respect your `.gitignore` settings.
+*   **Find files in many folders:** Scan multiple folders at once. Supports finding files with Git to automatically respect your `.gitignore` settings.
 *   **Filtering:** Skip folders, files, or specific names using search patterns.
 *   **Include Groups:** Group specific files to always include, even if you filter others.
 *   **Sorting:** Order files by name, size, modification date, token count, or folder depth.

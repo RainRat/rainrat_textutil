@@ -338,7 +338,7 @@ def _replace_line_block(text, regex, replacement=None):
 
 
 def _validate_glob_list(filenames, context_prefix):
-    """Validate and sanitize a list of glob patterns in place."""
+    """Validate and sanitize a list of search patterns in place."""
     if filenames is None:
         return
     if not isinstance(filenames, list):
