@@ -2386,8 +2386,13 @@ def main():
             "Recreate original files and folders from a combined JSON, JSONL, XML, Markdown, or Text file. "
             "You can read from a file, your terminal ('-'), or your clipboard. Sorting, token estimation, "
             "filtering options (--include, --exclude-file, --exclude-folder), and preview options "
-            "(--list-files, --tree) are supported."
+            "(--list-files, --tree) are supported. Line numbers are automatically removed unless --keep-line-numbers is used."
         ),
+    )
+    utility_group.add_argument(
+        "--keep-line-numbers",
+        action="store_true",
+        help="Keep line numbers when extracting files. By default, they are automatically removed if detected.",
     )
     utility_group.add_argument(
         "--restore",
@@ -2869,7 +2874,8 @@ def main():
             limit=config.get('filters', {}).get('max_files', 0),
             estimate_tokens=args.estimate_tokens,
             sort_by=config.get('output', {}).get('sort_by', 'name'),
-            sort_reverse=config.get('output', {}).get('sort_reverse', False)
+            sort_reverse=config.get('output', {}).get('sort_reverse', False),
+            keep_line_numbers=args.keep_line_numbers
         )
         dest = f"to '{output_folder}'"
         source_desc = f"from '{source_name}'"
@@ -2924,7 +2930,7 @@ def main():
         _print_execution_summary(stats, args, pairing_enabled, destination_desc, duration=duration, source_desc=source_desc)
 
 
-def extract_files(content, output_folder, dry_run=False, source_name="combined file", config=None, list_files=False, tree_view=False, limit=0, estimate_tokens=False, sort_by='name', sort_reverse=False):
+def extract_files(content, output_folder, dry_run=False, source_name="combined file", config=None, list_files=False, tree_view=False, limit=0, estimate_tokens=False, sort_by='name', sort_reverse=False, keep_line_numbers=False):
     """Recreate the original folder structure and files from a combined file content."""
     output_folder = Path(output_folder)
     stats = {
@@ -3061,6 +3067,11 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
     filtered_files = []
     for path_str, file_content, meta in files_to_create:
         rel_path = PurePath(path_str)
+
+        # Automatically remove line numbers unless requested otherwise
+        if not keep_line_numbers:
+            file_content = utils.remove_line_numbers(file_content)
+
         include, reason = should_include(
             None,
             rel_path,
