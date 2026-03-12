@@ -1230,6 +1230,8 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
 
     dim = str(C_DIM) if output_format == 'text' else ""
     reset = str(C_RESET) if output_format == 'text' else ""
+    folder_style = (str(C_BOLD) + str(C_CYAN)) if output_format == 'text' else ""
+    file_style = str(C_BOLD) if output_format == 'text' else ""
 
     def _add_node(node, prefix="", rel_parts=()):
         items = sorted(node.keys())
@@ -1254,7 +1256,8 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
                     if file_meta:
                         meta_str = f"{dim}{_format_metadata_summary(file_meta)}{reset}"
 
-            lines.append(f"{prefix}{connector}{item}{meta_str}")
+            style = folder_style if children else file_style
+            lines.append(f"{prefix}{connector}{style}{item}{reset}{meta_str}")
 
             # If the item has children (it's a folder), recurse
             if children:
@@ -1266,7 +1269,7 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
     if metadata and Path('.') in folder_metadata:
         root_meta_str = f"{dim}{_format_metadata_summary(folder_metadata[Path('.')])}{reset}"
 
-    lines.append(f"{root_path.name or str(root_path)}/{root_meta_str}")
+    lines.append(f"{folder_style}{root_path.name or str(root_path)}/{reset}{root_meta_str}")
     _add_node(tree)
 
     if include_header:
