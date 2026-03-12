@@ -1720,6 +1720,8 @@ def find_and_combine_files(
             stats['total_files'] = 0
             stats['total_size_bytes'] = 0
             stats['files_by_extension'] = {}
+            stats['size_by_extension'] = {}
+            stats['tokens_by_extension'] = {}
             if pairing_enabled:
                 for _, _, paths in all_paired_items:
                     for p in paths:
@@ -1885,6 +1887,8 @@ def find_and_combine_files(
             stats['total_tokens'] = current_tokens
             stats['total_lines'] = current_lines
             stats['files_by_extension'] = {}
+            stats['size_by_extension'] = {}
+            stats['tokens_by_extension'] = {}
             for item in all_single_mode_items:
                 _update_file_stats(stats, item[0])
             token_limit_pass_performed = True
