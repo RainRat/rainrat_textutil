@@ -486,3 +486,48 @@ def test_extract_files_invalid_path_error_handling(caplog):
         extract_files(content, Path("out"))
 
     assert "Skipping invalid path" in caplog.text
+
+def test_extract_removes_line_numbers(tmp_path):
+    """Verify that extraction automatically removes line numbers."""
+    output_dir = tmp_path / "extracted"
+    content = """--- file1.txt ---
+1: Line one
+2: Line two
+3: Line three
+--- end file1.txt ---
+"""
+    extract_files(content, str(output_dir))
+
+    extracted_content = (output_dir / "file1.txt").read_text(encoding="utf-8")
+    assert "1: Line one" not in extracted_content
+    assert "Line one" in extracted_content
+    assert extracted_content.strip() == "Line one\nLine two\nLine three"
+
+def test_extract_keeps_line_numbers_when_requested(tmp_path):
+    """Verify that extraction keeps line numbers when keep_line_numbers=True."""
+    output_dir = tmp_path / "extracted"
+    content = """--- file1.txt ---
+1: Line one
+2: Line two
+--- end file1.txt ---
+"""
+    extract_files(content, str(output_dir), keep_line_numbers=True)
+
+    extracted_content = (output_dir / "file1.txt").read_text(encoding="utf-8")
+    assert "1: Line one" in extracted_content
+    assert extracted_content.strip() == "1: Line one\n2: Line two"
+
+def test_extract_does_not_remove_false_positives(tmp_path):
+    """Verify that extraction doesn't remove numbers if they don't look like line numbers."""
+    output_dir = tmp_path / "extracted"
+    # Content where only 1 out of 3 lines matches the pattern (less than 50%)
+    content = """--- file1.txt ---
+1: This matches
+This does not match
+Neither does this
+--- end file1.txt ---
+"""
+    extract_files(content, str(output_dir))
+
+    extracted_content = (output_dir / "file1.txt").read_text(encoding="utf-8")
+    assert "1: This matches" in extracted_content

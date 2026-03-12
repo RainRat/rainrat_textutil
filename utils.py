@@ -823,6 +823,39 @@ def add_line_numbers(text):
     return "\n".join(numbered)
 
 
+def remove_line_numbers(text):
+    """Remove line numbers from each line of text.
+
+    This identifies lines starting with 'N: ' and removes that prefix.
+    It checks if the majority of lines match this pattern to avoid
+    accidental removal of content that happens to start with a number.
+    """
+    lines = text.splitlines()
+    if not lines:
+        return text
+
+    pattern = re.compile(r"^\s*\d+:\s")
+    matches = 0
+    non_empty_lines = 0
+
+    for line in lines:
+        if line.strip():
+            non_empty_lines += 1
+            if pattern.match(line):
+                matches += 1
+
+    # If more than 50% of non-empty lines match, remove the prefix
+    if non_empty_lines > 0 and (matches / non_empty_lines) > 0.5:
+        # Use a regex that specifically targets the 'N: ' at the start
+        processed = [re.sub(r"^\s*\d+:\s", "", line) for line in lines]
+        result = "\n".join(processed)
+        if text.endswith("\n"):
+            result += "\n"
+        return result
+
+    return text
+
+
 def validate_glob_pattern(pattern, *, context="search pattern"):
     """Warn about potentially problematic search patterns."""
     if not isinstance(pattern, str):
