@@ -73,7 +73,7 @@ _ANSI_ESCAPE = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
 
 
 class CLILogFormatter(logging.Formatter):
-    """A clean logging formatter for the CLI.
+    """A clean logging formatter for your terminal.
 
     Removes the 'INFO:' prefix for standard messages and adds semantic colors
     to WARNING and ERROR levels.
@@ -519,7 +519,7 @@ def collect_git_files(root_folder, progress=None):
         return file_paths, root_path, 0
     except (subprocess.CalledProcessError, FileNotFoundError, OSError) as exc:
         logging.warning(
-            "Git discovery failed in '%s': %s. Falling back to standard scanning.",
+            "Finding files with Git failed in '%s': %s. Falling back to standard scanning.",
             root_folder,
             exc,
         )
@@ -2413,7 +2413,7 @@ def main():
     )
     args = parser.parse_args()
 
-    # Handle the AI preset flag by enabling several other flags
+    # Handle the AI preset option by enabling several other options
     if args.ai:
         args.markdown = True
         args.line_numbers = True
@@ -2568,7 +2568,7 @@ def main():
         sys.exit(0)
 
     # Re-configure level based on config, *unless* -v was used.
-    # The -v (DEBUG) flag always overrides the config file's setting.
+    # The -v (DEBUG) option always overrides the configuration file's setting.
     if not args.verbose:
         level_str = config.get('logging', {}).get('level', 'INFO')
         log_level = getattr(logging, level_str.upper(), logging.INFO)
@@ -2591,7 +2591,7 @@ def main():
                 # Validate/sanitize the pattern
                 sanitized = utils.validate_glob_pattern(pattern, context="--exclude-file")
                 filenames.append(sanitized)
-            logging.debug("Added CLI file exclusions: %s", args.exclude_file)
+            logging.debug("Added terminal file exclusions: %s", args.exclude_file)
 
         if args.exclude_folder:
             if not isinstance(exclusions.get('folders'), list):
@@ -2600,9 +2600,9 @@ def main():
             for pattern in args.exclude_folder:
                 sanitized = utils.validate_glob_pattern(pattern, context="--exclude-folder")
                 folders.append(sanitized)
-            logging.debug("Added CLI folder exclusions: %s", args.exclude_folder)
+            logging.debug("Added terminal folder exclusions: %s", args.exclude_folder)
 
-    # Inject CLI inclusions into config
+    # Inject terminal inclusions into config
     if args.include:
         filters = config['filters']
 
@@ -2611,12 +2611,12 @@ def main():
             filters['inclusion_groups'] = {}
         groups = filters['inclusion_groups']
 
-        # Create a unique group for CLI inclusions and enable it
+        # Create a unique group for terminal inclusions and enable it
         groups['_cli_includes'] = {
             'enabled': True,
             'filenames': [utils.validate_glob_pattern(p, context="--include") for p in args.include]
         }
-        logging.debug("Added CLI file inclusions: %s", args.include)
+        logging.debug("Added terminal file inclusions: %s", args.include)
 
     pairing_conf = config.get('pairing') or {}
     output_conf = config.get('output') or {}
@@ -2713,7 +2713,7 @@ def main():
     if args.reverse:
         output_conf['sort_reverse'] = True
 
-    # Determine the effective output format. CLI flags take precedence over config.
+    # Determine the effective output format. Terminal options take precedence over configuration.
     if args.markdown:
         args.format = "markdown"
     elif args.json:
