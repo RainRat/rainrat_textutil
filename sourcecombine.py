@@ -3463,12 +3463,14 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             total_for_percent = stats.get('total_tokens', 0)
             # Indent(4) + TokenCount(11) + Space(2) + Percent(6) + Space(2) + Size(10) + Space(2) = 37
             path_width = max(30, term_width - 37)
+            print(f"    {C_DIM}{'TOKENS':>11}  {'%':>6}  {'SIZE':>10}  PATH{C_RESET}", file=sys.stderr)
         else:
             print(f"\n  {C_BOLD}{C_CYAN}Largest Files (by size){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[1], x[2]))[:5]
             total_for_percent = stats.get('total_size_bytes', 0)
             # Indent(4) + Size(10) + Space(2) + Percent(6) + Space(2) = 24
             path_width = max(30, term_width - 24)
+            print(f"    {C_DIM}{'SIZE':>10}  {'%':>6}  PATH{C_RESET}", file=sys.stderr)
 
         for tokens, f_size, path in top:
             val = tokens if has_tokens else f_size

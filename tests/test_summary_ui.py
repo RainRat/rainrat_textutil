@@ -43,6 +43,10 @@ def test_summary_redesign_largest_files(monkeypatch, capsys):
     # Check for the new sections
     assert "TOKEN ESTIMATION COMPLETE: 10 files" in stderr
     assert "Largest Files" in stderr
+    assert "TOKENS" in stderr
+    assert "%" in stderr
+    assert "SIZE" in stderr
+    assert "PATH" in stderr
 
     # Check for values
     assert "1,000" in stderr
@@ -69,7 +73,9 @@ def test_summary_printing(monkeypatch, capsys):
         'total_tokens': 5000,
         'token_count_is_approx': True,
         'excluded_folder_count': 2,
-        'top_files': []
+        'top_files': [
+            (0, 1000, "file.txt")
+        ]
     }
 
     # Mock args
@@ -91,6 +97,10 @@ def test_summary_printing(monkeypatch, capsys):
     assert "SUCCESS: Combined 123 files" in stderr
     assert "Included:                      123" in stderr
     assert "Total Size:                1.50 MB" in stderr
+    assert "Largest Files" in stderr
+    assert "SIZE" in stderr
+    assert "%" in stderr
+    assert "PATH" in stderr
     assert "Extensions" in stderr
     assert "Excluded Folders:                2" in stderr
     assert "Token Count:                ~5,000" in stderr
