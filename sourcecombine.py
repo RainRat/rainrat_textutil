@@ -1893,7 +1893,10 @@ def find_and_combine_files(
             stats['size_by_extension'] = {}
             stats['tokens_by_extension'] = {}
             for item in all_single_mode_items:
-                _update_file_stats(stats, item[0])
+                file_p = item[0]
+                meta = file_metadata.get(file_p, {})
+                _update_file_stats(stats, file_p, size=meta.get('size'))
+                _update_token_stats(stats, file_p, meta.get('tokens'))
             token_limit_pass_performed = True
         else:
             token_limit_pass_performed = False
