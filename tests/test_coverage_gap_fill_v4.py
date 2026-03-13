@@ -38,9 +38,27 @@ def test_main_output_is_dir(tmp_path):
     output_dir = tmp_path / "output_dir"
     output_dir.mkdir()
 
+    test_file = tmp_path / "test.py"
+    test_file.write_text("print('hello')", encoding='utf-8')
+
+    # Test that specifying a directory now works via main()
+    with patch('sys.argv', ['sourcecombine.py', str(test_file), '-o', str(output_dir)]):
+        with patch('sourcecombine.print_system_info'): # Avoid extra output
+            try:
+                sourcecombine.main()
+            except SystemExit as e:
+                assert e.code in (0, None)
+
+    assert (output_dir / "combined_files.txt").exists()
+
+def test_find_and_combine_files_output_is_dir_directly(tmp_path):
+    # If called directly with a directory, it should now fail with IsADirectoryError
+    # (or we could make it handle it, but for now we verify the old error is gone)
+    output_dir = tmp_path / "output_dir_direct"
+    output_dir.mkdir()
     config = copy.deepcopy(utils.DEFAULT_CONFIG)
 
-    with pytest.raises(utils.InvalidConfigError, match="is an existing folder. Please specify a file name."):
+    with pytest.raises(IsADirectoryError):
         sourcecombine.find_and_combine_files(
             config,
             output_path=str(output_dir),
