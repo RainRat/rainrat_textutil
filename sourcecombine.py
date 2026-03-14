@@ -2393,10 +2393,9 @@ def main():
         "--extract",
         action="store_true",
         help=(
-            "Recreate original files and folders from a combined JSON, JSONL, XML, Markdown, or Text file. "
-            "You can read from a file, your terminal ('-'), or your clipboard. Sorting, token estimation, "
-            "filtering options (--include, --exclude-file, --exclude-folder), and preview options "
-            "(--list-files, --tree) are supported. Line numbers are automatically removed unless --keep-line-numbers is used."
+            "Rebuild your original files and folders from a combined file (like JSON, XML, or Markdown). "
+            "You can read from a file, your terminal ('-'), or your clipboard. Filtering, sorting, and "
+            "preview options are supported. Line numbers are removed automatically unless you use --keep-line-numbers."
         ),
     )
     utility_group.add_argument(
