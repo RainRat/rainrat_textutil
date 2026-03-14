@@ -145,6 +145,12 @@ class _SilentProgress:
     def update(self, *_args, **_kwargs):
         return None
 
+    def set_description(self, desc=None, refresh=True):
+        return None
+
+    def set_postfix(self, ordered_dict=None, refresh=True, **kwargs):
+        return None
+
     def close(self):
         return None
 
@@ -884,6 +890,8 @@ def _process_paired_files(
     size_excluded_set = set(size_excluded or [])
     for pairing_key, paths in paired_paths.items():
         stem = Path(pairing_key).name
+        if processing_bar:
+            processing_bar.set_description(f"Pairing {stem}")
         ext_map = {p.suffix.lower(): [p] for p in paths}
         source_path = _select_preferred_path(ext_map, source_exts)
         header_path = _select_preferred_path(ext_map, header_exts)
@@ -1766,9 +1774,16 @@ def find_and_combine_files(
             # If sorting by tokens, we must calculate tokens for all files first
             if sort_by == 'tokens':
                 token_data = []
+                sort_bar = processor._make_bar(
+                    total=len(all_single_mode_items),
+                    desc="Calculating tokens for sorting",
+                    unit="file",
+                )
                 for item in all_single_mode_items:
                     file_path, root_path, is_excluded_by_size = item
                     rel_p = _get_rel_path(file_path, root_path)
+                    rel_p_str = rel_p.as_posix()
+                    sort_bar.set_description(f"Analyzing {_truncate_path(rel_p_str, 40)}")
                     if is_excluded_by_size:
                         placeholder = output_opts.get('max_size_placeholder')
                         # Note: 1372-1373 ensures placeholder exists if we are here
@@ -1778,7 +1793,9 @@ def find_and_combine_files(
                         content, _ = read_file_best_effort(file_path)
                         processed = process_content(content, processor.processing_opts)
                         tokens, _ = utils.estimate_tokens(processed)
-                    token_data.append((tokens, rel_p.as_posix()))
+                    token_data.append((tokens, rel_p_str))
+                    sort_bar.update(1)
+                sort_bar.close()
 
                 # Sort by tokens
                 # Zip tokens with items to sort them together
@@ -1794,8 +1811,16 @@ def find_and_combine_files(
                 all_single_mode_items = all_single_mode_items[:max_files]
                 stats['limit_reached'] = True
 
+            est_bar = processor._make_bar(
+                total=len(all_single_mode_items),
+                desc="Analyzing files",
+                unit="file",
+            )
             for i, item in enumerate(all_single_mode_items):
                 file_path, root_path, is_excluded_by_size = item
+
+                rel_p_str = _get_rel_path(file_path, root_path).as_posix()
+                est_bar.set_description(f"Analyzing {_truncate_path(rel_p_str, 40)}")
                 content_tokens = 0
                 content_lines = 0
                 content_size = 0
@@ -1876,7 +1901,9 @@ def find_and_combine_files(
                 current_lines += entry_lines
                 current_size += entry_size
                 limited_items.append((file_path, root_path, is_excluded_by_size, processed))
+                est_bar.update(1)
 
+            est_bar.close()
             all_single_mode_items = limited_items
             stats['token_limit_reached'] = token_limit_reached
             stats['size_limit_reached'] = size_limit_reached
@@ -2021,6 +2048,9 @@ def find_and_combine_files(
             for item in all_single_mode_items:
                 file_path, root_path, is_excluded_by_size = item[:3]
                 cached_processed = item[3] if len(item) > 3 else None
+
+                rel_p_str = _get_rel_path(file_path, root_path).as_posix()
+                processing_bar.set_description(f"Processing {_truncate_path(rel_p_str, 40)}")
 
                 if output_format == 'json' and not dry_run and not estimate_tokens:
                     if not first_item:
@@ -3133,6 +3163,7 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
                 enabled=_progress_enabled(False)
             )
             for path_str, file_content, meta in est_bar:
+                est_bar.set_description(f"Estimating {_truncate_path(path_str, 40)}")
                 tokens, is_approx = utils.estimate_tokens(file_content)
                 meta['tokens'] = tokens
                 meta['is_approx'] = is_approx
@@ -3198,6 +3229,7 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
     )
 
     for rel_path_str, file_content, meta in extraction_bar:
+        extraction_bar.set_description(f"Extracting {_truncate_path(rel_path_str, 40)}")
         # Security check: prevent path traversal and absolute paths across platforms.
         try:
             # We use joinpath and resolve to catch traversal and absolute path attempts.
