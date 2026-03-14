@@ -1373,9 +1373,6 @@ def find_and_combine_files(
     if output_format in ('json', 'jsonl') and pairing_enabled:
         raise InvalidConfigError(f"You cannot use {output_format.upper()} format when pairing files.")
 
-    if not pairing_enabled and output_path and output_path != '-':
-        out_p = Path(output_path)
-
     # Apply default Markdown templates if requested and not overridden
     if output_format == 'markdown':
         default_header = utils.DEFAULT_CONFIG['output']['header_template']
