@@ -2140,17 +2140,17 @@ def main():
         "targets",
         nargs="*",
         metavar="TARGET",
-        help="Folders or files to search. If you do not provide any, the current folder is used. If the first target is a '.yml' or '.yaml' file, it will be used as the configuration.",
+        help="Folders or files to search. If you do not provide any, it searches the current folder. If the first target is a '.yml' or '.yaml' file, the tool will use it as its configuration.",
     )
     core_group.add_argument(
         "--config",
         "-k",
-        help="Use a specific configuration file. This skips auto-detecting a configuration from your target list.",
+        help="Use a specific configuration file. This stops the tool from trying to find one automatically in your target list.",
     )
     core_group.add_argument(
         "--output",
         "-o",
-        help="Save the result to a specific file or folder. This overrides the path in your configuration file.",
+        help="Save the result to a specific file or folder. This takes priority over the path in your settings.",
     )
     core_group.add_argument(
         "--dry-run",
@@ -2162,7 +2162,7 @@ def main():
         "-v",
         "--verbose",
         action="store_true",
-        help="Show detailed status messages to help troubleshoot issues.",
+        help="Show detailed status messages to help find and fix problems.",
     )
 
     # Filtering & Selection Group
@@ -2174,7 +2174,7 @@ def main():
         dest="exclude_file",
         action="append",
         default=[],
-        help="Skip files that match this search pattern (for example, '*.log'). Repeat this option to skip more.",
+        help="Skip files that match this search pattern (for example, '*.log'). Use this option again to skip more.",
     )
     filtering_group.add_argument(
         "--exclude-folder",
@@ -2183,7 +2183,7 @@ def main():
         dest="exclude_folder",
         action="append",
         default=[],
-        help="Skip folders that match this search pattern (for example, 'build'). Repeat this option to skip more.",
+        help="Skip folders that match this search pattern (for example, 'build'). Use this option again to skip more.",
     )
     filtering_group.add_argument(
         "--include",
@@ -2191,7 +2191,7 @@ def main():
         "-i",
         action="append",
         default=[],
-        help="Include only files matching this search pattern (for example, '*.py'). Repeat this option to include more.",
+        help="Include only files matching this search pattern (for example, '*.py'). Use this option again to include more.",
     )
     filtering_group.add_argument(
         "--since",
@@ -2241,7 +2241,7 @@ def main():
         "--git-files",
         "-G",
         action="store_true",
-        help="Use 'git ls-files' to find files. This respects your .gitignore settings.",
+        help="Use 'git ls-files' to find files. This follows your .gitignore rules.",
     )
 
     # Sorting & Limiting Group
