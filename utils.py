@@ -85,6 +85,7 @@ DEFAULT_CONFIG = {
     'processing': {
         'apply_in_place': False,
         'create_backups': True,
+        'max_lines': 0,
     },
 }
 
@@ -534,6 +535,13 @@ def _validate_processing_section(config, *, source=None):
         source,
     )
 
+    max_lines = processing_conf.get('max_lines')
+    if max_lines is not None:
+        if not isinstance(max_lines, int) or max_lines < 0:
+            raise InvalidConfigError(
+                "'processing.max_lines' must be 0 or more"
+            )
+
     if 'in_place_groups' in processing_conf:
         raise InvalidConfigError(
             "'processing.in_place_groups' is no longer used. "
@@ -750,6 +758,7 @@ def process_content(buffer: str, options: Mapping[str, Any]) -> str:
     - ``compact_whitespace_groups`` (dict): optional overrides that enable or disable
       specific whitespace transformations. Supported keys are defined in
       ``COMPACT_WHITESPACE_GROUPS``.
+    - ``max_lines`` (int): if greater than zero, truncate the output to this many lines.
     """
     if not options:
         return buffer
@@ -805,6 +814,12 @@ def process_content(buffer: str, options: Mapping[str, Any]) -> str:
 
     if compact_enabled:
         buffer = compact_whitespace(buffer, groups=resolved_groups)
+
+    max_lines = options.get('max_lines', 0)
+    if max_lines > 0:
+        lines = buffer.splitlines(keepends=True)
+        if len(lines) > max_lines:
+            buffer = "".join(lines[:max_lines])
 
     return buffer
 

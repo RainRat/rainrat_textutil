@@ -2406,6 +2406,11 @@ def main():
         action="store_true",
         help="Create '.bak' copies of your original files when using --apply-in-place.",
     )
+    processing_group.add_argument(
+        "--max-lines",
+        type=int,
+        help="Truncate each file to this many lines before combining.",
+    )
 
     # Utility Commands Group
     utility_group = parser.add_argument_group("Utility Commands")
@@ -2749,6 +2754,9 @@ def main():
 
     if args.create_backups:
         config['processing']['create_backups'] = True
+
+    if args.max_lines is not None:
+        config['processing']['max_lines'] = args.max_lines
 
     if args.sort:
         output_conf['sort_by'] = args.sort

@@ -107,6 +107,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 
 ### Processing
 *   `--compact` / `-C`: Clean up extra spaces and blank lines in the output.
+*   `--max-lines`: Truncate each file to this many lines before combining.
 *   `--apply-in-place`: Apply processing rules directly to your source files (WARNING: modifies your files!).
 *   `--create-backups`: Create `.bak` copies of your original files when using `--apply-in-place`.
 
