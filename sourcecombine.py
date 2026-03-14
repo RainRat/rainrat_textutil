@@ -1375,8 +1375,6 @@ def find_and_combine_files(
 
     if not pairing_enabled and output_path and output_path != '-':
         out_p = Path(output_path)
-        if out_p.is_dir():
-            raise InvalidConfigError(f"The output path '{output_path}' is an existing folder. Please specify a file name.")
 
     # Apply default Markdown templates if requested and not overridden
     if output_format == 'markdown':
@@ -2641,7 +2639,11 @@ def main():
         if pairing_conf.get('enabled'):
             output_conf['folder'] = args.output
         else:
-            output_conf['file'] = args.output
+            # If the output is an existing folder, use the default filename inside it.
+            if Path(args.output).is_dir():
+                output_conf['file'] = str(Path(args.output) / DEFAULT_OUTPUT_FILENAME)
+            else:
+                output_conf['file'] = args.output
 
     if args.max_tokens is not None:
         config['filters']['max_total_tokens'] = args.max_tokens
@@ -2803,17 +2805,19 @@ def main():
     if pairing_enabled:
         output_path = output_conf.get('folder')
     else:
-        # Smart extension adjustment: if no explicit output path was provided via CLI
-        # and we are using the default filename, adjust the extension to match the format.
-        if not args.output and output_conf.get('file', DEFAULT_OUTPUT_FILENAME) == DEFAULT_OUTPUT_FILENAME:
+        # Smart extension adjustment: if the output filename is the default filename,
+        # adjust the extension to match the format. This works even if the file is
+        # inside a folder specified via terminal options.
+        current_output_file = output_conf.get('file', DEFAULT_OUTPUT_FILENAME)
+        if Path(current_output_file).name == DEFAULT_OUTPUT_FILENAME:
             if args.format == 'markdown':
-                output_conf['file'] = str(Path(DEFAULT_OUTPUT_FILENAME).with_suffix('.md'))
+                output_conf['file'] = str(Path(current_output_file).with_suffix('.md'))
             elif args.format == 'json':
-                output_conf['file'] = str(Path(DEFAULT_OUTPUT_FILENAME).with_suffix('.json'))
+                output_conf['file'] = str(Path(current_output_file).with_suffix('.json'))
             elif args.format == 'jsonl':
-                output_conf['file'] = str(Path(DEFAULT_OUTPUT_FILENAME).with_suffix('.jsonl'))
+                output_conf['file'] = str(Path(current_output_file).with_suffix('.jsonl'))
             elif args.format == 'xml':
-                output_conf['file'] = str(Path(DEFAULT_OUTPUT_FILENAME).with_suffix('.xml'))
+                output_conf['file'] = str(Path(current_output_file).with_suffix('.xml'))
 
         output_path = output_conf.get('file', DEFAULT_OUTPUT_FILENAME)
 
