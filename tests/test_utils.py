@@ -95,12 +95,14 @@ def test_read_file_best_effort_handles_utf16_edge_cases(tmp_path):
     bom_only.write_bytes(b"\xff\xfe")
 
     without_bom = tmp_path / "utf16_no_bom.txt"
-    without_bom.write_bytes("A".encode("utf-16-le"))
+    # Use a longer string for reliable detection of Little Endian without BOM
+    content_str = "Hello UTF-16LE"
+    without_bom.write_bytes(content_str.encode("utf-16-le"))
 
     content, _ = read_file_best_effort(bom_only)
     assert content == ""
     content, _ = read_file_best_effort(without_bom)
-    assert content == "A"
+    assert content == content_str
 
 
 def _write_config(tmp_path: Path, data: dict) -> Path:
