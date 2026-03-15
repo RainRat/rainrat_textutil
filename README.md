@@ -22,7 +22,11 @@ cd rainrat_textutil
 pip install -r requirements.txt
 ```
 
-*Note: Install the optional `tiktoken` package for more accurate token counting.*
+*Note: Install the optional `tiktoken` package for more accurate token counting:*
+
+```bash
+pip install tiktoken
+```
 
 ### Verify it works
 
@@ -42,6 +46,12 @@ Combine all files in `src/` and `lib/`, skip the `test/` folder, and estimate th
 
 ```bash
 python sourcecombine.py src lib -o output/ --exclude-folder "test" --estimate-tokens
+```
+
+Prepare a project for an AI assistant (Markdown format, line numbers, and copied to clipboard):
+
+```bash
+python sourcecombine.py . --ai
 ```
 
 ## Configuration
@@ -122,4 +132,4 @@ List one or more folders or files to search. If you do not provide any, the tool
 
 ## License
 
-This project is licensed under the MIT License - see the `LICENSE` file for details.
+This project is licensed under the MIT License - see the `LICENSE.txt` file for details.
