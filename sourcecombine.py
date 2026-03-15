@@ -3551,9 +3551,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
             # Align token counts at 11, percentages at 6, and sizes at 10 to keep paths consistent
             if has_tokens:
-                print(f"    {C_CYAN}{token_str:>11}  {percent_str}{C_RESET}  {C_DIM}{size_str:>10}{C_RESET}  {display_path}", file=sys.stderr)
+                print(f"    {C_CYAN}{token_str:>11}  {percent_str}{C_RESET}  {C_DIM}{size_str:>10}{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
             else:
-                print(f"    {C_CYAN}{size_str:>10}  {percent_str}{C_RESET}  {display_path}", file=sys.stderr)
+                print(f"    {C_CYAN}{size_str:>10}  {percent_str}{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
 
     # Extensions Grid
     if stats['files_by_extension']:
@@ -3594,7 +3594,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                     raw_weight_str = f"/{weight_percent:>5.1f}%S"
 
             # Combine count, percentage of files, and weight
-            items.append(f"{ext}{C_DIM}:{C_RESET} {C_CYAN}{count:>5,}{C_RESET} {C_DIM}({file_percent:>5.1f}%{weight_str}){C_RESET}")
+            items.append(f"{C_CYAN}{ext}{C_RESET}{C_DIM}:{C_RESET} {C_BOLD}{C_CYAN}{count:>5,}{C_RESET} {C_DIM}({file_percent:>5.1f}%{weight_str}){C_RESET}")
             raw_items.append(f"{ext}: {count:>5,} ({file_percent:>5.1f}%{raw_weight_str})")
 
         max_len = max(len(s) for s in raw_items) + 3
