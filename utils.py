@@ -167,12 +167,9 @@ def read_file_best_effort(file_path):
         if encoding.lower().replace('-', '_').startswith('utf_16'):
             has_bom = raw_bytes.startswith((b'\xff\xfe', b'\xfe\xff'))
             has_nulls = b'\x00' in raw_bytes
-            if not has_bom:
-                if not has_nulls and len(raw_bytes) < 6:
-                    # Guard against spurious UTF-16 guesses on very small files
-                    encoding = 'latin-1'
-                else:
-                    encoding = 'utf-16'
+            if not has_bom and not has_nulls and len(raw_bytes) < 6:
+                # Guard against spurious UTF-16 guesses on very small files
+                encoding = 'latin-1'
         try:
             return raw_bytes.decode(encoding, errors='replace').lstrip('\ufeff'), encoding
         except LookupError:
