@@ -400,7 +400,7 @@ def should_include(
 
     exclusion_folders = _normalize_patterns(exclusions.get('folders'))
     if exclusion_folders and _matches_folder_glob_cached(
-        rel_str, relative_path.parts, exclusion_folders
+        relative_path.parent.as_posix(), relative_path.parent.parts, exclusion_folders
     ):
         return (False, 'excluded') if return_reason else False
 
