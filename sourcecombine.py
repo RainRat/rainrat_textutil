@@ -2686,7 +2686,10 @@ def main():
         try:
             config['filters']['max_total_size_bytes'] = utils.parse_size_value(args.max_total_size)
         except InvalidConfigError as e:
-            logging.error(e)
+            if args.verbose:
+                logging.error(e, exc_info=True)
+            else:
+                logging.error(e)
             sys.exit(1)
 
     if args.max_total_lines is not None:
@@ -2734,7 +2737,10 @@ def main():
             if args.max_size:
                 filters['max_size_bytes'] = utils.parse_size_value(args.max_size)
         except InvalidConfigError as e:
-            logging.error(e)
+            if args.verbose:
+                logging.error(e, exc_info=True)
+            else:
+                logging.error(e)
             sys.exit(1)
 
     if args.toc:
