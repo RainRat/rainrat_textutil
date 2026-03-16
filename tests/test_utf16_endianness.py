@@ -1,5 +1,10 @@
+import sys
 import pytest
 from pathlib import Path
+
+# Add current directory to sys.path to import utils
+sys.path.append(str(Path(__file__).parent.parent))
+
 from utils import read_file_best_effort
 
 def test_read_file_utf16be_no_bom(tmp_path):
