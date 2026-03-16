@@ -101,9 +101,9 @@ def test_summary_printing(monkeypatch, capsys):
     assert "SIZE" in stderr
     assert "%" in stderr
     assert "PATH" in stderr
-    assert "Extensions" in stderr
-    assert "Excluded Folders:                2" in stderr
-    assert "Token Count:                ~5,000" in stderr
+    assert "File Types" in stderr
+    assert "Skipped Folders:                 2" in stderr
+    assert "Tokens:                     ~5,000" in stderr
 
     # Check wrapping (grid layout)
     assert "\n    " in stderr
@@ -204,5 +204,5 @@ def test_summary_terminal_size_fallback(capsys):
                 _print_execution_summary(stats, args, pairing_enabled=False)
 
     captured = capsys.readouterr()
-    assert "Extensions" in captured.err
+    assert "File Types" in captured.err
     assert ".txt:     1" in captured.err

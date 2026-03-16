@@ -3455,7 +3455,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     included_color = C_GREEN if total_included > 0 else C_RESET
     filtered_color = C_YELLOW if total_filtered > 0 else C_RESET
     print(f"    {C_BOLD}{'Included:':<{label_width}}{C_RESET}{included_color}{total_included:12,}{C_RESET}", file=sys.stderr)
-    print(f"    {C_BOLD}{'Filtered:':<{label_width}}{C_RESET}{filtered_color}{total_filtered:12,}{C_RESET}", file=sys.stderr)
+    print(f"    {C_BOLD}{'Skipped:':<{label_width}}{C_RESET}{filtered_color}{total_filtered:12,}{C_RESET}", file=sys.stderr)
 
     # Detailed breakdown of filtering reasons
     if stats.get('filter_reasons'):
@@ -3473,16 +3473,16 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
     print(f"    {C_BOLD}{'Total Found:':<{label_width}}{C_RESET}{C_CYAN}{total_discovered:12,}{C_RESET}", file=sys.stderr)
     if excluded_folders > 0:
-        print(f"    {C_BOLD}{'Excluded Folders:':<{label_width}}{C_RESET}{C_CYAN}{excluded_folders:12,}{C_RESET}", file=sys.stderr)
+        print(f"    {C_BOLD}{'Skipped Folders:':<{label_width}}{C_RESET}{C_CYAN}{excluded_folders:12,}{C_RESET}", file=sys.stderr)
 
-    # Data Section
+    # Details Section
     total_lines = stats.get('total_lines', 0)
-    print(f"\n  {C_BOLD}{C_CYAN}Data{C_RESET}", file=sys.stderr)
+    print(f"\n  {C_BOLD}{C_CYAN}Details{C_RESET}", file=sys.stderr)
 
     # Show output format if not extracting or listing
     if not getattr(args, 'extract', False) and not (args.list_files or args.tree):
         fmt_name = (getattr(args, 'format', None) or stats.get('output_format', 'text')).upper()
-        print(f"    {C_BOLD}{'Output Format:':<{label_width}}{C_RESET}{C_CYAN}{str(fmt_name):>12}{C_RESET}", file=sys.stderr)
+        print(f"    {C_BOLD}{'Format:':<{label_width}}{C_RESET}{C_CYAN}{str(fmt_name):>12}{C_RESET}", file=sys.stderr)
 
     print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_CYAN}{total_size_str:>12}{C_RESET}", file=sys.stderr)
     if total_lines > 0:
@@ -3493,7 +3493,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     if token_count > 0:
         token_str = f"{'~' if is_approx else ''}{token_count:,}"
         print(
-            f"    {C_BOLD}{'Token Count:':<{label_width}}{C_RESET}{C_CYAN}{token_str:>12}{C_RESET}",
+            f"    {C_BOLD}{'Tokens:':<{label_width}}{C_RESET}{C_CYAN}{token_str:>12}{C_RESET}",
             file=sys.stderr,
         )
         if is_approx:
@@ -3502,13 +3502,13 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 file=sys.stderr,
             )
 
-    # Execution Section
+    # Time and Limits Section
     has_limits = any(stats.get(k, 0) > 0 for k in ('max_total_tokens', 'max_total_size_bytes', 'max_total_lines'))
     if duration is not None or has_limits:
-        print(f"\n  {C_BOLD}{C_CYAN}Execution{C_RESET}", file=sys.stderr)
+        print(f"\n  {C_BOLD}{C_CYAN}Time and Limits{C_RESET}", file=sys.stderr)
 
         if duration is not None:
-            print(f"    {C_BOLD}{'Duration:':<{label_width}}{C_RESET}{C_CYAN}{duration:.2f}s{C_RESET}", file=sys.stderr)
+            print(f"    {C_BOLD}{'Time taken:':<{label_width}}{C_RESET}{C_CYAN}{duration:.2f}s{C_RESET}", file=sys.stderr)
 
         _print_limit_usage_bar('Token Limit Usage:', token_count, stats.get('max_total_tokens', 0), label_width)
         _print_limit_usage_bar('Size Limit Usage:', total_size_bytes, stats.get('max_total_size_bytes', 0), label_width)
@@ -3603,7 +3603,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         avail_width = max(40, term_width - 4)
         cols = max(1, avail_width // max_len)
 
-        print(f"\n  {C_BOLD}{C_CYAN}Extensions{C_RESET}", file=sys.stderr)
+        print(f"\n  {C_BOLD}{C_CYAN}File Types{C_RESET}", file=sys.stderr)
 
         for i in range(0, len(items), cols):
             chunk = items[i:i + cols]
