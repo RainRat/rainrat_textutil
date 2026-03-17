@@ -2670,11 +2670,7 @@ def main():
         if pairing_conf.get('enabled'):
             output_conf['folder'] = args.output
         else:
-            # If the output is an existing folder, use the default filename inside it.
-            if Path(args.output).is_dir():
-                output_conf['file'] = str(Path(args.output) / DEFAULT_OUTPUT_FILENAME)
-            else:
-                output_conf['file'] = args.output
+            output_conf['file'] = args.output
 
     if args.max_tokens is not None:
         config['filters']['max_total_tokens'] = args.max_tokens
@@ -2845,10 +2841,25 @@ def main():
     if pairing_enabled:
         output_path = output_conf.get('folder')
     else:
+        # Determine the effective output file, falling back to the default if not set.
+        current_output_file = output_conf.get('file', DEFAULT_OUTPUT_FILENAME)
+
+        # If the target is an existing folder or ends with a trailing slash,
+        # treat it as a folder and put the default filename inside it.
+        is_intended_dir = False
+        if current_output_file:
+            if Path(current_output_file).is_dir():
+                is_intended_dir = True
+            elif current_output_file.endswith(os.sep) or (os.altsep and current_output_file.endswith(os.altsep)):
+                is_intended_dir = True
+
+        if is_intended_dir:
+            current_output_file = str(Path(current_output_file) / DEFAULT_OUTPUT_FILENAME)
+            output_conf['file'] = current_output_file
+
         # Smart extension adjustment: if the output filename is the default filename,
         # adjust the extension to match the format. This works even if the file is
-        # inside a folder specified via terminal options.
-        current_output_file = output_conf.get('file', DEFAULT_OUTPUT_FILENAME)
+        # inside a folder specified via terminal options or configuration.
         if Path(current_output_file).name == DEFAULT_OUTPUT_FILENAME:
             if args.format == 'markdown':
                 output_conf['file'] = str(Path(current_output_file).with_suffix('.md'))
