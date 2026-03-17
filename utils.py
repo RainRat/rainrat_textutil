@@ -81,6 +81,7 @@ DEFAULT_CONFIG = {
         'format': 'text',
         'sort_by': 'name',
         'sort_reverse': False,
+        'summary_json': None,
     },
     'processing': {
         'apply_in_place': False,
@@ -602,6 +603,7 @@ def _validate_output_section(config):
         'global_footer_template',
         'max_size_placeholder',
         'format',
+        'summary_json',
     ]
 
     for field in string_fields:

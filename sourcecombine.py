@@ -23,6 +23,49 @@ def xml_escape(data: str) -> str:
     if not data:
         return ""
     return _xml_escape(data, {'"': "&quot;", "'": "&apos;"})
+
+
+def _convert_to_json_friendly(obj):
+    """Recursively convert objects (like Path) to JSON-compatible types."""
+    if isinstance(obj, dict):
+        return {k: _convert_to_json_friendly(v) for k, v in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [_convert_to_json_friendly(i) for i in obj]
+    elif isinstance(obj, Path):
+        return str(obj)
+    return obj
+
+
+def _write_json_summary(stats, file_path, duration=None, source_desc=None, destination_desc=None):
+    """Write the execution summary in JSON format to a file or stderr."""
+    if not file_path:
+        return
+
+    summary = copy.deepcopy(stats)
+    if duration is not None:
+        summary['duration_seconds'] = duration
+    if source_desc:
+        summary['source'] = source_desc
+    if destination_desc:
+        summary['destination'] = destination_desc
+
+    json_data = json.dumps(_convert_to_json_friendly(summary), indent=2)
+
+    try:
+        if file_path == '-':
+            # Write to stderr to avoid mixing with stdout output
+            sys.stderr.write("\n--- JSON Execution Summary ---\n")
+            sys.stderr.write(json_data)
+            sys.stderr.write("\n------------------------------\n")
+        else:
+            output_file = Path(file_path)
+            output_file.parent.mkdir(parents=True, exist_ok=True)
+            output_file.write_text(json_data, encoding='utf-8')
+            logging.info("JSON execution summary saved to '%s'.", file_path)
+    except OSError as e:
+        logging.error("Failed to write JSON summary to '%s': %s", file_path, e)
+
+
 from functools import lru_cache
 from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 
@@ -2365,6 +2408,10 @@ def main():
         action="store_true",
         help="Include a visual folder tree with file details at the start of the output. (Only when combining many files into one)",
     )
+    output_group.add_argument(
+        "--json-summary",
+        help="Save a machine-readable execution summary to a JSON file (use '-' for your terminal).",
+    )
 
     # Display & Preview Group
     display_group = parser.add_argument_group("Display & Preview")
@@ -2745,6 +2792,9 @@ def main():
     if args.toc:
         output_conf['table_of_contents'] = True
 
+    if args.json_summary:
+        output_conf['summary_json'] = args.json_summary
+
     if args.line_numbers:
         output_conf['add_line_numbers'] = True
 
@@ -2830,14 +2880,6 @@ def main():
 
     if args.show_config:
         import yaml
-
-        def _convert_to_json_friendly(obj):
-            if isinstance(obj, dict):
-                return {k: _convert_to_json_friendly(v) for k, v in obj.items()}
-            elif isinstance(obj, (list, tuple)):
-                return [_convert_to_json_friendly(i) for i in obj]
-            return obj
-
         logging.info("Final merged configuration:")
         yaml.dump(_convert_to_json_friendly(config), sys.stdout, sort_keys=False)
         sys.exit(0)
@@ -2934,6 +2976,7 @@ def main():
         source_desc = f"from '{source_name}'"
         duration = time.perf_counter() - start_time
         _print_execution_summary(stats, args, pairing_enabled=False, destination_desc=dest, duration=duration, source_desc=source_desc)
+        _write_json_summary(stats, output_conf.get('summary_json'), duration=duration, source_desc=source_desc, destination_desc=dest)
         sys.exit(0)
 
     mode_desc = "Pairing" if pairing_enabled else "Combining files"
@@ -2981,6 +3024,7 @@ def main():
 
         duration = time.perf_counter() - start_time
         _print_execution_summary(stats, args, pairing_enabled, destination_desc, duration=duration, source_desc=source_desc)
+        _write_json_summary(stats, output_conf.get('summary_json'), duration=duration, source_desc=source_desc, destination_desc=destination_desc)
 
 
 def extract_files(content, output_folder, dry_run=False, source_name="combined file", config=None, list_files=False, tree_view=False, limit=0, estimate_tokens=False, sort_by='name', sort_reverse=False, keep_line_numbers=False):
