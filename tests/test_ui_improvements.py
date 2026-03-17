@@ -107,3 +107,29 @@ def test_cli_override_config_format(temp_cwd, mock_argv):
             args, kwargs = mock_combine.call_args
             assert args[1] == 'combined_files.txt'
             assert kwargs['output_format'] == 'text'
+
+def test_trailing_slash_output(temp_cwd, mock_argv):
+    """Verify that a trailing slash in output path treats it as a directory."""
+    # Note: Use a path that doesn't exist yet to verify it works for new dirs too.
+    output_dir = "new_output_dir/"
+    with mock_argv(['.', '-o', output_dir, '--dry-run']):
+        with patch('sourcecombine.find_and_combine_files') as mock_combine:
+            mock_combine.return_value = {}
+            main()
+
+            args, _ = mock_combine.call_args
+            # It should have appended the default filename
+            expected_path = os.path.join("new_output_dir", "combined_files.txt")
+            assert args[1] == expected_path
+
+def test_trailing_slash_with_format(temp_cwd, mock_argv):
+    """Verify trailing slash with format shortcut works together."""
+    output_dir = "markdown_dir/"
+    with mock_argv(['.', '-o', output_dir, '-m', '--dry-run']):
+        with patch('sourcecombine.find_and_combine_files') as mock_combine:
+            mock_combine.return_value = {}
+            main()
+
+            args, _ = mock_combine.call_args
+            expected_path = os.path.join("markdown_dir", "combined_files.md")
+            assert args[1] == expected_path
