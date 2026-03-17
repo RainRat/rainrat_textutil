@@ -1,7 +1,6 @@
 import os
 import sys
 from pathlib import Path
-import pytest
 
 # Ensure we can import sourcecombine from parent directory
 sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))

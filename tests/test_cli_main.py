@@ -1,17 +1,15 @@
 import sys
 import os
-import shutil
 import logging
 import runpy
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import pytest
 import yaml
 
 # Adjust sys.path to include the project root
 sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
-import sourcecombine
 from sourcecombine import main, utils
 
 @pytest.fixture(autouse=True)

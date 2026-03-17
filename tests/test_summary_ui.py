@@ -7,7 +7,6 @@ from pathlib import Path
 sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
 import sourcecombine
-import pytest
 
 def test_summary_redesign_largest_files(monkeypatch, capsys):
     # Mock stats

@@ -1,6 +1,5 @@
 import sys
 import subprocess
-from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 def test_system_info_flag():

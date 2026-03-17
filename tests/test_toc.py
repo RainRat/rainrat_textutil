@@ -1,13 +1,10 @@
 import copy
 import pytest
 from pathlib import Path
-from unittest.mock import MagicMock
-import logging
 
 from sourcecombine import find_and_combine_files, _generate_table_of_contents
 from utils import DEFAULT_CONFIG
 
-import copy
 @pytest.fixture
 def toc_config(tmp_path):
     config = copy.deepcopy(DEFAULT_CONFIG)

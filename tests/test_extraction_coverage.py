@@ -1,6 +1,4 @@
 import json
-import pytest
-from pathlib import Path
 from sourcecombine import extract_files
 
 def test_extract_sorting_depth_descending(tmp_path):

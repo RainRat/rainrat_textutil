@@ -1,8 +1,4 @@
 import json
-import os
-import sys
-from pathlib import Path
-import pytest
 from sourcecombine import find_and_combine_files, main
 from utils import DEFAULT_CONFIG
 

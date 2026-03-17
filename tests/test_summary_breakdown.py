@@ -1,6 +1,4 @@
-import pytest
-from pathlib import Path
-from sourcecombine import find_and_combine_files, should_include
+from sourcecombine import find_and_combine_files
 import utils
 
 def test_summary_breakdown_reasons(tmp_path):

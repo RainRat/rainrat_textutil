@@ -3,9 +3,7 @@ import os
 import logging
 import pytest
 from unittest.mock import patch
-from pathlib import Path
 import yaml
-import sourcecombine
 from sourcecombine import main
 
 @pytest.fixture

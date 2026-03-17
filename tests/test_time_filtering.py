@@ -1,8 +1,7 @@
 import pytest
 from pathlib import Path
 from unittest.mock import MagicMock
-import time
-from datetime import datetime, timedelta
+from datetime import datetime
 import utils
 import sourcecombine
 

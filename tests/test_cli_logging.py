@@ -1,9 +1,7 @@
 import logging
 import os
-import sys
-from unittest.mock import patch, MagicMock
-import pytest
-from sourcecombine import CLILogFormatter, _LazyColor, C_YELLOW, C_RED, C_DIM, C_RESET
+from unittest.mock import patch
+from sourcecombine import CLILogFormatter, _LazyColor
 
 def test_cli_log_formatter_multiline_warning():
     formatter = CLILogFormatter()

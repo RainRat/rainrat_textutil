@@ -1,7 +1,6 @@
-import sys
 import yaml
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import sourcecombine
 from utils import remove_line_numbers, InvalidConfigError, process_content, validate_config
 

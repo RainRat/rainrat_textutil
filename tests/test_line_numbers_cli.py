@@ -1,7 +1,4 @@
-import os
 import subprocess
-import pytest
-from pathlib import Path
 
 def test_line_numbers_cli(tmp_path):
     # Create some dummy files

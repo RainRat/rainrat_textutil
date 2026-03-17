@@ -1,6 +1,3 @@
-import os
-from pathlib import Path
-import pytest
 from sourcecombine import find_and_combine_files
 
 def test_file_metadata_placeholders(tmp_path):

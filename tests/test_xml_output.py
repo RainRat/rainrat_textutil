@@ -1,6 +1,5 @@
 import sys
 from pathlib import Path
-import pytest
 import xml.etree.ElementTree as ET
 
 # Ensure repo root is on path

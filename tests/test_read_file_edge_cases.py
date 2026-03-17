@@ -1,7 +1,5 @@
-import logging
 from unittest.mock import patch, MagicMock
 import pytest
-from pathlib import Path
 from utils import read_file_best_effort
 
 def test_read_file_best_effort_retries_on_null_bytes_in_utf8(tmp_path):

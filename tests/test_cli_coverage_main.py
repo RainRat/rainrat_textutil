@@ -1,10 +1,9 @@
-import sys
 import yaml
 import io
 import os
 import copy
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import sourcecombine
 from sourcecombine import restore_backups
 

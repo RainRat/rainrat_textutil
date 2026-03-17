@@ -1,10 +1,8 @@
-import os
 import json
 import sys
 import logging
-import re
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import pytest
 from sourcecombine import find_and_combine_files, extract_files, should_include, main
 from utils import DEFAULT_CONFIG

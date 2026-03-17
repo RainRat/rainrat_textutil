@@ -1,6 +1,3 @@
-import os
-from pathlib import Path
-import pytest
 from sourcecombine import main
 import sys
 from unittest.mock import patch

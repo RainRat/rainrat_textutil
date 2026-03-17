@@ -1,6 +1,5 @@
 import subprocess
 import yaml
-import pytest
 
 def test_show_config_defaults():
     """Test that --show-config displays default values."""

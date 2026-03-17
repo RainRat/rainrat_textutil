@@ -1,11 +1,8 @@
-import os
 import sys
 import unittest
 from pathlib import Path
 from io import StringIO
-import logging
 import sourcecombine
-import utils
 
 class TestLineLimit(unittest.TestCase):
     def setUp(self):

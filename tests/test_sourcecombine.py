@@ -22,14 +22,12 @@ from sourcecombine import (
     collect_file_paths,
     find_and_combine_files,
     should_include,
-    _pair_files,
-    _process_paired_files,
     _progress_enabled,
     _update_file_stats,
     _group_paths_by_stem_suffix,
     _get_rel_path,
 )
-from utils import compact_whitespace, DEFAULT_CONFIG
+from utils import compact_whitespace
 
 
 def test_progress_enabled_behavior(monkeypatch, caplog):

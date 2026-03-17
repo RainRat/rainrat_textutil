@@ -1,8 +1,5 @@
-import pytest
-import logging
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import sys
-from io import StringIO
 import sourcecombine
 from sourcecombine import main
 import yaml
@@ -184,7 +181,6 @@ def test_list_files_tree_estimate_tokens(capsys, tmp_path):
 
 def test_list_files_with_token_estimation_approx(tmp_path, capsys):
     """Cover sourcecombine.py line 1213: stats['token_count_is_approx'] = True in list_files mode."""
-    import sourcecombine
     from unittest.mock import patch
     root = tmp_path / "root"
     root.mkdir()

@@ -1,9 +1,6 @@
 import pytest
 import utils
 import sourcecombine
-from pathlib import Path
-import shutil
-import sys
 from unittest.mock import patch
 import copy
 

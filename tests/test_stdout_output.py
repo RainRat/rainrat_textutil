@@ -1,10 +1,5 @@
 import sys
-import logging
 import pytest
-from pathlib import Path
-from contextlib import redirect_stdout
-import io
-import sourcecombine
 from sourcecombine import find_and_combine_files, InvalidConfigError
 
 def test_stdout_output(tmp_path, capsys):
@@ -65,7 +60,6 @@ def test_stdout_output_dry_run(tmp_path, capsys):
 def test_stdout_output_clipboard_priority(tmp_path, capsys):
     """Test that clipboard mode takes precedence over stdout."""
     # Mock pyperclip to avoid errors and verify interaction
-    import sys
     from unittest.mock import MagicMock
 
     # Mocking pyperclip module

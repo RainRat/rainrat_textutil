@@ -1,10 +1,9 @@
 import logging
 import os
 import sys
-from unittest.mock import Mock, MagicMock
+from unittest.mock import MagicMock
 from pathlib import Path, PurePath
 
-import pytest
 
 # Ensure sourcecombine is importable
 sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))

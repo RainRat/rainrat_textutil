@@ -4,7 +4,6 @@ import logging
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 import pytest
-import yaml
 
 # Adjust sys.path to include the project root
 sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))

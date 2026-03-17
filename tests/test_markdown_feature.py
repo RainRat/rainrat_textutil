@@ -1,15 +1,12 @@
 import os
 import sys
 import io
-import yaml
-import pytest
 from pathlib import Path
 
 # Add project root to sys.path
 sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
-from sourcecombine import FileProcessor, find_and_combine_files, InvalidConfigError
-import utils
+from sourcecombine import FileProcessor, find_and_combine_files
 
 def test_file_processor_markdown_ext_placeholder(tmp_path):
     root = tmp_path

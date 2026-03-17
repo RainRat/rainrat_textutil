@@ -1,9 +1,7 @@
-import os
 import io
 import pytest
 import copy
-from pathlib import Path
-from sourcecombine import find_and_combine_files, FileProcessor
+from sourcecombine import FileProcessor
 import utils
 
 def test_max_lines_truncation(tmp_path):

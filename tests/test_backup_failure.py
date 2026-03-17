@@ -1,6 +1,5 @@
 import os
 import sys
-import shutil
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
@@ -10,7 +9,6 @@ import pytest
 sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
 from sourcecombine import FileProcessor, InvalidConfigError
-import sourcecombine
 
 def test_backup_failure_raises_invalid_config_error(tmp_path):
     """

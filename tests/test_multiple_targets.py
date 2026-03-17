@@ -2,7 +2,6 @@ import sys
 import os
 import pytest
 import yaml
-from pathlib import Path
 from unittest.mock import patch
 from sourcecombine import main
 

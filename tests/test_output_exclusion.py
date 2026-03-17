@@ -1,6 +1,3 @@
-import os
-import sys
-from pathlib import Path
 from sourcecombine import find_and_combine_files, utils
 
 def test_output_file_is_excluded(tmp_path):

@@ -1,6 +1,3 @@
-import os
-import shutil
-from pathlib import Path
 import pytest
 from sourcecombine import find_and_combine_files
 from utils import DEFAULT_CONFIG

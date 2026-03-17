@@ -1,7 +1,5 @@
 import json
-import logging
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 import pytest
 import sys
 
@@ -9,7 +7,6 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from sourcecombine import find_and_combine_files, InvalidConfigError
-import utils
 
 def test_json_output_success(tmp_path):
     # Setup

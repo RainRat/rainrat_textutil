@@ -1,13 +1,10 @@
 import os
 import sys
 from pathlib import Path
-import logging
 
-import pytest
 
 sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
-import sourcecombine
 from sourcecombine import find_and_combine_files
 
 def test_global_header_and_footer(tmp_path):

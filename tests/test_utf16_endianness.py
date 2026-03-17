@@ -1,5 +1,4 @@
 import sys
-import pytest
 from pathlib import Path
 
 # Add current directory to sys.path to import utils

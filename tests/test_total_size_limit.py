@@ -1,5 +1,3 @@
-import pytest
-from pathlib import Path
 import sourcecombine
 from utils import DEFAULT_CONFIG
 

@@ -1,5 +1,3 @@
-import os
-from pathlib import Path
 import pytest
 from sourcecombine import collect_file_paths, find_and_combine_files
 import utils

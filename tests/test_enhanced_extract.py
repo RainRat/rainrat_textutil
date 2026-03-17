@@ -1,8 +1,5 @@
 import json
-import pytest
-from pathlib import Path
 from sourcecombine import extract_files
-import utils
 
 def test_extract_metadata_json(tmp_path):
     """Test that extraction from JSON preserves metadata."""

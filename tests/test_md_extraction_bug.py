@@ -1,7 +1,6 @@
 import os
 import sys
 import copy
-from pathlib import Path
 
 # Ensure we can import sourcecombine and utils
 sys.path.append(os.getcwd())
@@ -47,7 +46,7 @@ def some_util():
 
     assert "src/main.py" in extracted_paths, f"Missing src/main.py, found {extracted_paths}"
     assert "src/utils.py" in extracted_paths, f"Missing src/utils.py, found {extracted_paths}"
-    assert "Project Overview" not in extracted_paths, f"Incorrectly extracted 'Project Overview' header"
+    assert "Project Overview" not in extracted_paths, "Incorrectly extracted 'Project Overview' header"
 
 if __name__ == "__main__":
     try:

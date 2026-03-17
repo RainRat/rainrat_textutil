@@ -2,15 +2,14 @@ import sys
 import os
 import logging
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from pathlib import Path
 import io
-import yaml
 
 # Adjust sys.path to include the project root
 sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
-from sourcecombine import main, utils
+from sourcecombine import main
 
 @pytest.fixture(autouse=True)
 def reset_logging():

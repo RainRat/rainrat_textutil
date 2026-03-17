@@ -1,7 +1,5 @@
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import sys
-import os
 from pathlib import Path
 import yaml
 from sourcecombine import main, _generate_tree_string

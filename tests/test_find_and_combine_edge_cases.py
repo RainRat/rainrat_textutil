@@ -3,7 +3,6 @@ import os
 import sys
 from pathlib import Path
 
-import pytest
 
 sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
@@ -13,7 +12,6 @@ from sourcecombine import (
     _matches_file_glob_cached,
     _matches_folder_glob_cached
 )
-import sourcecombine
 
 def test_find_and_combine_continues_to_next_root_if_first_is_empty(tmp_path):
     root1 = tmp_path / "empty"

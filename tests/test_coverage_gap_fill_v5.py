@@ -1,10 +1,8 @@
-import subprocess
 import pytest
 from unittest.mock import MagicMock, patch
 from pathlib import Path
 import os
 import sys
-import logging
 import copy
 from sourcecombine import InvalidConfigError
 
