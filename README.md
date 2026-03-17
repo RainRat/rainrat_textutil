@@ -108,6 +108,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `-n` / `--line-numbers`: Add line numbers to each file in the output.
 *   `-T` / `--toc`: Add a Table of Contents to the start of the output.
 *   `-p` / `--include-tree`: Add a visual folder tree to the start of the output.
+*   `--json-summary`: Save a machine-readable execution summary (file counts, tokens, time taken) in JSON format. Use `-` to print it to your terminal.
 
 ### Display & Preview
 *   `--list-files` / `-l`: Show a list of all files that would be included and then stop.
