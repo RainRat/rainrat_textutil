@@ -126,6 +126,23 @@ def test_main_logs_error_with_traceback_on_invalid_time_in_verbose_mode(caplog):
 
     assert "Invalid time value" in caplog.text
 
+def test_main_logs_error_with_traceback_on_invalid_size_in_verbose_mode(caplog):
+    with patch("sys.argv", ["sourcecombine.py", "--max-size", "invalid-size", "--verbose"]):
+        with pytest.raises(SystemExit) as excinfo:
+            sourcecombine.main()
+        assert excinfo.value.code == 1
+
+    assert "Invalid size value" in caplog.text
+    # Verify that the traceback (exc_info) is present in the log records
+    assert any(record.exc_info is not None for record in caplog.records)
+
+def test_main_exits_on_invalid_total_size_value(caplog):
+    with patch("sys.argv", ["sourcecombine.py", "--max-total-size", "invalid-size"]):
+        with pytest.raises(SystemExit) as excinfo:
+            sourcecombine.main()
+        assert excinfo.value.code == 1
+    assert "Invalid size value" in caplog.text
+
 def test_main_exits_on_invalid_size_value(caplog):
     with patch("sys.argv", ["sourcecombine.py", "--max-size", "invalid-size"]):
         with pytest.raises(SystemExit) as excinfo:
@@ -157,6 +174,14 @@ def test_main_sets_sort_and_reverse_flags(capsys):
     config = yaml.safe_load(captured.out)
     assert config["output"]["sort_by"] == "size"
     assert config["output"]["sort_reverse"] is True
+
+def test_main_sets_max_lines(capsys):
+    with patch("sys.argv", ["sourcecombine.py", "--max-lines", "5", "--show-config"]):
+        with pytest.raises(SystemExit):
+            sourcecombine.main()
+    captured = capsys.readouterr()
+    config = yaml.safe_load(captured.out)
+    assert config["processing"]["max_lines"] == 5
 
 def test_main_extract_auto_detects_markdown_file(tmp_path):
     combined_file = tmp_path / "combined_files.md"
