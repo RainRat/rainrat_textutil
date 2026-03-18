@@ -385,47 +385,19 @@ def _validate_filters_section(config):
     if not isinstance(filters, dict):
         raise InvalidConfigError("'filters' section must be a dictionary.")
 
-    min_size = filters.get('min_size_bytes')
-    if min_size is not None:
-        if not isinstance(min_size, int) or min_size < 0:
-            raise InvalidConfigError(
-                "filters.min_size_bytes must be 0 or more"
-            )
-
-    max_size = filters.get('max_size_bytes')
-    if max_size is not None:
-        if not isinstance(max_size, int) or max_size < 0:
-            raise InvalidConfigError(
-                "filters.max_size_bytes must be 0 or more"
-            )
-
-    max_total_tokens = filters.get('max_total_tokens')
-    if max_total_tokens is not None:
-        if not isinstance(max_total_tokens, int) or max_total_tokens < 0:
-            raise InvalidConfigError(
-                "filters.max_total_tokens must be 0 or more"
-            )
-
-    max_total_size = filters.get('max_total_size_bytes')
-    if max_total_size is not None:
-        if not isinstance(max_total_size, int) or max_total_size < 0:
-            raise InvalidConfigError(
-                "filters.max_total_size_bytes must be 0 or more"
-            )
-
-    max_total_lines = filters.get('max_total_lines')
-    if max_total_lines is not None:
-        if not isinstance(max_total_lines, int) or max_total_lines < 0:
-            raise InvalidConfigError(
-                "filters.max_total_lines must be 0 or more"
-            )
-
-    max_files = filters.get('max_files')
-    if max_files is not None:
-        if not isinstance(max_files, int) or max_files < 0:
-            raise InvalidConfigError(
-                "filters.max_files must be 0 or more"
-            )
+    integer_filters = (
+        'min_size_bytes',
+        'max_size_bytes',
+        'max_total_tokens',
+        'max_total_size_bytes',
+        'max_total_lines',
+        'max_files',
+    )
+    for key in integer_filters:
+        val = filters.get(key)
+        if val is not None:
+            if not isinstance(val, int) or val < 0:
+                raise InvalidConfigError(f"filters.{key} must be 0 or more")
 
     for key in ('modified_since', 'modified_until'):
         val = filters.get(key)
