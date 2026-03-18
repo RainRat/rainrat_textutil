@@ -8,7 +8,7 @@ A versatile tool for your terminal to find, filter, and combine source code file
 *   **Filtering:** Skip folders, files, or specific names using search patterns.
 *   **Include Groups:** Group specific files to always include, even if you skip others.
 *   **Sorting:** Sort files by name, size, date, tokens, or folder depth.
-*   **Limiting:** Stop at a file limit, total tokens, total lines, or total file size.
+*   **Limiting:** Stop at a file limit, total tokens, total lines, or total size.
 *   **In-Place Processing:** Clean up extra spaces or blank lines directly in your source files.
 *   **Smart Combining:** Combine files while keeping headers and structural markers.
 *   **Estimation:** See total tokens without writing any files.

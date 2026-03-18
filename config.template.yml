@@ -56,11 +56,11 @@ output:
   add_line_numbers: false
 
   # Include a Table of Contents at the beginning of the combined file.
-  # (Ignored in pairing mode and JSON format)
+  # (Ignored in pairing and JSON format)
   table_of_contents: false
 
   # Include a visual folder tree at the start of the output file.
-  # (Ignored in pairing mode and JSON format)
+  # (Ignored in pairing and JSON format)
   include_tree: false
 
   # Template written before each file's content.
@@ -87,7 +87,7 @@ output:
   # filters.max_size_bytes. The text may use placeholders like {{FILENAME}} and {{SIZE}}.
   max_size_placeholder: null
 
-  # Global sorting options for both single-file and pairing modes.
+  # Global sorting options for both combining many files into one and pairing.
   # Choices: name, size, modified, tokens, depth.
   sort_by: 'name'
 
@@ -109,16 +109,16 @@ filters:
   # Omit, set to null, or set to 0 for no limit (0 is treated as unlimited).
   max_size_bytes: 0
 
-  # Stop adding files to the combined output once this total token limit is reached.
+  # Stop adding files once you reach the total tokens limit.
   # (Only when combining many files into one). Omit or set to 0 for no limit.
   max_total_tokens: 0
 
-  # Stop adding files to the combined output once this total size limit is reached.
+  # Stop adding files once you reach the total size limit.
   # Supports human-readable text like '10KB', '1.5MB', or raw bytes as an integer.
   # (Only when combining many files into one). Omit or set to 0 for no limit.
   max_total_size_bytes: 0
 
-  # Stop adding files to the combined output once this total line limit is reached.
+  # Stop adding files once you reach the total lines limit.
   # (Only when combining many files into one). Omit or set to 0 for no limit.
   max_total_lines: 0
 
