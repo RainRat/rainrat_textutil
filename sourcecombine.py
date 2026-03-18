@@ -2322,7 +2322,7 @@ def main():
         "--sort",
         "-s",
         choices=["name", "size", "modified", "tokens", "depth"],
-        help="Sort files by name, size, modified time, token count, or folder depth before combining.",
+        help="Sort files by name, size, modified time, tokens, or folder depth before combining.",
     )
     sorting_group.add_argument(
         "--reverse",
@@ -2340,16 +2340,16 @@ def main():
         "--max-tokens",
         "-M",
         type=int,
-        help="Stop adding files once this total token limit is reached. (Only when combining many files into one)",
+        help="Stop adding files once you reach the total tokens limit. (Only when combining many files into one)",
     )
     sorting_group.add_argument(
         "--max-total-size",
-        help="Stop adding files once this total size limit is reached (for example, '5MB'). (Only when combining many files into one)",
+        help="Stop adding files once you reach the total size limit (for example, '5MB'). (Only when combining many files into one)",
     )
     sorting_group.add_argument(
         "--max-total-lines",
         type=int,
-        help="Stop adding files once this total line limit is reached. (Only when combining many files into one)",
+        help="Stop adding files once you reach the total lines limit. (Only when combining many files into one)",
     )
 
     # Output Options Group
@@ -2364,7 +2364,7 @@ def main():
         "--clipboard",
         "-c",
         action="store_true",
-        help="Copy the combined text to the clipboard instead of creating a file. (Only works in single-file mode)",
+        help="Copy the combined text to the clipboard instead of creating a file. (Only works when combining many files into one)",
     )
     output_group.add_argument(
         "--format",
@@ -2400,13 +2400,13 @@ def main():
         "--toc",
         "-T",
         action="store_true",
-        help="Add a Table of Contents with file sizes and token counts to the start of the output. (Only works when combining many files into one in 'text' or 'markdown' formats)",
+        help="Add a Table of Contents with sizes and tokens to the start of the output. (Only works when combining many files into one in 'text' or 'markdown' formats)",
     )
     output_group.add_argument(
         "--include-tree",
         "-p",
         action="store_true",
-        help="Include a visual folder tree with file details at the start of the output. (Only when combining many files into one)",
+        help="Include a visual folder tree with details at the start of the output. (Only when combining many files into one)",
     )
     output_group.add_argument(
         "--json-summary",
@@ -2431,7 +2431,7 @@ def main():
         "--tree",
         "-t",
         action="store_true",
-        help="Show a visual folder tree of all included files with file details and then stop.",
+        help="Show a visual folder tree of all included files with details and then stop.",
     )
 
     # Processing Group
@@ -2477,7 +2477,7 @@ def main():
     utility_group.add_argument(
         "--keep-line-numbers",
         action="store_true",
-        help="Keep line numbers when extracting files. By default, they are automatically removed if detected.",
+        help="Keep line numbers when extracting files. By default, the tool removes them automatically if detected.",
     )
     utility_group.add_argument(
         "--restore",
