@@ -1649,8 +1649,9 @@ def find_and_combine_files(
                 continue
 
             # Update stats
-            for p in filtered_paths:
-                _update_file_stats(stats, p)
+            if not pairing_enabled:
+                for p in filtered_paths:
+                    _update_file_stats(stats, p)
 
             if pairing_enabled:
                 include_mismatched = pair_opts.get('include_mismatched', False)
@@ -1664,6 +1665,21 @@ def find_and_combine_files(
                     include_mismatched,
                     root_path=root_path,
                 )
+
+                # Collect all unique files that were successfully paired
+                paired_files_set = set()
+                for paths in paired_paths.values():
+                    paired_files_set.update(paths)
+
+                # Only update stats for files that are part of a pair
+                for p in sorted(paired_files_set):
+                    _update_file_stats(stats, p)
+
+                # Record how many files were skipped because they weren't paired
+                unpaired_count = len(set(pairing_inputs)) - len(paired_files_set)
+                if unpaired_count > 0:
+                    stats['filter_reasons']['unpaired'] = stats['filter_reasons'].get('unpaired', 0) + unpaired_count
+
                 for pair_key, paths in paired_paths.items():
                     all_paired_items.append((root_path, pair_key, paths))
             else:
