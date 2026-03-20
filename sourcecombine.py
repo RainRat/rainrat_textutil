@@ -313,7 +313,7 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
     """Replace placeholders in a template with file information.
 
     The placeholders include FILENAME, EXT, STEM, DIR, DIR_SLUG, SIZE,
-    TOKENS, and LINE_COUNT.
+    TOKENS, LINE_COUNT, and LANG.
     """
     if not template:
         return ""
@@ -323,12 +323,14 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
     stem = relative_path.stem
     parent_dir = relative_path.parent.as_posix()
     dir_slug = _slugify_relative_dir(parent_dir)
+    lang = utils.get_language_tag(relative_path)
 
     if escape_func:
         filename = escape_func(filename)
         ext = escape_func(ext)
         stem = escape_func(stem)
         parent_dir = escape_func(parent_dir)
+        lang = escape_func(lang)
 
     replacements = {
         FILENAME_PLACEHOLDER: filename,
@@ -336,6 +338,7 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
         "{{STEM}}": stem,
         "{{DIR}}": parent_dir,
         "{{DIR_SLUG}}": dir_slug,
+        "{{LANG}}": lang,
     }
 
     if size is not None:
@@ -1433,7 +1436,7 @@ def find_and_combine_files(
 
         # If current matches default (or is None/empty/missing), override with Markdown defaults
         if not current_header or current_header == default_header:
-            output_opts['header_template'] = "## {{FILENAME}}\n\n```{{EXT}}\n"
+            output_opts['header_template'] = "## {{FILENAME}}\n\n```{{LANG}}\n"
 
         if not current_footer or current_footer == default_footer:
             output_opts['footer_template'] = "\n```\n\n"

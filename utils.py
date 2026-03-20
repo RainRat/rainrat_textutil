@@ -16,6 +16,83 @@ except ImportError:
 DEFAULT_OUTPUT_FILENAME = "combined_files.txt"
 FILENAME_PLACEHOLDER = "{{FILENAME}}"
 
+# Mapping of file extensions to Markdown-friendly language tags for syntax highlighting.
+EXTENSION_TO_LANG = {
+    ".py": "python",
+    ".js": "javascript",
+    ".jsx": "javascript",
+    ".ts": "typescript",
+    ".tsx": "typescript",
+    ".html": "html",
+    ".htm": "html",
+    ".css": "css",
+    ".scss": "scss",
+    ".sass": "sass",
+    ".less": "less",
+    ".json": "json",
+    ".yml": "yaml",
+    ".yaml": "yaml",
+    ".md": "markdown",
+    ".markdown": "markdown",
+    ".sh": "bash",
+    ".bash": "bash",
+    ".zsh": "bash",
+    ".rb": "ruby",
+    ".rs": "rust",
+    ".go": "go",
+    ".c": "c",
+    ".cpp": "cpp",
+    ".cc": "cpp",
+    ".cxx": "cpp",
+    ".hpp": "cpp",
+    ".hh": "cpp",
+    ".hxx": "cpp",
+    ".h": "cpp",
+    ".cs": "csharp",
+    ".java": "java",
+    ".kt": "kotlin",
+    ".php": "php",
+    ".sql": "sql",
+    ".xml": "xml",
+    ".toml": "toml",
+    ".ini": "ini",
+    ".conf": "ini",
+    ".bat": "batch",
+    ".cmd": "batch",
+    ".ps1": "powershell",
+    ".dockerfile": "dockerfile",
+    ".makefile": "makefile",
+    ".cmake": "cmake",
+    ".swift": "swift",
+    ".dart": "dart",
+    ".scala": "scala",
+    ".lua": "lua",
+    ".r": "r",
+    ".pl": "perl",
+    ".pm": "perl",
+    ".vue": "vue",
+    ".svelte": "svelte",
+}
+
+# Mapping of specific filenames to Markdown-friendly language tags.
+FILENAME_TO_LANG = {
+    "dockerfile": "dockerfile",
+    "makefile": "makefile",
+    "cmakelists.txt": "cmake",
+    "package.json": "json",
+    "package-lock.json": "json",
+    "composer.json": "json",
+    "cargo.toml": "toml",
+    "cargo.lock": "toml",
+    "pyproject.toml": "toml",
+    "gemfile": "ruby",
+    "rakefile": "ruby",
+    "jenkinsfile": "groovy",
+    "procfile": "yaml",
+    "sourcecombine.yml": "yaml",
+    "sourcecombine.yaml": "yaml",
+}
+
 COMPACT_WHITESPACE_GROUPS = (
     'normalize_line_endings',
     'spaces_to_tabs',
@@ -793,6 +870,26 @@ def process_content(buffer: str, options: Mapping[str, Any]) -> str:
             buffer = "".join(lines[:max_lines])
 
     return buffer
+
+
+def get_language_tag(path: str | Path) -> str:
+    """Return a Markdown-friendly language tag for the file at ``path``.
+
+    This function maps common extensions and filenames to their corresponding
+    language identifiers for syntax highlighting. If no mapping is found, it
+    falls back to the file extension (without the leading dot).
+    """
+    path = Path(path)
+    name = path.name.lower()
+    ext = path.suffix.lower()
+
+    if name in FILENAME_TO_LANG:
+        return FILENAME_TO_LANG[name]
+
+    if ext in EXTENSION_TO_LANG:
+        return EXTENSION_TO_LANG[ext]
+
+    return ext.lstrip('.') or "text"
 
 
 def count_lines(text: str) -> int:

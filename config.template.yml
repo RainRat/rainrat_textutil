@@ -64,7 +64,7 @@ output:
   include_tree: false
 
   # Template written before each file's content.
-  # Placeholders: {{FILENAME}}, {{EXT}}, {{STEM}}, {{DIR}}, {{DIR_SLUG}}, {{SIZE}}, {{TOKENS}}, {{LINE_COUNT}}.
+  # Placeholders: {{FILENAME}}, {{EXT}}, {{STEM}}, {{DIR}}, {{DIR_SLUG}}, {{SIZE}}, {{TOKENS}}, {{LINE_COUNT}}, {{LANG}}.
   # Set to null or an empty text to omit the header.
   header_template: "--- {{FILENAME}} ---\n"
 
