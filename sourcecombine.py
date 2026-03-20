@@ -2307,7 +2307,7 @@ def main():
         "--max-depth",
         "-D",
         type=int,
-        help="Limit folder scanning to this depth (0 for no limit).",
+        help="Limit folder scanning to this depth (for example, '-D 1' for root files only; 0 for no limit).",
     )
     filtering_group.add_argument(
         "--git-files",
@@ -2322,7 +2322,7 @@ def main():
         "--sort",
         "-s",
         choices=["name", "size", "modified", "tokens", "depth"],
-        help="Sort files by name, size, modified time, tokens, or folder depth before combining.",
+        help="Sort files by name, size, date (modified), tokens, or folder depth before combining.",
     )
     sorting_group.add_argument(
         "--reverse",
@@ -2334,22 +2334,22 @@ def main():
         "--limit",
         "-L",
         type=int,
-        help="Stop after finding this many files.",
+        help="Stop adding files once you reach this limit.",
     )
     sorting_group.add_argument(
         "--max-tokens",
         "-M",
         type=int,
-        help="Stop adding files once you reach the total tokens limit. (Only when combining many files into one)",
+        help="Stop adding files once you reach the total tokens limit (only when combining many files into one).",
     )
     sorting_group.add_argument(
         "--max-total-size",
-        help="Stop adding files once you reach the total size limit (for example, '5MB'). (Only when combining many files into one)",
+        help="Stop adding files once you reach the total size limit (for example, '5MB') (only when combining many files into one).",
     )
     sorting_group.add_argument(
         "--max-total-lines",
         type=int,
-        help="Stop adding files once you reach the total lines limit. (Only when combining many files into one)",
+        help="Stop adding files once you reach the total lines limit (only when combining many files into one).",
     )
 
     # Output Options Group
@@ -2364,13 +2364,13 @@ def main():
         "--clipboard",
         "-c",
         action="store_true",
-        help="Copy the combined text to the clipboard instead of creating a file. (Only works when combining many files into one)",
+        help="Copy the combined text to the clipboard instead of creating a file (only when combining many files into one).",
     )
     output_group.add_argument(
         "--format",
         "-f",
         choices=["text", "json", "jsonl", "markdown", "xml"],
-        help="Choose how the output is organized. 'json' and 'jsonl' only work when combining files. 'markdown' and 'xml' add helpful structure.",
+        help="Choose the output format ('text', 'json', 'jsonl', 'markdown', 'xml'). 'json' and 'jsonl' only work when combining many files into one.",
     )
     output_group.add_argument(
         "--markdown",
@@ -2400,17 +2400,17 @@ def main():
         "--toc",
         "-T",
         action="store_true",
-        help="Add a Table of Contents with sizes and tokens to the start of the output. (Only works when combining many files into one in 'text' or 'markdown' formats)",
+        help="Add a Table of Contents with sizes and tokens to the start of the output (only when combining many files into one in 'text' or 'markdown' formats).",
     )
     output_group.add_argument(
         "--include-tree",
         "-p",
         action="store_true",
-        help="Include a visual folder tree with details at the start of the output. (Only when combining many files into one)",
+        help="Include a visual folder tree with details at the start of the output (only when combining many files into one).",
     )
     output_group.add_argument(
         "--json-summary",
-        help="Save a machine-readable execution summary to a JSON file (use '-' for your terminal).",
+        help="Save a machine-readable execution summary (file counts, tokens, time taken) in JSON format. Use '-' to print it to your terminal.",
     )
 
     # Display & Preview Group

@@ -88,7 +88,7 @@ output:
   max_size_placeholder: null
 
   # Global sorting options for both combining many files into one and pairing.
-  # Choices: name, size, modified, tokens, depth.
+  # Choices: name, size, date (modified), tokens, depth.
   sort_by: 'name'
 
   # If true, sort in descending order.
@@ -110,16 +110,16 @@ filters:
   max_size_bytes: 0
 
   # Stop adding files once you reach the total tokens limit.
-  # (Only when combining many files into one). Omit or set to 0 for no limit.
+  # (only when combining many files into one). Omit or set to 0 for no limit.
   max_total_tokens: 0
 
   # Stop adding files once you reach the total size limit.
   # Supports human-readable text like '10KB', '1.5MB', or raw bytes as an integer.
-  # (Only when combining many files into one). Omit or set to 0 for no limit.
+  # (only when combining many files into one). Omit or set to 0 for no limit.
   max_total_size_bytes: 0
 
   # Stop adding files once you reach the total lines limit.
-  # (Only when combining many files into one). Omit or set to 0 for no limit.
+  # (only when combining many files into one). Omit or set to 0 for no limit.
   max_total_lines: 0
 
   # Stop processing after this many files. Omit or set to 0 for no limit.
