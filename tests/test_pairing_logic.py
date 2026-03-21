@@ -21,24 +21,24 @@ def test_pair_files_logic(tmp_path):
     result = _pair_files(
         [src, hdr], (".cpp",), (".h",), include_mismatched=False, root_path=base
     )
-    assert result == {Path("file"): [src, hdr]}
+    assert result == [(Path("file"), [src, hdr])]
 
     mismatched_src = _pair_files(
         [src], (".cpp",), (".h",), include_mismatched=True, root_path=base
     )
-    assert mismatched_src == {Path("file.cpp"): [src]}
+    assert mismatched_src == [(Path("file.cpp"), [src])]
 
     lonely_hdr = _pair_files(
         [hdr], (".cpp",), (".h",), include_mismatched=True, root_path=base
     )
-    assert lonely_hdr == {Path("file.h"): [hdr]}
+    assert lonely_hdr == [(Path("file.h"), [hdr])]
 
     other_hdr = base / "lonely.h"
     other_hdr.write_text("", encoding="utf-8")
     no_pairs = _pair_files(
         [src, other_hdr], (".cpp",), (".h",), include_mismatched=False, root_path=base
     )
-    assert no_pairs == {}
+    assert no_pairs == []
 
     upper_src = base / "file.CPP"
     upper_hdr = base / "file.H"
@@ -51,7 +51,7 @@ def test_pair_files_logic(tmp_path):
         include_mismatched=False,
         root_path=base,
     )
-    assert mixed_case == {Path("file"): [upper_src, upper_hdr]}
+    assert mixed_case == [(Path("file"), [upper_src, upper_hdr])]
 
 
 def test_pair_files_prefers_extension_order(tmp_path):
@@ -72,7 +72,7 @@ def test_pair_files_prefers_extension_order(tmp_path):
         root_path=base,
     )
 
-    assert result == {Path("file"): [src_cpp, hdr_hpp]}
+    assert result == [(Path("file"), [src_cpp, hdr_hpp])]
 
 
 def test_pair_files_respects_relative_directories(tmp_path):
@@ -98,7 +98,7 @@ def test_pair_files_respects_relative_directories(tmp_path):
         root_path=root,
     )
 
-    assert result == {Path("src/feature/main"): [feature_src, feature_hdr]}
+    assert result == [(Path("src/feature/main"), [feature_src, feature_hdr])]
 
 
 def test_pair_files_pairs_unique_cross_folder_files(tmp_path):
@@ -122,7 +122,7 @@ def test_pair_files_pairs_unique_cross_folder_files(tmp_path):
         root_path=root,
     )
 
-    assert result == {Path("src/utils"): [source, header]}
+    assert result == [(Path("src/utils"), [source, header])]
 
 
 def test_pair_files_handles_colliding_names_in_separate_modules(tmp_path):
@@ -145,10 +145,10 @@ def test_pair_files_handles_colliding_names_in_separate_modules(tmp_path):
         root_path=root,
     )
 
-    assert result == {
-        Path("src/foo/util"): [foo_src, foo_hdr],
-        Path("src/bar/util"): [bar_src, bar_hdr],
-    }
+    assert result == [
+        (Path("src/foo/util"), [foo_src, foo_hdr]),
+        (Path("src/bar/util"), [bar_src, bar_hdr]),
+    ]
 
 
 def test_process_paired_files_writes_outputs(tmp_path):
@@ -164,7 +164,7 @@ def test_process_paired_files_writes_outputs(tmp_path):
     config = {"processing": {}, "output": {"header_template": "", "footer_template": ""}}
     processor = FileProcessor(config, config["output"], dry_run=False)
 
-    pairs = {"example": [source_path, header_path]}
+    pairs = [("example", [source_path, header_path])]
     out_folder = root / "out"
 
     _process_paired_files(
@@ -190,4 +190,4 @@ def test_pair_files_unrooted_path_value_error_branch():
     filtered_paths = [Path("/other/file.cpp")]
 
     result = _pair_files(filtered_paths, (), (), False, root_path=root_path)
-    assert result == {}
+    assert result == []
