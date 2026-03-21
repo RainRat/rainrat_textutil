@@ -127,6 +127,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--extract`: Rebuild your original files and folders from a combined file (like JSON, XML, or Markdown). You can read from a file, your terminal (`-`), or your clipboard. For example: `python sourcecombine.py --extract combined.json`. Filtering, sorting, and preview options are supported. Line numbers are removed automatically unless you use `--keep-line-numbers`.
 *   `--keep-line-numbers`: Keep line numbers when extracting files. By default, they are automatically removed if detected.
 *   `--restore`: Undo 'apply-in-place' changes by restoring original files from their `.bak` copies. This command scans your target folders recursively for backup files.
+*   `--delete-backups`: Remove all `.bak` files from your target folders. Use this to clean up after you are done with `--apply-in-place`.
 *   `--show-config`: Show the final combined configuration (including defaults, files, and options) and exit.
 *   `--system-info`: Show details about your computer and environment.
 *   `-V` / `--version`: Show the tool's version and exit.
