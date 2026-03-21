@@ -1287,7 +1287,7 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
         items = sorted(node.keys())
         for i, item in enumerate(items):
             is_last = i == len(items) - 1
-            connector = "└── " if is_last else "├── "
+            connector = f"{dim}└── {reset}" if is_last else f"{dim}├── {reset}"
 
             current_rel_parts = rel_parts + (item,)
             current_rel_path = Path(*current_rel_parts)
@@ -1307,11 +1307,12 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
                         meta_str = f"{dim}{_format_metadata_summary(file_meta)}{reset}"
 
             style = folder_style if children else file_style
-            lines.append(f"{prefix}{connector}{style}{item}{reset}{meta_str}")
+            suffix = f"{dim}/{reset}" if children else ""
+            lines.append(f"{prefix}{connector}{style}{item}{suffix}{meta_str}")
 
             # If the item has children (it's a folder), recurse
             if children:
-                extension = "    " if is_last else "│   "
+                extension = "    " if is_last else f"{dim}│{reset}   "
                 _add_node(children, prefix + extension, current_rel_parts)
 
     # Add the root folder name first
@@ -1319,7 +1320,7 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
     if metadata and Path('.') in folder_metadata:
         root_meta_str = f"{dim}{_format_metadata_summary(folder_metadata[Path('.')])}{reset}"
 
-    lines.append(f"{folder_style}{root_path.name or str(root_path)}/{reset}{root_meta_str}")
+    lines.append(f"{folder_style}{root_path.name or str(root_path)}{dim}/{reset}{root_meta_str}")
     _add_node(tree)
 
     if include_header:
@@ -1358,15 +1359,18 @@ def _generate_table_of_contents(files, output_format='text', metadata=None):
         toc_lines.append("")
 
     else: # text
+        dim = str(C_DIM) if output_format == 'text' else ""
+        reset = str(C_RESET) if output_format == 'text' else ""
+
         toc_lines.append("Table of Contents:")
         for file_path, root_path in files:
             rel_path = _get_rel_path(file_path, root_path)
 
             meta_str = ""
             if metadata and file_path in metadata:
-                meta_str = _format_metadata_summary(metadata[file_path])
+                meta_str = f"{dim}{_format_metadata_summary(metadata[file_path])}{reset}"
 
-            toc_lines.append(f"- {rel_path.as_posix()}{meta_str}")
+            toc_lines.append(f"{dim}- {reset}{rel_path.as_posix()}{meta_str}")
         toc_lines.append("\n" + "-" * 20 + "\n")
 
     return "\n".join(toc_lines)
