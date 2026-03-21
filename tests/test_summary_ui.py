@@ -203,5 +203,30 @@ def test_summary_terminal_size_fallback(capsys):
                 _print_execution_summary(stats, args, pairing_enabled=False)
 
     captured = capsys.readouterr()
-    assert "File Types" in captured.err
+    assert "File Types (count, % files, % size)" in captured.err
     assert ".txt:     1" in captured.err
+
+def test_summary_throughput_line(capsys):
+    """Test that throughput is shown on its own line."""
+    stats = {
+        'total_files': 10,
+        'total_discovered': 100,
+        'total_size_bytes': 1000,
+        'files_by_extension': {'.txt': 10},
+        'top_files': []
+    }
+
+    from sourcecombine import _print_execution_summary
+    args = MagicMock()
+    args.list_files = False
+    args.tree = False
+    args.extract = False
+    args.dry_run = False
+    args.estimate_tokens = False
+
+    with patch.dict(os.environ, {"NO_COLOR": "1"}):
+        _print_execution_summary(stats, args, pairing_enabled=False, duration=2.0)
+
+    captured = capsys.readouterr()
+    assert "Time taken:           2.00s" in captured.err
+    assert "Throughput:           50.0 files/s" in captured.err
