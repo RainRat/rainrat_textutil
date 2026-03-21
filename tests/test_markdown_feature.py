@@ -71,7 +71,7 @@ def test_markdown_format_defaults(tmp_path):
 
     content = (root / "out.md").read_text(encoding="utf-8")
     assert "## script.py" in content
-    assert "```py" in content
+    assert "```python" in content
     assert "```\n" in content
     assert "print('hello')" in content
 
@@ -141,4 +141,4 @@ def test_markdown_and_pairing(tmp_path):
     assert "## main.cpp" in content
     assert "```cpp" in content
     assert "## main.h" in content
-    assert "```h" in content
+    assert "```cpp" in content
