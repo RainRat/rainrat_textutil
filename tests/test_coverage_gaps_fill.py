@@ -41,7 +41,7 @@ def test_process_paired_files_gaps(tmp_path):
     f1 = root / "file1.cpp"
     f1.write_text("int main() { return 0; }", encoding="utf-8")
 
-    paired_paths = {"file1": [f1]}
+    paired_items = [("file1", [f1])]
     processor = FileProcessor(config={}, output_opts={'max_size_placeholder': 'Too big: {{FILENAME}}'})
     stats = {
         'total_tokens': 0,
@@ -56,7 +56,7 @@ def test_process_paired_files_gaps(tmp_path):
     # 1. Test estimate_tokens=True to cover line 849 (_DevNull)
     _process_paired_files(
         root_path=root,
-        paired_paths=paired_paths,
+        paired_items=paired_items,
         template="{{STEM}}.combined",
         source_exts=(".cpp",),
         header_exts=(".h",),
@@ -83,7 +83,7 @@ def test_process_paired_files_gaps(tmp_path):
 
     _process_paired_files(
         root_path=root,
-        paired_paths=paired_paths,
+        paired_items=paired_items,
         template="{{STEM}}.combined",
         source_exts=(".cpp",),
         header_exts=(".h",),
@@ -98,4 +98,4 @@ def test_process_paired_files_gaps(tmp_path):
 
     assert len(stats['top_files']) == 1
     assert stats['total_tokens'] > 0
-    processing_bar.update.assert_called_with(len(paired_paths["file1"]))
+    processing_bar.update.assert_called_with(len(paired_items[0][1]))

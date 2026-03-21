@@ -857,15 +857,15 @@ def _select_preferred_path(ext_map, preferred_exts):
 
 
 def _pair_files(filtered_paths, source_exts, header_exts, include_mismatched, *, root_path):
-    """Return a mapping of stems to paired file paths.
-    
+    """Return a list of (pairing_key, paths) tuples for paired files.
+
     We use a two-pass approach:
     1. Exact matches by full relative path.
     2. Convention-based matches by dropping the top-level folder (for example, src/ vs include/).
     """
 
     file_map = _group_paths_by_stem_suffix(filtered_paths, root_path=root_path)
-    paired = {}
+    paired = []
     used_files = set()
 
     # Pass 1: Exact matches (Full relative paths)
@@ -877,7 +877,7 @@ def _pair_files(filtered_paths, source_exts, header_exts, include_mismatched, *,
             pair = [src]
             if hdr != src:
                 pair.append(hdr)
-            paired[stem] = pair
+            paired.append((stem, pair))
             used_files.update(pair)
 
     # Pass 2: Convention matches (Truncated paths)
@@ -890,24 +890,24 @@ def _pair_files(filtered_paths, source_exts, header_exts, include_mismatched, *,
                 relative = p.relative_to(root_path)
             except ValueError:
                 relative = None
-            
+
             stem = (relative or p).with_suffix("")
             if relative is not None and len(stem.parts) > 1:
                 truncated_stem = Path(*stem.parts[1:])
                 truncated_map.setdefault(truncated_stem, {}).setdefault(p.suffix.lower(), []).append(p)
-        
+
         for t_stem, ext_map in truncated_map.items():
             # Only pair if the truncated stem is unambiguous
             src = _select_preferred_path(ext_map, source_exts)
             hdr = _select_preferred_path(ext_map, header_exts)
-            
+
             if src and hdr:
                 pair = [src]
                 if hdr != src:
                     pair.append(hdr)
                 # Use the full path of the source as the key for consistency
                 pair_key = _get_rel_path(src, root_path).with_suffix("")
-                paired[pair_key] = pair
+                paired.append((pair_key, pair))
                 used_files.update(pair)
 
     # Final Pass: Mismatched files if requested
@@ -915,14 +915,14 @@ def _pair_files(filtered_paths, source_exts, header_exts, include_mismatched, *,
         for p in filtered_paths:
             if p not in used_files:
                 pair_key = _get_rel_path(p, root_path)
-                paired[pair_key] = [p]
+                paired.append((pair_key, [p]))
                 used_files.add(p)
 
     return paired
 
 
 def _process_paired_files(
-    paired_paths,
+    paired_items,
     *,
     template,
     source_exts,
@@ -941,7 +941,7 @@ def _process_paired_files(
     """Process paired files and write combined outputs."""
 
     size_excluded_set = set(size_excluded or [])
-    for pairing_key, paths in paired_paths.items():
+    for pairing_key, paths in paired_items:
         stem = Path(pairing_key).name
         if processing_bar:
             processing_bar.set_description(f"Pairing {stem}")
@@ -952,13 +952,19 @@ def _process_paired_files(
         primary_path = source_path or header_path or paths[0]
         relative_dir = _get_rel_path(primary_path, root_path).parent
 
-        out_filename = _render_paired_filename(
-            template,
-            stem,
-            source_path,
-            header_path,
-            relative_dir=relative_dir,
-        )
+        # If it's a mismatched file (no header/source pair), use the full relative path
+        # as the output filename to avoid collisions if multiple files share the same stem
+        # but have different extensions (and include_mismatched is True).
+        if not source_path and not header_path and len(paths) == 1:
+            out_filename = _get_rel_path(paths[0], root_path).as_posix()
+        else:
+            out_filename = _render_paired_filename(
+                template,
+                stem,
+                source_path,
+                header_path,
+                relative_dir=relative_dir,
+            )
         out_path = Path(out_filename)
         if out_path.is_absolute():
             raise InvalidConfigError(
@@ -1612,7 +1618,7 @@ def find_and_combine_files(
                         root_path=root_path,
                     )
                     unique_paths = set()
-                    for paths in paired_paths.values():
+                    for _, paths in paired_paths:
                         unique_paths.update(paths)
                     paths_to_list = sorted(unique_paths)
                 else:
@@ -1693,7 +1699,7 @@ def find_and_combine_files(
 
                 # Collect all unique files that were successfully paired
                 paired_files_set = set()
-                for paths in paired_paths.values():
+                for _, paths in paired_paths:
                     paired_files_set.update(paths)
 
                 # Only update stats for files that are part of a pair
@@ -1705,7 +1711,7 @@ def find_and_combine_files(
                 if unpaired_count > 0:
                     stats['filter_reasons']['unpaired'] = stats['filter_reasons'].get('unpaired', 0) + unpaired_count
 
-                for pair_key, paths in paired_paths.items():
+                for pair_key, paths in paired_paths:
                     all_paired_items.append((root_path, pair_key, paths))
             else:
                 # Accumulate when combining many files into one
@@ -2026,7 +2032,7 @@ def find_and_combine_files(
             # Since we want to support global sorting, we should process in the sorted order.
             for root_path, pair_key, paths in all_paired_items:
                 _process_paired_files(
-                    {pair_key: paths},
+                    [(pair_key, paths)],
                     template=template,
                     source_exts=source_exts,
                     header_exts=header_exts,

@@ -37,7 +37,7 @@ def test_token_count_is_approx_paired(tmp_path):
     config = copy.deepcopy(utils.DEFAULT_CONFIG)
     processor = sourcecombine.FileProcessor(config, config["output"], dry_run=False)
 
-    pairs = {"example": [source_path]}
+    pairs = [("example", [source_path])]
     out_folder = root / "out"
     stats = {
         'total_tokens': 0,
@@ -74,7 +74,7 @@ def test_token_count_is_approx_paired_with_placeholder(tmp_path):
     config['output']['max_size_placeholder'] = "File {{FILENAME}} too big"
     processor = sourcecombine.FileProcessor(config, config["output"], dry_run=False)
 
-    pairs = {"example": [source_path]}
+    pairs = [("example", [source_path])]
     out_folder = root / "out"
     stats = {
         'total_tokens': 0,
@@ -142,7 +142,7 @@ def test_paired_global_templates(tmp_path):
     config = copy.deepcopy(utils.DEFAULT_CONFIG)
     processor = sourcecombine.FileProcessor(config, config["output"], dry_run=False)
 
-    pairs = {"example": [source_path]}
+    pairs = [("example", [source_path])]
     out_folder = root / "out"
 
     sourcecombine._process_paired_files(
