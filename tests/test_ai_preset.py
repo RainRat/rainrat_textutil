@@ -42,6 +42,7 @@ class TestAIPreset(unittest.TestCase):
             system_info=False,
             init=False,
             restore=False,
+            delete_backups=False,
             grep=None,
             exclude_grep=None,
             max_depth=None,

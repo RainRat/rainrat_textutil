@@ -2526,6 +2526,11 @@ def main():
         help="Undo 'apply-in-place' changes by restoring original files from their .bak copies. This command scans your target folders recursively for backup files.",
     )
     utility_group.add_argument(
+        "--delete-backups",
+        action="store_true",
+        help="Remove all '.bak' files from your target folders. Use this to clean up after you are done with '--apply-in-place'.",
+    )
+    utility_group.add_argument(
         "--show-config",
         action="store_true",
         help="Show the final combined configuration and exit. This includes defaults, your configuration file, and any options you provide.",
@@ -2696,6 +2701,12 @@ def main():
         # Use the finalized root folders for restoration
         restore_targets = config.get('search', {}).get('root_folders', ["."])
         restore_backups(restore_targets, dry_run=args.dry_run)
+        sys.exit(0)
+
+    if args.delete_backups:
+        # Use the finalized root folders for deletion
+        delete_targets = config.get('search', {}).get('root_folders', ["."])
+        delete_backups(delete_targets, dry_run=args.dry_run)
         sys.exit(0)
 
     # Re-configure level based on config, *unless* -v was used.
@@ -3437,6 +3448,55 @@ def restore_backups(targets, dry_run=False):
         logging.info("No files were restored.")
 
     return restored_count, error_count
+
+
+def delete_backups(targets, dry_run=False):
+    """Scan targets recursively for .bak files and delete them."""
+    if not targets:
+        targets = ["."]
+
+    deleted_count = 0
+    error_count = 0
+
+    for target in targets:
+        root_path = Path(target)
+        if not root_path.exists():
+            logging.warning("Target folder not found: %s", target)
+            continue
+
+        if root_path.is_file():
+            # If a single file is targeted, check if it's a backup
+            backup_files = [root_path] if root_path.suffix == ".bak" else []
+        else:
+            # Recursive scan for .bak files
+            backup_files = sorted(root_path.rglob("*.bak"))
+
+        if not backup_files:
+            logging.info("No backup files (.bak) found in '%s'.", target)
+            continue
+
+        for backup_path in backup_files:
+            rel_path = _get_rel_path(backup_path, root_path)
+
+            if dry_run:
+                logging.info("[DRY RUN] Would delete: %s", rel_path)
+                deleted_count += 1
+            else:
+                try:
+                    os.remove(backup_path)
+                    logging.info("Deleted backup: %s", rel_path)
+                    deleted_count += 1
+                except OSError as e:
+                    logging.error("Failed to delete backup %s: %s", rel_path, e)
+                    error_count += 1
+
+    if deleted_count > 0 or error_count > 0:
+        action = "Would delete" if dry_run else "Deleted"
+        logging.info("%s %d backup files. Errors: %d", action, deleted_count, error_count)
+    else:
+        logging.info("No backup files were deleted.")
+
+    return deleted_count, error_count
 
 
 def print_system_info():
