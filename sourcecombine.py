@@ -1,4 +1,5 @@
 import argparse
+from datetime import datetime
 import importlib.util
 import platform
 import subprocess
@@ -309,11 +310,11 @@ def _render_single_pass(template, replacements):
     return pattern.sub(lambda m: str(replacements[m.group(0)]), template)
 
 
-def _render_template(template, relative_path, size=None, tokens=None, lines=None, escape_func=None):
+def _render_template(template, relative_path, size=None, tokens=None, lines=None, escape_func=None, modified=None):
     """Replace placeholders in a template with file information.
 
     The placeholders include FILENAME, EXT, STEM, DIR, DIR_SLUG, SIZE,
-    TOKENS, and LINE_COUNT.
+    TOKENS, LINE_COUNT, and MODIFIED.
     """
     if not template:
         return ""
@@ -338,12 +339,10 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
         "{{DIR_SLUG}}": dir_slug,
     }
 
-    if size is not None:
-        replacements["{{SIZE}}"] = utils.format_size(size)
-    if tokens is not None:
-        replacements["{{TOKENS}}"] = f"{tokens:,}"
-    if lines is not None:
-        replacements["{{LINE_COUNT}}"] = f"{lines:,}"
+    replacements["{{SIZE}}"] = utils.format_size(size) if size is not None else ""
+    replacements["{{TOKENS}}"] = f"{tokens:,}" if tokens is not None else ""
+    replacements["{{LINE_COUNT}}"] = f"{lines:,}" if lines is not None else ""
+    replacements["{{MODIFIED}}"] = datetime.fromtimestamp(modified).isoformat() if modified is not None else ""
 
     return _render_single_pass(template, replacements)
 
@@ -1072,7 +1071,7 @@ class FileProcessor:
     def _make_bar(self, **kwargs):
         return _progress_bar(enabled=_progress_enabled(self.dry_run), **kwargs)
 
-    def _write_with_templates(self, outfile, content, relative_path, size=None, tokens=None, lines=None):
+    def _write_with_templates(self, outfile, content, relative_path, size=None, tokens=None, lines=None, modified=None):
         """Write ``content`` with configured header/footer templates."""
 
         header_template = self.output_opts.get(
@@ -1084,9 +1083,9 @@ class FileProcessor:
 
         escape_func = xml_escape if self.output_format == 'xml' else None
 
-        outfile.write(_render_template(header_template, relative_path, size=size, tokens=tokens, lines=lines, escape_func=escape_func))
+        outfile.write(_render_template(header_template, relative_path, size=size, tokens=tokens, lines=lines, escape_func=escape_func, modified=modified))
         outfile.write(content)
-        outfile.write(_render_template(footer_template, relative_path, size=size, tokens=tokens, lines=lines, escape_func=escape_func))
+        outfile.write(_render_template(footer_template, relative_path, size=size, tokens=tokens, lines=lines, escape_func=escape_func, modified=modified))
     def _backup_file(self, file_path):
         """Create a ``.bak`` backup for ``file_path`` when backups are enabled.
 
@@ -1117,6 +1116,7 @@ class FileProcessor:
         is_approx,
         line_count,
         include_line_numbers=True,
+        modified=None,
     ):
         """Format and write a single file entry to the output stream."""
         if self.estimate_tokens:
@@ -1131,6 +1131,8 @@ class FileProcessor:
                 "lines": line_count,
                 "content": content,
             }
+            if modified is not None:
+                entry["modified"] = modified
             json.dump(entry, outfile)
             if self.output_format == "jsonl":
                 outfile.write("\n")
@@ -1146,6 +1148,7 @@ class FileProcessor:
                 size=file_size,
                 tokens=token_count,
                 lines=line_count,
+                modified=modified,
             )
 
     def process_and_write(self, file_path, root_path, outfile, cached_content=None):
@@ -1172,7 +1175,9 @@ class FileProcessor:
                 file_path.write_text(processed_content, encoding=encoding, newline='')
 
         relative_path = _get_rel_path(file_path, root_path)
-        file_size = file_path.stat().st_size if file_path.exists() else 0
+        stat = file_path.stat() if file_path.exists() else None
+        file_size = stat.st_size if stat else 0
+        modified = stat.st_mtime if stat else None
 
         # Estimate tokens on the final processed content
         token_count, is_approx = utils.estimate_tokens(processed_content)
@@ -1186,6 +1191,7 @@ class FileProcessor:
             token_count,
             is_approx,
             line_count,
+            modified=modified,
         )
 
         return token_count, is_approx, line_count
@@ -1208,12 +1214,14 @@ class FileProcessor:
             return 0, True, 0
 
         relative_path = _get_rel_path(file_path, root_path)
-        file_size = file_path.stat().st_size if file_path.exists() else 0
+        stat = file_path.stat() if file_path.exists() else None
+        file_size = stat.st_size if stat else 0
+        modified = stat.st_mtime if stat else None
 
         # Estimate tokens on the placeholder content (but the placeholder itself might have tokens placeholder)
         # For max_size_placeholder, it's a bit tricky because we don't know the token count of the placeholder
         # until it's rendered. But we want to support {{SIZE}} in it.
-        rendered = _render_template(placeholder, relative_path, size=file_size)
+        rendered = _render_template(placeholder, relative_path, size=file_size, modified=modified)
 
         token_count, is_approx = utils.estimate_tokens(rendered)
         line_count = utils.count_lines(rendered)
@@ -1227,6 +1235,7 @@ class FileProcessor:
             is_approx,
             line_count,
             include_line_numbers=False,
+            modified=modified,
         )
 
         return token_count, is_approx, line_count
@@ -1450,7 +1459,7 @@ def find_and_combine_files(
         default_global_footer = utils.DEFAULT_CONFIG['output']['global_footer_template']
 
         if not output_opts.get('header_template') or output_opts.get('header_template') == default_header:
-            output_opts['header_template'] = '<file path="{{FILENAME}}">\n'
+            output_opts['header_template'] = '<file path="{{FILENAME}}" modified="{{MODIFIED}}">\n'
         if not output_opts.get('footer_template') or output_opts.get('footer_template') == default_footer:
             output_opts['footer_template'] = "\n</file>\n"
         if not output_opts.get('global_header_template') or output_opts.get('global_header_template') == default_global_header:
@@ -3094,7 +3103,8 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
                         'tokens': entry.get('tokens'),
                         'size': entry.get('size_bytes'),
                         'lines': entry.get('lines'),
-                        'is_approx': entry.get('tokens_is_approx', False)
+                        'is_approx': entry.get('tokens_is_approx', False),
+                        'modified': entry.get('modified'),
                     }
                     files_to_create.append((entry['path'], entry['content'], meta))
     except json.JSONDecodeError:
@@ -3114,7 +3124,8 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
                         'tokens': entry.get('tokens'),
                         'size': entry.get('size_bytes'),
                         'lines': entry.get('lines'),
-                        'is_approx': entry.get('tokens_is_approx', False)
+                        'is_approx': entry.get('tokens_is_approx', False),
+                        'modified': entry.get('modified'),
                     }
                     potential_files.append((entry['path'], entry['content'], meta))
                 else:
@@ -3143,12 +3154,14 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
                     tokens_val = file_node.get('tokens')
                     size_val = file_node.get('size')
                     lines_val = file_node.get('lines')
+                    mod_val = file_node.get('modified')
 
                     meta = {
                         'tokens': int(tokens_val.lstrip('~').replace(',', '')) if tokens_val else None,
                         'size': utils.parse_size_value(size_val) if size_val else None,
                         'lines': int(lines_val.replace(',', '')) if lines_val else None,
-                        'is_approx': tokens_val.startswith('~') if tokens_val else False
+                        'is_approx': tokens_val.startswith('~') if tokens_val else False,
+                        'modified': datetime.fromisoformat(mod_val).timestamp() if mod_val else None,
                     }
                     files_to_create.append((path, file_content, meta))
         except (ET.ParseError, ImportError):
@@ -3346,6 +3359,8 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
             try:
                 target_path.parent.mkdir(parents=True, exist_ok=True)
                 target_path.write_text(file_content, encoding='utf-8')
+                if meta.get('modified') is not None:
+                    os.utime(target_path, (meta['modified'], meta['modified']))
                 logging.info("Extracted: %s", target_path)
                 extracted_count += 1
             except OSError as e:
