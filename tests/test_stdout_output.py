@@ -33,7 +33,7 @@ def test_stdout_output(tmp_path, capsys):
     assert "Post-execution check" in captured_post.out
 
 def test_stdout_output_pairing_error(tmp_path):
-    """Test that pairing mode raises an error with -o -."""
+    """Test that pairing raises an error with -o -."""
     config = {
         'search': {'root_folders': [str(tmp_path)]},
         'pairing': {'enabled': True},

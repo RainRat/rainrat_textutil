@@ -149,7 +149,7 @@ def test_tree_view_no_output_file_validation(capsys, tmp_path):
     assert "TREE VIEW COMPLETE" in captured.err
 
 def test_tree_view_no_folder_creation(capsys, tmp_path):
-    """Verify that --tree does not create an output folder in pairing mode."""
+    """Verify that --tree does not create an output folder when pairing."""
     root = tmp_path / "pairproj"
     root.mkdir()
     (root / "f1.c").write_text("c")

@@ -1446,7 +1446,7 @@ def find_and_combine_files(
     recursive = search_opts.get('recursive', True)
 
     if clipboard and pairing_enabled:
-        raise InvalidConfigError("Clipboard mode is only available when pairing is disabled.")
+        raise InvalidConfigError("The clipboard can only be used when combining many files into one.")
 
     if output_path == '-' and pairing_enabled:
         raise InvalidConfigError("You cannot send output to your terminal when pairing files.")
@@ -1527,7 +1527,7 @@ def find_and_combine_files(
 
     # Store all items to process for when combining many files into one to enable global TOC
     # List of (file_path, root_path, is_size_excluded)
-    all_single_mode_items = []
+    all_combined_items = []
     # Store all pairs across all roots
     # List of (root_path, pair_key, paths)
     all_paired_items = []
@@ -1731,7 +1731,7 @@ def find_and_combine_files(
                     if record_size_exclusions and file_path in size_excluded_set:
                         is_excluded_by_size = True
 
-                    all_single_mode_items.append((file_path, root_path, is_excluded_by_size))
+                    all_combined_items.append((file_path, root_path, is_excluded_by_size))
 
         # End of root_folder loop
 
@@ -1790,8 +1790,8 @@ def find_and_combine_files(
                         else:
                             val = rel_p.as_posix()
                         return (val, rel_p.as_posix())
-                    all_single_mode_items.sort(key=get_single_sort_key, reverse=sort_reverse)
-                # Note: 'tokens' sort for single-file mode is handled inside the metadata pass below
+                    all_combined_items.sort(key=get_single_sort_key, reverse=sort_reverse)
+                # Note: 'tokens' sort when combining many files into one is handled inside the metadata pass below
 
         # Apply file limit after global sorting
         max_files = filter_opts.get('max_files', 0)
@@ -1804,9 +1804,9 @@ def find_and_combine_files(
                     stats['limit_reached'] = True
                     limit_applied = True
             elif sort_by != 'tokens':
-                if len(all_single_mode_items) > max_files:
-                    stats['filter_reasons']['file_limit'] = len(all_single_mode_items) - max_files
-                    all_single_mode_items = all_single_mode_items[:max_files]
+                if len(all_combined_items) > max_files:
+                    stats['filter_reasons']['file_limit'] = len(all_combined_items) - max_files
+                    all_combined_items = all_combined_items[:max_files]
                     stats['limit_reached'] = True
                     limit_applied = True
 
@@ -1822,7 +1822,7 @@ def find_and_combine_files(
                     for p in paths:
                         _update_file_stats(stats, p)
             else:
-                for item in all_single_mode_items:
+                for item in all_combined_items:
                     _update_file_stats(stats, item[0])
 
         if needs_full_pass and not pairing_enabled and not list_files and not tree_view:
@@ -1851,21 +1851,21 @@ def find_and_combine_files(
             # Estimate TOC and Tree overhead if enabled
             if output_format in ('text', 'markdown'):
                 if output_opts.get('include_tree'):
-                    overhead_tokens += len(all_single_mode_items) * 12
-                    overhead_size += len(all_single_mode_items) * 50
+                    overhead_tokens += len(all_combined_items) * 12
+                    overhead_size += len(all_combined_items) * 50
                 if output_opts.get('table_of_contents'):
-                    overhead_tokens += len(all_single_mode_items) * 12
-                    overhead_size += len(all_single_mode_items) * 50
+                    overhead_tokens += len(all_combined_items) * 12
+                    overhead_size += len(all_combined_items) * 50
 
             # If sorting by tokens, we must calculate tokens for all files first
             if sort_by == 'tokens':
                 token_data = []
                 sort_bar = processor._make_bar(
-                    total=len(all_single_mode_items),
+                    total=len(all_combined_items),
                     desc="Calculating tokens for sorting",
                     unit="file",
                 )
-                for item in all_single_mode_items:
+                for item in all_combined_items:
                     file_path, root_path, is_excluded_by_size = item
                     rel_p = _get_rel_path(file_path, root_path)
                     rel_p_str = rel_p.as_posix()
@@ -1886,23 +1886,23 @@ def find_and_combine_files(
                 # Sort by tokens
                 # Zip tokens with items to sort them together
                 indexed_items = sorted(
-                    zip(all_single_mode_items, token_data),
+                    zip(all_combined_items, token_data),
                     key=lambda x: (x[1][0], x[1][1]),
                     reverse=sort_reverse
                 )
-                all_single_mode_items = [x[0] for x in indexed_items]
+                all_combined_items = [x[0] for x in indexed_items]
 
-            if max_files > 0 and sort_by == 'tokens' and len(all_single_mode_items) > max_files:
-                stats['filter_reasons']['file_limit'] = len(all_single_mode_items) - max_files
-                all_single_mode_items = all_single_mode_items[:max_files]
+            if max_files > 0 and sort_by == 'tokens' and len(all_combined_items) > max_files:
+                stats['filter_reasons']['file_limit'] = len(all_combined_items) - max_files
+                all_combined_items = all_combined_items[:max_files]
                 stats['limit_reached'] = True
 
             est_bar = processor._make_bar(
-                total=len(all_single_mode_items),
+                total=len(all_combined_items),
                 desc="Analyzing files",
                 unit="file",
             )
-            for i, item in enumerate(all_single_mode_items):
+            for i, item in enumerate(all_combined_items):
                 file_path, root_path, is_excluded_by_size = item
 
                 rel_p_str = _get_rel_path(file_path, root_path).as_posix()
@@ -1967,20 +1967,20 @@ def find_and_combine_files(
 
                 if max_total_tokens > 0 and (current_tokens + overhead_tokens + entry_tokens) > max_total_tokens and (current_tokens + overhead_tokens) > 0:
                     token_limit_reached = True
-                    stats['filter_reasons']['token_limit'] = len(all_single_mode_items) - i
-                    logging.debug("Token limit reached; skipping %d remaining files.", len(all_single_mode_items) - i)
+                    stats['filter_reasons']['token_limit'] = len(all_combined_items) - i
+                    logging.debug("Token limit reached; skipping %d remaining files.", len(all_combined_items) - i)
                     break
 
                 if max_total_size > 0 and (current_size + overhead_size + entry_size) > max_total_size and (current_size + overhead_size) > 0:
                     size_limit_reached = True
-                    stats['filter_reasons']['size_limit'] = len(all_single_mode_items) - i
-                    logging.debug("Total size limit reached; skipping %d remaining files.", len(all_single_mode_items) - i)
+                    stats['filter_reasons']['size_limit'] = len(all_combined_items) - i
+                    logging.debug("Total size limit reached; skipping %d remaining files.", len(all_combined_items) - i)
                     break
 
                 if max_total_lines > 0 and (current_lines + overhead_lines + entry_lines) > max_total_lines and (current_lines + overhead_lines) > 0:
                     line_limit_reached = True
-                    stats['filter_reasons']['line_limit'] = len(all_single_mode_items) - i
-                    logging.debug("Total line limit reached; skipping %d remaining files.", len(all_single_mode_items) - i)
+                    stats['filter_reasons']['line_limit'] = len(all_combined_items) - i
+                    logging.debug("Total line limit reached; skipping %d remaining files.", len(all_combined_items) - i)
                     break
 
                 current_tokens += entry_tokens
@@ -1990,7 +1990,7 @@ def find_and_combine_files(
                 est_bar.update(1)
 
             est_bar.close()
-            all_single_mode_items = limited_items
+            all_combined_items = limited_items
             stats['token_limit_reached'] = token_limit_reached
             stats['size_limit_reached'] = size_limit_reached
             stats['line_limit_reached'] = line_limit_reached
@@ -2003,7 +2003,7 @@ def find_and_combine_files(
             stats['files_by_extension'] = {}
             stats['size_by_extension'] = {}
             stats['tokens_by_extension'] = {}
-            for item in all_single_mode_items:
+            for item in all_combined_items:
                 file_p = item[0]
                 meta = file_metadata.get(file_p, {})
                 _update_file_stats(stats, file_p, size=meta.get('size'))
@@ -2049,7 +2049,7 @@ def find_and_combine_files(
                 )
             processing_bar.close()
 
-        # Process Single File Mode items (including Global Header, TOC, Tree, and Footer)
+        # Process items (including Global Header, TOC, Tree, and Footer) when combining many files into one
         if not pairing_enabled and not list_files and not tree_view:
             # Update global header tokens if they will be included in the output or estimation
             if (not dry_run or estimate_tokens) and output_format in ('text', 'markdown', 'xml'):
@@ -2068,7 +2068,7 @@ def find_and_combine_files(
 
             if output_opts.get('include_tree') and output_format in ('text', 'markdown'):
                 root_to_paths = {}
-                for item in all_single_mode_items:
+                for item in all_combined_items:
                     file_path, root_path = item[0], item[1]
                     if root_path not in root_to_paths:
                         root_to_paths[root_path] = []
@@ -2112,7 +2112,7 @@ def find_and_combine_files(
                         outfile.write(tree_footer)
 
             if output_opts.get('table_of_contents') and output_format in ('text', 'markdown'):
-                toc_files = [(item[0], item[1]) for item in all_single_mode_items]
+                toc_files = [(item[0], item[1]) for item in all_combined_items]
                 toc_content = _generate_table_of_contents(toc_files, output_format, metadata=file_metadata)
 
                 if not dry_run or estimate_tokens:
@@ -2126,12 +2126,12 @@ def find_and_combine_files(
                     outfile.write(toc_content)
 
             processing_bar = processor._make_bar(
-                total=len(all_single_mode_items),
+                total=len(all_combined_items),
                 desc="Processing files",
                 unit="file",
             )
 
-            for item in all_single_mode_items:
+            for item in all_combined_items:
                 file_path, root_path, is_excluded_by_size = item[:3]
                 cached_processed = item[3] if len(item) > 3 else None
 
@@ -2564,7 +2564,7 @@ def main():
         ):
             if importlib.util.find_spec("pyperclip"):
                 args.clipboard = True
-                logging.debug("AI preset: Auto-enabled clipboard mode.")
+                logging.debug("AI preset: Automatically enabled the clipboard.")
 
     # Configure logging *immediately* based on -v.
     # This ensures logging is set up *before* load_and_validate_config (which logs)
@@ -3037,8 +3037,8 @@ def main():
         _write_json_summary(stats, output_conf.get('summary_json'), duration=duration, source_desc=source_desc, destination_desc=dest)
         sys.exit(0)
 
-    mode_desc = "Pairing" if pairing_enabled else "Combining files"
-    logging.info("%sSourceCombine starting. Mode: %s%s", C_DIM, mode_desc, C_RESET)
+    action_desc = "pairing" if pairing_enabled else "combining many files into one"
+    logging.info("%sSourceCombine starting. Action: %s%s", C_DIM, action_desc, C_RESET)
 
     if args.list_files:
         logging.info("%sOutput: Listing files only%s %s(no files will be written)%s", C_CYAN, C_RESET, C_DIM, C_RESET)
