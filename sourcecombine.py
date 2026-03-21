@@ -396,11 +396,20 @@ def _matches_file_glob_cached(file_name, relative_path_str, patterns):
 def _matches_folder_glob_cached(relative_path_str, parts, patterns):
     rel_path_cf = relative_path_str.casefold()
     parts_cf = tuple(p.casefold() for p in parts)
+
     for pattern in patterns:
-        if fnmatch.fnmatchcase(rel_path_cf, pattern):
-            return True
+        # Check individual parts (e.g., 'node_modules')
         if any(fnmatch.fnmatchcase(p_cf, pattern) for p_cf in parts_cf):
             return True
+
+        # Check all parent paths to ensure recursive exclusion (for example, 'src/generated'
+        # matches 'src/generated/assets')
+        current = ""
+        for p_cf in parts_cf:
+            current = (current + "/" + p_cf) if current else p_cf
+            if fnmatch.fnmatchcase(current, pattern):
+                return True
+
     return False
 
 
