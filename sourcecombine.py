@@ -42,7 +42,7 @@ def _write_json_summary(stats, file_path, duration=None, source_desc=None, desti
     if not file_path:
         return
 
-    summary = copy.deepcopy(stats)
+    summary = _convert_to_json_friendly(stats)
     if duration is not None:
         summary['duration_seconds'] = duration
     if source_desc:
@@ -50,7 +50,7 @@ def _write_json_summary(stats, file_path, duration=None, source_desc=None, desti
     if destination_desc:
         summary['destination'] = destination_desc
 
-    json_data = json.dumps(_convert_to_json_friendly(summary), indent=2)
+    json_data = json.dumps(summary, indent=2)
 
     try:
         if file_path == '-':
