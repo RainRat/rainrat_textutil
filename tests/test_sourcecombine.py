@@ -213,7 +213,7 @@ def test_max_size_placeholder_writes_entry(tmp_path):
     assert "ok" in content
 
 
-def test_clipboard_mode_copies_output(monkeypatch, tmp_path):
+def test_clipboard_copies_output(monkeypatch, tmp_path):
     project_root = tmp_path / "proj"
     project_root.mkdir()
     sample = project_root / "sample.txt"
@@ -240,7 +240,7 @@ def test_clipboard_mode_copies_output(monkeypatch, tmp_path):
     assert not output_path.exists()
 
 
-def test_clipboard_mode_rejects_pairing(tmp_path):
+def test_clipboard_rejects_pairing(tmp_path):
     project_root = tmp_path / "proj"
     project_root.mkdir()
     (project_root / "one.cpp").write_text("one", encoding="utf-8")
