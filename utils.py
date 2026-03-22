@@ -1095,7 +1095,12 @@ def parse_size_value(value: str) -> int:
     if not match:
         raise InvalidConfigError(f"Invalid size value: '{value}'. Use '10KB', '1.5MB', etc.")
 
-    number = float(match.group(1))
+    try:
+        number = float(match.group(1))
+    except ValueError as e:
+        raise InvalidConfigError(
+            f"Invalid size value: '{value}'. Use '10KB', '1.5MB', etc."
+        ) from e
     unit = match.group(2)
 
     if not unit or unit == 'B':
