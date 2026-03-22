@@ -27,6 +27,10 @@ search:
   # if any `inclusion_groups` are enabled.
   allowed_extensions: []
 
+  # Only include files of these languages (for example, 'python', 'cpp').
+  # See `--list-languages` for a full list. Leave empty to include all.
+  allowed_languages: []
+
 # --- Output Configuration ---
 output:
   # Output format (text, json, markdown, xml). Defaults to text.

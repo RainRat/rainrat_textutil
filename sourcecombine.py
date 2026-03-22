@@ -462,6 +462,12 @@ def should_include(
     if allowed_extensions and suffix not in allowed_extensions:
         return (False, 'extension') if return_reason else False
 
+    allowed_languages = search_opts.get('allowed_languages')
+    if allowed_languages:
+        lang = utils.get_language_tag(relative_path)
+        if lang not in allowed_languages:
+            return (False, 'language_mismatch') if return_reason else False
+
     include_patterns = set()
     for group_conf in (filter_opts.get('inclusion_groups') or {}).values():
         if isinstance(group_conf, dict) and group_conf.get('enabled'):
@@ -2313,6 +2319,13 @@ def main():
         help="Include only files matching this search pattern (for example, '*.py'). Use this option again to include more.",
     )
     filtering_group.add_argument(
+        "--language",
+        "--lang",
+        action="append",
+        default=[],
+        help="Include only files of these languages (for example, 'python', 'cpp'). Use this option again to include more. See --list-languages for a full list.",
+    )
+    filtering_group.add_argument(
         "--since",
         "-S",
         help="Include files modified since this time (for example, '1d', '2h', 'YYYY-MM-DD').",
@@ -2513,6 +2526,11 @@ def main():
         help="Create a basic 'sourcecombine.yml' file in your current folder to get started.",
     )
     utility_group.add_argument(
+        "--list-languages",
+        action="store_true",
+        help="Show a list of all supported language identifiers and then stop.",
+    )
+    utility_group.add_argument(
         "--extract",
         action="store_true",
         help=(
@@ -2592,6 +2610,16 @@ def main():
 
     if args.system_info:
         print_system_info()
+        sys.exit(0)
+
+    if args.list_languages:
+        print("\nSupported Languages:")
+        langs = utils.get_all_languages()
+        # Group into 4 columns for readability
+        for i in range(0, len(langs), 4):
+            chunk = langs[i:i + 4]
+            print("  " + "".join(f"{l:<18}" for l in chunk))
+        print(f"\nTotal: {len(langs)} languages supported.\n")
         sys.exit(0)
 
     if args.init:
@@ -2765,6 +2793,13 @@ def main():
             'filenames': [utils.validate_glob_pattern(p, context="--include") for p in args.include]
         }
         logging.debug("Added terminal file inclusions: %s", args.include)
+
+    if args.language:
+        search = config['search']
+        if not isinstance(search.get('allowed_languages'), list):
+            search['allowed_languages'] = []
+        search['allowed_languages'].extend(args.language)
+        logging.debug("Added terminal language inclusions: %s", args.language)
 
     pairing_conf = config.get('pairing') or {}
     output_conf = config.get('output') or {}

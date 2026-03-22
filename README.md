@@ -77,6 +77,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 
 ### Filtering & Selection
 *   `-i` / `--include` / `--include-file`: Include only files that match this search pattern (for example, `*.py`, `*.js`).
+*   `--language` / `--lang`: Include only files of these languages (for example, `python`, `cpp`). Use this option again to include more. See `--list-languages` for a full list.
 *   `-x` / `--exclude-file` / `--exclude`: Skip files that match this search pattern (for example, `*.log`).
 *   `-X` / `--exclude-folder` / `--exclude-dir`: Skip folders that match this search pattern (for example, `node_modules`, `.git`).
 *   `--grep` / `-g`: Include only files whose content matches this search pattern.
@@ -124,6 +125,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 
 ### Utility Commands
 *   `--init`: Create a basic `sourcecombine.yml` configuration file in your current folder to get started.
+*   `--list-languages`: Show a list of all supported language identifiers and then stop.
 *   `--extract`: Rebuild your original files and folders from a combined file (like JSON, XML, or Markdown). You can read from a file, your terminal (`-`), or your clipboard. For example: `python sourcecombine.py --extract combined.json`. Filtering, sorting, and preview options are supported. Line numbers are removed automatically unless you use `--keep-line-numbers`.
 *   `--keep-line-numbers`: Keep line numbers when extracting files. By default, they are automatically removed if detected.
 *   `--restore`: Undo 'apply-in-place' changes by restoring original files from their `.bak` copies. This command scans your target folders recursively for backup files.

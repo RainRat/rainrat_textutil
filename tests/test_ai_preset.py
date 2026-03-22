@@ -58,7 +58,9 @@ class TestAIPreset(unittest.TestCase):
             max_lines=None,
             skip_binary=False,
             keep_line_numbers=False,
-            json_summary=None
+            json_summary=None,
+            language=None,
+            list_languages=False,
         )
 
     @patch('argparse.ArgumentParser.parse_args')

@@ -110,6 +110,7 @@ DEFAULT_CONFIG = {
     'search': {
         'max_depth': 0,
         'use_git': False,
+        'allowed_languages': [],
     },
     'filters': {
         'skip_binary': False,
@@ -454,6 +455,14 @@ def _validate_search_section(config):
     allowed_exts = search.get('allowed_extensions')
     if allowed_exts is not None and not isinstance(allowed_exts, list):
         raise InvalidConfigError("search.allowed_extensions must be a list.")
+
+    allowed_langs = search.get('allowed_languages')
+    if allowed_langs is not None:
+        if not isinstance(allowed_langs, list):
+            raise InvalidConfigError("search.allowed_languages must be a list of languages.")
+        for lang in allowed_langs:
+            if not isinstance(lang, str):
+                raise InvalidConfigError("Values in 'search.allowed_languages' must be text.")
 
 
 def _validate_filters_section(config):
@@ -890,6 +899,13 @@ def get_language_tag(path: str | Path) -> str:
         return EXTENSION_TO_LANG[ext]
 
     return ext.lstrip('.') or "text"
+
+
+def get_all_languages() -> list[str]:
+    """Return a sorted list of all unique supported language identifiers."""
+    all_langs = set(EXTENSION_TO_LANG.values())
+    all_langs.update(FILENAME_TO_LANG.values())
+    return sorted(list(all_langs))
 
 
 def count_lines(text: str) -> int:
