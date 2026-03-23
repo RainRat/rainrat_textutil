@@ -3572,7 +3572,7 @@ def print_system_info():
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
 
-def _print_limit_usage_bar(label, current, maximum, label_width):
+def _print_limit_usage_bar(label, current, maximum, label_width, is_size=False):
     """Print an ASCII progress bar for limit usage."""
     if maximum <= 0:
         return
@@ -3587,7 +3587,13 @@ def _print_limit_usage_bar(label, current, maximum, label_width):
         bar_color = C_YELLOW
     else:
         bar_color = C_GREEN
-    print(f"    {C_BOLD}{label:<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_CYAN}{percent:>6.1f}%{C_RESET}", file=sys.stderr)
+
+    if is_size:
+        detail = f"({utils.format_size(current)} / {utils.format_size(maximum)})"
+    else:
+        detail = f"({current:,} / {maximum:,})"
+
+    print(f"    {C_BOLD}{label:<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_CYAN}{percent:>6.1f}%{C_RESET} {C_DIM}{detail}{C_RESET}", file=sys.stderr)
 
 
 def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None, duration=None, source_desc=None):
@@ -3723,7 +3729,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
         _print_limit_usage_bar('File Limit Usage:', total_included, stats.get('max_files', 0), label_width)
         _print_limit_usage_bar('Token Limit Usage:', token_count, stats.get('max_total_tokens', 0), label_width)
-        _print_limit_usage_bar('Size Limit Usage:', total_size_bytes, stats.get('max_total_size_bytes', 0), label_width)
+        _print_limit_usage_bar('Size Limit Usage:', total_size_bytes, stats.get('max_total_size_bytes', 0), label_width, is_size=True)
         _print_limit_usage_bar('Line Limit Usage:', total_lines, stats.get('max_total_lines', 0), label_width)
 
     # Largest Files
