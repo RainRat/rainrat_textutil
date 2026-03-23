@@ -1,13 +1,15 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import sys
 from pathlib import Path
 import pytest
 from unittest.mock import MagicMock
 
 # Ensure repo root is on path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from sourcecombine import should_include
-import utils
+
 
 def test_should_include_language_filter():
     filter_opts = {}

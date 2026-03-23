@@ -1,8 +1,11 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import yaml
 import pytest
 from unittest.mock import patch
 import sourcecombine
-from utils import remove_line_numbers, InvalidConfigError, process_content, validate_config
+from utils import remove_line_numbers, process_content, validate_config
 
 def test_remove_line_numbers_empty_string():
     # Covers utils.py line 835
@@ -17,7 +20,7 @@ def test_remove_line_numbers_trailing_newline():
 def test_main_verbose_invalid_config_error(caplog):
     # Covers sourcecombine.py line 2571 (approx)
     with patch("sourcecombine.load_and_validate_config", return_value={'search': {}}):
-        with patch("sourcecombine.validate_config", side_effect=InvalidConfigError("Test Error")):
+        with patch("sourcecombine.validate_config", side_effect=utils.InvalidConfigError("Test Error")):
             with patch("sys.argv", ["sourcecombine.py", "--verbose", "."]):
                 with pytest.raises(SystemExit) as excinfo:
                     sourcecombine.main()
@@ -134,5 +137,5 @@ def test_utils_process_content_no_options():
 
 def test_utils_invalid_use_git():
     # Covers utils.py line 370
-    with pytest.raises(InvalidConfigError, match="search.use_git must be true or false"):
+    with pytest.raises(utils.InvalidConfigError, match="search.use_git must be true or false"):
         validate_config({'search': {'use_git': 'not a bool'}}, defaults=None)

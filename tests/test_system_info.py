@@ -1,3 +1,6 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import sys
 import subprocess
 from unittest.mock import patch, MagicMock

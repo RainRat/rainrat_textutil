@@ -1,3 +1,6 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import os
 import sys
 from pathlib import Path
@@ -6,14 +9,13 @@ from unittest.mock import patch, MagicMock
 import pytest
 
 # Add the project root to sys.path so we can import sourcecombine
-sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
-from sourcecombine import FileProcessor, InvalidConfigError
+from sourcecombine import FileProcessor
 
 def test_backup_failure_raises_invalid_config_error(tmp_path):
     """
     Verify that if creating a backup fails (e.g., due to permission error),
-    FileProcessor raises InvalidConfigError to prevent data loss.
+    FileProcessor raises utils.InvalidConfigError to prevent data loss.
     """
     file_path = tmp_path / "important_code.py"
     original_content = "print('hello')"
@@ -36,7 +38,7 @@ def test_backup_failure_raises_invalid_config_error(tmp_path):
     # Mock shutil.copy2 to raise OSError
     # We patch sourcecombine.shutil.copy2 because sourcecombine imports shutil
     with patch("sourcecombine.shutil.copy2", side_effect=OSError("Disk full")):
-        with pytest.raises(InvalidConfigError) as excinfo:
+        with pytest.raises(utils.InvalidConfigError) as excinfo:
             # Pass a dummy outfile because process_and_write writes to it if successful
             # But here it should fail before writing to outfile
             processor.process_and_write(file_path, tmp_path, MagicMock())[:-1]

@@ -1,8 +1,11 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import pytest
 from pathlib import Path
 from unittest.mock import MagicMock
 from datetime import datetime
-import utils
+
 import sourcecombine
 
 def test_parse_time_value():

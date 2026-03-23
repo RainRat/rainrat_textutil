@@ -1,8 +1,11 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import io
 import pytest
 import copy
 from sourcecombine import FileProcessor
-import utils
+
 
 def test_max_lines_truncation(tmp_path):
     """Test that content is truncated to the specified number of lines."""
@@ -69,7 +72,7 @@ def test_max_lines_in_place(tmp_path):
 
 def test_max_lines_validation():
     """Test that max_lines validation works."""
-    from utils import validate_config, InvalidConfigError
+    from utils import validate_config
 
     config = copy.deepcopy(utils.DEFAULT_CONFIG)
 
@@ -79,10 +82,10 @@ def test_max_lines_validation():
 
     # Invalid: Negative
     config['processing']['max_lines'] = -1
-    with pytest.raises(InvalidConfigError, match="'processing.max_lines' must be 0 or more"):
+    with pytest.raises(utils.InvalidConfigError, match="'processing.max_lines' must be 0 or more"):
         validate_config(config)
 
     # Invalid: Not an integer
     config['processing']['max_lines'] = "five"
-    with pytest.raises(InvalidConfigError, match="'processing.max_lines' must be 0 or more"):
+    with pytest.raises(utils.InvalidConfigError, match="'processing.max_lines' must be 0 or more"):
         validate_config(config)

@@ -1,7 +1,10 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import io
 import copy
 from sourcecombine import find_and_combine_files, FileProcessor
-import utils
+
 
 def test_line_count_calculation(tmp_path):
     """Test that line count is correctly calculated on processed content."""

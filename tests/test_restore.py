@@ -1,3 +1,6 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import os
 import sys
 import logging
@@ -6,7 +9,6 @@ import pytest
 from unittest.mock import patch
 
 # Adjust sys.path to include the project root
-sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
 from sourcecombine import restore_backups, main
 

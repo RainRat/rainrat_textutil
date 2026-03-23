@@ -1,10 +1,12 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import logging
 import os
 import sys
 from pathlib import Path
 
 
-sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
 from sourcecombine import (
     find_and_combine_files,

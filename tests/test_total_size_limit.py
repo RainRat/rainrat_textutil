@@ -1,3 +1,6 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import sourcecombine
 from utils import DEFAULT_CONFIG
 
@@ -56,7 +59,7 @@ def test_total_size_limit_cli_parsing(tmp_path, monkeypatch):
     parsed_args = parser.parse_args(["--max-total-size", "1KB"])
     assert parsed_args.max_total_size == "1KB"
 
-    import utils
+    
     val = utils.parse_size_value(parsed_args.max_total_size)
     assert val == 1024
 

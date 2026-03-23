@@ -1,6 +1,9 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 from unittest.mock import patch, mock_open
 from pathlib import Path
-import utils
+
 
 def test_looks_binary_reads_only_prefix():
     """

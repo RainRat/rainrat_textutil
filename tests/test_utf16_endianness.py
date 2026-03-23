@@ -1,7 +1,10 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import sys
 from pathlib import Path
 
-# Add current directory to sys.path to import utils
+# Add current directory to sys.path to 
 sys.path.append(str(Path(__file__).parent.parent))
 
 from utils import read_file_best_effort

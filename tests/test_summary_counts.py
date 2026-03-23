@@ -1,11 +1,13 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import sys
 import os
 from pathlib import Path
 
 # Adjust sys.path to include the project root
-sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
-import utils
+
 from sourcecombine import find_and_combine_files
 
 def test_summary_counts_with_filtering(tmp_path):

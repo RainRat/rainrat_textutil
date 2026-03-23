@@ -1,10 +1,12 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import sys
 from pathlib import Path
 import pytest
 import xml.etree.ElementTree as ET
 
 # Ensure repo root is on path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from sourcecombine import find_and_combine_files
 

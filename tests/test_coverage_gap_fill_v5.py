@@ -1,16 +1,17 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import pytest
 from unittest.mock import MagicMock, patch
 from pathlib import Path
 import os
 import sys
 import copy
-from sourcecombine import InvalidConfigError
 
 # Adjust sys.path to include the project root
-sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
 import sourcecombine
-import utils
+
 
 def test_collect_git_files_progress():
     """Target sourcecombine.py line 505: progress.update(1)."""
@@ -98,32 +99,32 @@ filters:
 
 def test_utils_validation_gaps():
     """Target utils.py lines 375, 379, 449, 458, 461, 558, 562."""
-    from utils import validate_config, InvalidConfigError
+    from utils import validate_config
 
-    with pytest.raises(InvalidConfigError, match="search.root_folders must be a list"):
+    with pytest.raises(utils.InvalidConfigError, match="search.root_folders must be a list"):
         validate_config({'search': {'root_folders': 'not a list'}})
 
-    with pytest.raises(InvalidConfigError, match="search.allowed_extensions must be a list"):
+    with pytest.raises(utils.InvalidConfigError, match="search.allowed_extensions must be a list"):
         validate_config({'search': {'allowed_extensions': 'not a list'}})
 
-    with pytest.raises(InvalidConfigError, match="filters.exclusions must be a dictionary"):
+    with pytest.raises(utils.InvalidConfigError, match="filters.exclusions must be a dictionary"):
         validate_config({'filters': {'exclusions': 'not a dict'}})
 
-    with pytest.raises(InvalidConfigError, match="filters.inclusion_groups must be a dictionary"):
+    with pytest.raises(utils.InvalidConfigError, match="filters.inclusion_groups must be a dictionary"):
         validate_config({'filters': {'inclusion_groups': 'not a dict'}})
 
-    with pytest.raises(InvalidConfigError, match="filters.inclusion_groups.test must be a dictionary"):
+    with pytest.raises(utils.InvalidConfigError, match="filters.inclusion_groups.test must be a dictionary"):
         validate_config({'filters': {'inclusion_groups': {'test': 'not a dict'}}})
 
-    with pytest.raises(InvalidConfigError, match="pairing.source_extensions must be a list"):
+    with pytest.raises(utils.InvalidConfigError, match="pairing.source_extensions must be a list"):
         validate_config({'pairing': {'enabled': True, 'source_extensions': 'not a list'}})
 
-    with pytest.raises(InvalidConfigError, match="pairing.header_extensions must be a list"):
+    with pytest.raises(utils.InvalidConfigError, match="pairing.header_extensions must be a list"):
         validate_config({'pairing': {'enabled': True, 'header_extensions': 'not a list'}})
 
 def test_find_and_combine_files_invalid_config_error_handling():
     """Target sourcecombine.py lines 2790-2795."""
-    with patch('sourcecombine.find_and_combine_files', side_effect=InvalidConfigError("Test error")):
+    with patch('sourcecombine.find_and_combine_files', side_effect=utils.InvalidConfigError("Test error")):
         with patch('sys.argv', ['sourcecombine.py', '.']):
             with pytest.raises(SystemExit) as exc:
                 sourcecombine.main()

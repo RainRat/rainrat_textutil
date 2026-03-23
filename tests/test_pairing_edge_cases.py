@@ -1,12 +1,14 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import os
 import sys
 from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
-from sourcecombine import find_and_combine_files, InvalidConfigError
+from sourcecombine import find_and_combine_files
 
 def test_paired_filename_template_invalid_placeholder(tmp_path):
     # Test that using a single-brace placeholder that is not in the allowed list triggers ValueError
@@ -68,7 +70,7 @@ def test_paired_filename_template_double_brace_unknown(tmp_path):
 
 
 def test_paired_filename_template_absolute_path(tmp_path):
-    # Test that if the template results in an absolute path, InvalidConfigError is raised
+    # Test that if the template results in an absolute path, utils.InvalidConfigError is raised
     root = tmp_path / "project"
     root.mkdir()
     src = root / "file.cpp"
@@ -97,5 +99,5 @@ def test_paired_filename_template_absolute_path(tmp_path):
         }
     }
 
-    with pytest.raises(InvalidConfigError, match="Paired filename template must produce a relative path"):
+    with pytest.raises(utils.InvalidConfigError, match="Paired filename template must produce a relative path"):
         find_and_combine_files(config, str(output_dir))

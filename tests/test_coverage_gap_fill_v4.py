@@ -1,5 +1,8 @@
-import pytest
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 import utils
+
+import pytest
+
 import sourcecombine
 from unittest.mock import patch
 import copy

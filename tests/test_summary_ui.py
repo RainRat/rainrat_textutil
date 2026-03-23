@@ -1,10 +1,12 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 from unittest.mock import MagicMock, patch
 import sys
 import os
 from pathlib import Path
 
 # Adjust sys.path to include the project root
-sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
 import sourcecombine
 

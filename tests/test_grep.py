@@ -1,3 +1,6 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import json
 import sys
 import logging
@@ -62,8 +65,8 @@ def test_grep_invalid_regex():
     config = DEFAULT_CONFIG.copy()
     config['filters'] = {'grep': '['} # Invalid regex
 
-    from utils import validate_config, InvalidConfigError
-    with pytest.raises(InvalidConfigError) as excinfo:
+    from utils import validate_config
+    with pytest.raises(utils.InvalidConfigError) as excinfo:
         validate_config(config)
     assert "Invalid search pattern in filters.grep" in str(excinfo.value)
 

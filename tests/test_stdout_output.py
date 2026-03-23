@@ -1,6 +1,9 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import sys
 import pytest
-from sourcecombine import find_and_combine_files, InvalidConfigError
+from sourcecombine import find_and_combine_files
 
 def test_stdout_output(tmp_path, capsys):
     """Test that output is written to stdout when -o - is used."""
@@ -40,7 +43,7 @@ def test_stdout_output_pairing_error(tmp_path):
         'output': {'folder': 'output_folder'}
     }
 
-    with pytest.raises(InvalidConfigError, match="You cannot send output to your terminal when pairing files"):
+    with pytest.raises(utils.InvalidConfigError, match="You cannot send output to your terminal when pairing files"):
         find_and_combine_files(config, output_path='-')
 
 def test_stdout_output_dry_run(tmp_path, capsys):

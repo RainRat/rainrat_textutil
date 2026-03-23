@@ -1,3 +1,6 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import io
 import builtins
 import logging
@@ -11,7 +14,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 import yaml
 
-sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
 pyperclip_stub = types.SimpleNamespace(copy=lambda _text: None, paste=lambda: None)
 sys.modules.setdefault("pyperclip", pyperclip_stub)
@@ -255,7 +257,7 @@ def test_clipboard_rejects_pairing(tmp_path):
         "output": {"folder": os.fspath(output_path)},
     }
 
-    with pytest.raises(sourcecombine.InvalidConfigError):
+    with pytest.raises(sourcecombine.utils.InvalidConfigError):
         find_and_combine_files(config, output_path, dry_run=False, clipboard=True)
 
 
@@ -272,7 +274,7 @@ def test_output_file_required_without_pairing_or_clipboard(tmp_path):
         "output": {"file": None, "header_template": "", "footer_template": ""},
     }
 
-    with pytest.raises(sourcecombine.InvalidConfigError):
+    with pytest.raises(sourcecombine.utils.InvalidConfigError):
         find_and_combine_files(config, output_path=None, dry_run=False, clipboard=False)
 
 
@@ -889,7 +891,7 @@ def test_sort_by_tokens_with_size_exclusion_placeholder(tmp_path):
 
 def test_integration_find_and_combine_files_estimates_tokens(tmp_path, monkeypatch):
     """Verify that find_and_combine_files correctly aggregates token counts in stats."""
-    import utils
+    
     # Setup files
     root = tmp_path / "root"
     root.mkdir()
@@ -921,7 +923,7 @@ def test_integration_find_and_combine_files_estimates_tokens(tmp_path, monkeypat
 
 def test_token_limit_enforcement(tmp_path, monkeypatch):
     """Verify that the token limit correctly truncates the file list."""
-    import utils
+    
     root = tmp_path / "root"
     root.mkdir()
     # 1 token approx = 4 chars

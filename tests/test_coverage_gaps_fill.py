@@ -1,3 +1,6 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import os
 import sys
 from pathlib import Path
@@ -5,9 +8,8 @@ from unittest.mock import MagicMock, patch
 
 
 # Adjust sys.path to include the project root
-sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
-import utils
+
 
 def test_truncate_path_short_width():
     # Covers sourcecombine.py line 211

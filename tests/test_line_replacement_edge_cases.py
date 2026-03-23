@@ -1,3 +1,6 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import sys
 import os
 import textwrap
@@ -5,9 +8,8 @@ from pathlib import Path
 import pytest
 
 # Ensure project root is in path
-sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
-from utils import _replace_line_block, apply_line_regex_replacements, validate_regex_pattern, InvalidConfigError
+from utils import _replace_line_block, apply_line_regex_replacements, validate_regex_pattern
 
 def test_replace_line_block_removes_block_when_replacement_is_none():
     """Verify that a block of lines is removed when replacement is None."""
@@ -92,8 +94,8 @@ def test_apply_line_regex_replacements_skips_invalid_rules():
     assert result == "bar"
 
 def test_apply_line_regex_replacements_raises_on_invalid_regex():
-    """Verify that invalid regex patterns in rules raise InvalidConfigError."""
+    """Verify that invalid regex patterns in rules raise utils.InvalidConfigError."""
     text = "content"
     rules = [{"pattern": "["}] # Invalid regex
-    with pytest.raises(InvalidConfigError):
+    with pytest.raises(utils.InvalidConfigError):
         apply_line_regex_replacements(text, rules)

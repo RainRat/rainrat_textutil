@@ -1,9 +1,11 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import os
 import sys
 from pathlib import Path, PureWindowsPath
 import pytest
 
-sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
 from sourcecombine import _render_paired_filename, _slugify_relative_dir
 

@@ -1,3 +1,6 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 from unittest.mock import patch, MagicMock
 import pytest
 from utils import read_file_best_effort

@@ -1,3 +1,6 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import os
 import sys
 import copy
@@ -6,7 +9,7 @@ import copy
 sys.path.append(os.getcwd())
 
 import sourcecombine
-import utils
+
 
 def test_md_header_selection():
     content = """

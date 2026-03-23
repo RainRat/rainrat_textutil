@@ -1,3 +1,6 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import json
 import logging
 import sys
@@ -7,7 +10,6 @@ from unittest.mock import patch, MagicMock
 import pytest
 
 # Ensure repo root is on path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from sourcecombine import extract_files, main, _render_single_pass, _render_global_template
 from utils import DEFAULT_CONFIG

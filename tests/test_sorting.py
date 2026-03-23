@@ -1,3 +1,6 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import sys
 import os
 import time
@@ -5,12 +8,11 @@ from pathlib import Path
 import pytest
 
 # Add project root to path
-sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
 import logging
 from io import StringIO
 from contextlib import contextmanager
-import utils
+
 from sourcecombine import find_and_combine_files
 
 @contextmanager

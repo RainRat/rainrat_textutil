@@ -1,3 +1,6 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import os
 import sys
 import logging
@@ -5,7 +8,6 @@ from pathlib import Path
 import pytest
 from unittest.mock import patch
 
-sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
 from sourcecombine import delete_backups, main
 

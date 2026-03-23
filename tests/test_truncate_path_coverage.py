@@ -1,8 +1,10 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import os
 import sys
 
 # Adjust sys.path to include the project root
-sys.path.insert(0, os.fspath(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from sourcecombine import _truncate_path
 

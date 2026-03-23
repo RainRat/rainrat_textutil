@@ -1,6 +1,9 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import pytest
 from sourcecombine import collect_file_paths, find_and_combine_files
-import utils
+
 
 def setup_test_folders(tmp_path):
     """

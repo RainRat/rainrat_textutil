@@ -1,3 +1,6 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 from sourcecombine import find_and_combine_files, utils
 
 def test_output_file_is_excluded(tmp_path):

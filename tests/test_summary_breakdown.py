@@ -1,5 +1,8 @@
-from sourcecombine import find_and_combine_files
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 import utils
+
+from sourcecombine import find_and_combine_files
+
 
 def test_summary_breakdown_reasons(tmp_path):
     # Create a test environment

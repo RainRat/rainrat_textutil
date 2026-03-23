@@ -1,8 +1,11 @@
-import pytest
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 import utils
 
+import pytest
+
+
 def test_parse_size_value_invalid_numeric():
-    # Test that invalid numeric strings that pass the regex raise InvalidConfigError
+    # Test that invalid numeric strings that pass the regex raise utils.InvalidConfigError
     # instead of a raw ValueError during float conversion.
     with pytest.raises(utils.InvalidConfigError) as excinfo:
         utils.parse_size_value("10.20.30KB")

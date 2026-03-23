@@ -1,3 +1,6 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import subprocess
 import pytest
 from unittest.mock import MagicMock, patch
@@ -6,10 +9,9 @@ import os
 import sys
 
 # Adjust sys.path to include the project root
-sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
 import sourcecombine
-import utils
+
 
 def test_collect_git_files_success():
     """Test successful git file discovery."""

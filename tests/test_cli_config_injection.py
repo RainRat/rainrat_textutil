@@ -1,3 +1,6 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import sys
 import os
 import logging
@@ -6,9 +9,8 @@ from unittest.mock import patch, MagicMock
 import pytest
 
 # Adjust sys.path to include the project root
-sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
-from sourcecombine import main, find_and_combine_files, InvalidConfigError, _generate_tree_string
+from sourcecombine import main, find_and_combine_files, _generate_tree_string
 
 @pytest.fixture
 def temp_cwd(tmp_path):
@@ -158,12 +160,12 @@ def test_cli_estimate_tokens_output(temp_cwd, caplog, mock_stats):
     assert "Output: Token estimation only (no files will be written)" in caplog.text
 
 def test_main_invalid_config_validation_hit_1835(temp_cwd, caplog):
-    """Test InvalidConfigError in main() at line 1835."""
+    """Test utils.InvalidConfigError in main() at line 1835."""
     config_file = temp_cwd / "dummy.yml"
     config_file.write_text("search: {root_folders: ['.']}", encoding="utf-8")
 
     # Patch validate_config where it's used in sourcecombine.main
-    with patch('sourcecombine.validate_config', side_effect=InvalidConfigError("Forced validation error")):
+    with patch('sourcecombine.validate_config', side_effect=utils.InvalidConfigError("Forced validation error")):
         with patch.object(sys, 'argv', ['sourcecombine.py', str(config_file)]):
             with pytest.raises(SystemExit) as excinfo:
                 main()

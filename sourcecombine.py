@@ -231,12 +231,14 @@ from utils import (
     validate_config,
     add_line_numbers,
     ConfigNotFoundError,
-    InvalidConfigError,
     FILENAME_PLACEHOLDER,
     DEFAULT_OUTPUT_FILENAME,
     _looks_binary,
     DEFAULT_CONFIG,
 )
+
+# Export for backward compatibility and to handle module reloads correctly
+InvalidConfigError = utils.InvalidConfigError
 
 
 def _get_rel_path(path, root_path):
@@ -973,7 +975,7 @@ def _process_paired_files(
             )
         out_path = Path(out_filename)
         if out_path.is_absolute():
-            raise InvalidConfigError(
+            raise utils.InvalidConfigError(
                 "Paired filename template must produce a relative path"
             )
 
@@ -1115,7 +1117,7 @@ class FileProcessor:
 
         The backup is an exact copy of the original file and keeps its
         details (like the date it was changed). If ``create_backups`` is ``False``
-        no action is taken. Failures to copy raise ``InvalidConfigError`` so the
+        no action is taken. Failures to copy raise ``utils.InvalidConfigError`` so the
         tool stops before overwriting your code.
         """
 
@@ -1126,7 +1128,7 @@ class FileProcessor:
         try:
             shutil.copy2(file_path, backup_path)
         except OSError as exc:
-            raise InvalidConfigError(
+            raise utils.InvalidConfigError(
                 f"Failed to create backup for '{file_path}': {exc}"
             ) from exc
 
@@ -1453,13 +1455,13 @@ def find_and_combine_files(
     recursive = search_opts.get('recursive', True)
 
     if clipboard and pairing_enabled:
-        raise InvalidConfigError("The clipboard can only be used when combining many files into one.")
+        raise utils.InvalidConfigError("The clipboard can only be used when combining many files into one.")
 
     if output_path == '-' and pairing_enabled:
-        raise InvalidConfigError("You cannot send output to your terminal when pairing files.")
+        raise utils.InvalidConfigError("You cannot send output to your terminal when pairing files.")
 
     if output_format in ('json', 'jsonl') and pairing_enabled:
-        raise InvalidConfigError(f"You cannot use {output_format.upper()} format when pairing files.")
+        raise utils.InvalidConfigError(f"You cannot use {output_format.upper()} format when pairing files.")
 
     # Apply default Markdown templates if requested and not overridden
     if output_format == 'markdown':
@@ -1493,7 +1495,7 @@ def find_and_combine_files(
             output_opts['global_footer_template'] = "\n</repository>\n"
 
     if not pairing_enabled and not dry_run and not estimate_tokens and not clipboard and not list_files and not tree_view and output_path is None:
-        raise InvalidConfigError(
+        raise utils.InvalidConfigError(
             "You must set an output file in your configuration or use the --output option."
         )
 
@@ -2691,7 +2693,7 @@ def main():
         except ConfigNotFoundError:
             logging.error("Could not find the configuration file '%s'.", config_path)
             sys.exit(1)
-        except InvalidConfigError as e:
+        except utils.InvalidConfigError as e:
             if args.verbose:
                 logging.error("The configuration is not valid: %s", e, exc_info=True)
             else:
@@ -2725,7 +2727,7 @@ def main():
     if not args.files_from:
         try:
             validate_config(config, nested_required={'search': ['root_folders']})
-        except InvalidConfigError as e:
+        except utils.InvalidConfigError as e:
             if args.verbose:
                 logging.error("The configuration is not valid: %s", e, exc_info=True)
             else:
@@ -2754,6 +2756,8 @@ def main():
 
     # Inject CLI exclusions into config
     if args.exclude_file or args.exclude_folder:
+        if not isinstance(config.get('filters'), dict):
+            config['filters'] = {}
         filters = config['filters']
 
         if not isinstance(filters.get('exclusions'), dict):
@@ -2781,6 +2785,8 @@ def main():
 
     # Inject terminal inclusions into config
     if args.include:
+        if not isinstance(config.get('filters'), dict):
+            config['filters'] = {}
         filters = config['filters']
 
         # Ensure inclusion_groups exists and is a dictionary
@@ -2821,7 +2827,7 @@ def main():
             config['filters'] = {}
         try:
             config['filters']['max_total_size_bytes'] = utils.parse_size_value(args.max_total_size)
-        except InvalidConfigError as e:
+        except utils.InvalidConfigError as e:
             if args.verbose:
                 logging.error(e, exc_info=True)
             else:
@@ -2858,7 +2864,7 @@ def main():
                 filters['modified_since'] = utils.parse_time_value(args.since)
             if args.until:
                 filters['modified_until'] = utils.parse_time_value(args.until)
-        except InvalidConfigError as e:
+        except utils.InvalidConfigError as e:
             if args.verbose:
                 logging.error(e, exc_info=True)
             else:
@@ -2872,7 +2878,7 @@ def main():
                 filters['min_size_bytes'] = utils.parse_size_value(args.min_size)
             if args.max_size:
                 filters['max_size_bytes'] = utils.parse_size_value(args.max_size)
-        except InvalidConfigError as e:
+        except utils.InvalidConfigError as e:
             if args.verbose:
                 logging.error(e, exc_info=True)
             else:
@@ -3108,7 +3114,7 @@ def main():
             tree_view=args.tree,
             explicit_files=explicit_files,
         )
-    except InvalidConfigError as exc:
+    except utils.InvalidConfigError as exc:
         if args.verbose:
             logging.error(exc, exc_info=True)
         else:

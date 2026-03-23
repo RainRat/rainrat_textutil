@@ -1,12 +1,14 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import json
 from pathlib import Path
 import pytest
 import sys
 
 # Ensure repo root is on path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from sourcecombine import find_and_combine_files, InvalidConfigError
+from sourcecombine import find_and_combine_files
 
 def test_json_output_success(tmp_path):
     # Setup
@@ -53,7 +55,7 @@ def test_json_output_incompatible_with_pairing():
         'search': {'root_folders': []},
         'pairing': {'enabled': True}
     }
-    with pytest.raises(InvalidConfigError, match="You cannot use JSON format when pairing files"):
+    with pytest.raises(utils.InvalidConfigError, match="You cannot use JSON format when pairing files"):
         find_and_combine_files(config, "out", output_format='json')
 
 def test_json_output_excludes_header_templates(tmp_path):

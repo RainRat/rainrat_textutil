@@ -1,3 +1,6 @@
+import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import utils
+
 import os
 import sys
 import logging
@@ -6,7 +9,7 @@ import importlib
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 import sourcecombine
-import utils
+
 
 def test_convert_to_json_friendly_path():
     # Covers sourcecombine.py line 35
