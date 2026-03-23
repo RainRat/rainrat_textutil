@@ -1,5 +1,6 @@
 import argparse
 from datetime import datetime
+import difflib
 import importlib.util
 import platform
 import subprocess
@@ -24,6 +25,36 @@ def xml_escape(data: str) -> str:
     if not data:
         return ""
     return _xml_escape(data, {'"': "&quot;", "'": "&apos;"})
+
+
+def _print_diff(old_text, new_text, filename):
+    """Print a colored unified diff between old_text and new_text."""
+    if old_text == new_text:
+        return
+
+    diff = difflib.unified_diff(
+        old_text.splitlines(keepends=True),
+        new_text.splitlines(keepends=True),
+        fromfile=f"a/{filename}",
+        tofile=f"b/{filename}",
+    )
+
+    has_diff = False
+    for line in diff:
+        has_diff = True
+        if line.startswith('+++') or line.startswith('---'):
+            sys.stderr.write(f"{C_BOLD}{line}{C_RESET}")
+        elif line.startswith('@@'):
+            sys.stderr.write(f"{C_CYAN}{line}{C_RESET}")
+        elif line.startswith('+'):
+            sys.stderr.write(f"{C_GREEN}{line}{C_RESET}")
+        elif line.startswith('-'):
+            sys.stderr.write(f"{C_RED}{line}{C_RESET}")
+        else:
+            sys.stderr.write(line)
+
+    if has_diff:
+        sys.stderr.write("\n")
 
 
 def _convert_to_json_friendly(obj):
@@ -1085,6 +1116,7 @@ class FileProcessor:
         self.dry_run = dry_run
         self.estimate_tokens = estimate_tokens
         self.output_format = output_format
+        self.show_diff = bool(self.output_opts.get('show_diff', False))
         self.processing_opts = config.get('processing', {}) or {}
         self.apply_in_place = bool(self.processing_opts.get('apply_in_place'))
         if self.apply_in_place:
@@ -1185,20 +1217,26 @@ class FileProcessor:
         tuple[int, bool, int]
             A tuple containing (token_count, is_approximate, line_count) for the written content.
         """
-        if self.dry_run:
+        if self.dry_run and not (self.show_diff and self.apply_in_place):
             logging.info(_get_rel_path(file_path, root_path))
             return 0, True, 0
 
         logging.debug("Processing: %s", file_path)
         if cached_content is not None:
             processed_content = cached_content
+            content = None
         else:
             content, encoding = read_file_best_effort(file_path)
             processed_content = process_content(content, self.processing_opts)
+
+            if self.show_diff and self.apply_in_place:
+                _print_diff(content, processed_content, _get_rel_path(file_path, root_path).as_posix())
+
             if self.apply_in_place and processed_content != content and not self.estimate_tokens:
-                logging.info("Updating in place: %s (encoding: %s)", file_path, encoding)
-                self._backup_file(file_path)
-                file_path.write_text(processed_content, encoding=encoding, newline='')
+                if not self.dry_run:
+                    logging.info("Updating in place: %s (encoding: %s)", file_path, encoding)
+                    self._backup_file(file_path)
+                    file_path.write_text(processed_content, encoding=encoding, newline='')
 
         relative_path = _get_rel_path(file_path, root_path)
         stat = file_path.stat() if file_path.exists() else None
@@ -1209,16 +1247,17 @@ class FileProcessor:
         token_count, is_approx = utils.estimate_tokens(processed_content)
         line_count = utils.count_lines(processed_content)
 
-        self._emit_entry(
-            outfile,
-            processed_content,
-            relative_path,
-            file_size,
-            token_count,
-            is_approx,
-            line_count,
-            modified=modified,
-        )
+        if not self.dry_run or outfile is not None:
+            self._emit_entry(
+                outfile,
+                processed_content,
+                relative_path,
+                file_size,
+                token_count,
+                is_approx,
+                line_count,
+                modified=modified,
+            )
 
         return token_count, is_approx, line_count
 
@@ -2496,6 +2535,11 @@ def main():
         action="store_true",
         help="Show a visual folder tree of all included files with details and then stop.",
     )
+    display_group.add_argument(
+        "--diff",
+        action="store_true",
+        help="Show a colored diff of changes (only when using --apply-in-place or --extract).",
+    )
 
     # Processing Group
     processing_group = parser.add_argument_group("Processing")
@@ -2897,6 +2941,9 @@ def main():
     if args.include_tree:
         output_conf['include_tree'] = True
 
+    if args.diff:
+        output_conf['show_diff'] = True
+
     if args.compact:
         config['processing']['compact_whitespace'] = True
 
@@ -3081,7 +3128,8 @@ def main():
             estimate_tokens=args.estimate_tokens,
             sort_by=config.get('output', {}).get('sort_by', 'name'),
             sort_reverse=config.get('output', {}).get('sort_reverse', False),
-            keep_line_numbers=args.keep_line_numbers
+            keep_line_numbers=args.keep_line_numbers,
+            show_diff=config.get('output', {}).get('show_diff', False)
         )
         dest = f"to '{output_folder}'"
         source_desc = f"from '{source_name}'"
@@ -3138,7 +3186,7 @@ def main():
         _write_json_summary(stats, output_conf.get('summary_json'), duration=duration, source_desc=source_desc, destination_desc=destination_desc)
 
 
-def extract_files(content, output_folder, dry_run=False, source_name="combined file", config=None, list_files=False, tree_view=False, limit=0, estimate_tokens=False, sort_by='name', sort_reverse=False, keep_line_numbers=False):
+def extract_files(content, output_folder, dry_run=False, source_name="combined file", config=None, list_files=False, tree_view=False, limit=0, estimate_tokens=False, sort_by='name', sort_reverse=False, keep_line_numbers=False, show_diff=False):
     """Recreate the original folder structure and files from a combined file content."""
     output_folder = Path(output_folder)
     stats = {
@@ -3424,6 +3472,10 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
         except (ValueError, OSError):
             logging.warning("Skipping invalid path: %s", rel_path_str)
             continue
+
+        if show_diff and target_path.exists():
+            old_content, _ = read_file_best_effort(target_path)
+            _print_diff(old_content, file_content, rel_path_str)
 
         if dry_run:
             logging.info("[DRY RUN] Would create: %s", target_path)

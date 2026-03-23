@@ -160,6 +160,7 @@ DEFAULT_CONFIG = {
         'sort_by': 'name',
         'sort_reverse': False,
         'summary_json': None,
+        'show_diff': False,
     },
     'processing': {
         'apply_in_place': False,
@@ -694,6 +695,10 @@ def _validate_output_section(config):
     sort_reverse = output_conf.get('sort_reverse')
     if sort_reverse is not None and not isinstance(sort_reverse, bool):
         raise InvalidConfigError("'output.sort_reverse' must be true or false.")
+
+    show_diff = output_conf.get('show_diff')
+    if show_diff is not None and not isinstance(show_diff, bool):
+        raise InvalidConfigError("'output.show_diff' must be true or false.")
 
 
 def apply_line_regex_replacements(text, rules):
