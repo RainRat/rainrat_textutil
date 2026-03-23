@@ -347,7 +347,9 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
     replacements["{{SIZE}}"] = utils.format_size(size) if size is not None else ""
     replacements["{{TOKENS}}"] = f"{tokens:,}" if tokens is not None else ""
     replacements["{{LINE_COUNT}}"] = f"{lines:,}" if lines is not None else ""
-    replacements["{{MODIFIED}}"] = datetime.fromtimestamp(modified).isoformat() if modified is not None else ""
+    replacements["{{MODIFIED}}"] = (
+        datetime.fromtimestamp(modified).isoformat() if modified is not None else ""
+    )
 
     return _render_single_pass(template, replacements)
 
@@ -802,33 +804,23 @@ def _render_paired_filename(
     dir_value = relative_dir.as_posix()
     dir_slug = _slugify_relative_dir(dir_value)
 
-    placeholders = {
-        'STEM': stem,
-        'SOURCE_EXT': source_ext,
-        'HEADER_EXT': header_ext,
-        'DIR': dir_value,
-        'DIR_SLUG': dir_slug,
+    replacements = {
+        '{{STEM}}': stem,
+        '{{SOURCE_EXT}}': source_ext,
+        '{{HEADER_EXT}}': header_ext,
+        '{{DIR}}': dir_value,
+        '{{DIR_SLUG}}': dir_slug,
     }
 
-    def _to_format_placeholder(match):
-        name = match.group(1)
-        if name not in placeholders:
+    # Validate that all {{...}} placeholders in the template are known
+    for match in re.finditer(r"{{(\w+)}}", template):
+        placeholder = match.group(0)
+        if placeholder not in replacements:
             raise ValueError(
-                f"Unknown placeholder '{{{{{name}}}}}' in paired filename template"
+                f"Unknown placeholder '{{{{{match.group(1)}}}}}' in paired filename template"
             )
-        return '{' + name + '}'
 
-    format_template = re.sub(r"{{(\w+)}}", _to_format_placeholder, template)
-
-    try:
-        rendered = format_template.format(**placeholders)
-    except KeyError as exc:
-        missing = exc.args[0]
-        raise ValueError(
-            f"Missing value for placeholder '{{{{{missing}}}}}' in paired filename template"
-        ) from exc
-
-    return rendered
+    return _render_single_pass(template, replacements)
 
 
 def _group_paths_by_stem_suffix(file_paths, *, root_path):
