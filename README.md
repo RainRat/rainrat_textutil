@@ -115,6 +115,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 ### Display & Preview
 *   `--list-files` / `-l`: Show a list of all files that would be included and then stop.
 *   `--tree` / `-t`: Show a visual folder tree of all included files with details and then stop.
+*   `--diff`: Show a colored diff of changes (only when using `--apply-in-place` or `--extract`).
 *   `--estimate-tokens` / `-e`: Calculate tokens without writing any files.
     *   *Note: Slower than a dry-run because the tool must read every file.*
 

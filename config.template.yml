@@ -102,6 +102,9 @@ output:
   # in JSON format. Use '-' to print it to your terminal.
   summary_json: null
 
+  # Show a colored diff of changes (only when using --apply-in-place or --extract).
+  show_diff: false
+
 # --- File Filtering ---
 filters:
   # Include only files larger than this size.
