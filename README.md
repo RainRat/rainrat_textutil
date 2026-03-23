@@ -7,7 +7,7 @@ A versatile tool for your terminal to find, filter, and combine source code file
 *   **Find files in many folders:** Scan many folders at once. Use Git to find files and follow your `.gitignore` rules automatically.
 *   **Filtering:** Skip folders, files, or specific names using search patterns.
 *   **Include Groups:** Group specific files to always include, even if you skip others.
-*   **Sorting:** Sort files by name, size, date, tokens, or folder depth.
+*   **Sorting:** Sort files by `name`, `size`, `modified`, `tokens`, or `depth`.
 *   **Limiting:** Stop at a file limit, total tokens, total lines, or total size.
 *   **In-Place Processing:** Clean up extra spaces or blank lines directly in your source files.
 *   **Smart Combining:** Combine files while keeping headers and structural markers.
@@ -91,28 +91,28 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--files-from`: Read a list of files to include from a text file (use `-` for your terminal). This skips scanning folders.
 
 ### Sorting & Limiting
-*   `--sort` / `-s`: Sort files by `name`, `size`, `modified`, `tokens`, or `depth` before combining.
+*   `--sort` / `-s`: Sort files by name, size, date (modified), tokens, or folder depth before combining.
 *   `--reverse` / `-r`: Reverse the sort order.
 *   `--limit` / `-L`: Stop after finding this many files.
-*   `--max-tokens` / `-M`: Stop adding files once you reach the total tokens limit.
-*   `--max-total-size`: Stop adding files once you reach the total size limit (for example, '1MB').
-*   `--max-total-lines`: Stop adding files once you reach the total lines limit.
+*   `--max-tokens` / `-M`: Stop adding files once you reach the total tokens limit (only when combining many files into one).
+*   `--max-total-size`: Stop adding files once you reach the total size limit (for example, '5MB') (only when combining many files into one).
+*   `--max-total-lines`: Stop adding files once you reach the total lines limit (only when combining many files into one).
 
 ### Output Options
 *   `-a` / `--ai`: Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, folder tree, and skipping binary files. This also copies to your terminal's clipboard if you do not specify an output.
-*   `-c` / `--clipboard`: Copy the result to your clipboard instead of creating a file.
-*   `-f` / `--format`: Choose the output format (`text`, `json`, `jsonl`, `markdown`, `xml`).
+*   `--clipboard` / `-c`: Copy the combined text to the clipboard instead of creating a file (only when combining many files into one).
+*   `--format` / `-f`: Choose the output format ('text', 'json', 'jsonl', 'markdown', 'xml'). 'json' and 'jsonl' only work when combining many files into one.
 *   `-m` / `--markdown`: Shortcut for `--format markdown`.
 *   `-j` / `--json`: Shortcut for `--format json`.
 *   `-w` / `--xml`: Shortcut for `--format xml`.
 *   `-n` / `--line-numbers`: Add line numbers to each file in the output.
-*   `-T` / `--toc`: Add a Table of Contents to the start of the output.
-*   `-p` / `--include-tree`: Add a visual folder tree to the start of the output.
+*   `--toc` / `-T`: Add a Table of Contents with sizes and tokens to the start of the output (only when combining many files into one in 'text' or 'markdown' formats).
+*   `--include-tree` / `-p`: Include a visual folder tree with details at the start of the output (only when combining many files into one).
 *   `--json-summary`: Save a machine-readable execution summary (file counts, tokens, time taken) in JSON format. Use `-` to print it to your terminal.
 
 ### Display & Preview
 *   `--list-files` / `-l`: Show a list of all files that would be included and then stop.
-*   `--tree` / `-t`: Show a visual folder tree of all included files and then stop.
+*   `--tree` / `-t`: Show a visual folder tree of all included files with details and then stop.
 *   `--estimate-tokens` / `-e`: Calculate tokens without writing any files.
     *   *Note: Slower than a dry-run because the tool must read every file.*
 

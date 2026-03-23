@@ -56,11 +56,11 @@ output:
   add_line_numbers: false
 
   # Include a Table of Contents at the beginning of the combined file.
-  # (Ignored in pairing and JSON format)
+  # (only when combining many files into one; ignored in JSON format).
   table_of_contents: false
 
   # Include a visual folder tree at the start of the output file.
-  # (Ignored in pairing and JSON format)
+  # (only when combining many files into one; ignored in JSON format).
   include_tree: false
 
   # Template written before each file's content.
