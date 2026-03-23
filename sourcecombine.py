@@ -1432,6 +1432,7 @@ def find_and_combine_files(
         'max_total_tokens': config.get('filters', {}).get('max_total_tokens', 0),
         'max_total_size_bytes': config.get('filters', {}).get('max_total_size_bytes', 0),
         'max_total_lines': config.get('filters', {}).get('max_total_lines', 0),
+        'max_files': config.get('filters', {}).get('max_files', 0),
         'filter_reasons': {},
     }
     search_opts = config.get('search', {})
@@ -3110,6 +3111,7 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
         'token_count_is_approx': False,
         'top_files': [],
         'files_by_extension': {},
+        'max_files': limit,
         'filter_reasons': {},
     }
 
@@ -3676,7 +3678,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             )
 
     # Time and Limits Section
-    has_limits = any(stats.get(k, 0) > 0 for k in ('max_total_tokens', 'max_total_size_bytes', 'max_total_lines'))
+    has_limits = any(stats.get(k, 0) > 0 for k in ('max_total_tokens', 'max_total_size_bytes', 'max_total_lines', 'max_files'))
     if duration is not None or has_limits:
         print(f"\n  {C_BOLD}{C_CYAN}Time and Limits{C_RESET}", file=sys.stderr)
 
@@ -3686,6 +3688,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 fps = total_discovered / duration
                 print(f"    {C_BOLD}{'Throughput:':<{label_width}}{C_RESET}{C_CYAN}{fps:,.1f} files/s{C_RESET}", file=sys.stderr)
 
+        _print_limit_usage_bar('File Limit Usage:', total_included, stats.get('max_files', 0), label_width)
         _print_limit_usage_bar('Token Limit Usage:', token_count, stats.get('max_total_tokens', 0), label_width)
         _print_limit_usage_bar('Size Limit Usage:', total_size_bytes, stats.get('max_total_size_bytes', 0), label_width)
         _print_limit_usage_bar('Line Limit Usage:', total_lines, stats.get('max_total_lines', 0), label_width)
