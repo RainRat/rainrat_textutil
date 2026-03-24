@@ -64,6 +64,7 @@ class TestAIPreset(unittest.TestCase):
             json_summary=None,
             language=None,
             list_languages=False,
+            diff=False,
         )
 
     @patch('argparse.ArgumentParser.parse_args')
