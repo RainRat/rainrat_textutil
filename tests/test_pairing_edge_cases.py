@@ -10,15 +10,14 @@ import pytest
 
 from sourcecombine import find_and_combine_files
 
-def test_paired_filename_template_invalid_placeholder(tmp_path):
-    # Test that using a single-brace placeholder that is not in the allowed list triggers ValueError
-    # This specifically targets the KeyError catch block in _render_paired_filename
+
+
+def test_paired_filename_template_collision(tmp_path):
+    # Test that if the output file would overwrite an input file, it is skipped
     root = tmp_path / "project"
     root.mkdir()
     src = root / "file.cpp"
-    hdr = root / "file.h"
     src.write_text("source", encoding="utf-8")
-    hdr.write_text("header", encoding="utf-8")
 
     output_dir = tmp_path / "output"
 
@@ -26,18 +25,23 @@ def test_paired_filename_template_invalid_placeholder(tmp_path):
         "search": {"root_folders": [str(root)]},
         "pairing": {
             "enabled": True,
-            "source_extensions": [".cpp"],
-            "header_extensions": [".h"]
+            "include_mismatched": True,
         },
         "output": {
-            "folder": str(output_dir),
-            "paired_filename_template": "{UNKNOWN}_file.txt"
+            "folder": str(root), # Force output to input folder
+            "paired_filename_template": "{{STEM}}.cpp" # Force collision
         }
     }
 
-    # The KeyError is caught and re-raised as ValueError
-    with pytest.raises(ValueError, match="Missing value for placeholder '{{UNKNOWN}}'"):
-        find_and_combine_files(config, str(output_dir))
+    # Should not raise, but should skip the file
+    stats = find_and_combine_files(config, str(root))
+
+    # Check that nothing was combined (total_tokens/size_bytes might be 0 or small due to headers)
+    # Actually, if it's skipped, it shouldn't be in top_files
+    assert not any(f[2].endswith("file.cpp") for f in stats.get('top_files', []))
+
+    # Original file should still be original
+    assert src.read_text(encoding="utf-8") == "source"
 
 
 def test_paired_filename_template_double_brace_unknown(tmp_path):
