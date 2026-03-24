@@ -31,12 +31,12 @@ def test_paired_filename_template_invalid_placeholder(tmp_path):
         },
         "output": {
             "folder": str(output_dir),
-            "paired_filename_template": "{UNKNOWN}_file.txt"
+            "paired_filename_template": "{{UNKNOWN}}_file.txt"
         }
     }
 
-    # The KeyError is caught and re-raised as ValueError
-    with pytest.raises(ValueError, match="Missing value for placeholder '{{UNKNOWN}}'"):
+    # The unknown placeholder is caught and raises ValueError
+    with pytest.raises(ValueError, match="Unknown placeholder '{{UNKNOWN}}'"):
         find_and_combine_files(config, str(output_dir))
 
 
