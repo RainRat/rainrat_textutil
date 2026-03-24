@@ -7,6 +7,7 @@ A versatile tool for your terminal to find, filter, and combine source code file
 *   **Find files in many folders:** Scan many folders at once. Use Git to find files and follow your `.gitignore` rules automatically.
 *   **Filtering:** Skip folders, files, or specific names using search patterns.
 *   **Include Groups:** Group specific files to always include, even if you skip others.
+*   **Pairing:** Combine related files (like source and header pairs) into their own individual output files.
 *   **File Extraction:** Rebuild your original files and folders from a combined file (like JSON, XML, or Markdown).
 *   **Sorting:** Sort files by `name`, `size`, `modified`, `tokens`, or `depth`.
 *   **Limiting:** Stop at a file limit, total tokens, total lines, or total size.
