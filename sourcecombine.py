@@ -265,6 +265,7 @@ from utils import (
     FILENAME_PLACEHOLDER,
     DEFAULT_OUTPUT_FILENAME,
     _looks_binary,
+    DEFAULT_CONFIG,
 )
 
 # Export for backward compatibility and to handle module reloads correctly
