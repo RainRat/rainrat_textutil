@@ -3869,6 +3869,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             key=lambda item: (-item[1], item[0])
         )
 
+        # Calculate max extension length for alignment
+        max_ext_len = max(len(ext) for ext, _ in sorted_exts) if sorted_exts else 0
+
         items = []
         raw_items = []
 
@@ -3900,8 +3903,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                     raw_weight_str = f"/{weight_percent:>5.1f}%"
 
             # Combine count, percentage of files, and weight
-            items.append(f"{C_CYAN}{ext}{C_RESET}{C_DIM}:{C_RESET} {C_BOLD}{C_CYAN}{count:>5,}{C_RESET} {C_DIM}({file_percent:>5.1f}%{weight_str}){C_RESET}")
-            raw_items.append(f"{ext}: {count:>5,} ({file_percent:>5.1f}%{raw_weight_str})")
+            items.append(f"{C_CYAN}{ext:<{max_ext_len}}{C_RESET}{C_DIM}:{C_RESET} {C_BOLD}{C_CYAN}{count:>5,}{C_RESET} {C_DIM}({file_percent:>5.1f}%{weight_str}){C_RESET}")
+            raw_items.append(f"{ext:<{max_ext_len}}: {count:>5,} ({file_percent:>5.1f}%{raw_weight_str})")
 
         max_len = max(len(s) for s in raw_items) + 3
 
