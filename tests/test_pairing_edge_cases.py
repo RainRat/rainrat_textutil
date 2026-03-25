@@ -10,6 +10,40 @@ import pytest
 
 from sourcecombine import find_and_combine_files
 
+
+
+def test_paired_filename_template_collision(tmp_path):
+    # Test that if the output file would overwrite an input file, it is skipped
+    root = tmp_path / "project"
+    root.mkdir()
+    src = root / "file.cpp"
+    src.write_text("source", encoding="utf-8")
+
+    output_dir = tmp_path / "output"
+
+    config = {
+        "search": {"root_folders": [str(root)]},
+        "pairing": {
+            "enabled": True,
+            "include_mismatched": True,
+        },
+        "output": {
+            "folder": str(root), # Force output to input folder
+            "paired_filename_template": "{{STEM}}.cpp" # Force collision
+        }
+    }
+
+    # Should not raise, but should skip the file
+    stats = find_and_combine_files(config, str(root))
+
+    # Check that nothing was combined (total_tokens/size_bytes might be 0 or small due to headers)
+    # Actually, if it's skipped, it shouldn't be in top_files
+    assert not any(f[2].endswith("file.cpp") for f in stats.get('top_files', []))
+
+    # Original file should still be original
+    assert src.read_text(encoding="utf-8") == "source"
+
+
 def test_paired_filename_template_double_brace_unknown(tmp_path):
     # Test that using a double-brace placeholder that is not in the allowed list triggers ValueError
     # This targets the validation loop in _render_paired_filename

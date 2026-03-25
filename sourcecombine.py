@@ -1007,6 +1007,19 @@ def _process_paired_files(
         else:
             out_file = primary_path.parent / out_path
 
+        try:
+            abs_out = out_file.resolve()
+            if any(p.resolve() == abs_out for p in paths):
+                logging.warning(
+                    "Skipping pair '%s' because its output path would overwrite one of its input files: %s",
+                    stem, out_file
+                )
+                if processing_bar:
+                    processing_bar.update(len(paths))
+                continue
+        except OSError:
+            pass
+
         if dry_run:
             logging.info("[PAIR %s] -> %s", stem, out_file)
             for path in paths:
