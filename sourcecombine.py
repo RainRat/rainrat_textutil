@@ -2586,9 +2586,9 @@ def main():
         "--extract",
         action="store_true",
         help=(
-            "Rebuild your original files and folders from a combined file (like JSON, XML, or Markdown). "
-            "You can read from a file, your terminal ('-'), or your clipboard. Filtering, sorting, and "
-            "preview options are supported. Line numbers are removed automatically unless you use --keep-line-numbers."
+            "Rebuild your original files and folders from combined files (like JSON, XML, or Markdown). "
+            "You can read from one or more files, folders, your terminal ('-'), or your clipboard. Filtering, "
+            "sorting, and preview options are supported. Line numbers are removed automatically unless you use --keep-line-numbers."
         ),
     )
     utility_group.add_argument(
@@ -3082,28 +3082,36 @@ def main():
 
     if args.extract:
         output_folder = args.output or "."
-        content = ""
-        source_name = ""
+        sources = []
 
         if args.clipboard:
             try:
                 import pyperclip
-                content = pyperclip.paste()
-                source_name = "clipboard"
+                sources.append(("clipboard", pyperclip.paste()))
             except ImportError:
                 logging.error("The 'pyperclip' tool is required for clipboard support. Install it with: pip install pyperclip")
                 sys.exit(1)
-        elif remaining_targets and remaining_targets[0] == "-":
-            content = sys.stdin.read()
-            source_name = "stdin"
-        elif remaining_targets:
-            input_path = Path(remaining_targets[0])
-            if not input_path.exists():
-                logging.error("Input file not found: %s", input_path)
-                sys.exit(1)
-            content, _ = read_file_best_effort(input_path)
-            source_name = str(input_path)
-        else:
+
+        for target in remaining_targets:
+            if target == "-":
+                sources.append(("stdin", sys.stdin.read()))
+            else:
+                input_path = Path(target)
+                if input_path.is_dir():
+                    # Batch scan directory for potential combined files
+                    paths, _, _ = collect_file_paths(input_path, recursive=True, exclude_folders=[])
+                    for p in paths:
+                        if not _looks_binary(p):
+                            content, _ = read_file_best_effort(p)
+                            if content:
+                                sources.append((str(p), content))
+                elif input_path.is_file():
+                    content, _ = read_file_best_effort(input_path)
+                    sources.append((str(input_path), content))
+                else:
+                    logging.warning("Extraction target not found: %s", target)
+
+        if not sources:
             # Fallback: look for the default combined file
             input_path = Path(output_path)
             if not input_path.is_file():
@@ -3116,16 +3124,15 @@ def main():
             if input_path.is_file():
                 logging.info("No input specified for extraction. Using found file: %s", input_path)
                 content, _ = read_file_best_effort(input_path)
-                source_name = str(input_path)
+                sources.append((str(input_path), content))
             else:
-                logging.error("No input specified for extraction. Use a file path, '-' for your terminal, or --clipboard.")
+                logging.error("No input specified for extraction. Use a file path, folder, '-' for your terminal, or --clipboard.")
                 sys.exit(1)
 
         stats = extract_files(
-            content,
+            sources,
             output_folder,
             dry_run=args.dry_run,
-            source_name=source_name,
             config=config,
             list_files=args.list_files,
             tree_view=args.tree,
@@ -3137,7 +3144,11 @@ def main():
             show_diff=config.get('output', {}).get('show_diff', False)
         )
         dest = f"to '{output_folder}'"
-        source_desc = f"from '{source_name}'"
+        if len(sources) == 1:
+            source_desc = f"from '{sources[0][0]}'"
+        else:
+            source_desc = f"from {len(sources)} sources"
+
         duration = time.perf_counter() - start_time
         _print_execution_summary(stats, args, pairing_enabled=False, destination_desc=dest, duration=duration, source_desc=source_desc)
         _write_json_summary(stats, output_conf.get('summary_json'), duration=duration, source_desc=source_desc, destination_desc=dest)
@@ -3191,8 +3202,115 @@ def main():
         _write_json_summary(stats, output_conf.get('summary_json'), duration=duration, source_desc=source_desc, destination_desc=destination_desc)
 
 
-def extract_files(content, output_folder, dry_run=False, source_name="combined file", config=None, list_files=False, tree_view=False, limit=0, estimate_tokens=False, sort_by='name', sort_reverse=False, keep_line_numbers=False, show_diff=False):
-    """Recreate the original folder structure and files from a combined file content."""
+def _parse_combined_content(content, source_name="combined file"):
+    """Identify and parse combined file content into a list of (path, content, meta) tuples."""
+    if not content:
+        return []
+
+    files_found = []
+
+    # 1. Try JSON
+    try:
+        data = json.loads(content)
+        if isinstance(data, list):
+            for entry in data:
+                if isinstance(entry, dict) and 'path' in entry and 'content' in entry:
+                    meta = {
+                        'tokens': entry.get('tokens'),
+                        'size': entry.get('size_bytes'),
+                        'lines': entry.get('lines'),
+                        'is_approx': entry.get('tokens_is_approx', False),
+                        'modified': entry.get('modified'),
+                    }
+                    files_found.append((entry['path'], entry['content'], meta))
+            if files_found:
+                return files_found
+    except json.JSONDecodeError:
+        pass
+
+    # 1.5 Try JSONL if JSON failed
+    potential_files = []
+    for line in content.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            entry = json.loads(line)
+            if isinstance(entry, dict) and 'path' in entry and 'content' in entry:
+                meta = {
+                    'tokens': entry.get('tokens'),
+                    'size': entry.get('size_bytes'),
+                    'lines': entry.get('lines'),
+                    'is_approx': entry.get('tokens_is_approx', False),
+                    'modified': entry.get('modified'),
+                }
+                potential_files.append((entry['path'], entry['content'], meta))
+            else:
+                logging.debug("Skipping malformed JSONL line in %s: %s", source_name, line)
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    if potential_files:
+        return potential_files
+
+    # 2. Try XML
+    try:
+        import xml.etree.ElementTree as ET
+        root = ET.fromstring(content)
+        # Support both flat and nested <file> tags
+        for file_node in root.iter('file'):
+            path = file_node.get('path')
+            file_content = file_node.text
+            if path and file_content is not None:
+                # XML extraction often has extra newlines due to templates
+                if file_content.startswith('\n') and file_content.endswith('\n'):
+                    file_content = file_content[1:-1]
+
+                tokens_val = file_node.get('tokens')
+                size_val = file_node.get('size')
+                lines_val = file_node.get('lines')
+                mod_val = file_node.get('modified')
+
+                meta = {
+                    'tokens': int(tokens_val.lstrip('~').replace(',', '')) if tokens_val else None,
+                    'size': utils.parse_size_value(size_val) if size_val else None,
+                    'lines': int(lines_val.replace(',', '')) if lines_val else None,
+                    'is_approx': tokens_val.startswith('~') if tokens_val else False,
+                    'modified': datetime.fromisoformat(mod_val).timestamp() if mod_val else None,
+                }
+                files_found.append((path, file_content, meta))
+        if files_found:
+            return files_found
+    except (ET.ParseError, ImportError):
+        pass
+
+    # 3. Try Text format (Default SourceCombine output)
+    pattern = re.compile(r'^---\s+(.+?)\s+---\n([\s\S]*?)\n--- end \1 ---', re.MULTILINE)
+    for match in pattern.finditer(content):
+        path, file_content = match.groups()
+        files_found.append((path.strip(), file_content, {}))
+    if files_found:
+        return files_found
+
+    # 4. Try Markdown
+    code_block_pattern = re.compile(r'^```(?:\S+)?\n([\s\S]*?)\n^```', re.MULTILINE)
+    header_pattern = re.compile(r'^#{2,3}\s+(.+?)\s*$', re.MULTILINE)
+
+    last_pos = 0
+    for cb_match in code_block_pattern.finditer(content):
+        search_space = content[last_pos:cb_match.start()]
+        h_matches = list(header_pattern.finditer(search_space))
+        if h_matches:
+            path = h_matches[-1].group(1).strip()
+            file_content = cb_match.group(1)
+            files_found.append((path, file_content, {}))
+        last_pos = cb_match.end()
+
+    return files_found
+
+
+def extract_files(sources, output_folder, dry_run=False, source_name="combined file", config=None, list_files=False, tree_view=False, limit=0, estimate_tokens=False, sort_by='name', sort_reverse=False, keep_line_numbers=False, show_diff=False):
+    """Recreate the original folder structure and files from combined content sources."""
     output_folder = Path(output_folder)
     stats = {
         'total_discovered': 0,
@@ -3212,118 +3330,23 @@ def extract_files(content, output_folder, dry_run=False, source_name="combined f
     if config is None:
         config = copy.deepcopy(utils.DEFAULT_CONFIG)
 
-    if not content:
-        logging.error("Input content is empty.")
+    # Handle backward compatibility for single source string/bytes
+    if isinstance(sources, (str, bytes)):
+        sources = [(source_name, sources)]
+
+    if not sources:
+        logging.error("No extraction sources provided.")
         sys.exit(1)
 
     files_to_create = []
-
-    # 1. Try JSON
-    try:
-        data = json.loads(content)
-        if isinstance(data, list):
-            for entry in data:
-                if isinstance(entry, dict) and 'path' in entry and 'content' in entry:
-                    meta = {
-                        'tokens': entry.get('tokens'),
-                        'size': entry.get('size_bytes'),
-                        'lines': entry.get('lines'),
-                        'is_approx': entry.get('tokens_is_approx', False),
-                        'modified': entry.get('modified'),
-                    }
-                    files_to_create.append((entry['path'], entry['content'], meta))
-    except json.JSONDecodeError:
-        pass
-
-    # 1.5 Try JSONL if JSON failed
-    if not files_to_create:
-        potential_files = []
-        for line in content.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                entry = json.loads(line)
-                if isinstance(entry, dict) and 'path' in entry and 'content' in entry:
-                    meta = {
-                        'tokens': entry.get('tokens'),
-                        'size': entry.get('size_bytes'),
-                        'lines': entry.get('lines'),
-                        'is_approx': entry.get('tokens_is_approx', False),
-                        'modified': entry.get('modified'),
-                    }
-                    potential_files.append((entry['path'], entry['content'], meta))
-                else:
-                    logging.debug("Skipping malformed JSONL line in %s: %s", source_name, line)
-            except (json.JSONDecodeError, TypeError):
-                logging.debug("Skipping invalid JSON line in %s: %s", source_name, line)
-
-        if potential_files:
-            files_to_create = potential_files
-
-    # 2. Try XML if JSON failed or found nothing
-    if not files_to_create:
-        try:
-            import xml.etree.ElementTree as ET
-            root = ET.fromstring(content)
-            # Support both flat and nested <file> tags
-            for file_node in root.iter('file'):
-                path = file_node.get('path')
-                file_content = file_node.text
-                if path and file_content is not None:
-                    # XML extraction often has extra newlines due to templates
-                    # If it starts and ends with a newline, it's likely from the template
-                    if file_content.startswith('\n') and file_content.endswith('\n'):
-                        file_content = file_content[1:-1]
-
-                    tokens_val = file_node.get('tokens')
-                    size_val = file_node.get('size')
-                    lines_val = file_node.get('lines')
-                    mod_val = file_node.get('modified')
-
-                    meta = {
-                        'tokens': int(tokens_val.lstrip('~').replace(',', '')) if tokens_val else None,
-                        'size': utils.parse_size_value(size_val) if size_val else None,
-                        'lines': int(lines_val.replace(',', '')) if lines_val else None,
-                        'is_approx': tokens_val.startswith('~') if tokens_val else False,
-                        'modified': datetime.fromisoformat(mod_val).timestamp() if mod_val else None,
-                    }
-                    files_to_create.append((path, file_content, meta))
-        except (ET.ParseError, ImportError):
-            pass
-
-    # 3. Try Text format (Default SourceCombine output)
-    if not files_to_create:
-        # Match --- FILENAME --- followed by content and --- end FILENAME ---
-        # Note: The non-greedy [\s\S]*? handles many files correctly.
-        pattern = re.compile(r'^---\s+(.+?)\s+---\n([\s\S]*?)\n--- end \1 ---', re.MULTILINE)
-        for match in pattern.finditer(content):
-            path, file_content = match.groups()
-            files_to_create.append((path.strip(), file_content, {}))
-
-    # 4. Try Markdown if others failed or found nothing
-    if not files_to_create:
-        # Find all code blocks and their preceding headers.
-        # We associate each code block with the last header that appears before it.
-        # This is robust against global headers (like a Table of Contents) and
-        # ensures the header closest to the code block is used as the filename.
-        code_block_pattern = re.compile(r'^```(?:\S+)?\n([\s\S]*?)\n^```', re.MULTILINE)
-        header_pattern = re.compile(r'^#{2,3}\s+(.+?)\s*$', re.MULTILINE)
-
-        last_pos = 0
-        for cb_match in code_block_pattern.finditer(content):
-            # Look for headers between last_pos and cb_match.start()
-            search_space = content[last_pos:cb_match.start()]
-            h_matches = list(header_pattern.finditer(search_space))
-            if h_matches:
-                # Use the last header found in the search space, as it's closest to the code block.
-                path = h_matches[-1].group(1).strip()
-                file_content = cb_match.group(1)
-                files_to_create.append((path, file_content, {}))
-            last_pos = cb_match.end()
+    for name, content in sources:
+        found = _parse_combined_content(content, source_name=name)
+        if not found:
+            logging.warning("Could not find any files to extract in %s.", name)
+        files_to_create.extend(found)
 
     if not files_to_create:
-        logging.error("Could not find any files to extract in %s. Supported formats are JSON, XML, Markdown, and Text.", source_name)
+        logging.error("Could not find any files to extract in any of the sources.")
         sys.exit(1)
 
     stats['total_discovered'] = len(files_to_create)

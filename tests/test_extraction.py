@@ -341,7 +341,7 @@ def test_cli_extract_file_not_found(caplog, monkeypatch):
         main()
 
     assert excinfo.value.code == 1
-    assert "Input file not found" in caplog.text
+    assert "Extraction target not found" in caplog.text
 
 def test_cli_extract_no_input(caplog, monkeypatch, tmp_path):
     """Test extraction with no input specified, ensuring it falls back to combined_files.txt."""
@@ -440,9 +440,9 @@ def test_extract_files_empty_content(caplog):
     import sourcecombine
     with caplog.at_level(logging.ERROR):
         with pytest.raises(SystemExit) as excinfo:
-            sourcecombine.extract_files("", "out_folder")
+            sourcecombine.extract_files([("empty", "")], "out_folder")
     assert excinfo.value.code == 1
-    assert "Input content is empty" in caplog.text
+    assert "Could not find any files to extract in any of the sources" in caplog.text
 
 def test_cli_extract_clipboard_import_error_coverage(monkeypatch, caplog):
     """Cover sourcecombine.py lines 1998-2000: pyperclip ImportError."""
