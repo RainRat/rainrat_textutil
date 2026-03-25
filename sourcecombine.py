@@ -343,7 +343,7 @@ def _render_single_pass(template, replacements):
     return pattern.sub(lambda m: str(replacements[m.group(0)]), template)
 
 
-def _render_template(template, relative_path, size=None, tokens=None, lines=None, escape_func=None, modified=None):
+def _render_template(template, relative_path, size=None, tokens=None, lines=None, escape_func=None, modified=None, content=None):
     """Replace placeholders in a template with file information.
 
     The placeholders include FILENAME, EXT, STEM, DIR, DIR_SLUG, SIZE,
@@ -357,7 +357,7 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
     stem = relative_path.stem
     parent_dir = relative_path.parent.as_posix()
     dir_slug = _slugify_relative_dir(parent_dir)
-    lang = utils.get_language_tag(relative_path)
+    lang = utils.get_language_tag(relative_path, content=content)
 
     if escape_func:
         filename = escape_func(filename)
@@ -499,7 +499,23 @@ def should_include(
 
     allowed_languages = search_opts.get('allowed_languages')
     if allowed_languages:
-        lang = utils.get_language_tag(relative_path)
+        # For language filtering, we might need to look at the content if the extension is missing
+        sample_content = None
+        if not relative_path.suffix:
+            if virtual_content:
+                sample_content = (
+                    virtual_content.decode('utf-8', errors='replace')
+                    if isinstance(virtual_content, bytes)
+                    else virtual_content
+                )
+            elif file_path:
+                try:
+                    with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+                        sample_content = f.readline()
+                except OSError:
+                    pass
+
+        lang = utils.get_language_tag(relative_path, content=sample_content)
         if lang not in allowed_languages:
             return (False, 'language_mismatch') if return_reason else False
 
@@ -1146,9 +1162,9 @@ class FileProcessor:
 
         escape_func = xml_escape if self.output_format == 'xml' else None
 
-        outfile.write(_render_template(header_template, relative_path, size=size, tokens=tokens, lines=lines, escape_func=escape_func, modified=modified))
+        outfile.write(_render_template(header_template, relative_path, size=size, tokens=tokens, lines=lines, escape_func=escape_func, modified=modified, content=content))
         outfile.write(content)
-        outfile.write(_render_template(footer_template, relative_path, size=size, tokens=tokens, lines=lines, escape_func=escape_func, modified=modified))
+        outfile.write(_render_template(footer_template, relative_path, size=size, tokens=tokens, lines=lines, escape_func=escape_func, modified=modified, content=content))
     def _backup_file(self, file_path):
         """Create a ``.bak`` backup for ``file_path`` when backups are enabled.
 
@@ -1291,7 +1307,7 @@ class FileProcessor:
         # Estimate tokens on the placeholder content (but the placeholder itself might have tokens placeholder)
         # For max_size_placeholder, it's a bit tricky because we don't know the token count of the placeholder
         # until it's rendered. But we want to support {{SIZE}} in it.
-        rendered = _render_template(placeholder, relative_path, size=file_size, modified=modified)
+        rendered = _render_template(placeholder, relative_path, size=file_size, modified=modified, content=None)
 
         token_count, is_approx = utils.estimate_tokens(rendered)
         line_count = utils.count_lines(rendered)
