@@ -22,7 +22,7 @@ from xml.sax.saxutils import escape as _xml_escape
 
 def xml_escape(data: str) -> str:
     """Escape &, <, >, \", and ' for safe use in XML."""
-    if not data:
+    if data is None:
         return ""
     return _xml_escape(data, {'"': "&quot;", "'": "&apos;"})
 
