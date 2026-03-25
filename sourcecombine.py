@@ -2326,7 +2326,7 @@ def main():
         "targets",
         nargs="*",
         metavar="TARGET",
-        help="Folders or files to search. If you do not provide any, it searches the current folder. If the first target is a '.yml' or '.yaml' file, the tool will use it as its configuration.",
+        help="Folders or files to search. If you provide none, the tool searches the current folder. If the first target is a '.yml' or '.yaml' file, the tool uses it as its configuration.",
     )
     core_group.add_argument(
         "--config",
