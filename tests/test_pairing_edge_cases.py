@@ -1,4 +1,4 @@
-import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import sys; import os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 import utils
 
 import os
@@ -19,7 +19,7 @@ def test_paired_filename_template_collision(tmp_path):
     src = root / "file.cpp"
     src.write_text("source", encoding="utf-8")
 
-    output_dir = tmp_path / "output"
+    tmp_path / "output"
 
     config = {
         "search": {"root_folders": [str(root)]},

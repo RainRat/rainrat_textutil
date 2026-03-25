@@ -1,5 +1,4 @@
-import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
-import utils
+import sys; import os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
 import json
 from sourcecombine import find_and_combine_files, main
@@ -14,7 +13,7 @@ def test_jsonl_output(tmp_path):
     config['search'] = {'root_folders': [str(tmp_path)]}
     output_path = tmp_path / "output.jsonl"
 
-    stats = find_and_combine_files(config, str(output_path), output_format='jsonl')
+    find_and_combine_files(config, str(output_path), output_format='jsonl')
 
     content = output_path.read_text()
     lines = content.strip().split('\n')

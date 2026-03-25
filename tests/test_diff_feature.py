@@ -1,11 +1,8 @@
-import os
 import sys
 import pytest
-from pathlib import Path
-from sourcecombine import main, find_and_combine_files
+from sourcecombine import main
 
 def test_diff_apply_in_place(tmp_path, monkeypatch, capsys):
-    from sourcecombine import C_GREEN, C_RED, C_CYAN, C_BOLD, C_RESET
     # Force NO_COLOR to empty string to ensure colors are rendered if we mock isatty
     monkeypatch.setenv("NO_COLOR", "")
 

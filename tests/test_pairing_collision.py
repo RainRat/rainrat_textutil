@@ -1,7 +1,5 @@
-import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
-import utils
+import sys; import os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
-import pytest
 from pathlib import Path
 from sourcecombine import find_and_combine_files
 from utils import DEFAULT_CONFIG

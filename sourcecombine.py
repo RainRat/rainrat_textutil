@@ -265,7 +265,6 @@ from utils import (
     FILENAME_PLACEHOLDER,
     DEFAULT_OUTPUT_FILENAME,
     _looks_binary,
-    DEFAULT_CONFIG,
 )
 
 # Export for backward compatibility and to handle module reloads correctly
@@ -432,7 +431,6 @@ def _matches_file_glob_cached(file_name, relative_path_str, patterns):
 
 @lru_cache(maxsize=4096)
 def _matches_folder_glob_cached(relative_path_str, parts, patterns):
-    rel_path_cf = relative_path_str.casefold()
     parts_cf = tuple(p.casefold() for p in parts)
 
     for pattern in patterns:
@@ -676,7 +674,6 @@ def collect_file_paths(root_folder, recursive, exclude_folders, progress=None, m
                         # Check each parent folder against exclusion patterns
                         return _matches_folder_glob_cached(rel_p.parent.as_posix(), rel_p.parent.parts, exclude_patterns)
 
-                    original_count = len(file_paths)
                     file_paths = [p for p in file_paths if not _is_excluded(p)]
                     # Note: We don't accurately count excluded FOLDERS here,
                     # but we've filtered the files.
@@ -2686,7 +2683,7 @@ def main():
         # Group into 4 columns for readability
         for i in range(0, len(langs), 4):
             chunk = langs[i:i + 4]
-            print("  " + "".join(f"{l:<18}" for l in chunk))
+            print("  " + "".join(f"{lang_tag:<18}" for lang_tag in chunk))
         print(f"\nTotal: {len(langs)} languages supported.\n")
         sys.exit(0)
 
@@ -3481,7 +3478,6 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
     logging.info("Found %d files to extract from %s", len(files_to_create), source_name)
 
     extracted_count = 0
-    abs_output_folder = output_folder.resolve()
 
     extraction_bar = _progress_bar(
         files_to_create,

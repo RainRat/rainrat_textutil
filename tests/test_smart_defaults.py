@@ -1,5 +1,4 @@
-import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
-import utils
+import sys; import os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
 import pytest
 from sourcecombine import find_and_combine_files
@@ -46,7 +45,6 @@ def test_defaults_ignore_noise(temp_workspace):
     # So total files would be 4.
     # After fix, total files should be 1.
 
-    processed_files = []
     # We can't easily inspect the 'stats' for filenames, but we can rely on total_files count
     # provided we know exactly what's there.
 

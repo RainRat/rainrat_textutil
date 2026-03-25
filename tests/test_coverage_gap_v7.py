@@ -1,9 +1,8 @@
-import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import sys; import os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 import utils
 import sourcecombine
 import pytest
-from unittest.mock import patch, MagicMock
-import copy
+from unittest.mock import patch
 
 def test_validate_search_allowed_languages_not_list():
     config = {'search': {'allowed_languages': 'not-a-list'}}
