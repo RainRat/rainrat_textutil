@@ -72,6 +72,7 @@ EXTENSION_TO_LANG = {
     ".pm": "perl",
     ".vue": "vue",
     ".svelte": "svelte",
+    ".groovy": "groovy",
 }
 
 # Mapping of specific filenames to Markdown-friendly language tags.
@@ -886,12 +887,40 @@ def process_content(buffer: str, options: Mapping[str, Any]) -> str:
     return buffer
 
 
-def get_language_tag(path: str | Path) -> str:
+def detect_language_from_shebang(content: str) -> str | None:
+    """Identify the language from the shebang line (e.g., #!/usr/bin/env python3)."""
+    if not content or not content.startswith("#!"):
+        return None
+
+    first_line = content.split('\n', 1)[0] if content else ""
+
+    # Common mappings for shebangs to language tags
+    interpreters = [
+        ("python", "python"),
+        ("node", "javascript"),
+        ("ruby", "ruby"),
+        ("perl", "perl"),
+        ("php", "php"),
+        ("bash", "bash"),
+        ("zsh", "bash"),
+        ("sh", "bash"),
+        ("groovy", "groovy"),
+    ]
+
+    for marker, lang in interpreters:
+        if marker in first_line:
+            return lang
+
+    return None
+
+
+def get_language_tag(path: str | Path, content: str | None = None) -> str:
     """Return a Markdown-friendly language tag for the file at ``path``.
 
     This function maps common extensions and filenames to their corresponding
-    language identifiers for syntax highlighting. If no mapping is found, it
-    falls back to the file extension (without the leading dot).
+    language identifiers for syntax highlighting. If no mapping is found and
+    ``content`` is provided, it attempts to detect the language from a shebang
+    line. Otherwise, it falls back to the file extension.
     """
     path = Path(path)
     name = path.name.lower()
@@ -902,6 +931,12 @@ def get_language_tag(path: str | Path) -> str:
 
     if ext in EXTENSION_TO_LANG:
         return EXTENSION_TO_LANG[ext]
+
+    # Try shebang detection for extensionless scripts or unrecognized extensions
+    if content:
+        shebang_lang = detect_language_from_shebang(content)
+        if shebang_lang:
+            return shebang_lang
 
     return ext.lstrip('.') or "text"
 
