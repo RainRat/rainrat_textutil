@@ -3413,7 +3413,7 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         stats['total_lines'] += meta['lines']
 
     # Token Estimation Pass
-    if estimate_tokens:
+    if estimate_tokens or sort_by == 'tokens':
         needs_estimation = [f for f in filtered_files if f[2].get('tokens') is None]
         if needs_estimation:
             est_bar = _progress_bar(
