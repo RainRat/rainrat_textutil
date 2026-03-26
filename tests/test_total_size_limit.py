@@ -87,5 +87,5 @@ def test_summary_shows_size_limit(tmp_path, capsys):
 
     captured = capsys.readouterr().err
     assert "WARNING: Output truncated due to total size limit." in captured
-    assert "Size Limit Usage:" in captured
+    assert "Size Limit:" in captured
     assert "[#####-----]" in captured # 50% usage

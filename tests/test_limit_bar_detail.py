@@ -22,7 +22,7 @@ def test_limit_bar_detail_tokens(capsys):
         sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
 
     captured = capsys.readouterr()
-    assert "Token Limit Usage:" in captured.err
+    assert "Token Limit:" in captured.err
     assert "[#####-----]   50.0% (500 / 1,000)" in captured.err
 
 def test_limit_bar_detail_size(capsys):
@@ -45,7 +45,7 @@ def test_limit_bar_detail_size(capsys):
         sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
 
     captured = capsys.readouterr()
-    assert "Size Limit Usage:" in captured.err
+    assert "Size Limit:" in captured.err
     assert "[#####-----]   50.0% (5.00 KB / 10.00 KB)" in captured.err
 
 def test_limit_bar_detail_files(capsys):
@@ -67,5 +67,5 @@ def test_limit_bar_detail_files(capsys):
         sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
 
     captured = capsys.readouterr()
-    assert "File Limit Usage:" in captured.err
+    assert "File Limit:" in captured.err
     assert "[#####-----]   50.0% (5 / 10)" in captured.err

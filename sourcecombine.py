@@ -3765,7 +3765,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to file limit.{C_RESET}", file=sys.stderr)
 
     # Files Section
-    label_width = 22
+    label_width = 20
     print(f"  {C_BOLD}{C_CYAN}Files{C_RESET}", file=sys.stderr)
     included_color = C_GREEN if total_included > 0 else C_RESET
     filtered_color = C_YELLOW if total_filtered > 0 else C_RESET
@@ -3784,9 +3784,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 display_reason = reason.replace('_', ' ')
                 # Use dim for less visual noise in the breakdown
                 # Align with 'Included/Filtered' by adjusting for the bullet indent
-                print(f"      {C_DIM}- {display_reason:<{label_width - 4}}{C_RESET}{C_DIM}{count:12,}{C_RESET}", file=sys.stderr)
+                print(f"      {C_DIM}- {display_reason:<{label_width - 2}}{C_RESET}{C_DIM}{count:12,}{C_RESET}", file=sys.stderr)
 
-    print(f"    {C_BOLD}{'Total Found:':<{label_width}}{C_RESET}{C_CYAN}{total_discovered:12,}{C_RESET}", file=sys.stderr)
+    print(f"    {C_BOLD}{'Total Found:':<{label_width}}{C_RESET}{C_DIM}{total_discovered:12,}{C_RESET}", file=sys.stderr)
     if excluded_folders > 0:
         print(f"    {C_BOLD}{'Skipped Folders:':<{label_width}}{C_RESET}{C_CYAN}{excluded_folders:12,}{C_RESET}", file=sys.stderr)
 
@@ -3794,8 +3794,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     total_lines = stats.get('total_lines', 0)
     print(f"\n  {C_BOLD}{C_CYAN}Details{C_RESET}", file=sys.stderr)
 
-    # Show output format if not extracting or listing
-    if not getattr(args, 'extract', False) and not (args.list_files or args.tree):
+    # Show output format if not extracting, listing, or tree
+    if not getattr(args, 'extract', False) and not args.list_files and not args.tree:
         fmt_name = (getattr(args, 'format', None) or stats.get('output_format', 'text')).upper()
         print(f"    {C_BOLD}{'Format:':<{label_width}}{C_RESET}{C_CYAN}{str(fmt_name):>12}{C_RESET}", file=sys.stderr)
 
@@ -3824,14 +3824,14 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
         if duration is not None:
             print(f"    {C_BOLD}{'Time taken:':<{label_width}}{C_RESET}{C_CYAN}{duration:.2f}s{C_RESET}", file=sys.stderr)
-            if duration > 0:
+            if duration > 0 and total_discovered > 1:
                 fps = total_discovered / duration
                 print(f"    {C_BOLD}{'Throughput:':<{label_width}}{C_RESET}{C_CYAN}{fps:,.1f} files/s{C_RESET}", file=sys.stderr)
 
-        _print_limit_usage_bar('File Limit Usage:', total_included, stats.get('max_files', 0), label_width)
-        _print_limit_usage_bar('Token Limit Usage:', token_count, stats.get('max_total_tokens', 0), label_width)
-        _print_limit_usage_bar('Size Limit Usage:', total_size_bytes, stats.get('max_total_size_bytes', 0), label_width, is_size=True)
-        _print_limit_usage_bar('Line Limit Usage:', total_lines, stats.get('max_total_lines', 0), label_width)
+        _print_limit_usage_bar('File Limit:', total_included, stats.get('max_files', 0), label_width)
+        _print_limit_usage_bar('Token Limit:', token_count, stats.get('max_total_tokens', 0), label_width)
+        _print_limit_usage_bar('Size Limit:', total_size_bytes, stats.get('max_total_size_bytes', 0), label_width, is_size=True)
+        _print_limit_usage_bar('Line Limit:', total_lines, stats.get('max_total_lines', 0), label_width)
 
     # Largest Files
     if stats.get('top_files'):
@@ -3870,9 +3870,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
             # Align token counts at 11, percentages at 6, and sizes at 10 to keep paths consistent
             if has_tokens:
-                print(f"    {C_CYAN}{token_str:>11}  {percent_str}{C_RESET}  {C_DIM}{size_str:>10}{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
+                print(f"    {C_CYAN}{token_str:>11}  {C_DIM}{percent_str}{C_RESET}  {C_DIM}{size_str:>10}{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
             else:
-                print(f"    {C_CYAN}{size_str:>10}  {percent_str}{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
+                print(f"    {C_CYAN}{size_str:>10}  {C_DIM}{percent_str}{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
 
     # Extensions Grid
     if stats['files_by_extension']:
@@ -3906,14 +3906,14 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 total_tokens = stats.get('total_tokens', 0)
                 if total_tokens > 0:
                     weight_percent = (tokens_by_ext.get(ext, 0) / total_tokens) * 100
-                    weight_str = f"{C_DIM}/{weight_percent:>5.1f}%{C_RESET}"
-                    raw_weight_str = f"/{weight_percent:>5.1f}%"
+                    weight_str = f"/{weight_percent:>5.1f}%"
+                    raw_weight_str = weight_str
             else:
                 total_size = stats.get('total_size_bytes', 0)
                 if total_size > 0:
                     weight_percent = (size_by_ext.get(ext, 0) / total_size) * 100
-                    weight_str = f"{C_DIM}/{weight_percent:>5.1f}%{C_RESET}"
-                    raw_weight_str = f"/{weight_percent:>5.1f}%"
+                    weight_str = f"/{weight_percent:>5.1f}%"
+                    raw_weight_str = weight_str
 
             # Combine count, percentage of files, and weight
             items.append(f"{C_CYAN}{ext:<{max_ext_len}}{C_RESET}{C_DIM}:{C_RESET} {C_BOLD}{C_CYAN}{count:>5,}{C_RESET} {C_DIM}({file_percent:>5.1f}%{weight_str}){C_RESET}")

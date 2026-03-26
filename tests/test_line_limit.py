@@ -86,7 +86,7 @@ class TestLineLimit(unittest.TestCase):
             sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
 
             summary = stderr_capture.getvalue()
-            self.assertIn("Line Limit Usage:", summary)
+            self.assertIn("Line Limit:", summary)
             self.assertIn("[#####-----]", summary) # 50%
             self.assertIn("50.0%", summary)
         finally:
