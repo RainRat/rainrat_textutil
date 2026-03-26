@@ -112,6 +112,7 @@ DEFAULT_CONFIG = {
         'max_depth': 0,
         'use_git': False,
         'allowed_languages': [],
+        'excluded_languages': [],
     },
     'filters': {
         'skip_binary': False,
@@ -465,6 +466,14 @@ def _validate_search_section(config):
         for lang in allowed_langs:
             if not isinstance(lang, str):
                 raise InvalidConfigError("Values in 'search.allowed_languages' must be text.")
+
+    excluded_langs = search.get('excluded_languages')
+    if excluded_langs is not None:
+        if not isinstance(excluded_langs, list):
+            raise InvalidConfigError("search.excluded_languages must be a list of languages.")
+        for lang in excluded_langs:
+            if not isinstance(lang, str):
+                raise InvalidConfigError("Values in 'search.excluded_languages' must be text.")
 
 
 def _validate_filters_section(config):

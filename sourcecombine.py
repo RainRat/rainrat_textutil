@@ -518,6 +518,32 @@ def should_include(
         if lang not in allowed_languages:
             return (False, 'language_mismatch') if return_reason else False
 
+    excluded_languages = search_opts.get('excluded_languages')
+    if excluded_languages:
+        # Check if we already detected the language in the inclusion step
+        if allowed_languages:
+            # lang is already set
+            pass
+        else:
+            sample_content = None
+            if not relative_path.suffix:
+                if virtual_content:
+                    sample_content = (
+                        virtual_content.decode('utf-8', errors='replace')
+                        if isinstance(virtual_content, bytes)
+                        else virtual_content
+                    )
+                elif file_path:
+                    try:
+                        with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+                            sample_content = f.readline()
+                    except OSError:
+                        pass
+            lang = utils.get_language_tag(relative_path, content=sample_content)
+
+        if lang in excluded_languages:
+            return (False, 'language_excluded') if return_reason else False
+
     include_patterns = set()
     for group_conf in (filter_opts.get('inclusion_groups') or {}).values():
         if isinstance(group_conf, dict) and group_conf.get('enabled'):
@@ -2387,6 +2413,13 @@ def main():
         help="Include only files of these languages (for example, 'python', 'cpp'). Use this option again to include more. See --list-languages for a full list.",
     )
     filtering_group.add_argument(
+        "--exclude-language",
+        "--exclude-lang",
+        action="append",
+        default=[],
+        help="Skip files of these languages (for example, 'javascript', 'html'). Use this option again to skip more. See --list-languages for a full list.",
+    )
+    filtering_group.add_argument(
         "--since",
         "-S",
         help="Include files modified since this time (for example, '1d', '2h', 'YYYY-MM-DD').",
@@ -2870,6 +2903,13 @@ def main():
             search['allowed_languages'] = []
         search['allowed_languages'].extend(args.language)
         logging.debug("Added terminal language inclusions: %s", args.language)
+
+    if args.exclude_language:
+        search = config['search']
+        if not isinstance(search.get('excluded_languages'), list):
+            search['excluded_languages'] = []
+        search['excluded_languages'].extend(args.exclude_language)
+        logging.debug("Added terminal language exclusions: %s", args.exclude_language)
 
     pairing_conf = config.get('pairing') or {}
     output_conf = config.get('output') or {}
