@@ -62,6 +62,38 @@ The tool looks for a `sourcecombine.yml` file in the current folder or the folde
 
 See `config.template.yml` for a fully documented example.
 
+## Custom Templates
+
+You can customize the output by using templates in your configuration file. Templates use placeholders in double curly braces (for example, `{{FILENAME}}`) that the tool replaces with actual data.
+
+### File Templates
+Used in `header_template` and `footer_template` for each file:
+*   `{{FILENAME}}`: The relative path to the file.
+*   `{{EXT}}`: The file extension.
+*   `{{STEM}}`: The filename without its extension.
+*   `{{DIR}}`: The relative folder path.
+*   `{{DIR_SLUG}}`: A simplified version of the folder path.
+*   `{{LANG}}`: The language identifier for syntax highlighting.
+*   `{{SIZE}}`: The human-readable file size.
+*   `{{TOKENS}}`: The number of tokens in the file.
+*   `{{LINE_COUNT}}`: The number of lines in the file.
+*   `{{MODIFIED}}`: The last modified time in ISO format.
+
+### Project Templates
+Used in `global_header_template` and `global_footer_template` for the whole project:
+*   `{{FILE_COUNT}}`: The total number of files included.
+*   `{{TOTAL_SIZE}}`: The combined size of all files.
+*   `{{TOTAL_TOKENS}}`: The total number of tokens.
+*   `{{TOTAL_LINES}}`: The total number of lines.
+
+### Pairing Templates
+Used in `paired_filename_template` when combining related files:
+*   `{{STEM}}`: The base name shared by the pair.
+*   `{{SOURCE_EXT}}`: The extension of the source file.
+*   `{{HEADER_EXT}}`: The extension of the header file.
+*   `{{DIR}}`: The relative folder path.
+*   `{{DIR_SLUG}}`: A simplified folder name.
+
 ## Terminal Options
 
 ```bash
