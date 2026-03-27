@@ -62,6 +62,38 @@ The tool looks for a `sourcecombine.yml` file in the current folder or the folde
 
 See `config.template.yml` for a fully documented example.
 
+### Placeholders
+
+Use these placeholders in your configuration file templates to customize the output.
+
+#### File-level Placeholders
+Used in `header_template` and `footer_template`:
+*   `{{FILENAME}}`: The relative folder path and filename (for example, `src/main.py`).
+*   `{{STEM}}`: The base name of the file (for example, `main` from `main.py`).
+*   `{{EXT}}`: The file extension (for example, `py`).
+*   `{{DIR}}`: The relative folder path using forward slashes (or `.` for the root folder).
+*   `{{DIR_SLUG}}`: A simplified name for `{{DIR}}` (`root` when `DIR` is `.`).
+*   `{{LANG}}`: The language identifier used for syntax highlighting (for example, `python`).
+*   `{{SIZE}}`: The total size of the file in a human-readable format (for example, `1.5KB`).
+*   `{{TOKENS}}`: The total number of tokens in the file.
+*   `{{LINE_COUNT}}`: The total number of lines in the file.
+*   `{{MODIFIED}}`: The date the file was last modified in ISO 8601 format.
+
+#### Project-level Placeholders
+Used in `global_header_template` and `global_footer_template`:
+*   `{{FILE_COUNT}}`: The total number of files included.
+*   `{{TOTAL_SIZE}}`: The total size of all included files in a human-readable format.
+*   `{{TOTAL_TOKENS}}`: The total number of tokens across all included files.
+*   `{{TOTAL_LINES}}`: The total number of lines across all included files.
+
+#### Pairing-level Placeholders
+Used in `paired_filename_template`:
+*   `{{STEM}}`: The base name shared by the paired files (for example, `main` from `main.cpp`).
+*   `{{SOURCE_EXT}}`: The extension of the source file (for example, `.cpp`).
+*   `{{HEADER_EXT}}`: The extension of the header file (for example, `.h`).
+*   `{{DIR}}`: The relative folder path using forward slashes (or `.` for the root folder).
+*   `{{DIR_SLUG}}`: A simplified name for `{{DIR}}` (`root` when `DIR` is `.`).
+
 ## Terminal Options
 
 ```bash
