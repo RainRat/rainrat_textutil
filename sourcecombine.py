@@ -497,7 +497,9 @@ def should_include(
         return (False, 'extension') if return_reason else False
 
     allowed_languages = search_opts.get('allowed_languages')
-    if allowed_languages:
+    exclude_languages = search_opts.get('exclude_languages')
+
+    if allowed_languages or exclude_languages:
         # For language filtering, we might need to look at the content if the extension is missing
         sample_content = None
         if not relative_path.suffix:
@@ -515,7 +517,11 @@ def should_include(
                     pass
 
         lang = utils.get_language_tag(relative_path, content=sample_content)
-        if lang not in allowed_languages:
+
+        if exclude_languages and lang in exclude_languages:
+            return (False, 'language_excluded') if return_reason else False
+
+        if allowed_languages and lang not in allowed_languages:
             return (False, 'language_mismatch') if return_reason else False
 
     include_patterns = set()
@@ -2387,6 +2393,13 @@ def main():
         help="Include only files of these languages (for example, 'python', 'cpp'). Use this option again to include more. See --list-languages for a full list.",
     )
     filtering_group.add_argument(
+        "--exclude-language",
+        "--exclude-lang",
+        action="append",
+        default=[],
+        help="Skip files of these languages (for example, 'javascript', 'html'). Use this option again to skip more.",
+    )
+    filtering_group.add_argument(
         "--since",
         "-S",
         help="Include files modified since this time (for example, '1d', '2h', 'YYYY-MM-DD').",
@@ -2864,12 +2877,19 @@ def main():
         }
         logging.debug("Added terminal file inclusions: %s", args.include)
 
+    search = config.get('search', {})
+
     if args.language:
-        search = config['search']
         if not isinstance(search.get('allowed_languages'), list):
             search['allowed_languages'] = []
         search['allowed_languages'].extend(args.language)
         logging.debug("Added terminal language inclusions: %s", args.language)
+
+    if args.exclude_language:
+        if not isinstance(search.get('exclude_languages'), list):
+            search['exclude_languages'] = []
+        search['exclude_languages'].extend(args.exclude_language)
+        logging.debug("Added terminal language exclusions: %s", args.exclude_language)
 
     pairing_conf = config.get('pairing') or {}
     output_conf = config.get('output') or {}
