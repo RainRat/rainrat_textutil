@@ -68,29 +68,29 @@ You can customize the output by using templates in your configuration file. Temp
 
 ### File Templates
 Used in `header_template` and `footer_template` for each file:
-*   `{{FILENAME}}`: The relative path to the file.
-*   `{{EXT}}`: The file extension.
-*   `{{STEM}}`: The filename without its extension.
-*   `{{DIR}}`: The relative folder path.
-*   `{{DIR_SLUG}}`: A simplified version of the folder path.
-*   `{{LANG}}`: The language identifier for syntax highlighting.
-*   `{{SIZE}}`: The human-readable file size.
+*   `{{FILENAME}}`: The relative path to the file (for example, `src/main.py`).
+*   `{{EXT}}`: The file extension (for example, `py`).
+*   `{{STEM}}`: The filename without its extension (for example, `main` from `main.py`).
+*   `{{DIR}}`: The relative folder path (or `.` for the root folder).
+*   `{{DIR_SLUG}}`: A simplified version of the folder path (`root` when `DIR` is `.`).
+*   `{{LANG}}`: The language identifier for syntax highlighting (for example, `python`).
+*   `{{SIZE}}`: The human-readable file size (for example, `1.5KB`).
 *   `{{TOKENS}}`: The number of tokens in the file.
 *   `{{LINE_COUNT}}`: The number of lines in the file.
-*   `{{MODIFIED}}`: The last modified time in ISO format.
+*   `{{MODIFIED}}`: The last modified time in ISO 8601 format.
 
 ### Project Templates
 Used in `global_header_template` and `global_footer_template` for the whole project:
 *   `{{FILE_COUNT}}`: The total number of files included.
-*   `{{TOTAL_SIZE}}`: The combined size of all files.
-*   `{{TOTAL_TOKENS}}`: The total number of tokens.
-*   `{{TOTAL_LINES}}`: The total number of lines.
+*   `{{TOTAL_SIZE}}`: The combined size of all files in a human-readable format.
+*   `{{TOTAL_TOKENS}}`: The total number of tokens across all included files.
+*   `{{TOTAL_LINES}}`: The total number of lines across all included files.
 
 ### Pairing Templates
 Used in `paired_filename_template` when combining related files:
-*   `{{STEM}}`: The base name shared by the pair.
-*   `{{SOURCE_EXT}}`: The extension of the source file.
-*   `{{HEADER_EXT}}`: The extension of the header file.
+*   `{{STEM}}`: The base name shared by the pair (for example, `main` from `main.cpp`).
+*   `{{SOURCE_EXT}}`: The extension of the source file (for example, `.cpp`).
+*   `{{HEADER_EXT}}`: The extension of the header file (for example, `.h`).
 *   `{{DIR}}`: The relative folder path.
 *   `{{DIR_SLUG}}`: A simplified folder name.
 
