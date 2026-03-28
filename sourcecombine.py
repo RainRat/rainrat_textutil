@@ -3786,7 +3786,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 # Align with 'Included/Filtered' by adjusting for the bullet indent
                 print(f"      {C_DIM}- {display_reason:<{label_width - 4}}{C_RESET}{C_DIM}{count:12,}{C_RESET}", file=sys.stderr)
 
-    found_color = C_DIM if (total_discovered == total_included and not stats.get('filter_reasons')) else C_CYAN
     found_label_style = C_DIM if (total_discovered == total_included and not stats.get('filter_reasons')) else C_BOLD
     found_value_style = C_DIM if (total_discovered == total_included and not stats.get('filter_reasons')) else f"{C_BOLD}{C_CYAN}"
     print(f"    {found_label_style}{'Total Found:':<{label_width}}{C_RESET}{found_value_style}{total_discovered:12,}{C_RESET}", file=sys.stderr)
