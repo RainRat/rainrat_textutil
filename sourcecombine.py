@@ -3764,7 +3764,10 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 # Align with 'Included/Filtered' by adjusting for the bullet indent
                 print(f"      {C_DIM}- {display_reason:<{label_width - 4}}{C_RESET}{C_DIM}{count:12,}{C_RESET}", file=sys.stderr)
 
-    print(f"    {C_BOLD}{'Total Found:':<{label_width}}{C_RESET}{C_CYAN}{total_discovered:12,}{C_RESET}", file=sys.stderr)
+    found_color = C_DIM if (total_discovered == total_included and not stats.get('filter_reasons')) else C_CYAN
+    found_label_style = C_DIM if (total_discovered == total_included and not stats.get('filter_reasons')) else C_BOLD
+    found_value_style = C_DIM if (total_discovered == total_included and not stats.get('filter_reasons')) else f"{C_BOLD}{C_CYAN}"
+    print(f"    {found_label_style}{'Total Found:':<{label_width}}{C_RESET}{found_value_style}{total_discovered:12,}{C_RESET}", file=sys.stderr)
     if excluded_folders > 0:
         print(f"    {C_BOLD}{'Skipped Folders:':<{label_width}}{C_RESET}{C_CYAN}{excluded_folders:12,}{C_RESET}", file=sys.stderr)
 
@@ -3802,9 +3805,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
         if duration is not None:
             print(f"    {C_BOLD}{'Time taken:':<{label_width}}{C_RESET}{C_CYAN}{duration:.2f}s{C_RESET}", file=sys.stderr)
-            if duration > 0:
+            if duration > 0 and total_discovered > 1:
                 fps = total_discovered / duration
-                print(f"    {C_BOLD}{'Throughput:':<{label_width}}{C_RESET}{C_CYAN}{fps:,.1f} files/s{C_RESET}", file=sys.stderr)
+                print(f"    {C_DIM}{'Throughput:':<{label_width}}{C_RESET}{C_CYAN}{fps:,.1f} files/s{C_RESET}", file=sys.stderr)
 
         _print_limit_usage_bar('File Limit Usage:', total_included, stats.get('max_files', 0), label_width)
         _print_limit_usage_bar('Token Limit Usage:', token_count, stats.get('max_total_tokens', 0), label_width)
@@ -3894,7 +3897,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                     raw_weight_str = f"/{weight_percent:>5.1f}%"
 
             # Combine count, percentage of files, and weight
-            items.append(f"{C_CYAN}{ext:<{max_ext_len}}{C_RESET}{C_DIM}:{C_RESET} {C_BOLD}{C_CYAN}{count:>5,}{C_RESET} {C_DIM}({file_percent:>5.1f}%{weight_str}){C_RESET}")
+            items.append(f"{C_DIM}{ext:<{max_ext_len}}:{C_RESET} {C_BOLD}{C_CYAN}{count:>5,}{C_RESET} {C_DIM}({file_percent:>5.1f}%{weight_str}){C_RESET}")
             raw_items.append(f"{ext:<{max_ext_len}}: {count:>5,} ({file_percent:>5.1f}%{raw_weight_str})")
 
         max_len = max(len(s) for s in raw_items) + 3
