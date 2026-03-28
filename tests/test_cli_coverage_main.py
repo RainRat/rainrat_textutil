@@ -218,3 +218,46 @@ def test_restore_backups_defaults_to_current_directory_when_targets_are_empty():
         assert restored == 0
         assert errors == 0
         mock_exists.assert_any_call()
+
+
+def test_main_cli_language_injection_uninitialized_config(tmp_path):
+    # This targets sourcecombine.py:2868 and 2874
+    # We mock utils.validate_config to avoid fixing the uninitialized search section
+    test_file = tmp_path / "test.py"
+    test_file.write_text("print('hello')", encoding='utf-8')
+
+    dummy_config = tmp_path / "config.yml"
+    dummy_config.write_text("search: {allowed_languages: null, exclude_languages: null}", encoding='utf-8')
+
+    file_list = tmp_path / "files.txt"
+    file_list.write_text(str(test_file), encoding='utf-8')
+
+    # Config with None instead of lists for languages
+    bad_config = {
+        'search': {
+            'allowed_languages': None,
+            'exclude_languages': None,
+            'root_folders': [str(tmp_path)]
+        },
+        'filters': {
+            'exclusions': {'filenames': [], 'folders': []},
+            'inclusion_groups': {}
+        },
+        'pairing': {},
+        'output': {},
+        'logging': {'level': 'INFO'},
+        'processing': {}
+    }
+
+    with patch('sourcecombine.load_and_validate_config', return_value=bad_config), \
+         patch('utils.validate_config'), \
+         patch('sys.argv', ['sourcecombine.py', '--config', str(dummy_config), '--language', 'python', '--exclude-lang', 'ruby', '--files-from', str(file_list)]), \
+         patch('sourcecombine.find_and_combine_files', return_value={}), \
+         patch('sourcecombine._print_execution_summary'), \
+         patch('sys.exit'):
+
+        sourcecombine.main()
+
+        # Verify that the dead-code branches were hit and correctly initialized the lists
+        assert bad_config['search']['allowed_languages'] == ['python']
+        assert bad_config['search']['exclude_languages'] == ['ruby']
