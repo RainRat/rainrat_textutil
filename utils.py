@@ -749,12 +749,12 @@ def validate_config(
         def apply_defaults(cfg, defs):
             for key, value in defs.items():
                 if isinstance(value, dict):
-                    if cfg.get(key) is None:
+                    if key not in cfg or cfg[key] is None:
                         cfg[key] = {}
                     node = cfg[key]
                     if isinstance(node, dict):
                         apply_defaults(node, value)
-                elif cfg.get(key) is None:
+                elif key not in cfg or cfg[key] is None:
                     # Use deepcopy to prevent shared references to mutable defaults (lists/dicts)
                     # polluting the global DEFAULT_CONFIG when 'cfg' is modified later.
                     cfg[key] = copy.deepcopy(value)

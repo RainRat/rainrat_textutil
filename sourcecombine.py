@@ -2767,9 +2767,8 @@ def main():
     if config is None:
         config = copy.deepcopy(utils.DEFAULT_CONFIG)
 
-    # Ensure search section exists
-    if 'search' not in config:
-        config['search'] = {}
+    # Ensure all default sections and values exist
+    utils.validate_config(config)
 
     # Apply positional targets or fallback to current folder
     if remaining_targets:
@@ -2819,17 +2818,10 @@ def main():
 
     # Inject CLI exclusions into config
     if args.exclude_file or args.exclude_folder:
-        if not isinstance(config.get('filters'), dict):
-            config['filters'] = {}
         filters = config['filters']
-
-        if not isinstance(filters.get('exclusions'), dict):
-            filters['exclusions'] = {}
         exclusions = filters['exclusions']
 
         if args.exclude_file:
-            if not isinstance(exclusions.get('filenames'), list):
-                exclusions['filenames'] = []
             filenames = exclusions['filenames']
             for pattern in args.exclude_file:
                 # Validate/sanitize the pattern
@@ -2838,8 +2830,6 @@ def main():
             logging.debug("Added terminal file exclusions: %s", args.exclude_file)
 
         if args.exclude_folder:
-            if not isinstance(exclusions.get('folders'), list):
-                exclusions['folders'] = []
             folders = exclusions['folders']
             for pattern in args.exclude_folder:
                 sanitized = utils.validate_glob_pattern(pattern, context="--exclude-folder")
@@ -2848,13 +2838,7 @@ def main():
 
     # Inject terminal inclusions into config
     if args.include:
-        if not isinstance(config.get('filters'), dict):
-            config['filters'] = {}
         filters = config['filters']
-
-        # Ensure inclusion_groups exists and is a dictionary
-        if not isinstance(filters.get('inclusion_groups'), dict):
-            filters['inclusion_groups'] = {}
         groups = filters['inclusion_groups']
 
         # Create a unique group for terminal inclusions and enable it
@@ -2866,8 +2850,6 @@ def main():
 
     if args.language:
         search = config['search']
-        if not isinstance(search.get('allowed_languages'), list):
-            search['allowed_languages'] = []
         search['allowed_languages'].extend(args.language)
         logging.debug("Added terminal language inclusions: %s", args.language)
 
@@ -2886,8 +2868,6 @@ def main():
         config['filters']['max_total_tokens'] = args.max_tokens
 
     if args.max_total_size is not None:
-        if not isinstance(config.get('filters'), dict):
-            config['filters'] = {}
         try:
             config['filters']['max_total_size_bytes'] = utils.parse_size_value(args.max_total_size)
         except utils.InvalidConfigError as e:
@@ -2898,8 +2878,6 @@ def main():
             sys.exit(1)
 
     if args.max_total_lines is not None:
-        if not isinstance(config.get('filters'), dict):
-            config['filters'] = {}
         config['filters']['max_total_lines'] = args.max_total_lines
 
     if args.limit is not None:
