@@ -56,6 +56,12 @@ Prepare a project for an AI assistant (Markdown format, line numbers, and copied
 python sourcecombine.py . --ai
 ```
 
+Combine related source and header pairs (like `.cpp` and `.h`) into an `outputs/` folder:
+
+```bash
+python sourcecombine.py src/ -o outputs/ --config example_cpp_h.yml
+```
+
 ## Configuration
 
 The tool looks for a `sourcecombine.yml` file in the current folder or the folders you choose. Use it to set complex exclusion rules, inclusion groups, and default output paths.
