@@ -19,6 +19,14 @@ search:
   # Git repository, it falls back to standard scanning.
   use_git: false
 
+  # Include only files that have changed in Git.
+  use_git_diff: false
+
+  # If use_git_diff is true, this finds changes since this commit reference
+  # (for example, 'main' or a commit hash). Omit or set to null to find
+  # unstaged, staged, and untracked changes.
+  git_diff_ref: null
+
   # Search folders recursively.
   recursive: true
 
