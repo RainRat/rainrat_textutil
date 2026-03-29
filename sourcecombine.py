@@ -1202,10 +1202,9 @@ def _update_file_stats(stats, file_path, size=None):
 
 
 def _update_token_stats(stats, file_path, tokens):
-    if not tokens or 'tokens_by_extension' not in stats:
-        return
-    ext = file_path.suffix.lower() or '.no_extension'
-    stats['tokens_by_extension'][ext] = stats['tokens_by_extension'].get(ext, 0) + tokens
+    if tokens and 'tokens_by_extension' in stats:
+        ext = file_path.suffix.lower() or '.no_extension'
+        stats['tokens_by_extension'][ext] = stats['tokens_by_extension'].get(ext, 0) + tokens
 
 
 class FileProcessor:
