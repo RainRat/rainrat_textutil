@@ -928,3 +928,15 @@ def test_validate_config_not_a_dict():
     """Ensure utils.InvalidConfigError is raised if the config is not a dictionary."""
     with pytest.raises(utils.InvalidConfigError, match="Configuration must be a dictionary."):
         validate_config(["not", "a", "dictionary"])
+
+
+def test_validate_search_exclude_languages_not_list():
+    config = {'search': {'exclude_languages': 'not-a-list'}}
+    with pytest.raises(utils.InvalidConfigError, match="search.exclude_languages must be a list of languages."):
+        utils._validate_search_section(config)
+
+
+def test_validate_search_exclude_languages_not_strings():
+    config = {'search': {'exclude_languages': [123]}}
+    with pytest.raises(utils.InvalidConfigError, match="Values in 'search.exclude_languages' must be text."):
+        utils._validate_search_section(config)

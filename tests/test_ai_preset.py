@@ -61,7 +61,8 @@ class TestAIPreset(unittest.TestCase):
             skip_binary=False,
             keep_line_numbers=False,
             json_summary=None,
-            language=None,
+            language=[],
+            exclude_language=[],
             list_languages=False,
             diff=False,
         )
