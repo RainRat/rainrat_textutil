@@ -647,7 +647,74 @@ def collect_git_files(root_folder, progress=None):
         return None
 
 
-def collect_file_paths(root_folder, recursive, exclude_folders, progress=None, max_depth=0, use_git=False):
+def collect_git_diff_files(root_folder, diff_ref=None, progress=None):
+    """Use git diff to find changed files in the repository.
+
+    Returns (file_paths, root_path, excluded_folder_count) if successful, else None.
+    """
+    root_path = Path(root_folder)
+    try:
+        file_paths_set = set()
+
+        if diff_ref:
+            # Changes between current state and a reference (includes staged/unstaged)
+            # git diff --name-only --relative REF
+            result = subprocess.run(
+                ['git', 'diff', '--name-only', '--relative', diff_ref],
+                cwd=root_path,
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            for line in result.stdout.splitlines():
+                if line:
+                    file_paths_set.add(line)
+        else:
+            # Current working set: staged + unstaged
+            # git diff --name-only --relative HEAD
+            result = subprocess.run(
+                ['git', 'diff', '--name-only', '--relative', 'HEAD'],
+                cwd=root_path,
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            for line in result.stdout.splitlines():
+                if line:
+                    file_paths_set.add(line)
+
+        # Untracked files relative to the root_path
+        result = subprocess.run(
+            ['git', 'ls-files', '--others', '--exclude-standard', '--', '.'],
+            cwd=root_path,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        for line in result.stdout.splitlines():
+            if line:
+                file_paths_set.add(line)
+
+        file_paths = []
+        for rel_path in sorted(file_paths_set):
+            p = root_path / rel_path
+            # Filter out deleted files
+            if p.is_file():
+                file_paths.append(p)
+                if progress:
+                    progress.update(1)
+
+        return file_paths, root_path, 0
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError) as exc:
+        logging.warning(
+            "Finding changed files with Git failed in '%s': %s. Falling back to standard scanning.",
+            root_folder,
+            exc,
+        )
+        return None
+
+
+def collect_file_paths(root_folder, recursive, exclude_folders, progress=None, max_depth=0, use_git=False, use_git_diff=False, git_diff_ref=None):
     """Return all paths in ``root_folder`` while skipping excluded folders.
 
     If ``root_folder`` is a file, it returns a list containing only that file.
@@ -660,6 +727,27 @@ def collect_file_paths(root_folder, recursive, exclude_folders, progress=None, m
             # Use parent as root for absolute paths, but preserve context for relative paths
             root = root_path.parent if root_path.is_absolute() else Path('.')
             return [root_path], root, 0
+
+        if use_git_diff:
+            git_results = collect_git_diff_files(root_folder, diff_ref=git_diff_ref, progress=progress)
+            if git_results is not None:
+                file_paths, root, excluded = git_results
+                # Apply max_depth if requested
+                if max_depth > 0:
+                    file_paths = [
+                        p for p in file_paths
+                        if len(p.relative_to(root).parts) <= max_depth
+                    ]
+
+                # Apply folder exclusions if requested
+                exclude_patterns = _normalize_patterns(exclude_folders)
+                if exclude_patterns:
+                    def _is_excluded(p):
+                        rel_p = p.relative_to(root)
+                        return _matches_folder_glob_cached(rel_p.parent.as_posix(), rel_p.parent.parts, exclude_patterns)
+                    file_paths = [p for p in file_paths if not _is_excluded(p)]
+
+                return file_paths, root, excluded
 
         if use_git:
             git_results = collect_git_files(root_folder, progress=progress)
@@ -1639,6 +1727,8 @@ def find_and_combine_files(
                         progress=finding_bar,
                         max_depth=search_opts.get('max_depth', 0),
                         use_git=search_opts.get('use_git', False),
+                        use_git_diff=search_opts.get('use_git_diff', False),
+                        git_diff_ref=search_opts.get('git_diff_ref'),
                     )
                 finally:
                     finding_bar.close()
@@ -2449,6 +2539,13 @@ def main():
         action="store_true",
         help="Use 'git ls-files' to find files. This follows your .gitignore rules.",
     )
+    filtering_group.add_argument(
+        "--git-diff",
+        nargs="?",
+        const=True,
+        metavar="REF",
+        help="Include only files that have changed in Git. If a REF is provided (like 'main'), it finds changes since that commit. Otherwise, it finds unstaged, staged, and untracked changes.",
+    )
 
     # Sorting & Limiting Group
     sorting_group = parser.add_argument_group("Sorting & Limiting")
@@ -2919,6 +3016,11 @@ def main():
 
     if args.git_files:
         config['search']['use_git'] = True
+
+    if args.git_diff:
+        config['search']['use_git_diff'] = True
+        if isinstance(args.git_diff, str):
+            config['search']['git_diff_ref'] = args.git_diff
 
     if args.since or args.until:
         filters = config['filters']

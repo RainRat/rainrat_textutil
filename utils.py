@@ -111,6 +111,8 @@ DEFAULT_CONFIG = {
     'search': {
         'max_depth': 0,
         'use_git': False,
+        'use_git_diff': False,
+        'git_diff_ref': None,
         'allowed_languages': [],
         'exclude_languages': [],
     },
@@ -449,6 +451,18 @@ def _validate_search_section(config):
     if use_git is not None and not isinstance(use_git, bool):
         raise InvalidConfigError(
             "search.use_git must be true or false"
+        )
+
+    use_git_diff = search.get('use_git_diff')
+    if use_git_diff is not None and not isinstance(use_git_diff, bool):
+        raise InvalidConfigError(
+            "search.use_git_diff must be true or false"
+        )
+
+    git_diff_ref = search.get('git_diff_ref')
+    if git_diff_ref is not None and not isinstance(git_diff_ref, str):
+        raise InvalidConfigError(
+            "search.git_diff_ref must be text or nothing"
         )
 
     root_folders = search.get('root_folders')
