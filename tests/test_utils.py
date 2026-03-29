@@ -940,3 +940,27 @@ def test_validate_search_exclude_languages_not_strings():
     config = {'search': {'exclude_languages': [123]}}
     with pytest.raises(utils.InvalidConfigError, match="Values in 'search.exclude_languages' must be text."):
         utils._validate_search_section(config)
+
+
+def test_validate_search_not_a_dict():
+    config = {"search": "not a dict"}
+    with pytest.raises(utils.InvalidConfigError, match="'search' section must be a dictionary."):
+        utils._validate_search_section(config)
+
+
+def test_validate_search_max_depth_invalid():
+    config = {"search": {"max_depth": -1}}
+    with pytest.raises(utils.InvalidConfigError, match="search.max_depth must be 0 or more"):
+        utils._validate_search_section(config)
+
+
+def test_validate_search_use_git_diff_invalid():
+    config = {"search": {"use_git_diff": "not a bool"}}
+    with pytest.raises(utils.InvalidConfigError, match="search.use_git_diff must be true or false"):
+        utils._validate_search_section(config)
+
+
+def test_validate_search_git_diff_ref_invalid():
+    config = {"search": {"git_diff_ref": 123}}
+    with pytest.raises(utils.InvalidConfigError, match="search.git_diff_ref must be text or nothing"):
+        utils._validate_search_section(config)
