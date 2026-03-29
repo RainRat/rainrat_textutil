@@ -66,6 +66,8 @@ class TestAIPreset(unittest.TestCase):
             git_diff=False,
             list_languages=False,
             diff=False,
+            replace=[],
+            replace_line=[],
         )
 
     @patch('argparse.ArgumentParser.parse_args')

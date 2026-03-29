@@ -2693,6 +2693,20 @@ def main():
         type=int,
         help="Truncate each file to this many lines before combining.",
     )
+    processing_group.add_argument(
+        "--replace",
+        nargs=2,
+        action="append",
+        metavar=("PATTERN", "REPLACEMENT"),
+        help="Add a global search-and-replace rule using regular expressions. Use this option again to add more.",
+    )
+    processing_group.add_argument(
+        "--replace-line",
+        nargs=2,
+        action="append",
+        metavar=("PATTERN", "REPLACEMENT"),
+        help="Add a line-based search-and-replace rule. Matching lines that follow each other collapse into one replacement. Use this option again to add more.",
+    )
 
     # Utility Commands Group
     utility_group = parser.add_argument_group("Utility Commands")
@@ -3076,6 +3090,22 @@ def main():
 
     if args.max_lines is not None:
         config['processing']['max_lines'] = args.max_lines
+
+    if args.replace:
+        regex_rules = config['processing'].setdefault('regex_replacements', [])
+        if regex_rules is None:
+            regex_rules = config['processing']['regex_replacements'] = []
+        for pattern, replacement in args.replace:
+            regex_rules.append({'pattern': pattern, 'replacement': replacement})
+        logging.debug("Added %d terminal regex replacements.", len(args.replace))
+
+    if args.replace_line:
+        line_rules = config['processing'].setdefault('line_regex_replacements', [])
+        if line_rules is None:
+            line_rules = config['processing']['line_regex_replacements'] = []
+        for pattern, replacement in args.replace_line:
+            line_rules.append({'pattern': pattern, 'replacement': replacement})
+        logging.debug("Added %d terminal line regex replacements.", len(args.replace_line))
 
     if args.sort:
         output_conf['sort_by'] = args.sort
