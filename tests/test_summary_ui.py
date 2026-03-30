@@ -229,5 +229,5 @@ def test_summary_throughput_line(capsys):
         _print_execution_summary(stats, args, pairing_enabled=False, duration=2.0)
 
     captured = capsys.readouterr()
-    assert "Time taken:           2.00s" in captured.err
+    assert "Time taken:                  2.00s" in captured.err
     assert "Throughput:           50.0 files/s" in captured.err
