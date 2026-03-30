@@ -343,7 +343,7 @@ def _render_single_pass(template, replacements):
     return pattern.sub(lambda m: str(replacements[m.group(0)]), template)
 
 
-def _render_template(template, relative_path, size=None, tokens=None, lines=None, escape_func=None, modified=None, content=None):
+def _render_template(template, relative_path, size=None, tokens=None, lines=None, escape_func=None, modified=None, content=None, custom_languages=None):
     """Replace placeholders in a template with file information.
 
     The placeholders include FILENAME, EXT, STEM, DIR, DIR_SLUG, SIZE,
@@ -357,7 +357,7 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
     stem = relative_path.stem
     parent_dir = relative_path.parent.as_posix()
     dir_slug = _slugify_relative_dir(parent_dir)
-    lang = utils.get_language_tag(relative_path, content=content)
+    lang = utils.get_language_tag(relative_path, content=content, overrides=custom_languages)
 
     if escape_func:
         filename = escape_func(filename)
@@ -516,7 +516,8 @@ def should_include(
                 except OSError:
                     pass
 
-        lang = utils.get_language_tag(relative_path, content=sample_content)
+        custom_languages = search_opts.get('custom_languages')
+        lang = utils.get_language_tag(relative_path, content=sample_content, overrides=custom_languages)
 
         if exclude_languages and lang in exclude_languages:
             return (False, 'language_excluded') if return_reason else False
@@ -1224,6 +1225,8 @@ class FileProcessor:
 
     def __init__(self, config, output_opts, dry_run=False, estimate_tokens=False, output_format='text'):
         self.config = config
+        self.search_opts = config.get('search', {}) or {}
+        self.custom_languages = self.search_opts.get('custom_languages', {})
         self.output_opts = output_opts or {}
         self.dry_run = dry_run
         self.estimate_tokens = estimate_tokens
@@ -1253,9 +1256,9 @@ class FileProcessor:
 
         escape_func = xml_escape if self.output_format == 'xml' else None
 
-        outfile.write(_render_template(header_template, relative_path, size=size, tokens=tokens, lines=lines, escape_func=escape_func, modified=modified, content=content))
+        outfile.write(_render_template(header_template, relative_path, size=size, tokens=tokens, lines=lines, escape_func=escape_func, modified=modified, content=content, custom_languages=self.custom_languages))
         outfile.write(content)
-        outfile.write(_render_template(footer_template, relative_path, size=size, tokens=tokens, lines=lines, escape_func=escape_func, modified=modified, content=content))
+        outfile.write(_render_template(footer_template, relative_path, size=size, tokens=tokens, lines=lines, escape_func=escape_func, modified=modified, content=content, custom_languages=self.custom_languages))
     def _backup_file(self, file_path):
         """Create a ``.bak`` backup for ``file_path`` when backups are enabled.
 
@@ -1398,7 +1401,7 @@ class FileProcessor:
         # Estimate tokens on the placeholder content (but the placeholder itself might have tokens placeholder)
         # For max_size_placeholder, it's a bit tricky because we don't know the token count of the placeholder
         # until it's rendered. But we want to support {{SIZE}} in it.
-        rendered = _render_template(placeholder, relative_path, size=file_size, modified=modified, content=None)
+        rendered = _render_template(placeholder, relative_path, size=file_size, modified=modified, content=None, custom_languages=self.custom_languages)
 
         token_count, is_approx = utils.estimate_tokens(rendered)
         line_count = utils.count_lines(rendered)
@@ -2035,7 +2038,7 @@ def find_and_combine_files(
                     if is_excluded_by_size:
                         placeholder = output_opts.get('max_size_placeholder')
                         # Note: 1372-1373 ensures placeholder exists if we are here
-                        rendered = _render_template(placeholder, rel_p, size=file_path.stat().st_size if file_path.exists() else 0)
+                        rendered = _render_template(placeholder, rel_p, size=file_path.stat().st_size if file_path.exists() else 0, custom_languages=search_opts.get('custom_languages'))
                         tokens, _ = utils.estimate_tokens(rendered)
                     else:
                         content, _ = read_file_best_effort(file_path)
@@ -2080,7 +2083,7 @@ def find_and_combine_files(
                 if is_excluded_by_size:
                     placeholder = output_opts.get('max_size_placeholder')
                     if placeholder:
-                        rendered = _render_template(placeholder, rel_p, size=file_size)
+                        rendered = _render_template(placeholder, rel_p, size=file_size, custom_languages=search_opts.get('custom_languages'))
                         content_tokens, is_approx = utils.estimate_tokens(rendered)
                         content_lines = utils.count_lines(rendered)
                         content_size = len(rendered.encode('utf-8'))
@@ -2112,8 +2115,8 @@ def find_and_combine_files(
                 h_template = output_opts.get('header_template', utils.DEFAULT_CONFIG['output']['header_template'])
                 f_template = output_opts.get('footer_template', utils.DEFAULT_CONFIG['output']['footer_template'])
 
-                rendered_h = _render_template(h_template, rel_p, size=file_size, tokens=content_tokens, lines=content_lines)
-                rendered_f = _render_template(f_template, rel_p, size=file_size, tokens=content_tokens, lines=content_lines)
+                rendered_h = _render_template(h_template, rel_p, size=file_size, tokens=content_tokens, lines=content_lines, custom_languages=search_opts.get('custom_languages'))
+                rendered_f = _render_template(f_template, rel_p, size=file_size, tokens=content_tokens, lines=content_lines, custom_languages=search_opts.get('custom_languages'))
 
                 header_tokens = utils.estimate_tokens(rendered_h)[0]
                 footer_tokens = utils.estimate_tokens(rendered_f)[0]
@@ -2331,8 +2334,8 @@ def find_and_combine_files(
                     rel_p = _get_rel_path(file_path, root_path)
                     f_size = file_path.stat().st_size if file_path.exists() else 0
 
-                    rendered_h = _render_template(h_template, rel_p, size=f_size, tokens=token_count, lines=line_count)
-                    rendered_f = _render_template(f_template, rel_p, size=f_size, tokens=token_count, lines=line_count)
+                    rendered_h = _render_template(h_template, rel_p, size=f_size, tokens=token_count, lines=line_count, custom_languages=search_opts.get('custom_languages'))
+                    rendered_f = _render_template(f_template, rel_p, size=f_size, tokens=token_count, lines=line_count, custom_languages=search_opts.get('custom_languages'))
 
                     header_tokens = utils.estimate_tokens(rendered_h)[0]
                     footer_tokens = utils.estimate_tokens(rendered_f)[0]
@@ -2544,6 +2547,13 @@ def main():
         const=True,
         metavar="REF",
         help="Include only files that have changed in Git. If a REF is provided (like 'main'), it finds changes since that commit. Otherwise, it finds unstaged, staged, and untracked changes.",
+    )
+    filtering_group.add_argument(
+        "--map-lang",
+        nargs=2,
+        action="append",
+        metavar=("EXTENSION", "LANGUAGE"),
+        help="Manually map a file extension or filename to a specific language (for example, '.mjml' 'html'). Use this option again to add more.",
     )
 
     # Sorting & Limiting Group
@@ -2970,6 +2980,14 @@ def main():
             'filenames': [utils.validate_glob_pattern(p, context="--include") for p in args.include]
         }
         logging.debug("Added terminal file inclusions: %s", args.include)
+
+    if args.map_lang:
+        custom_langs = config['search'].setdefault('custom_languages', {})
+        if custom_langs is None:
+            custom_langs = config['search']['custom_languages'] = {}
+        for pattern, lang in args.map_lang:
+            custom_langs[pattern.lower()] = lang.lower()
+        logging.debug("Added terminal language mappings: %s", args.map_lang)
 
     search = config.get('search', {})
 
