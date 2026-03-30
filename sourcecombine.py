@@ -3930,7 +3930,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             if duration > 0 and total_discovered > 1:
                 fps = total_discovered / duration
                 bps = total_size_bytes / duration
-                print(f"    {C_DIM}{'Throughput:':<{label_width}}{C_RESET}{C_CYAN}{fps:,.1f} files/s ({utils.format_size(bps)}/s){C_RESET}", file=sys.stderr)
+                print(f"    {C_BOLD}{'Throughput:':<{label_width}}{C_RESET}{C_CYAN}{fps:,.1f} files/s {C_DIM}({utils.format_size(bps)}/s){C_RESET}", file=sys.stderr)
 
         _print_limit_usage_bar('File Limit Usage:', total_included, stats.get('max_files', 0), label_width)
         _print_limit_usage_bar('Token Limit Usage:', token_count, stats.get('max_total_tokens', 0), label_width)
@@ -3974,9 +3974,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
             # Align token counts at 11, percentages at 6, and sizes at 10 to keep paths consistent
             if has_tokens:
-                print(f"    {C_CYAN}{token_str:>11}  {percent_str}{C_RESET}  {C_DIM}{size_str:>10}{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
+                print(f"    {C_BOLD}{C_CYAN}{token_str:>11}{C_RESET}  {C_DIM}{percent_str}{C_RESET}  {C_DIM}{size_str:>10}{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
             else:
-                print(f"    {C_CYAN}{size_str:>10}  {percent_str}{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
+                print(f"    {C_BOLD}{C_CYAN}{size_str:>10}{C_RESET}  {C_DIM}{percent_str}{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
 
     # Extensions Grid
     if stats['files_by_extension']:
