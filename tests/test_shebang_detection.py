@@ -70,3 +70,23 @@ def test_shebang_detection_shell_variants(tmp_path):
 
     # All three should be identified as 'bash'
     assert stats['total_files'] == 3
+
+def test_shebang_detection_unrecognized_extension(tmp_path):
+    """Verify that language filtering includes scripts with shebangs and unrecognized extensions."""
+    # Python script with unknown extension
+    unknown_script = tmp_path / "script.unknown"
+    unknown_script.write_text("#!/usr/bin/python\nprint('hello')\n", encoding='utf-8')
+
+    config = DEFAULT_CONFIG.copy()
+    config['search'] = {
+        'root_folders': [str(tmp_path)],
+        'allowed_languages': ['python']
+    }
+    config['output'] = {'file': str(tmp_path / "combined.txt")}
+
+    stats = find_and_combine_files(config, str(tmp_path / "combined.txt"))
+
+    # Should include the python script with the unrecognized extension
+    assert stats['total_files'] == 1
+    combined_content = (tmp_path / "combined.txt").read_text()
+    assert "script.unknown" in combined_content
