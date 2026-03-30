@@ -110,10 +110,10 @@ python sourcecombine.py [TARGET ...] [OPTIONS]
 List one or more folders or files to search. If you do not provide any, the tool searches the current folder. If the first target is a `.yml` or `.yaml` file, the tool uses it as its configuration.
 
 ### Core Options
-*   `-o` / `--output`: Save the result to a specific file or folder.
+*   `-o` / `--output`: Save the result to a specific file or folder. This takes priority over the path in your settings.
 *   `--dry-run` / `-d`: Show what would happen without making changes.
-*   `--verbose` / `-v`: Show detailed messages to help you find and fix problems.
-*   `--config`: Use a specific configuration file.
+*   `--verbose` / `-v`: Show detailed status messages to help find and fix problems.
+*   `--config` / `-k`: Use a specific configuration file. This stops the tool from trying to find one automatically in your target list.
 
 ### Filtering & Selection
 *   `-i` / `--include` / `--include-file`: Include only files that match this search pattern (for example, `*.py`, `*.js`).
@@ -131,12 +131,12 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--max-depth` / `-D`: Limit folder scanning to this depth (for example, `-D 1` for root files only; 0 for no limit).
 *   `--git-files` / `-G`: Use `git ls-files` to find files. This follows your `.gitignore` rules.
 *   `--git-diff [REF]`: Include only files that have changed in Git. If you provide a REF (like `main`), it finds changes since that commit. Otherwise, it finds unstaged, staged, and untracked changes.
-*   `--files-from`: Read a list of files to include from a text file (use `-` for your terminal). This skips scanning folders.
+*   `--files-from`: Read a list of files from a text file (use '-' for your terminal). This skips looking for files in folders.
 
 ### Sorting & Limiting
 *   `--sort` / `-s`: Sort files by name, size, date (modified), tokens, or folder depth before combining.
 *   `--reverse` / `-r`: Reverse the sort order.
-*   `--limit` / `-L`: Stop after finding this many files.
+*   `--limit` / `-L`: Stop adding files once you reach this limit.
 *   `--max-tokens` / `-M`: Stop adding files once you reach the total tokens limit (only when combining many files into one).
 *   `--max-total-size`: Stop adding files once you reach the total size limit (for example, '5MB') (only when combining many files into one).
 *   `--max-total-lines`: Stop adding files once you reach the total lines limit (only when combining many files into one).
@@ -148,7 +148,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `-m` / `--markdown`: Shortcut for `--format markdown`.
 *   `-j` / `--json`: Shortcut for `--format json`.
 *   `-w` / `--xml`: Shortcut for `--format xml`.
-*   `-n` / `--line-numbers`: Add line numbers to each file in the output.
+*   `--line-numbers` / `-n`: Add line numbers to the beginning of each line in the combined output.
 *   `--toc` / `-T`: Add a Table of Contents with sizes and tokens to the start of the output (only when combining many files into one in 'text' or 'markdown' formats).
 *   `--include-tree` / `-p`: Include a visual folder tree with details at the start of the output (only when combining many files into one).
 *   `--json-summary`: Save a machine-readable execution summary (file counts, tokens, time taken) in JSON format. Use `-` to print it to your terminal.
@@ -170,7 +170,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--init`: Create a basic `sourcecombine.yml` configuration file in your current folder to get started.
 *   `--list-languages`: Show a list of all supported language identifiers and then stop.
 *   `--extract`: Rebuild your original files and folders from combined files (like JSON, XML, or Markdown). You can read from one or more files, folders, your terminal (`-`), or your clipboard. For example: `python sourcecombine.py --extract outputs/`. Filtering, sorting, and preview options are supported. Line numbers are removed automatically unless you use `--keep-line-numbers`.
-*   `--keep-line-numbers`: Keep line numbers when extracting files. By default, they are automatically removed if detected.
+*   `--keep-line-numbers`: Keep line numbers when extracting files. By default, the tool removes them automatically if detected.
 *   `--restore`: Undo 'apply-in-place' changes by restoring original files from their `.bak` copies. This command scans your target folders recursively for backup files.
 *   `--delete-backups`: Remove all `.bak` files from your target folders. Use this to clean up after you are done with `--apply-in-place`.
 *   `--show-config`: Show the final combined configuration (including defaults, files, and options) and exit.
