@@ -924,7 +924,7 @@ def detect_language_from_shebang(content: str) -> str | None:
     if not content or not content.startswith("#!"):
         return None
 
-    first_line = content.split('\n', 1)[0] if content else ""
+    first_line = content.split('\n', 1)[0]
 
     # Common mappings for shebangs to language tags
     interpreters = [
