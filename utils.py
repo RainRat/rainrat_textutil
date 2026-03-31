@@ -115,6 +115,7 @@ DEFAULT_CONFIG = {
         'git_diff_ref': None,
         'allowed_languages': [],
         'exclude_languages': [],
+        'custom_languages': {},
     },
     'filters': {
         'skip_binary': False,
@@ -488,6 +489,14 @@ def _validate_search_section(config):
         for lang in exclude_langs:
             if not isinstance(lang, str):
                 raise InvalidConfigError("Values in 'search.exclude_languages' must be text.")
+
+    custom_langs = search.get('custom_languages')
+    if custom_langs is not None:
+        if not isinstance(custom_langs, dict):
+            raise InvalidConfigError("search.custom_languages must be a dictionary.")
+        for key, val in custom_langs.items():
+            if not isinstance(key, str) or not isinstance(val, str):
+                raise InvalidConfigError("Both keys and values in 'search.custom_languages' must be text.")
 
 
 def _validate_filters_section(config):
@@ -937,7 +946,7 @@ def detect_language_from_shebang(content: str) -> str | None:
     return None
 
 
-def get_language_tag(path: str | Path, content: str | None = None) -> str:
+def get_language_tag(path: str | Path, content: str | None = None, overrides: Mapping[str, str] | None = None) -> str:
     """Return a Markdown-friendly language tag for the file at ``path``.
 
     This function maps common extensions and filenames to their corresponding
@@ -948,6 +957,18 @@ def get_language_tag(path: str | Path, content: str | None = None) -> str:
     path = Path(path)
     name = path.name.lower()
     ext = path.suffix.lower()
+
+    if overrides:
+        # Check for full filename override first
+        if name in overrides:
+            return overrides[name]
+        # Then check for extension with dot
+        if ext in overrides:
+            return overrides[ext]
+        # Then check for extension without dot
+        dotless_ext = ext.lstrip('.')
+        if dotless_ext in overrides:
+            return overrides[dotless_ext]
 
     if name in FILENAME_TO_LANG:
         return FILENAME_TO_LANG[name]
