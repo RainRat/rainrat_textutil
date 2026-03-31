@@ -3827,7 +3827,7 @@ def _print_limit_usage_bar(label, current, maximum, label_width, is_size=False):
     else:
         detail = f"({current:,} / {maximum:,})"
 
-    print(f"    {C_BOLD}{label:<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_CYAN}{percent:>6.1f}%{C_RESET} {C_DIM}{detail}{C_RESET}", file=sys.stderr)
+    print(f"    {C_BOLD}{label:<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_DIM}{percent:>6.1f}%{C_RESET} {C_DIM}{detail}{C_RESET}", file=sys.stderr)
 
 
 def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None, duration=None, source_desc=None):
@@ -3900,8 +3900,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     # Files Section
     label_width = 22
     print(f"  {C_BOLD}{C_CYAN}Files{C_RESET}", file=sys.stderr)
-    included_color = C_GREEN if total_included > 0 else C_RESET
-    filtered_color = C_YELLOW if total_filtered > 0 else C_RESET
+    included_color = f"{C_BOLD}{C_GREEN}" if total_included > 0 else C_RESET
+    filtered_color = f"{C_BOLD}{C_YELLOW}" if total_filtered > 0 else C_RESET
     print(f"    {C_BOLD}{'Included:':<{label_width}}{C_RESET}{included_color}{total_included:12,}{C_RESET}", file=sys.stderr)
     print(f"    {C_BOLD}{'Skipped:':<{label_width}}{C_RESET}{filtered_color}{total_filtered:12,}{C_RESET}", file=sys.stderr)
 
@@ -3932,18 +3932,18 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     # Show output format if not extracting or listing
     if not getattr(args, 'extract', False) and not (args.list_files or args.tree):
         fmt_name = (getattr(args, 'format', None) or stats.get('output_format', 'text')).upper()
-        print(f"    {C_BOLD}{'Format:':<{label_width}}{C_RESET}{C_CYAN}{str(fmt_name):>12}{C_RESET}", file=sys.stderr)
+        print(f"    {C_BOLD}{'Format:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{str(fmt_name):>12}{C_RESET}", file=sys.stderr)
 
-    print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_CYAN}{total_size_str:>12}{C_RESET}", file=sys.stderr)
+    print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_size_str:>12}{C_RESET}", file=sys.stderr)
     if total_lines > 0:
-        print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_CYAN}{total_lines:12,}{C_RESET}", file=sys.stderr)
+        print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET}", file=sys.stderr)
 
     # Token Counts
     # Show token counts if tokens were estimated
     if token_count > 0:
         token_str = f"{'~' if is_approx else ''}{token_count:,}"
         print(
-            f"    {C_BOLD}{'Tokens:':<{label_width}}{C_RESET}{C_CYAN}{token_str:>12}{C_RESET}",
+            f"    {C_BOLD}{'Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET}",
             file=sys.stderr,
         )
         if is_approx:
@@ -3958,11 +3958,12 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         print(f"\n  {C_BOLD}{C_CYAN}Time and Limits{C_RESET}", file=sys.stderr)
 
         if duration is not None:
-            print(f"    {C_BOLD}{'Time taken:':<{label_width}}{C_RESET}{C_CYAN}{duration:.2f}s{C_RESET}", file=sys.stderr)
+            print(f"    {C_BOLD}{'Time taken:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{duration:11.2f}s{C_RESET}", file=sys.stderr)
             if duration > 0 and total_discovered > 1:
                 fps = total_discovered / duration
                 bps = total_size_bytes / duration
-                print(f"    {C_BOLD}{'Throughput:':<{label_width}}{C_RESET}{C_CYAN}{fps:,.1f} files/s {C_DIM}({utils.format_size(bps)}/s){C_RESET}", file=sys.stderr)
+                fps_str = f"{fps:,.1f} files/s"
+                print(f"    {C_BOLD}{'Throughput:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{fps_str:>12}{C_RESET} {C_DIM}({utils.format_size(bps)}/s){C_RESET}", file=sys.stderr)
 
         _print_limit_usage_bar('File Limit Usage:', total_included, stats.get('max_files', 0), label_width)
         _print_limit_usage_bar('Token Limit Usage:', token_count, stats.get('max_total_tokens', 0), label_width)
