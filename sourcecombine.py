@@ -3980,8 +3980,17 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             if duration > 0 and total_discovered > 1:
                 fps = total_discovered / duration
                 bps = total_size_bytes / duration
+                tps = token_count / duration if token_count > 0 else 0
+
                 fps_str = f"{fps:,.1f} files/s"
-                print(f"    {C_BOLD}{'Throughput:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{fps_str:>12}{C_RESET} {C_DIM}({utils.format_size(bps)}/s){C_RESET}", file=sys.stderr)
+
+                throughput_details = [f"{utils.format_size(bps)}/s"]
+                if tps > 0:
+                    tps_str = f"{tps:,.0f} tokens/s"
+                    throughput_details.append(tps_str)
+
+                details_str = f"({', '.join(throughput_details)})"
+                print(f"    {C_BOLD}{'Throughput:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{fps_str:>12}{C_RESET} {C_DIM}{details_str}{C_RESET}", file=sys.stderr)
 
         _print_limit_usage_bar('File Limit Usage:', total_included, stats.get('max_files', 0), label_width)
         _print_limit_usage_bar('Token Limit Usage:', token_count, stats.get('max_total_tokens', 0), label_width)
