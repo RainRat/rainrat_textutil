@@ -64,7 +64,7 @@ python sourcecombine.py src/ -o outputs/ --config example_cpp_h.yml
 
 ## Configuration
 
-The tool looks for a `sourcecombine.yml` file in the current folder or the folders you choose. Use it to set complex exclusion rules, inclusion groups, and default output paths.
+The tool automatically searches for a configuration file (`sourcecombine.yml`, `sourcecombine.yaml`, `config.yml`, or `config.yaml`) in your current folder when you do not provide any search targets. Use it to set complex exclusion rules, inclusion groups, and default output paths.
 
 See `config.template.yml` for a fully documented example.
 
