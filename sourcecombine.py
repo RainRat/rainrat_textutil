@@ -1916,7 +1916,7 @@ def find_and_combine_files(
         has_global_placeholders = (global_header and any(p in global_header for p in global_placeholders)) or \
                                   (global_footer and any(p in global_footer for p in global_placeholders))
 
-        needs_full_pass = (sort_by != 'name' or max_total_tokens > 0 or max_total_size > 0 or max_total_lines > 0 or
+        needs_full_pass = (sort_by not in ('name',) or max_total_tokens > 0 or max_total_size > 0 or max_total_lines > 0 or
                            needs_metadata or has_global_placeholders or estimate_tokens)
 
         # Global Sort
@@ -1937,6 +1937,8 @@ def find_and_combine_files(
                         content, _ = read_file_best_effort(primary_path)
                         processed = process_content(content, processor.processing_opts)
                         val, _ = utils.estimate_tokens(processed)
+                    elif sort_by == 'language':
+                        val = utils.get_language_tag(primary_path, overrides=processor.custom_languages)
                     else:
                         val = rel_p.as_posix()
                     return (val, rel_p.as_posix())
@@ -1944,7 +1946,7 @@ def find_and_combine_files(
                 all_paired_items.sort(key=get_pair_sort_key, reverse=sort_reverse)
         else:
             if sort_by != 'name' or sort_reverse:
-                if sort_by in ('name', 'size', 'modified', 'depth'):
+                if sort_by in ('name', 'size', 'modified', 'depth', 'language'):
                     def get_single_sort_key(item):
                         file_p, root_p, _ = item
                         rel_p = _get_rel_path(file_p, root_p)
@@ -1954,6 +1956,8 @@ def find_and_combine_files(
                             val = file_p.stat().st_mtime if file_p.exists() else 0
                         elif sort_by == 'depth':
                             val = len(rel_p.parts)
+                        elif sort_by == 'language':
+                            val = utils.get_language_tag(file_p, overrides=processor.custom_languages)
                         else:
                             val = rel_p.as_posix()
                         return (val, rel_p.as_posix())
@@ -2563,8 +2567,8 @@ def main():
     sorting_group.add_argument(
         "--sort",
         "-s",
-        choices=["name", "size", "modified", "tokens", "depth"],
-        help="Sort files by name, size, date (modified), tokens, or folder depth before combining.",
+        choices=["name", "size", "modified", "tokens", "depth", "language"],
+        help="Sort files by name, size, date (modified), tokens, folder depth, or language before combining.",
     )
     sorting_group.add_argument(
         "--reverse",
@@ -3600,6 +3604,8 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
             elif sort_by == 'modified':
                 # Modification time is not typically preserved in combined files
                 val = 0
+            elif sort_by == 'language':
+                val = utils.get_language_tag(path_str, content=file_content, overrides=config.get('search', {}).get('custom_languages'))
             elif sort_by == 'depth':
                 val = len(PurePath(path_str).parts)
             else:
