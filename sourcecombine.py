@@ -3376,6 +3376,22 @@ def _parse_combined_content(content, source_name="combined file"):
     if not content:
         return []
 
+    def _to_int_or_none(val):
+        if isinstance(val, int):
+            return val
+        try:
+            return int(val)
+        except (ValueError, TypeError):
+            return None
+
+    def _to_float_or_none(val):
+        if isinstance(val, (int, float)):
+            return float(val)
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            return None
+
     files_found = []
 
     # 1. Try JSON
@@ -3384,12 +3400,13 @@ def _parse_combined_content(content, source_name="combined file"):
         if isinstance(data, list):
             for entry in data:
                 if isinstance(entry, dict) and 'path' in entry and 'content' in entry:
+                    # Robust numeric conversion for metadata to avoid crashes during stats calculation
                     meta = {
-                        'tokens': entry.get('tokens'),
-                        'size': entry.get('size_bytes'),
-                        'lines': entry.get('lines'),
-                        'is_approx': entry.get('tokens_is_approx', False),
-                        'modified': entry.get('modified'),
+                        'tokens': _to_int_or_none(entry.get('tokens')),
+                        'size': _to_int_or_none(entry.get('size_bytes')),
+                        'lines': _to_int_or_none(entry.get('lines')),
+                        'is_approx': bool(entry.get('tokens_is_approx', False)),
+                        'modified': _to_float_or_none(entry.get('modified')),
                     }
                     files_found.append((entry['path'], entry['content'], meta))
             if files_found:
@@ -3407,11 +3424,11 @@ def _parse_combined_content(content, source_name="combined file"):
             entry = json.loads(line)
             if isinstance(entry, dict) and 'path' in entry and 'content' in entry:
                 meta = {
-                    'tokens': entry.get('tokens'),
-                    'size': entry.get('size_bytes'),
-                    'lines': entry.get('lines'),
-                    'is_approx': entry.get('tokens_is_approx', False),
-                    'modified': entry.get('modified'),
+                    'tokens': _to_int_or_none(entry.get('tokens')),
+                    'size': _to_int_or_none(entry.get('size_bytes')),
+                    'lines': _to_int_or_none(entry.get('lines')),
+                    'is_approx': bool(entry.get('tokens_is_approx', False)),
+                    'modified': _to_float_or_none(entry.get('modified')),
                 }
                 potential_files.append((entry['path'], entry['content'], meta))
             else:
@@ -3440,13 +3457,29 @@ def _parse_combined_content(content, source_name="combined file"):
                 lines_val = file_node.get('lines')
                 mod_val = file_node.get('modified')
 
-                meta = {
-                    'tokens': int(tokens_val.lstrip('~').replace(',', '')) if tokens_val else None,
-                    'size': utils.parse_size_value(size_val) if size_val else None,
-                    'lines': int(lines_val.replace(',', '')) if lines_val else None,
-                    'is_approx': tokens_val.startswith('~') if tokens_val else False,
-                    'modified': datetime.fromisoformat(mod_val).timestamp() if mod_val else None,
-                }
+                meta = {}
+                try:
+                    meta['tokens'] = int(tokens_val.lstrip('~').replace(',', '')) if tokens_val else None
+                    meta['is_approx'] = tokens_val.startswith('~') if tokens_val else False
+                except (ValueError, TypeError):
+                    meta['tokens'] = None
+                    meta['is_approx'] = False
+
+                try:
+                    meta['size'] = utils.parse_size_value(size_val) if size_val else None
+                except (ValueError, utils.InvalidConfigError):
+                    meta['size'] = None
+
+                try:
+                    meta['lines'] = int(lines_val.replace(',', '')) if lines_val else None
+                except (ValueError, TypeError):
+                    meta['lines'] = None
+
+                try:
+                    meta['modified'] = datetime.fromisoformat(mod_val).timestamp() if mod_val else None
+                except (ValueError, TypeError, OSError):
+                    meta['modified'] = None
+
                 files_found.append((path, file_content, meta))
         if files_found:
             return files_found
