@@ -323,7 +323,7 @@ def _format_metadata_summary(meta: Mapping[str, Any]) -> str:
 
 @lru_cache(maxsize=128)
 def _get_replacement_pattern(keys):
-    """Compile a regex pattern from a tuple of keys, sorted by length."""
+    """Compile a regular expression pattern from a tuple of keys, sorted by length."""
     return re.compile("|".join(re.escape(k) for k in keys))
 
 
@@ -2522,12 +2522,12 @@ def main():
     filtering_group.add_argument(
         "--grep",
         "-g",
-        help="Include only files whose content matches this search pattern.",
+        help="Include only files whose content matches this regular expression.",
     )
     filtering_group.add_argument(
         "--exclude-grep",
         "-E",
-        help="Skip files whose content matches this search pattern.",
+        help="Skip files whose content matches this regular expression.",
     )
     filtering_group.add_argument(
         "--skip-binary",
@@ -2720,7 +2720,7 @@ def main():
         nargs=2,
         action="append",
         metavar=("PATTERN", "REPLACEMENT"),
-        help="Add a line-based search-and-replace rule. Matching lines that follow each other collapse into one replacement. Use this option again to add more.",
+        help="Add a line-based search-and-replace rule using regular expressions. Matching lines that follow each other collapse into one replacement. Use this option again to add more.",
     )
 
     # Utility Commands Group
@@ -3120,7 +3120,7 @@ def main():
             regex_rules = config['processing']['regex_replacements'] = []
         for pattern, replacement in args.replace:
             regex_rules.append({'pattern': pattern, 'replacement': replacement})
-        logging.debug("Added %d terminal regex replacements.", len(args.replace))
+        logging.debug("Added %d terminal regular expression replacements.", len(args.replace))
 
     if args.replace_line:
         line_rules = config['processing'].setdefault('line_regex_replacements', [])
@@ -3128,7 +3128,7 @@ def main():
             line_rules = config['processing']['line_regex_replacements'] = []
         for pattern, replacement in args.replace_line:
             line_rules.append({'pattern': pattern, 'replacement': replacement})
-        logging.debug("Added %d terminal line regex replacements.", len(args.replace_line))
+        logging.debug("Added %d terminal line regular expression replacements.", len(args.replace_line))
 
     if args.sort:
         output_conf['sort_by'] = args.sort

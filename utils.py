@@ -371,7 +371,7 @@ def _validate_compact_whitespace_groups(groups, *, context):
 
 
 def _validate_regex_list(rules, context_prefix, source):
-    """Validate a list of regex replacement rules."""
+    """Validate a list of regular expression replacement rules."""
     if rules is None:
         return
     if not isinstance(rules, list):
@@ -611,14 +611,14 @@ def _validate_processing_section(config, *, source=None):
         context='processing.compact_whitespace_groups',
     )
 
-    # Validate regex patterns in regex_replacements
+    # Validate regular expression patterns in regex_replacements
     _validate_regex_list(
         processing_conf.get('regex_replacements'),
         "processing.regex_replacements",
         source,
     )
 
-    # Validate regex patterns in line_regex_replacements
+    # Validate regular expression patterns in line_regex_replacements
     _validate_regex_list(
         processing_conf.get('line_regex_replacements'),
         "processing.line_regex_replacements",
@@ -735,7 +735,7 @@ def _validate_output_section(config):
 
 
 def apply_line_regex_replacements(text, rules):
-    """Apply line-oriented regex replacements.
+    """Apply line-oriented regular expression replacements.
 
     Each rule in ``rules`` must provide a ``pattern`` key. If ``replacement``
     is supplied, it is inserted once for each contiguous block of matching
@@ -1029,7 +1029,7 @@ def remove_line_numbers(text):
 
     # If more than 50% of non-empty lines match, remove the prefix
     if non_empty_lines > 0 and (matches / non_empty_lines) > 0.5:
-        # Use a regex that specifically targets the 'N: ' at the start
+        # Use a regular expression that specifically targets the 'N: ' at the start
         processed = [re.sub(r"^\s*\d+:\s", "", line) for line in lines]
         result = "\n".join(processed)
         if text.endswith("\n"):
@@ -1084,8 +1084,8 @@ def validate_glob_pattern(pattern, *, context="search pattern"):
     return normalized
 
 
-def validate_regex_pattern(pattern, *, context="search pattern", source=None):
-    """Return a compiled regex after validating ``pattern``.
+def validate_regex_pattern(pattern, *, context="regular expression", source=None):
+    """Return a compiled regular expression after validating ``pattern``.
 
     Raises ``InvalidConfigError`` with a helpful message when ``pattern`` is
     invalid. ``context`` describes where the pattern originated so the error
@@ -1095,7 +1095,7 @@ def validate_regex_pattern(pattern, *, context="search pattern", source=None):
     try:
         return re.compile(pattern)
     except re.error as exc:
-        location = f"Invalid search pattern in {context}"
+        location = f"Invalid regular expression in {context}"
         if source:
             location += f" (from '{source}')"
         raise InvalidConfigError(

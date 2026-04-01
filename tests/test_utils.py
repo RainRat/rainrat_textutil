@@ -730,7 +730,7 @@ def test_validate_regex_replacements_invalid_regex(tmp_path):
             }
         }
     )
-    with pytest.raises(utils.InvalidConfigError, match="Invalid search pattern in processing.regex_replacements\\[0\\]"):
+    with pytest.raises(utils.InvalidConfigError, match="Invalid regular expression in processing.regex_replacements\\[0\\]"):
         load_and_validate_config(config_path)
 
 def test_validate_line_regex_replacements_invalid_regex(tmp_path):
@@ -746,7 +746,7 @@ def test_validate_line_regex_replacements_invalid_regex(tmp_path):
             }
         }
     )
-    with pytest.raises(utils.InvalidConfigError, match="Invalid search pattern in processing.line_regex_replacements\\[0\\]"):
+    with pytest.raises(utils.InvalidConfigError, match="Invalid regular expression in processing.line_regex_replacements\\[0\\]"):
         load_and_validate_config(config_path)
 
 def test_validate_output_format_invalid(tmp_path):
