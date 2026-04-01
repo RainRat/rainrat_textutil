@@ -2102,6 +2102,8 @@ def find_and_combine_files(
                         logging.info("Updating in place: %s (encoding: %s)", file_path, encoding)
                         processor._backup_file(file_path)
                         file_path.write_text(processed, encoding=encoding, newline='')
+                        if processor.show_diff:
+                            _print_diff(content, processed, _get_rel_path(file_path, root_path).as_posix())
                     content_tokens, is_approx = utils.estimate_tokens(processed)
                     content_lines = utils.count_lines(processed)
                     content_size = len(processed.encode('utf-8'))
