@@ -585,8 +585,10 @@ def should_include(
 
     grep_pattern = filter_opts.get('grep')
     exclude_grep_pattern = filter_opts.get('exclude_grep')
+    min_lines = filter_opts.get('min_lines', 0)
+    max_lines = filter_opts.get('max_lines', 0)
 
-    if grep_pattern or exclude_grep_pattern:
+    if grep_pattern or exclude_grep_pattern or min_lines > 0 or max_lines > 0:
         try:
             if virtual_content is not None:
                 content = (
@@ -605,6 +607,13 @@ def should_include(
 
             if exclude_grep_pattern and re.search(exclude_grep_pattern, content):
                 return (False, 'exclude_grep_match') if return_reason else False
+
+            if min_lines > 0 or max_lines > 0:
+                line_count = utils.count_lines(content)
+                if min_lines > 0 and line_count < min_lines:
+                    return (False, 'too_few_lines') if return_reason else False
+                if max_lines > 0 and line_count > max_lines:
+                    return (False, 'too_many_lines') if return_reason else False
 
         except Exception as exc:
             logging.warning("Error while checking content patterns on '%s': %s", rel_str, exc)
@@ -2516,6 +2525,16 @@ def main():
         help="Include only files smaller than this size (for example, '10KB', '1MB').",
     )
     filtering_group.add_argument(
+        "--min-lines",
+        type=int,
+        help="Include only files with at least this many lines.",
+    )
+    filtering_group.add_argument(
+        "--max-lines",
+        type=int,
+        help="Include only files with at most this many lines.",
+    )
+    filtering_group.add_argument(
         "--files-from",
         help="Read a list of files from a text file (use '-' for your terminal). This skips looking for files in folders.",
     )
@@ -3035,6 +3054,12 @@ def main():
 
     if args.max_total_lines is not None:
         config['filters']['max_total_lines'] = args.max_total_lines
+
+    if args.min_lines is not None:
+        config['filters']['min_lines'] = args.min_lines
+
+    if args.max_lines is not None:
+        config['filters']['max_lines'] = args.max_lines
 
     if args.limit is not None:
         config['filters']['max_files'] = args.limit
