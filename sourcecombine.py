@@ -226,6 +226,9 @@ class _SilentProgress:
     def set_postfix(self, ordered_dict=None, refresh=True, **kwargs):
         return None
 
+    def set_postfix_str(self, s='', refresh=True):
+        return None
+
     def close(self):
         return None
 
@@ -303,6 +306,24 @@ def _truncate_path(path: str, max_width: int) -> str:
     head_len = max_width - tail_len - 3
 
     return f"{path[:head_len]}...{path[-tail_len:]}"
+
+
+def _update_bar_stats(bar, tokens=0, size=0, is_approx=False):
+    """Update a progress bar's postfix with cumulative stats."""
+    # Skip updates for silent progress handlers to avoid overhead
+    if not bar or isinstance(bar, _SilentProgress):
+        return
+
+    parts = []
+    if tokens > 0:
+        # Use a string indicator for approximation to handle cumulative cases correctly
+        token_str = f"{'~' if is_approx else ''}{int(tokens):,}"
+        parts.append(f"tokens: {token_str}")
+    if size > 0:
+        parts.append(f"size: {utils.format_size(float(size))}")
+
+    if parts:
+        bar.set_postfix_str(", ".join(parts), refresh=False)
 
 
 def _format_metadata_summary(meta: Mapping[str, Any]) -> str:
@@ -1083,6 +1104,9 @@ def _process_paired_files(
     """Process paired files and write combined outputs."""
 
     size_excluded_set = set(size_excluded or [])
+    running_tokens = 0
+    running_size = 0
+    running_is_approx = False
     for pairing_key, paths in paired_items:
         stem = Path(pairing_key).name
         if processing_bar:
@@ -1157,6 +1181,14 @@ def _process_paired_files(
                 if stats is not None:
                     stats['total_tokens'] = stats.get('total_tokens', 0) + token_count
                     stats['total_lines'] = stats.get('total_lines', 0) + line_count
+                running_tokens += token_count
+                # Optimization: use cached file size from stat() call if possible,
+                # but here it's easier to just call it once.
+                running_size += primary_path.stat().st_size if primary_path.exists() else 0
+                if is_approx:
+                    running_is_approx = True
+                _update_bar_stats(processing_bar, running_tokens, running_size, is_approx=running_is_approx)
+                if stats is not None:
                     if is_approx:
                         stats['token_count_is_approx'] = True
                     _update_token_stats(stats, primary_path, token_count)
@@ -1178,6 +1210,12 @@ def _process_paired_files(
                     if stats is not None:
                         stats['total_tokens'] = stats.get('total_tokens', 0) + token_count
                         stats['total_lines'] = stats.get('total_lines', 0) + line_count
+                    running_tokens += token_count
+                    running_size += file_path.stat().st_size if file_path.exists() else 0
+                    if is_approx:
+                        running_is_approx = True
+                    _update_bar_stats(processing_bar, running_tokens, running_size, is_approx=running_is_approx)
+                    if stats is not None:
                         if is_approx:
                             stats['token_count_is_approx'] = True
                         _update_token_stats(stats, file_path, token_count)
@@ -2036,6 +2074,10 @@ def find_and_combine_files(
                     desc="Calculating tokens for sorting",
                     unit="file",
                 )
+                running_tokens = 0
+                running_size = 0
+                # Sorting by tokens always involves estimation
+                running_is_approx = True
                 for item in all_combined_items:
                     file_path, root_path, is_excluded_by_size = item
                     rel_p = _get_rel_path(file_path, root_path)
@@ -2051,6 +2093,9 @@ def find_and_combine_files(
                         processed = process_content(content, processor.processing_opts)
                         tokens, _ = utils.estimate_tokens(processed)
                     token_data.append((tokens, rel_p_str))
+                    running_tokens += tokens
+                    running_size += file_path.stat().st_size if file_path.exists() else 0
+                    _update_bar_stats(sort_bar, running_tokens, running_size, is_approx=running_is_approx)
                     sort_bar.update(1)
                 sort_bar.close()
 
@@ -2073,11 +2118,13 @@ def find_and_combine_files(
                 desc="Analyzing files",
                 unit="file",
             )
+            running_is_approx = False
             for i, item in enumerate(all_combined_items):
                 file_path, root_path, is_excluded_by_size = item
 
                 rel_p_str = _get_rel_path(file_path, root_path).as_posix()
                 est_bar.set_description(f"Analyzing {_truncate_path(rel_p_str, 40)}")
+                _update_bar_stats(est_bar, current_tokens, current_size, is_approx=running_is_approx)
                 content_tokens = 0
                 content_lines = 0
                 content_size = 0
@@ -2095,6 +2142,7 @@ def find_and_combine_files(
                         content_size = len(rendered.encode('utf-8'))
                         if is_approx:
                             stats['token_count_is_approx'] = True
+                            running_is_approx = True
                 else:
                     content, encoding = read_file_best_effort(file_path)
                     processed = process_content(content, processor.processing_opts)
@@ -2107,6 +2155,7 @@ def find_and_combine_files(
                     content_size = len(processed.encode('utf-8'))
                     if is_approx:
                         stats['token_count_is_approx'] = True
+                        running_is_approx = True
 
                 _update_token_stats(stats, file_path, content_tokens)
 
@@ -2301,6 +2350,9 @@ def find_and_combine_files(
                 desc="Processing files",
                 unit="file",
             )
+            running_tokens = 0
+            running_size = 0
+            running_is_approx = False
 
             for item in all_combined_items:
                 file_path, root_path, is_excluded_by_size = item[:3]
@@ -2356,6 +2408,11 @@ def find_and_combine_files(
 
                 stats['top_files'].append((token_count, file_path.stat().st_size if file_path.exists() else 0, _get_rel_path(file_path, root_path).as_posix()))
 
+                running_tokens += token_count
+                running_size += file_path.stat().st_size if file_path.exists() else 0
+                if is_approx:
+                    running_is_approx = True
+                _update_bar_stats(processing_bar, running_tokens, running_size, is_approx=running_is_approx)
                 processing_bar.update(1)
 
             processing_bar.close()
@@ -3577,11 +3634,17 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
                 unit="file",
                 enabled=_progress_enabled(False)
             )
+            running_tokens = 0
+            running_is_approx = False
             for path_str, file_content, meta in est_bar:
                 est_bar.set_description(f"Estimating {_truncate_path(path_str, 40)}")
                 tokens, is_approx = utils.estimate_tokens(file_content)
                 meta['tokens'] = tokens
                 meta['is_approx'] = is_approx
+                running_tokens += tokens
+                if is_approx:
+                    running_is_approx = True
+                _update_bar_stats(est_bar, tokens=running_tokens, is_approx=running_is_approx)
             est_bar.close()
 
     for path_str, file_content, meta in filtered_files:
@@ -3643,6 +3706,9 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         unit="file",
         enabled=_progress_enabled(dry_run)
     )
+    running_tokens = 0
+    running_size = 0
+    running_is_approx = False
 
     for rel_path_str, file_content, meta in extraction_bar:
         extraction_bar.set_description(f"Extracting {_truncate_path(rel_path_str, 40)}")
@@ -3685,6 +3751,14 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
                     os.utime(target_path, (meta['modified'], meta['modified']))
                 logging.info("Extracted: %s", target_path)
                 extracted_count += 1
+                # Ensure we handle numeric conversion for metadata (especially from XML/JSON)
+                t_val = meta.get('tokens') or 0
+                s_val = meta.get('size') or 0
+                running_tokens += int(t_val) if isinstance(t_val, (int, float)) else 0
+                running_size += float(s_val) if isinstance(s_val, (int, float, str)) and not isinstance(s_val, bool) else 0
+                if meta.get('is_approx'):
+                    running_is_approx = True
+                _update_bar_stats(extraction_bar, running_tokens, running_size, is_approx=running_is_approx)
             except OSError as e:
                 logging.error("Failed to write %s: %s", target_path, e)
 
