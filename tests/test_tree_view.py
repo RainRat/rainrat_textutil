@@ -123,7 +123,7 @@ def test_tree_view_no_files(capsys, tmp_path):
     captured = capsys.readouterr()
     # If no files are matched, iteration_targets is empty, so no tree is printed.
     assert captured.out == ""
-    assert "Included:                        0" in captured.err
+    assert "Included:                          0" in captured.err
 
 def test_tree_view_no_output_file_validation(capsys, tmp_path):
     """Verify that --tree does not require output.file when set to null."""
