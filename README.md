@@ -121,8 +121,8 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--exclude-language` / `--exclude-lang`: Skip files of these languages (for example, `javascript`, `html`). Use this option again to skip more.
 *   `-x` / `--exclude-file` / `--exclude`: Skip files that match this search pattern (for example, `*.log`).
 *   `-X` / `--exclude-folder` / `--exclude-dir`: Skip folders that match this search pattern (for example, `node_modules`, `.git`).
-*   `--grep` / `-g`: Include only files whose content matches this search pattern.
-*   `--exclude-grep` / `-E`: Skip files whose content matches this search pattern.
+*   `--grep` / `-g`: Include only files whose content matches this regular expression.
+*   `--exclude-grep` / `-E`: Skip files whose content matches this regular expression.
 *   `--skip-binary` / `-B`: Skip files that contain non-text data (binary files).
 *   `--since` / `-S`: Include files modified since this time (for example, '1d', '2h', 'YYYY-MM-DD').
 *   `--until` / `-U`: Include files modified before this time (for example, '1d', '2h', 'YYYY-MM-DD').
@@ -165,7 +165,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--compact` / `-C`: Clean up extra spaces and blank lines in the output.
 *   `--max-lines`: Truncate each file to this many lines before combining.
 *   `--replace PATTERN REPLACEMENT`: Add a global search-and-replace rule using regular expressions. Use this option again to add more.
-*   `--replace-line PATTERN REPLACEMENT`: Add a line-based search-and-replace rule. Matching lines that follow each other collapse into a single replacement.
+*   `--replace-line PATTERN REPLACEMENT`: Add a line-based regular expression rule to find and replace content. Matching lines that follow each other collapse into a single replacement.
 *   `--apply-in-place`: Apply processing rules directly to your source files (WARNING: modifies your files!).
 *   `--create-backups`: Create `.bak` copies of your original files when using `--apply-in-place`.
 

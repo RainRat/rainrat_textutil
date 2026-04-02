@@ -2522,12 +2522,12 @@ def main():
     filtering_group.add_argument(
         "--grep",
         "-g",
-        help="Include only files whose content matches this search pattern.",
+        help="Include only files whose content matches this regular expression.",
     )
     filtering_group.add_argument(
         "--exclude-grep",
         "-E",
-        help="Skip files whose content matches this search pattern.",
+        help="Skip files whose content matches this regular expression.",
     )
     filtering_group.add_argument(
         "--skip-binary",
@@ -2720,7 +2720,7 @@ def main():
         nargs=2,
         action="append",
         metavar=("PATTERN", "REPLACEMENT"),
-        help="Add a line-based search-and-replace rule. Matching lines that follow each other collapse into one replacement. Use this option again to add more.",
+        help="Add a line-based regular expression rule to find and replace content. Matching lines that follow each other collapse into one replacement. Use this option again to add more.",
     )
 
     # Utility Commands Group
