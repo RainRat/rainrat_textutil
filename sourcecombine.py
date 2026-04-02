@@ -27,6 +27,30 @@ def xml_escape(data: str) -> str:
     return _xml_escape(data, {'"': "&quot;", "'": "&apos;"})
 
 
+def _to_int_or_none(val: Any) -> int | None:
+    """Safely convert a value to an integer, returning None on failure.
+
+    Handles strings with commas and leading '~' (approximate indicator).
+    """
+    if val is None:
+        return None
+    try:
+        s = str(val).lstrip('~').replace(',', '')
+        return int(float(s))
+    except (ValueError, TypeError):
+        return None
+
+
+def _to_float_or_none(val: Any) -> float | None:
+    """Safely convert a value to a float, returning None on failure."""
+    if val is None:
+        return None
+    try:
+        return float(str(val).replace(',', ''))
+    except (ValueError, TypeError):
+        return None
+
+
 def _print_diff(old_text, new_text, filename):
     """Print a colored unified diff between old_text and new_text."""
     if old_text == new_text:
@@ -3430,26 +3454,31 @@ def _parse_combined_content(content, source_name="combined file"):
         root = ET.fromstring(content)
         # Support both flat and nested <file> tags
         for file_node in root.iter('file'):
-            path = file_node.get('path')
-            file_content = file_node.text
-            if path and file_content is not None:
-                # XML extraction often has extra newlines due to templates
-                if file_content.startswith('\n') and file_content.endswith('\n'):
-                    file_content = file_content[1:-1]
+            try:
+                path = file_node.get('path')
+                file_content = file_node.text
+                if path and file_content is not None:
+                    # XML extraction often has extra newlines due to templates
+                    if file_content.startswith('\n') and file_content.endswith('\n'):
+                        file_content = file_content[1:-1]
 
-                tokens_val = file_node.get('tokens')
-                size_val = file_node.get('size')
-                lines_val = file_node.get('lines')
-                mod_val = file_node.get('modified')
+                    tokens_val = file_node.get('tokens')
+                    size_val = file_node.get('size')
+                    lines_val = file_node.get('lines')
+                    mod_val = file_node.get('modified')
 
-                meta = {
-                    'tokens': int(tokens_val.lstrip('~').replace(',', '')) if tokens_val else None,
-                    'size': utils.parse_size_value(size_val) if size_val else None,
-                    'lines': int(lines_val.replace(',', '')) if lines_val else None,
-                    'is_approx': tokens_val.startswith('~') if tokens_val else False,
-                    'modified': datetime.fromisoformat(mod_val).timestamp() if mod_val else None,
-                }
-                files_found.append((path, file_content, meta))
+                    meta = {
+                        'tokens': _to_int_or_none(tokens_val),
+                        'size': utils.parse_size_value(size_val) if size_val else None,
+                        'lines': _to_int_or_none(lines_val),
+                        'is_approx': (str(tokens_val).startswith('~')) if tokens_val else False,
+                        'modified': datetime.fromisoformat(mod_val).timestamp() if mod_val else None,
+                    }
+                    files_found.append((path, file_content, meta))
+            except (ValueError, TypeError, Exception) as exc:
+                logging.debug("Skipping malformed XML file entry: %s", exc)
+                continue
+
         if files_found:
             return files_found
     except (ET.ParseError, ImportError):
