@@ -1084,7 +1084,7 @@ def validate_glob_pattern(pattern, *, context="search pattern"):
     return normalized
 
 
-def validate_regex_pattern(pattern, *, context="search pattern", source=None):
+def validate_regex_pattern(pattern, *, context="regular expression", source=None):
     """Return a compiled regex after validating ``pattern``.
 
     Raises ``InvalidConfigError`` with a helpful message when ``pattern`` is
@@ -1095,7 +1095,7 @@ def validate_regex_pattern(pattern, *, context="search pattern", source=None):
     try:
         return re.compile(pattern)
     except re.error as exc:
-        location = f"Invalid search pattern in {context}"
+        location = f"Invalid regular expression in {context}"
         if source:
             location += f" (from '{source}')"
         raise InvalidConfigError(

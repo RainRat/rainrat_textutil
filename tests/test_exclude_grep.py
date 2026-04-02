@@ -97,7 +97,7 @@ def test_exclude_grep_invalid_regex():
     from utils import validate_config
     with pytest.raises(utils.InvalidConfigError) as excinfo:
         validate_config(config)
-    assert "Invalid search pattern in filters.exclude_grep" in str(excinfo.value)
+    assert "Invalid regular expression in filters.exclude_grep" in str(excinfo.value)
 
 def test_cli_exclude_grep_config_injection(tmp_path, monkeypatch):
     root = tmp_path / "root"

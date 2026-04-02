@@ -161,10 +161,10 @@ filters:
   # If true, skip files that appear to contain binary data (for example, executables, images).
   skip_binary: false
 
-  # Only include files whose content matches this search pattern.
+  # Only include files whose content matches this regular expression.
   grep: ""
 
-  # Skip files whose content matches this search pattern.
+  # Skip files whose content matches this regular expression.
   exclude_grep: ""
 
   # --- Inclusion Groups ---
@@ -225,7 +225,7 @@ processing:
   # If true, removes only the *first* C-style block comment if it's at the top of the file.
   # This runs *first* and also strips leading whitespace after the comment.
   remove_initial_c_style_comment: false
-  line_regex_replacements: []      # Collapse blocks of lines matching search patterns
+  line_regex_replacements: []      # Collapse blocks of lines matching regular expressions
   # Example line rule:
   # line_regex_replacements:
   #   - pattern: '^\s*\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$'
