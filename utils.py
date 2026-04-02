@@ -119,6 +119,10 @@ DEFAULT_CONFIG = {
     },
     'filters': {
         'skip_binary': False,
+        'min_tokens': 0,
+        'max_tokens': 0,
+        'min_lines': 0,
+        'max_lines': 0,
         'max_total_tokens': 0,
         'max_total_size_bytes': 0,
         'max_total_lines': 0,
@@ -508,6 +512,10 @@ def _validate_filters_section(config):
     integer_filters = (
         'min_size_bytes',
         'max_size_bytes',
+        'min_tokens',
+        'max_tokens',
+        'min_lines',
+        'max_lines',
         'max_total_tokens',
         'max_total_size_bytes',
         'max_total_lines',

@@ -128,6 +128,10 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--until` / `-U`: Include files modified before this time (for example, '1d', '2h', 'YYYY-MM-DD').
 *   `--min-size`: Include only files larger than this size (for example, '10KB', '1MB').
 *   `--max-size`: Include only files smaller than this size (for example, '10KB', '1MB').
+*   `--min-tokens`: Include only files with at least this many tokens.
+*   `--max-file-tokens`: Include only files with at most this many tokens.
+*   `--min-lines`: Include only files with at least this many lines.
+*   `--max-file-lines`: Include only files with at most this many lines.
 *   `--max-depth` / `-D`: Limit folder scanning to this depth (for example, `-D 1` for root files only; 0 for no limit).
 *   `--git-files` / `-G`: Use `git ls-files` to find files. This follows your `.gitignore` rules.
 *   `--git-diff [REF]`: Include only files that have changed in Git. If you provide a REF (like `main`), it finds changes since that commit. Otherwise, it finds unstaged, staged, and untracked changes.
