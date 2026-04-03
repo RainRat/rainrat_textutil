@@ -3797,8 +3797,8 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
             except OSError as e:
                 logging.error("Failed to write %s: %s", target_path, e)
 
-            running_size += meta.get('size', 0)
-            running_tokens += meta.get('tokens', 0)
+            running_size += meta.get('size') or 0
+            running_tokens += meta.get('tokens') or 0
             extraction_bar.set_postfix(size=utils.format_size(running_size), tokens=f"{running_tokens:,}")
 
     if not dry_run:

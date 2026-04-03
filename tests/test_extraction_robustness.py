@@ -90,3 +90,29 @@ decimal content
     stats = extract_files(content, tmp_path, dry_run=True)
 
     assert stats['total_tokens'] == 123
+
+
+def test_extract_json_with_null_meta(tmp_path):
+    """
+    Verify that JSON extraction handles null tokens or size metadata.
+    This catches regressions of the TypeError at sourcecombine.py:3801.
+    """
+    data = [
+        {
+            "path": "null_meta.py",
+            "content": "print('hello')",
+            "tokens": None,
+            "size_bytes": None,
+            "lines": 1,
+            "tokens_is_approx": False,
+            "modified": None
+        }
+    ]
+    content = json.dumps(data)
+
+    # Should not crash with TypeError
+    stats = extract_files(content, tmp_path, dry_run=True)
+
+    assert stats['total_files'] == 1
+    assert stats['total_tokens'] == 0
+    assert stats['total_size_bytes'] == 14  # Length of content "print('hello')"
