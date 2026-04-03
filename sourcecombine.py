@@ -3797,8 +3797,8 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
             except OSError as e:
                 logging.error("Failed to write %s: %s", target_path, e)
 
-            running_size += meta.get('size', 0)
-            running_tokens += meta.get('tokens', 0)
+            running_size += (meta.get('size') or 0)
+            running_tokens += (meta.get('tokens') or 0)
             extraction_bar.set_postfix(size=utils.format_size(running_size), tokens=f"{running_tokens:,}")
 
     if not dry_run:
@@ -4115,7 +4115,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                     tps_str = f"{tps:,.0f} tokens/s"
                     throughput_details.append(tps_str)
 
-                details_str = f"({', '.join(throughput_details)})"
+                details_str = f"({(' • ').join(throughput_details)})"
                 print(f"    {C_BOLD}{'Throughput:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{fps_str:>12}{C_RESET} {C_DIM}{details_str}{C_RESET}", file=sys.stderr)
 
         _print_limit_usage_bar('File Limit Usage:', total_included, stats.get('max_files', 0), label_width)
@@ -4196,18 +4196,18 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 total_tokens = stats.get('total_tokens', 0)
                 if total_tokens > 0:
                     weight_percent = (tokens_by_ext.get(ext, 0) / total_tokens) * 100
-                    weight_str = f"{C_DIM}/{weight_percent:>5.1f}%{C_RESET}"
-                    raw_weight_str = f"/{weight_percent:>5.1f}%"
+                    weight_str = f" {C_DIM}•{C_RESET} {weight_percent:>5.1f}%"
+                    raw_weight_str = f" • {weight_percent:>5.1f}%"
             else:
                 total_size = stats.get('total_size_bytes', 0)
                 if total_size > 0:
                     weight_percent = (size_by_ext.get(ext, 0) / total_size) * 100
-                    weight_str = f"{C_DIM}/{weight_percent:>5.1f}%{C_RESET}"
-                    raw_weight_str = f"/{weight_percent:>5.1f}%"
+                    weight_str = f" {C_DIM}•{C_RESET} {weight_percent:>5.1f}%"
+                    raw_weight_str = f" • {weight_percent:>5.1f}%"
 
             # Combine count, percentage of files, and weight
-            items.append(f"{C_DIM}{ext:<{max_ext_len}}:{C_RESET} {C_BOLD}{C_CYAN}{count:>5,}{C_RESET} {C_DIM}({file_percent:>5.1f}%{weight_str}){C_RESET}")
-            raw_items.append(f"{ext:<{max_ext_len}}: {count:>5,} ({file_percent:>5.1f}%{raw_weight_str})")
+            items.append(f"{C_DIM}{(ext + ':'):<{max_ext_len + 1}}{C_RESET} {C_BOLD}{C_CYAN}{count:>5,}{C_RESET} {C_DIM}({file_percent:>5.1f}%{weight_str}){C_RESET}")
+            raw_items.append(f"{(ext + ':'):<{max_ext_len + 1}} {count:>5,} ({file_percent:>5.1f}%{raw_weight_str})")
 
         max_len = max(len(s) for s in raw_items) + 3
 
@@ -4215,7 +4215,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         avail_width = max(40, term_width - 4)
         cols = max(1, avail_width // max_len)
 
-        legend = "count, % files, % tokens" if has_ext_tokens else "count, % files, % size"
+        legend = "count • % files • % tokens" if has_ext_tokens else "count • % files • % size"
         print(f"\n  {C_BOLD}{C_CYAN}File Types {C_DIM}({legend}){C_RESET}", file=sys.stderr)
 
         for i in range(0, len(items), cols):
