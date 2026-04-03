@@ -138,6 +138,11 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--map-lang EXTENSION LANGUAGE`: Manually map a file extension or filename to a specific language (for example, `.mjml` `html`). Use this option again to add more.
 *   `--files-from`: Read a list of files from a text file (use '-' for your terminal). This skips looking for files in folders.
 
+### Pairing Options
+*   `--pair SOURCE_EXT HEADER_EXT`: Enable file pairing by matching source and header extensions (for example, `.cpp` `.h`). Use this option again to add more pairs.
+*   `--include-unpaired`: Include files that do not have a matching pair when pairing is enabled.
+*   `--pair-template TEMPLATE`: Set the filename template for paired output (for example, `{{STEM}}.combined`).
+
 ### Sorting & Limiting
 *   `--sort` / `-s`: Sort files by name, size, date (modified), tokens, folder depth, or language before combining.
 *   `--reverse` / `-r`: Reverse the sort order.

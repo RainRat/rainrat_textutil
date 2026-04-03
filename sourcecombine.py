@@ -2746,6 +2746,26 @@ def main():
         help="Save a machine-readable execution summary (file counts, tokens, time taken) in JSON format. Use '-' to print it to your terminal.",
     )
 
+    # Pairing Options Group
+    pairing_group = parser.add_argument_group("Pairing Options")
+    pairing_group.add_argument(
+        "--pair",
+        nargs=2,
+        action="append",
+        metavar=("SOURCE_EXT", "HEADER_EXT"),
+        help="Enable file pairing by matching source and header extensions (for example, '.cpp' '.h'). Use this option again to add more pairs.",
+    )
+    pairing_group.add_argument(
+        "--include-unpaired",
+        action="store_true",
+        help="Include files that do not have a matching pair when pairing is enabled.",
+    )
+    pairing_group.add_argument(
+        "--pair-template",
+        metavar="TEMPLATE",
+        help="Set the filename template for paired output (for example, '{{STEM}}.combined').",
+    )
+
     # Display & Preview Group
     display_group = parser.add_argument_group("Display & Preview")
     display_group.add_argument(
@@ -3097,7 +3117,35 @@ def main():
         logging.debug("Added terminal language exclusions: %s", args.exclude_language)
 
     pairing_conf = config.get('pairing') or {}
+
+    if args.pair:
+        pairing_conf['enabled'] = True
+        source_exts = pairing_conf.get('source_extensions')
+        if not isinstance(source_exts, list):
+            source_exts = pairing_conf['source_extensions'] = []
+        header_exts = pairing_conf.get('header_extensions')
+        if not isinstance(header_exts, list):
+            header_exts = pairing_conf['header_extensions'] = []
+
+        for src, hdr in args.pair:
+            # Ensure extensions have leading dots
+            if not src.startswith('.'):
+                src = '.' + src
+            if not hdr.startswith('.'):
+                hdr = '.' + hdr
+            source_exts.append(src.lower())
+            header_exts.append(hdr.lower())
+        logging.debug("Added terminal pairing rules: %s", args.pair)
+
+    if args.include_unpaired:
+        pairing_conf['include_mismatched'] = True
+        logging.debug("Terminal enabled include_mismatched pairing.")
+
     output_conf = config.get('output') or {}
+
+    if args.pair_template:
+        output_conf['paired_filename_template'] = args.pair_template
+        logging.debug("Terminal set paired_filename_template: %s", args.pair_template)
     config['pairing'] = pairing_conf
     config['output'] = output_conf
 
@@ -3797,8 +3845,8 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
             except OSError as e:
                 logging.error("Failed to write %s: %s", target_path, e)
 
-            running_size += meta.get('size', 0)
-            running_tokens += meta.get('tokens', 0)
+            running_size += (meta.get('size') or 0)
+            running_tokens += (meta.get('tokens') or 0)
             extraction_bar.set_postfix(size=utils.format_size(running_size), tokens=f"{running_tokens:,}")
 
     if not dry_run:
