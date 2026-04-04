@@ -142,9 +142,9 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--sort` / `-s`: Sort files by name, size, date (modified), tokens, folder depth, or language before combining.
 *   `--reverse` / `-r`: Reverse the sort order.
 *   `--limit` / `-L`: Stop adding files once you reach this limit.
-*   `--max-tokens` / `-M`: Stop adding files once you reach the total tokens limit (only when combining many files into one).
-*   `--max-total-size`: Stop adding files once you reach the total size limit (for example, '5MB') (only when combining many files into one).
-*   `--max-total-lines`: Stop adding files once you reach the total lines limit (only when combining many files into one).
+*   `--max-tokens` / `-M`: Stop adding files once you reach the total tokens limit (only when combining many files or extracting).
+*   `--max-total-size`: Stop adding files once you reach the total size limit (for example, '5MB') (only when combining many files or extracting).
+*   `--max-total-lines`: Stop adding files once you reach the total lines limit (only when combining many files or extracting).
 
 ### Output Options
 *   `-a` / `--ai`: Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, folder tree, and skipping binary files. This also copies to your terminal's clipboard if you do not specify an output.
