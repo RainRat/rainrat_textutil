@@ -3686,7 +3686,7 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
                 meta['tokens'] = tokens
                 meta['is_approx'] = is_approx
                 running_tokens += tokens
-                running_size += meta.get('size', 0)
+                running_size += (meta.get('size') or 0)
                 est_bar.set_postfix(size=utils.format_size(running_size), tokens=f"{running_tokens:,}")
             est_bar.close()
 
@@ -3704,9 +3704,9 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         def get_extract_sort_key(item):
             path_str, file_content, meta = item
             if sort_by == 'size':
-                val = meta['size']
+                val = (meta.get('size') or 0)
             elif sort_by == 'tokens':
-                val = meta.get('tokens', 0)
+                val = (meta.get('tokens') or 0)
             elif sort_by == 'modified':
                 # Modification time is not typically preserved in combined files
                 val = 0
@@ -3797,8 +3797,8 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
             except OSError as e:
                 logging.error("Failed to write %s: %s", target_path, e)
 
-            running_size += meta.get('size', 0)
-            running_tokens += meta.get('tokens', 0)
+            running_size += (meta.get('size') or 0)
+            running_tokens += (meta.get('tokens') or 0)
             extraction_bar.set_postfix(size=utils.format_size(running_size), tokens=f"{running_tokens:,}")
 
     if not dry_run:
