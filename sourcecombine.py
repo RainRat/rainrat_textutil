@@ -41,16 +41,6 @@ def _to_int_or_none(val: Any) -> int | None:
         return None
 
 
-def _to_float_or_none(val: Any) -> float | None:
-    """Safely convert a value to a float, returning None on failure."""
-    if val is None:
-        return None
-    try:
-        return float(str(val).replace(',', ''))
-    except (ValueError, TypeError):
-        return None
-
-
 def _print_diff(old_text, new_text, filename):
     """Print a colored unified diff between old_text and new_text."""
     if old_text == new_text:
