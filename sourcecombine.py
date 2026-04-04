@@ -1706,7 +1706,7 @@ def find_and_combine_files(
 
     if not pairing_enabled and not dry_run and not estimate_tokens and not clipboard and not list_files and not tree_view and output_path is None:
         raise utils.InvalidConfigError(
-            "You must set an output file in your configuration or use the --output option."
+            "Please provide an output path using --output [FILE] or set 'output.file' in your configuration."
         )
 
     abs_output_path = None
@@ -2461,9 +2461,8 @@ def main():
     start_time = time.perf_counter()
     parser = argparse.ArgumentParser(
         description=(
-            "A versatile tool for your terminal to find, filter, and combine source code files "
-            "from a project into one file (or folder). Use it to give better context to AI "
-            "assistants, generate documentation, or save your work."
+            "Find, filter, and combine source code files into one file or folder. Use it to "
+            "provide context for AI assistants, generate documentation, or create backups."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=textwrap.dedent("""
@@ -2691,7 +2690,7 @@ def main():
         "--ai",
         "-a",
         action="store_true",
-        help="Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, folder tree, and skipping binary files. This also copies to your terminal's clipboard if you do not specify an output.",
+        help="Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, folder tree, and skip binary files. If no output is set, it copies to the clipboard (requires 'pyperclip').",
     )
     output_group.add_argument(
         "--clipboard",
@@ -2826,9 +2825,9 @@ def main():
         "--extract",
         action="store_true",
         help=(
-            "Rebuild your original files and folders from combined files (like JSON, XML, or Markdown). "
-            "You can read from one or more files, folders, your terminal ('-'), or your clipboard. Filtering, "
-            "sorting, and preview options are supported. Line numbers are removed automatically unless you use --keep-line-numbers."
+            "Restore original files from combined formats like JSON, XML, or Markdown. Read "
+            "from files, folders, your terminal (-), or clipboard. Removes line numbers "
+            "automatically if detected."
         ),
     )
     utility_group.add_argument(
@@ -3798,7 +3797,7 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
                 logging.error("Failed to write %s: %s", target_path, e)
 
             running_size += meta.get('size', 0)
-            running_tokens += meta.get('tokens', 0)
+            running_tokens += meta.get('tokens') or 0
             extraction_bar.set_postfix(size=utils.format_size(running_size), tokens=f"{running_tokens:,}")
 
     if not dry_run:

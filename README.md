@@ -1,6 +1,6 @@
 # SourceCombine
 
-A versatile tool for your terminal to find, filter, and combine source code files from a project into one file (or folder). Use it to give better context to AI assistants, generate documentation, or save your work.
+Find, filter, and combine source code files into one file or folder. Use it to provide context for AI assistants, generate documentation, or create backups.
 
 ## Key Features
 
@@ -8,7 +8,7 @@ A versatile tool for your terminal to find, filter, and combine source code file
 *   **Filtering:** Skip folders, files, or specific names using search patterns. You can also filter by language, file content, or Git changes.
 *   **Include Groups:** Group specific files to always include, even if you skip others.
 *   **Pairing:** Combine related files (like source and header pairs) into their own individual output files.
-*   **File Extraction:** Rebuild your original files and folders from combined files (like JSON, XML, or Markdown). Batch process multiple files or entire folders.
+*   **File Extraction:** Restore original files from combined formats like JSON, XML, or Markdown. Batch process multiple files or entire folders.
 *   **Sorting:** Sort files by `name`, `size`, `modified`, `tokens`, `depth`, or `language`.
 *   **Limiting:** Stop at a file limit, total tokens, total lines, or total size.
 *   **In-Place Processing:** Clean up extra spaces or blank lines directly in your source files.
@@ -50,7 +50,7 @@ Combine all files in `src/` and `lib/`, skip the `test/` folder, and estimate to
 python sourcecombine.py src lib -o output/ --exclude-folder "test" --estimate-tokens
 ```
 
-Prepare a project for an AI assistant (Markdown format, line numbers, and copied to clipboard):
+Prepare a project for an AI assistant (Markdown format, line numbers, and copied to the clipboard):
 
 ```bash
 python sourcecombine.py . --ai
@@ -147,7 +147,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--max-total-lines`: Stop adding files once you reach the total lines limit (only when combining many files into one).
 
 ### Output Options
-*   `-a` / `--ai`: Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, folder tree, and skipping binary files. This also copies to your terminal's clipboard if you do not specify an output.
+*   `-a` / `--ai`: Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, folder tree, and skip binary files. If no output is set, it copies to the clipboard (requires 'pyperclip').
 *   `--clipboard` / `-c`: Copy the combined text to the clipboard instead of creating a file (only when combining many files into one).
 *   `--format` / `-f`: Choose the output format ('text', 'json', 'jsonl', 'markdown', 'xml'). 'json' and 'jsonl' only work when combining many files into one.
 *   `-m` / `--markdown`: Shortcut for `--format markdown`.
@@ -176,7 +176,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 ### Utility Commands
 *   `--init`: Create a basic `sourcecombine.yml` configuration file in your current folder to get started.
 *   `--list-languages`: Show a list of all supported language identifiers and then stop.
-*   `--extract`: Rebuild your original files and folders from combined files (like JSON, XML, or Markdown). You can read from one or more files, folders, your terminal (`-`), or your clipboard. For example: `python sourcecombine.py --extract outputs/`. Filtering, sorting, and preview options are supported. Line numbers are removed automatically unless you use `--keep-line-numbers`.
+*   `--extract`: Restore original files from combined formats like JSON, XML, or Markdown. Read from files, folders, your terminal (-), or clipboard. For example: `python sourcecombine.py --extract outputs/`. Removes line numbers automatically if detected.
 *   `--keep-line-numbers`: Keep line numbers when extracting files. By default, the tool removes them automatically if detected.
 *   `--restore`: Undo 'apply-in-place' changes by restoring original files from their `.bak` copies. This command scans your target folders recursively for backup files.
 *   `--delete-backups`: Remove all `.bak` files from your target folders. Use this to clean up after you are done with `--apply-in-place`.
