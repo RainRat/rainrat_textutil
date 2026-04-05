@@ -23,7 +23,7 @@ def test_limit_bar_detail_tokens(capsys):
 
     captured = capsys.readouterr()
     assert "Token Limit Usage:" in captured.err
-    assert "[#####-----]   50.0% (500 / 1,000)" in captured.err
+    assert "[#####-----]   50.0% (500 • 1,000)" in captured.err
 
 def test_limit_bar_detail_size(capsys):
     """Test that the size limit bar shows formatted values."""
@@ -46,7 +46,7 @@ def test_limit_bar_detail_size(capsys):
 
     captured = capsys.readouterr()
     assert "Size Limit Usage:" in captured.err
-    assert "[#####-----]   50.0% (5.00 KB / 10.00 KB)" in captured.err
+    assert "[#####-----]   50.0% (5.00 KB • 10.00 KB)" in captured.err
 
 def test_limit_bar_detail_files(capsys):
     """Test that the file limit bar shows actual values."""
@@ -68,4 +68,4 @@ def test_limit_bar_detail_files(capsys):
 
     captured = capsys.readouterr()
     assert "File Limit Usage:" in captured.err
-    assert "[#####-----]   50.0% (5 / 10)" in captured.err
+    assert "[#####-----]   50.0% (5 • 10)" in captured.err
