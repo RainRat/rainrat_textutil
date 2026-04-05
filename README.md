@@ -111,12 +111,12 @@ List one or more folders or files to search. If you do not provide any, the tool
 
 ### Core Options
 *   `-o` / `--output`: Save the result to a specific file or folder. This takes priority over the path in your settings.
-*   `--dry-run` / `-d`: Show what would happen without making changes.
+*   `--dry-run` / `-d`: Show what would happen without making any changes.
 *   `--verbose` / `-v`: Show detailed status messages to help find and fix problems.
 *   `--config` / `-k`: Use a specific configuration file. This stops the tool from trying to find one automatically in your target list.
 
 ### Filtering & Selection
-*   `-i` / `--include` / `--include-file`: Include only files that match this search pattern (for example, `*.py`, `*.js`).
+*   `-i` / `--include` / `--include-file`: Include only files that match this search pattern (for example, `*.py`). Use this option again to include more.
 *   `--language` / `--lang`: Include only files of these languages (for example, `python`, `cpp`). Use this option again to include more. See `--list-languages` for a full list.
 *   `--exclude-language` / `--exclude-lang`: Skip files of these languages (for example, `javascript`, `html`). Use this option again to skip more.
 *   `-x` / `--exclude-file` / `--exclude`: Skip files that match this search pattern (for example, `*.log`).
@@ -141,7 +141,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 ### Sorting & Limiting
 *   `--sort` / `-s`: Sort files by name, size, date (modified), tokens, folder depth, or language before combining.
 *   `--reverse` / `-r`: Reverse the sort order.
-*   `--limit` / `-L`: Stop adding files once you reach this limit.
+*   `--limit` / `-L`: Stop adding files once you reach this file limit.
 *   `--max-tokens` / `-M`: Stop adding files once you reach the total tokens limit (only when combining many files into one).
 *   `--max-total-size`: Stop adding files once you reach the total size limit (for example, '5MB') (only when combining many files into one).
 *   `--max-total-lines`: Stop adding files once you reach the total lines limit (only when combining many files into one).
@@ -162,14 +162,13 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--list-files` / `-l`: Show a list of all files that would be included and then stop.
 *   `--tree` / `-t`: Show a visual folder tree of all included files with details and then stop.
 *   `--diff`: Show a colored diff of changes (only when using `--apply-in-place` or `--extract`).
-*   `--estimate-tokens` / `-e`: Calculate tokens without writing any files.
-    *   *Note: Slower than a dry-run because the tool must read every file.*
+*   `--estimate-tokens` / `-e`: Calculate total tokens without writing any files. This is slower because every file must be read.
 
 ### Processing
 *   `--compact` / `-C`: Clean up extra spaces and blank lines in the output.
 *   `--max-lines`: Truncate each file to this many lines before combining.
 *   `--replace PATTERN REPLACEMENT`: Add a global search-and-replace rule using regular expressions. Use this option again to add more.
-*   `--replace-line PATTERN REPLACEMENT`: Add a line-based regular expression rule to find and replace content. Matching lines that follow each other collapse into a single replacement.
+*   `--replace-line PATTERN REPLACEMENT`: Add a line-based regular expression rule to find and replace content. Matching lines that follow each other collapse into a single replacement. Use this option again to add more.
 *   `--apply-in-place`: Apply processing rules directly to your source files (WARNING: modifies your files!).
 *   `--create-backups`: Create `.bak` copies of your original files when using `--apply-in-place`.
 

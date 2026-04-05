@@ -2513,7 +2513,7 @@ def main():
         "--dry-run",
         "-d",
         action="store_true",
-        help="Show what would happen without actually making any changes.",
+        help="Show what would happen without making any changes.",
     )
     core_group.add_argument(
         "-v",
@@ -2548,7 +2548,7 @@ def main():
         "-i",
         action="append",
         default=[],
-        help="Include only files matching this search pattern (for example, '*.py'). Use this option again to include more.",
+        help="Include only files that match this search pattern (for example, '*.py'). Use this option again to include more.",
     )
     filtering_group.add_argument(
         "--language",
@@ -2667,7 +2667,7 @@ def main():
         "--limit",
         "-L",
         type=int,
-        help="Stop adding files once you reach this limit.",
+        help="Stop adding files once you reach this file limit.",
     )
     sorting_group.add_argument(
         "--max-tokens",
@@ -2752,7 +2752,7 @@ def main():
         "--estimate-tokens",
         "-e",
         action="store_true",
-        help="Estimate how many tokens the output will use. This is slower because the tool must read every file.",
+        help="Calculate total tokens without writing any files. This is slower because every file must be read.",
     )
     display_group.add_argument(
         "--list-files",
@@ -2778,7 +2778,7 @@ def main():
         "--compact",
         "-C",
         action="store_true",
-        help="Clean up extra spaces and blank lines in the output to save tokens.",
+        help="Clean up extra spaces and blank lines in the output.",
     )
     processing_group.add_argument(
         "--apply-in-place",
@@ -2807,7 +2807,7 @@ def main():
         nargs=2,
         action="append",
         metavar=("PATTERN", "REPLACEMENT"),
-        help="Add a line-based regular expression rule to find and replace content. Matching lines that follow each other collapse into one replacement. Use this option again to add more.",
+        help="Add a line-based regular expression rule to find and replace content. Matching lines that follow each other collapse into a single replacement. Use this option again to add more.",
     )
 
     # Utility Commands Group
@@ -2815,7 +2815,7 @@ def main():
     utility_group.add_argument(
         "--init",
         action="store_true",
-        help="Create a basic 'sourcecombine.yml' file in your current folder to get started.",
+        help="Create a basic 'sourcecombine.yml' configuration file in your current folder to get started.",
     )
     utility_group.add_argument(
         "--list-languages",
@@ -2827,8 +2827,9 @@ def main():
         action="store_true",
         help=(
             "Rebuild your original files and folders from combined files (like JSON, XML, or Markdown). "
-            "You can read from one or more files, folders, your terminal ('-'), or your clipboard. Filtering, "
-            "sorting, and preview options are supported. Line numbers are removed automatically unless you use --keep-line-numbers."
+            "You can read from one or more files, folders, your terminal ('-'), or your clipboard. "
+            "Filtering, sorting, and preview options are supported. Line numbers are removed "
+            "automatically unless you use --keep-line-numbers."
         ),
     )
     utility_group.add_argument(
@@ -2849,12 +2850,12 @@ def main():
     utility_group.add_argument(
         "--show-config",
         action="store_true",
-        help="Show the final combined configuration and exit. This includes defaults, your configuration file, and any options you provide.",
+        help="Show the final combined configuration (including defaults, files, and options) and exit.",
     )
     utility_group.add_argument(
         "--system-info",
         action="store_true",
-        help="Show details about your computer and the tool you are using.",
+        help="Show details about your computer and environment.",
     )
     utility_group.add_argument(
         "--version",
@@ -3797,8 +3798,8 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
             except OSError as e:
                 logging.error("Failed to write %s: %s", target_path, e)
 
-            running_size += meta.get('size', 0)
-            running_tokens += meta.get('tokens', 0)
+            running_size += (meta.get('size') or 0)
+            running_tokens += (meta.get('tokens') or 0)
             extraction_bar.set_postfix(size=utils.format_size(running_size), tokens=f"{running_tokens:,}")
 
     if not dry_run:
