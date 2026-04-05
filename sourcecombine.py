@@ -3481,9 +3481,9 @@ def _parse_combined_content(content, source_name="combined file"):
             for entry in data:
                 if isinstance(entry, dict) and 'path' in entry and 'content' in entry:
                     meta = {
-                        'tokens': entry.get('tokens'),
-                        'size': entry.get('size_bytes'),
-                        'lines': entry.get('lines'),
+                        'tokens': _to_int_or_none(entry.get('tokens')),
+                        'size': _to_int_or_none(entry.get('size_bytes')),
+                        'lines': _to_int_or_none(entry.get('lines')),
                         'is_approx': entry.get('tokens_is_approx', False),
                         'modified': entry.get('modified'),
                     }
@@ -3503,9 +3503,9 @@ def _parse_combined_content(content, source_name="combined file"):
             entry = json.loads(line)
             if isinstance(entry, dict) and 'path' in entry and 'content' in entry:
                 meta = {
-                    'tokens': entry.get('tokens'),
-                    'size': entry.get('size_bytes'),
-                    'lines': entry.get('lines'),
+                    'tokens': _to_int_or_none(entry.get('tokens')),
+                    'size': _to_int_or_none(entry.get('size_bytes')),
+                    'lines': _to_int_or_none(entry.get('lines')),
                     'is_approx': entry.get('tokens_is_approx', False),
                     'modified': entry.get('modified'),
                 }
@@ -3664,9 +3664,9 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         if meta.get('lines') is None:
             meta['lines'] = utils.count_lines(file_content)
 
-        stats['total_size_bytes'] += meta['size']
-        stats['size_by_extension'][ext] = stats['size_by_extension'].get(ext, 0) + meta['size']
-        stats['total_lines'] += meta['lines']
+        stats['total_size_bytes'] += (meta.get('size') or 0)
+        stats['size_by_extension'][ext] = stats['size_by_extension'].get(ext, 0) + (meta.get('size') or 0)
+        stats['total_lines'] += (meta.get('lines') or 0)
 
     # Token Estimation Pass
     if estimate_tokens or sort_by == 'tokens':
@@ -3797,8 +3797,8 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
             except OSError as e:
                 logging.error("Failed to write %s: %s", target_path, e)
 
-            running_size += meta.get('size', 0)
-            running_tokens += meta.get('tokens', 0)
+            running_size += (meta.get('size') or 0)
+            running_tokens += (meta.get('tokens') or 0)
             extraction_bar.set_postfix(size=utils.format_size(running_size), tokens=f"{running_tokens:,}")
 
     if not dry_run:
