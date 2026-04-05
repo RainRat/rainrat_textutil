@@ -41,16 +41,6 @@ def _to_int_or_none(val: Any) -> int | None:
         return None
 
 
-def _to_float_or_none(val: Any) -> float | None:
-    """Safely convert a value to a float, returning None on failure."""
-    if val is None:
-        return None
-    try:
-        return float(str(val).replace(',', ''))
-    except (ValueError, TypeError):
-        return None
-
-
 def _print_diff(old_text, new_text, filename):
     """Print a colored unified diff between old_text and new_text."""
     if old_text == new_text:
@@ -3797,8 +3787,8 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
             except OSError as e:
                 logging.error("Failed to write %s: %s", target_path, e)
 
-            running_size += meta.get('size', 0)
-            running_tokens += meta.get('tokens', 0)
+            running_size += (_to_int_or_none(meta.get('size')) or 0)
+            running_tokens += (_to_int_or_none(meta.get('tokens')) or 0)
             extraction_bar.set_postfix(size=utils.format_size(running_size), tokens=f"{running_tokens:,}")
 
     if not dry_run:

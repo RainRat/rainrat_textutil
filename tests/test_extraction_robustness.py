@@ -1,7 +1,7 @@
 import sys; import os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
 import json
-from sourcecombine import extract_files, _to_int_or_none, _to_float_or_none
+from sourcecombine import extract_files, _to_int_or_none
 import pytest
 
 def test_to_int_or_none():
@@ -13,13 +13,6 @@ def test_to_int_or_none():
     assert _to_int_or_none(None) is None
     assert _to_int_or_none("invalid") is None
     assert _to_int_or_none([]) is None
-
-def test_to_float_or_none():
-    assert _to_float_or_none("123.45") == 123.45
-    assert _to_float_or_none("1,234.56") == 1234.56
-    assert _to_float_or_none(123.45) == 123.45
-    assert _to_float_or_none(None) is None
-    assert _to_float_or_none("invalid") is None
 
 def test_extract_xml_robustness_malformed_entries(tmp_path):
     """Verify that malformed entries in XML are skipped without crashing the entire extraction."""
