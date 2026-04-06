@@ -62,6 +62,12 @@ Combine related source and header pairs (like `.cpp` and `.h`) into an `outputs/
 python sourcecombine.py src/ -o outputs/ --config example_cpp_h.yml
 ```
 
+Extract files and folders from a combined file into a new folder:
+
+```bash
+python sourcecombine.py --extract combined_files.txt -o extracted_files/
+```
+
 ## Configuration
 
 The tool automatically searches for a configuration file (`sourcecombine.yml`, `sourcecombine.yaml`, `config.yml`, or `config.yaml`) in your current folder when you do not provide any search targets. Use it to set complex exclusion rules, inclusion groups, and default output paths.
