@@ -2673,16 +2673,16 @@ def main():
         "--max-tokens",
         "-M",
         type=int,
-        help="Stop adding files once you reach the total tokens limit (only when combining many files into one).",
+        help="Stop adding files once you reach the total tokens limit (only when combining many files or extracting).",
     )
     sorting_group.add_argument(
         "--max-total-size",
-        help="Stop adding files once you reach the total size limit (for example, '5MB') (only when combining many files into one).",
+        help="Stop adding files once you reach the total size limit (for example, '5MB') (only when combining many files or extracting).",
     )
     sorting_group.add_argument(
         "--max-total-lines",
         type=int,
-        help="Stop adding files once you reach the total lines limit (only when combining many files into one).",
+        help="Stop adding files once you reach the total lines limit (only when combining many files or extracting).",
     )
 
     # Output Options Group
@@ -3630,6 +3630,10 @@ def _parse_combined_content(content, source_name="combined file"):
 def extract_files(sources, output_folder, dry_run=False, source_name="combined file", config=None, list_files=False, tree_view=False, limit=0, estimate_tokens=False, sort_by='name', sort_reverse=False, keep_line_numbers=False, show_diff=False):
     """Recreate the original folder structure and files from combined content sources."""
     output_folder = Path(output_folder)
+
+    if config is None:
+        config = copy.deepcopy(utils.DEFAULT_CONFIG)
+
     stats = {
         'total_discovered': 0,
         'total_files': 0,
@@ -3642,11 +3646,11 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         'top_files': [],
         'files_by_extension': {},
         'max_files': limit,
+        'max_total_tokens': config.get('filters', {}).get('max_total_tokens', 0),
+        'max_total_size_bytes': config.get('filters', {}).get('max_total_size_bytes', 0),
+        'max_total_lines': config.get('filters', {}).get('max_total_lines', 0),
         'filter_reasons': {},
     }
-
-    if config is None:
-        config = copy.deepcopy(utils.DEFAULT_CONFIG)
 
     # Handle backward compatibility for single source string/bytes
     if isinstance(sources, (str, bytes)):
@@ -3699,25 +3703,15 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         filtered_files = filtered_files[:limit]
         stats['limit_reached'] = True
 
-    # Metadata and Stats Pass
+    # Initial metadata calculation needed for sorting and limits
     for path_str, file_content, meta in filtered_files:
-        rel_path = PurePath(path_str)
-        stats['total_files'] += 1
-        ext = rel_path.suffix.lower() or '.no_extension'
-        stats['files_by_extension'][ext] = stats['files_by_extension'].get(ext, 0) + 1
-
-        # Use existing metadata or calculate it
         if meta.get('size') is None:
             meta['size'] = len(file_content.encode('utf-8'))
         if meta.get('lines') is None:
             meta['lines'] = utils.count_lines(file_content)
 
-        stats['total_size_bytes'] += meta['size']
-        stats['size_by_extension'][ext] = stats['size_by_extension'].get(ext, 0) + meta['size']
-        stats['total_lines'] += meta['lines']
-
-    # Token Estimation Pass
-    if estimate_tokens or sort_by == 'tokens':
+    # Token Estimation Pass (needed before global limits if sorting by tokens or requested)
+    if estimate_tokens or sort_by == 'tokens' or stats['max_total_tokens'] > 0:
         needs_estimation = [f for f in filtered_files if f[2].get('tokens') is None]
         if needs_estimation:
             est_bar = _progress_bar(
@@ -3737,15 +3731,6 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
                 running_size += meta.get('size', 0)
                 est_bar.set_postfix(size=utils.format_size(running_size), tokens=f"{running_tokens:,}")
             est_bar.close()
-
-    for path_str, file_content, meta in filtered_files:
-        tokens = meta.get('tokens')
-        if tokens is not None:
-            stats['total_tokens'] += tokens
-            ext = PurePath(path_str).suffix.lower() or '.no_extension'
-            stats['tokens_by_extension'][ext] = stats['tokens_by_extension'].get(ext, 0) + tokens
-            if meta.get('is_approx'):
-                stats['token_count_is_approx'] = True
 
     # Global Sort
     if sort_by != 'name' or sort_reverse:
@@ -3768,7 +3753,63 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
 
         filtered_files.sort(key=get_extract_sort_key, reverse=sort_reverse)
 
+    # Apply global limits (tokens, size, lines)
+    max_total_tokens = stats['max_total_tokens']
+    max_total_size = stats['max_total_size_bytes']
+    max_total_lines = stats['max_total_lines']
+
+    limited_files = []
+    current_tokens = 0
+    current_size = 0
+    current_lines = 0
+
+    for i, item in enumerate(filtered_files):
+        path_str, file_content, meta = item
+
+        file_tokens = (meta.get('tokens') or 0)
+        file_size = meta['size']
+        file_lines = meta['lines']
+
+        if max_total_tokens > 0 and (current_tokens + file_tokens) > max_total_tokens and current_tokens > 0:
+            stats['token_limit_reached'] = True
+            stats['filter_reasons']['token_limit'] = len(filtered_files) - i
+            break
+
+        if max_total_size > 0 and (current_size + file_size) > max_total_size and current_size > 0:
+            stats['size_limit_reached'] = True
+            stats['filter_reasons']['size_limit'] = len(filtered_files) - i
+            break
+
+        if max_total_lines > 0 and (current_lines + file_lines) > max_total_lines and current_lines > 0:
+            stats['line_limit_reached'] = True
+            stats['filter_reasons']['line_limit'] = len(filtered_files) - i
+            break
+
+        current_tokens += file_tokens
+        current_size += file_size
+        current_lines += file_lines
+        limited_files.append(item)
+
+    filtered_files = limited_files
+
+    # Final Stats Pass
     for path_str, file_content, meta in filtered_files:
+        rel_path = PurePath(path_str)
+        stats['total_files'] += 1
+        ext = rel_path.suffix.lower() or '.no_extension'
+        stats['files_by_extension'][ext] = stats['files_by_extension'].get(ext, 0) + 1
+
+        stats['total_size_bytes'] += meta['size']
+        stats['size_by_extension'][ext] = stats['size_by_extension'].get(ext, 0) + meta['size']
+        stats['total_lines'] += meta['lines']
+
+        tokens = meta.get('tokens')
+        if tokens is not None:
+            stats['total_tokens'] += tokens
+            stats['tokens_by_extension'][ext] = stats['tokens_by_extension'].get(ext, 0) + tokens
+            if meta.get('is_approx'):
+                stats['token_count_is_approx'] = True
+
         stats['top_files'].append((meta.get('tokens') or 0, meta['size'], path_str))
 
     files_to_create = filtered_files
