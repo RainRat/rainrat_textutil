@@ -4276,18 +4276,20 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 total_tokens = stats.get('total_tokens', 0)
                 if total_tokens > 0:
                     weight_percent = (tokens_by_ext.get(ext, 0) / total_tokens) * 100
-                    weight_str = f"{C_DIM} • {weight_percent:>5.1f}%{C_RESET}"
-                    raw_weight_str = f" • {weight_percent:>5.1f}%"
+                    weight_str = f" • {weight_percent:>5.1f}%"
+                    raw_weight_str = weight_str
             else:
                 total_size = stats.get('total_size_bytes', 0)
                 if total_size > 0:
                     weight_percent = (size_by_ext.get(ext, 0) / total_size) * 100
-                    weight_str = f"{C_DIM} • {weight_percent:>5.1f}%{C_RESET}"
-                    raw_weight_str = f" • {weight_percent:>5.1f}%"
+                    weight_str = f" • {weight_percent:>5.1f}%"
+                    raw_weight_str = weight_str
 
             # Combine count, percentage of files, and weight
-            items.append(f"{C_DIM}{ext:<{max_ext_len}}:{C_RESET} {C_BOLD}{C_CYAN}{count:>5,}{C_RESET} {C_DIM}({file_percent:>5.1f}%{weight_str}){C_RESET}")
-            raw_items.append(f"{ext:<{max_ext_len}}: {count:>5,} ({file_percent:>5.1f}%{raw_weight_str})")
+            # Attach the colon to the extension for better visual grouping
+            ext_with_colon = f"{ext}:"
+            items.append(f"{C_DIM}{ext_with_colon:<{max_ext_len + 1}}{C_RESET} {C_BOLD}{C_CYAN}{count:>5,}{C_RESET} {C_DIM}({file_percent:>5.1f}%{weight_str}){C_RESET}")
+            raw_items.append(f"{ext_with_colon:<{max_ext_len + 1}} {count:>5,} ({file_percent:>5.1f}%{raw_weight_str})")
 
         max_len = max(len(s) for s in raw_items) + 3
 
