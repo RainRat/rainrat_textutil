@@ -3519,9 +3519,9 @@ def _parse_combined_content(content, source_name="combined file"):
             for entry in data:
                 if isinstance(entry, dict) and 'path' in entry and 'content' in entry:
                     meta = {
-                        'tokens': entry.get('tokens'),
-                        'size': entry.get('size_bytes'),
-                        'lines': entry.get('lines'),
+                        'tokens': _to_int_or_none(entry.get('tokens')),
+                        'size': _to_int_or_none(entry.get('size_bytes')),
+                        'lines': _to_int_or_none(entry.get('lines')),
                         'is_approx': entry.get('tokens_is_approx', False),
                         'modified': entry.get('modified'),
                     }
@@ -3541,9 +3541,9 @@ def _parse_combined_content(content, source_name="combined file"):
             entry = json.loads(line)
             if isinstance(entry, dict) and 'path' in entry and 'content' in entry:
                 meta = {
-                    'tokens': entry.get('tokens'),
-                    'size': entry.get('size_bytes'),
-                    'lines': entry.get('lines'),
+                    'tokens': _to_int_or_none(entry.get('tokens')),
+                    'size': _to_int_or_none(entry.get('size_bytes')),
+                    'lines': _to_int_or_none(entry.get('lines')),
                     'is_approx': entry.get('tokens_is_approx', False),
                     'modified': entry.get('modified'),
                 }
@@ -3700,8 +3700,17 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         if meta.get('lines') is None:
             meta['lines'] = utils.count_lines(file_content)
 
+<<<<<<< HEAD
     # Token Estimation Pass (needed before global limits if sorting by tokens or requested)
     if estimate_tokens or sort_by == 'tokens' or stats['max_total_tokens'] > 0:
+=======
+        stats['total_size_bytes'] += (meta.get('size') or 0)
+        stats['size_by_extension'][ext] = stats['size_by_extension'].get(ext, 0) + (meta.get('size') or 0)
+        stats['total_lines'] += (meta.get('lines') or 0)
+
+    # Token Estimation Pass
+    if estimate_tokens or sort_by == 'tokens':
+>>>>>>> origin/fix-extraction-metadata-crash-5780392705267831232
         needs_estimation = [f for f in filtered_files if f[2].get('tokens') is None]
         if needs_estimation:
             est_bar = _progress_bar(
