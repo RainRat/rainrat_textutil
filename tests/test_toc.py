@@ -28,7 +28,7 @@ def test_generate_toc_text():
 
     expected = (
         "Table of Contents:\n"
-        "- src/main.py (1.00 KB, 256 tokens)\n"
+        "- src/main.py (1.00 KB • 256 tokens)\n"
         "- src/utils.py\n"
         "- README.md (512.00 B)\n"
         "\n--------------------\n"
@@ -48,7 +48,7 @@ def test_generate_toc_markdown():
 
     expected = (
         "## Table of Contents\n"
-        "- [src/main.py](#srcmainpy) (1.00 KB, 256 tokens)\n"
+        "- [src/main.py](#srcmainpy) (1.00 KB • 256 tokens)\n"
         "- [Hello World.md](#hello-worldmd) (512.00 B)\n"
     )
 

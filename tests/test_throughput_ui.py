@@ -45,7 +45,7 @@ def test_throughput_with_tokens(monkeypatch, capsys):
     assert "2,500 tokens/s" in stderr
 
     # Check parenthetical format
-    assert "(5.00 KB/s, 2,500 tokens/s)" in stderr
+    assert "(5.00 KB/s • 2,500 tokens/s)" in stderr
 
 def test_throughput_without_tokens(monkeypatch, capsys):
     # Mock stats
