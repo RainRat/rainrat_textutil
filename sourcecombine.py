@@ -3087,7 +3087,7 @@ def main():
             custom_langs[pattern.lower()] = lang.lower()
         logging.debug("Added terminal language mappings: %s", args.map_lang)
 
-    search = config.get('search', {})
+    search = config.get('search') or {}
 
     if args.language:
         if not isinstance(search.get('allowed_languages'), list):
@@ -3133,6 +3133,7 @@ def main():
         logging.debug("Terminal set paired_filename_template: %s", args.pair_template)
     config['pairing'] = pairing_conf
     config['output'] = output_conf
+    config['search'] = search
 
     if args.output and not args.extract:
         if pairing_conf.get('enabled'):
