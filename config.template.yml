@@ -127,6 +127,9 @@ output:
 
 # --- File Filtering ---
 filters:
+  # Skip duplicate files by absolute path or content.
+  unique: false
+
   # Include only files larger than this size.
   # Supports human-readable text like '10KB', '1.5MB', or raw bytes as an integer.
   min_size_bytes: 0

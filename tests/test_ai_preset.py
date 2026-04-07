@@ -76,6 +76,7 @@ class TestAIPreset(unittest.TestCase):
             pair=[],
             include_unpaired=False,
             pair_template=None,
+            unique=False,
         )
 
     @patch('argparse.ArgumentParser.parse_args')
