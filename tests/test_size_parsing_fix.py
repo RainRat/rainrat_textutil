@@ -17,3 +17,10 @@ def test_parse_size_value_invalid_numeric_no_unit():
         utils.parse_size_value("10.20.30")
     assert "Invalid size value" in str(excinfo.value)
     assert "10.20.30" in str(excinfo.value)
+
+
+def test_parse_size_value_with_commas():
+    # Test that human-readable sizes with commas are correctly parsed.
+    assert utils.parse_size_value("1,023 B") == 1023
+    assert utils.parse_size_value("1,024 KB") == 1048576
+    assert utils.parse_size_value("1,500.50 MB") == int(1500.5 * 1024 * 1024)
