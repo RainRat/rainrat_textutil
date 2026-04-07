@@ -4100,6 +4100,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         action = "Extracted" if getattr(args, 'extract', False) else "Combined"
         summary_title = f"SUCCESS: {action} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
 
+    # Collapse any accidental double spaces caused by empty optional fields
+    summary_title = re.sub(r'\s+', ' ', summary_title)
+
     # Header
     # We use _ANSI_ESCAPE to correctly calculate the visible length of the title for the border
     raw_title = _ANSI_ESCAPE.sub('', f"=== {summary_title} [{data_hint}] ===")
@@ -4252,8 +4255,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             key=lambda item: (-item[1], item[0])
         )
 
-        # Calculate max extension length for alignment
-        max_ext_len = max(len(ext) for ext, _ in sorted_exts) if sorted_exts else 0
+        # Calculate max extension length for alignment (including the colon)
+        max_ext_len = max(len(ext) + 1 for ext, _ in sorted_exts) if sorted_exts else 0
 
         items = []
         raw_items = []
@@ -4286,8 +4289,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                     raw_weight_str = f" • {weight_percent:>5.1f}%"
 
             # Combine count, percentage of files, and weight
-            items.append(f"{C_DIM}{ext:<{max_ext_len}}:{C_RESET} {C_BOLD}{C_CYAN}{count:>5,}{C_RESET} {C_DIM}({file_percent:>5.1f}%{weight_str}){C_RESET}")
-            raw_items.append(f"{ext:<{max_ext_len}}: {count:>5,} ({file_percent:>5.1f}%{raw_weight_str})")
+            ext_label = ext + ":"
+            items.append(f"{C_DIM}{ext_label:<{max_ext_len}}{C_RESET} {C_BOLD}{C_CYAN}{count:>5,}{C_RESET} {C_DIM}({file_percent:>5.1f}%{weight_str}){C_RESET}")
+            raw_items.append(f"{ext_label:<{max_ext_len}} {count:>5,} ({file_percent:>5.1f}%{raw_weight_str})")
 
         max_len = max(len(s) for s in raw_items) + 3
 
