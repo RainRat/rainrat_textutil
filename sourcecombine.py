@@ -1326,6 +1326,24 @@ class FileProcessor:
                 f"Failed to create backup for '{file_path}': {exc}"
             ) from exc
 
+    def _apply_inplace_if_needed(self, file_path, root_path, content, processed_content, encoding, dry_run=None, estimate_tokens=None):
+        """Apply in-place updates and print diffs if configured."""
+        if dry_run is None:
+            dry_run = self.dry_run
+        if estimate_tokens is None:
+            estimate_tokens = self.estimate_tokens
+
+        if not self.apply_in_place or processed_content == content:
+            return
+
+        if self.show_diff:
+            _print_diff(content, processed_content, _get_rel_path(file_path, root_path).as_posix())
+
+        if not estimate_tokens and not dry_run:
+            logging.info("Updating in place: %s (encoding: %s)", file_path, encoding)
+            self._backup_file(file_path)
+            file_path.write_text(processed_content, encoding=encoding, newline='')
+
     def _emit_entry(
         self,
         outfile,
@@ -1390,15 +1408,7 @@ class FileProcessor:
         else:
             content, encoding = read_file_best_effort(file_path)
             processed_content = process_content(content, self.processing_opts)
-
-            if self.show_diff and self.apply_in_place:
-                _print_diff(content, processed_content, _get_rel_path(file_path, root_path).as_posix())
-
-            if self.apply_in_place and processed_content != content and not self.estimate_tokens:
-                if not self.dry_run:
-                    logging.info("Updating in place: %s (encoding: %s)", file_path, encoding)
-                    self._backup_file(file_path)
-                    file_path.write_text(processed_content, encoding=encoding, newline='')
+            self._apply_inplace_if_needed(file_path, root_path, content, processed_content, encoding)
 
         relative_path = _get_rel_path(file_path, root_path)
         stat = file_path.stat() if file_path.exists() else None
@@ -2166,12 +2176,7 @@ def find_and_combine_files(
                 else:
                     content, encoding = read_file_best_effort(file_path)
                     processed = process_content(content, processor.processing_opts)
-                    if processor.apply_in_place and processed != content and not estimate_tokens and not dry_run:
-                        logging.info("Updating in place: %s (encoding: %s)", file_path, encoding)
-                        processor._backup_file(file_path)
-                        file_path.write_text(processed, encoding=encoding, newline='')
-                        if processor.show_diff:
-                            _print_diff(content, processed, _get_rel_path(file_path, root_path).as_posix())
+                    processor._apply_inplace_if_needed(file_path, root_path, content, processed, encoding, dry_run=dry_run, estimate_tokens=estimate_tokens)
 
                     # Content-based deduplication
                     if filter_opts.get('unique'):
