@@ -17,19 +17,30 @@ A versatile tool for your terminal to find, filter, and combine source code file
 *   **Estimation:** See total tokens without writing any files.
 *   **Configuration:** Save your settings in a `sourcecombine.yml` configuration file.
 
-## Download the code
+## Installation
 
-```bash
-git clone https://github.com/RainRat/rainrat_textutil.git
-cd rainrat_textutil
-pip install -r requirements.txt
-```
+### Prerequisites
 
-*Note: Install the optional `tiktoken` package for more accurate tokens:*
+*   Python 3.10 or higher.
+*   Git (for downloading the code and using Git-based features).
 
-```bash
-pip install tiktoken
-```
+### Steps
+
+1.  Clone the repository:
+    ```bash
+    git clone https://github.com/RainRat/rainrat_textutil.git
+    cd rainrat_textutil
+    ```
+
+2.  Install the required dependencies:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+3.  (Optional) Install the `tiktoken` package for more accurate token counting:
+    ```bash
+    pip install tiktoken
+    ```
 
 ### Verify it works
 
@@ -43,6 +54,12 @@ Combine all Python files in the current folder into `combined_files.txt`:
 
 ```bash
 python sourcecombine.py . -o combined_files.txt --include "*.py"
+```
+
+Combine only Python and JavaScript files:
+
+```bash
+python sourcecombine.py . -o output.txt --lang python --lang javascript
 ```
 
 Combine all files in `src/` and `lib/`, skip the `test/` folder, and estimate tokens:
