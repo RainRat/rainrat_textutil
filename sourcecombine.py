@@ -1568,6 +1568,100 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
     return "\n".join(lines)
 
 
+def _generate_project_overview(stats, output_format='text', processing_opts=None):
+    """Generate a project overview summary from execution statistics."""
+    if not stats:
+        return ""
+
+    lines = []
+    if output_format == 'markdown':
+        lines.append("# Project Overview\n")
+        lines.append("## Statistics")
+    else:
+        lines.append("Project Overview:")
+
+    total_files = stats.get('total_files', 0)
+    total_size = utils.format_size(stats.get('total_size_bytes', 0))
+    total_tokens = stats.get('total_tokens', 0)
+    total_lines = stats.get('total_lines', 0)
+    is_approx = stats.get('token_count_is_approx', False)
+
+    token_str = f"{'~' if is_approx else ''}{total_tokens:,}"
+
+    if output_format == 'markdown':
+        lines.append(f"- **Files:** {total_files:,}")
+        lines.append(f"- **Total Size:** {total_size}")
+        lines.append(f"- **Total Lines:** {total_lines:,}")
+        lines.append(f"- **Total Tokens:** {token_str}")
+    else:
+        lines.append(f"  Files: {total_files:,}")
+        lines.append(f"  Total Size: {total_size}")
+        lines.append(f"  Total Lines: {total_lines:,}")
+        lines.append(f"  Total Tokens: {token_str}")
+
+    # Truncation Notices
+    truncations = []
+    if stats.get('token_limit_reached'):
+        truncations.append("Token limit reached")
+    if stats.get('size_limit_reached'):
+        truncations.append("Total size limit reached")
+    if stats.get('line_limit_reached'):
+        truncations.append("Total line limit reached")
+    if stats.get('limit_reached'):
+        truncations.append("File limit reached")
+
+    if truncations:
+        notice = "WARNING: Output truncated due to: " + ", ".join(truncations)
+        if output_format == 'markdown':
+            lines.append(f"\n> [!CAUTION]\n> **{notice}**")
+        else:
+            lines.append(f"\n  {notice}")
+
+    # Processing Details
+    if processing_opts:
+        active_rules = []
+        if processing_opts.get('compact_whitespace'):
+            active_rules.append("Whitespace compaction")
+        if processing_opts.get('remove_all_c_style_comments'):
+            active_rules.append("C-style comment removal")
+        if processing_opts.get('max_lines'):
+            active_rules.append(f"Truncated to {processing_opts['max_lines']} lines per file")
+
+        if active_rules:
+            if output_format == 'markdown':
+                lines.append("\n## Applied Processing")
+                for rule in active_rules:
+                    lines.append(f"- {rule}")
+            else:
+                lines.append("\n  Applied Processing:")
+                for rule in active_rules:
+                    lines.append(f"    - {rule}")
+
+    # Language Breakdown
+    ext_stats = stats.get('files_by_extension', {})
+    if ext_stats:
+        sorted_exts = sorted(ext_stats.items(), key=lambda x: (-x[1], x[0]))
+        if output_format == 'markdown':
+            lines.append("\n## File Types")
+            lines.append("| Extension | Count | % Files |")
+            lines.append("| :--- | :--- | :--- |")
+            for ext, count in sorted_exts:
+                percent = (count / total_files * 100) if total_files > 0 else 0
+                lines.append(f"| `{ext}` | {count:,} | {percent:.1f}% |")
+        else:
+            lines.append("\n  File Types:")
+            for ext, count in sorted_exts:
+                percent = (count / total_files * 100) if total_files > 0 else 0
+                lines.append(f"    {ext:<10} {count:>5,} ({percent:>5.1f}%)")
+
+    if output_format == 'markdown':
+        lines.append("\n---")
+    else:
+        lines.append("\n" + "-" * 20 + "\n")
+
+    return "\n".join(lines)
+
+
 def _generate_table_of_contents(files, output_format='text', metadata=None):
     """Generate a Table of Contents string for the provided files.
 
@@ -1974,7 +2068,11 @@ def find_and_combine_files(
         max_total_tokens = filter_opts.get('max_total_tokens', 0)
         max_total_size = filter_opts.get('max_total_size_bytes', 0)
         max_total_lines = filter_opts.get('max_total_lines', 0)
-        needs_metadata = bool(output_opts.get('include_tree') or output_opts.get('table_of_contents'))
+        needs_metadata = bool(
+            output_opts.get('include_tree')
+            or output_opts.get('table_of_contents')
+            or output_opts.get('project_overview')
+        )
 
         # We need metadata for sorting (except name), token limit, size limit, TOC/Tree, or global placeholders
         global_placeholders = ["{{FILE_COUNT}}", "{{TOTAL_SIZE}}", "{{TOTAL_TOKENS}}", "{{TOTAL_LINES}}"]
@@ -2086,6 +2184,9 @@ def find_and_combine_files(
 
             # Estimate TOC and Tree overhead if enabled
             if output_format in ('text', 'markdown'):
+                if output_opts.get('project_overview'):
+                    overhead_tokens += 100 + (len(stats.get('files_by_extension', {})) * 10)
+                    overhead_size += 500 + (len(stats.get('files_by_extension', {})) * 50)
                 if output_opts.get('include_tree'):
                     overhead_tokens += len(all_combined_items) * 12
                     overhead_size += len(all_combined_items) * 50
@@ -2321,6 +2422,20 @@ def find_and_combine_files(
             # Write global header after metadata pass to ensure placeholders are filled
             if global_header and not dry_run and not estimate_tokens and output_format in ('text', 'markdown', 'xml'):
                 outfile.write(_render_global_template(global_header, stats))
+
+            if output_opts.get('project_overview') and output_format in ('text', 'markdown'):
+                overview_content = _generate_project_overview(
+                    stats, output_format, processing_opts=config.get('processing')
+                )
+                if not dry_run or estimate_tokens:
+                    token_count, is_approx = utils.estimate_tokens(overview_content)
+                    line_count = utils.count_lines(overview_content)
+                    stats['total_tokens'] += token_count
+                    stats['total_lines'] += line_count
+                    if is_approx:
+                        stats['token_count_is_approx'] = True
+                if not dry_run and not estimate_tokens:
+                    outfile.write(overview_content + "\n")
 
             if output_opts.get('include_tree') and output_format in ('text', 'markdown'):
                 root_to_paths = {}
@@ -2773,6 +2888,11 @@ def main():
         help="Include a visual folder tree with details at the start of the output (only when combining many files into one).",
     )
     output_group.add_argument(
+        "--overview",
+        action="store_true",
+        help="Add a project overview summary with statistics and language breakdown to the start of the output (only when combining many files into one).",
+    )
+    output_group.add_argument(
         "--json-summary",
         help="Save a machine-readable execution summary (file counts, tokens, time taken) in JSON format. Use '-' to print it to your terminal.",
     )
@@ -2923,6 +3043,7 @@ def main():
         args.line_numbers = True
         args.toc = True
         args.include_tree = True
+        args.overview = True
         args.skip_binary = True
 
         # If no explicit output is provided, attempt to use the clipboard
@@ -3278,6 +3399,9 @@ def main():
 
     if args.include_tree:
         output_conf['include_tree'] = True
+
+    if getattr(args, 'overview', False):
+        output_conf['project_overview'] = True
 
     if args.diff:
         output_conf['show_diff'] = True

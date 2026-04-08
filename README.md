@@ -169,6 +169,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--line-numbers` / `-n`: Add line numbers to the beginning of each line in the combined output.
 *   `--toc` / `-T`: Add a Table of Contents with sizes and tokens to the start of the output (only when combining many files into one in 'text' or 'markdown' formats).
 *   `--include-tree` / `-p`: Include a visual folder tree with details at the start of the output (only when combining many files into one).
+*   `--overview`: Add a project overview summary with statistics and language breakdown to the start of the output (only when combining many files into one).
 *   `--json-summary`: Save a machine-readable execution summary (file counts, tokens, time taken) in JSON format. Use `-` to print it to your terminal.
 
 ### Display & Preview
