@@ -6,6 +6,7 @@ A versatile tool for your terminal to find, filter, and combine source code file
 
 *   **Find files in many folders:** Scan many folders at once. Use Git to find files and follow your `.gitignore` rules automatically.
 *   **Filtering:** Skip folders, files, or specific names using search patterns. You can also filter by language, file content, or Git changes.
+*   **Deduplication:** Skip duplicate files by absolute path or content.
 *   **Include Groups:** Group specific files to always include, even if you skip others.
 *   **Pairing:** Combine related files (like source and header pairs) into their own individual output files.
 *   **File Extraction:** Rebuild your original files and folders from combined files (like JSON, XML, or Markdown). Batch process multiple files or entire folders.
@@ -141,6 +142,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--max-depth` / `-D`: Limit folder scanning to this depth (for example, `-D 1` for root files only; 0 for no limit).
 *   `--git-files` / `-G`: Use `git ls-files` to find files. This follows your `.gitignore` rules.
 *   `--git-diff [REF]`: Include only files that have changed in Git. If you provide a REF (like `main`), it finds changes since that commit. Otherwise, it finds unstaged, staged, and untracked changes.
+*   `--unique` / `-u`: Skip duplicate files by absolute path or content.
 *   `--map-lang EXTENSION LANGUAGE`: Manually map a file extension or filename to a specific language (for example, `.mjml` `html`). Use this option again to add more.
 *   `--files-from`: Read a list of files from a text file (use '-' for your terminal). This skips looking for files in folders.
 

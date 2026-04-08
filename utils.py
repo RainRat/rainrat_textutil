@@ -118,6 +118,7 @@ DEFAULT_CONFIG = {
         'custom_languages': {},
     },
     'filters': {
+        'unique': False,
         'skip_binary': False,
         'min_tokens': 0,
         'max_tokens': 0,
@@ -534,6 +535,10 @@ def _validate_filters_section(config):
                 raise InvalidConfigError(
                     f"filters.{key} must be 0 or more"
                 )
+
+    unique = filters.get('unique')
+    if unique is not None and not isinstance(unique, bool):
+        raise InvalidConfigError("filters.unique must be true or false")
 
     skip_binary = filters.get('skip_binary')
     if skip_binary is not None and not isinstance(skip_binary, bool):

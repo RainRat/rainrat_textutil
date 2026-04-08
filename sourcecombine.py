@@ -1,6 +1,7 @@
 import argparse
 from datetime import datetime
 import difflib
+import hashlib
 import importlib.util
 import platform
 import subprocess
@@ -1280,6 +1281,7 @@ class FileProcessor:
             )
         else:
             self.create_backups = False
+        self.seen_hashes = set()
 
     def _make_bar(self, **kwargs):
         return _progress_bar(enabled=_progress_enabled(self.dry_run), **kwargs)
@@ -1299,6 +1301,11 @@ class FileProcessor:
         outfile.write(_render_template(header_template, relative_path, size=size, tokens=tokens, lines=lines, escape_func=escape_func, modified=modified, content=content, custom_languages=self.custom_languages))
         outfile.write(content)
         outfile.write(_render_template(footer_template, relative_path, size=size, tokens=tokens, lines=lines, escape_func=escape_func, modified=modified, content=content, custom_languages=self.custom_languages))
+
+    def get_content_hash(self, content):
+        """Return the SHA-256 hash of the content."""
+        return hashlib.sha256(content.encode('utf-8', errors='replace')).hexdigest()
+
     def _backup_file(self, file_path):
         """Create a ``.bak`` backup for ``file_path`` when backups are enabled.
 
@@ -1736,6 +1743,8 @@ def find_and_combine_files(
     all_paired_items = []
     # Track all files excluded by size across all roots
     all_size_excluded = set()
+    # For path-based deduplication
+    seen_paths = set()
     # Metadata for TOC and Tree: {Path: {'size': int, 'tokens': int, 'mtime': float, 'depth': int}}
     file_metadata = {}
 
@@ -1789,10 +1798,28 @@ def find_and_combine_files(
             if excluded_count > 0:
                 stats['filter_reasons']['excluded_folder'] = stats['filter_reasons'].get('excluded_folder', 0) + excluded_count
             stats['total_discovered'] += len(all_paths)
+
+            # Path-based deduplication
+            unique_for_root = []
+            if filter_opts.get('unique'):
+                for p in all_paths:
+                    try:
+                        abs_p = p.resolve()
+                        if abs_p in seen_paths:
+                            logging.debug("Skipping duplicate path: %s", p)
+                            stats['filter_reasons']['duplicate_path'] = stats['filter_reasons'].get('duplicate_path', 0) + 1
+                            continue
+                        seen_paths.add(abs_p)
+                        unique_for_root.append(p)
+                    except OSError:
+                        unique_for_root.append(p)
+            else:
+                unique_for_root = all_paths
+
             record_size_exclusions = bool(output_opts.get('max_size_placeholder'))
 
             filtered_result = filter_file_paths(
-                all_paths,
+                unique_for_root,
                 filter_opts=filter_opts,
                 search_opts=search_opts,
                 root_path=root_path,
@@ -1955,7 +1982,7 @@ def find_and_combine_files(
                                   (global_footer and any(p in global_footer for p in global_placeholders))
 
         needs_full_pass = (sort_by not in ('name',) or max_total_tokens > 0 or max_total_size > 0 or max_total_lines > 0 or
-                           needs_metadata or has_global_placeholders or estimate_tokens)
+                           needs_metadata or has_global_placeholders or estimate_tokens or filter_opts.get('unique'))
 
         # Global Sort
         if pairing_enabled:
@@ -2145,6 +2172,16 @@ def find_and_combine_files(
                         file_path.write_text(processed, encoding=encoding, newline='')
                         if processor.show_diff:
                             _print_diff(content, processed, _get_rel_path(file_path, root_path).as_posix())
+
+                    # Content-based deduplication
+                    if filter_opts.get('unique'):
+                        content_hash = processor.get_content_hash(processed)
+                        if content_hash in processor.seen_hashes:
+                            logging.debug("Skipping duplicate content: %s", rel_p_str)
+                            stats['filter_reasons']['duplicate_content'] = stats['filter_reasons'].get('duplicate_content', 0) + 1
+                            continue
+                        processor.seen_hashes.add(content_hash)
+
                     content_tokens, is_approx = utils.estimate_tokens(processed)
                     content_lines = utils.count_lines(processed)
                     content_size = len(processed.encode('utf-8'))
@@ -2205,6 +2242,10 @@ def find_and_combine_files(
                 est_bar.update(1)
 
             est_bar.close()
+            # Clear hashes before final output pass so they can be tracked again if needed,
+            # but for combined files we want to keep them if we were using them for filtering.
+            # Actually, we should clear them if we are going to re-process in the output pass.
+            processor.seen_hashes.clear()
             all_combined_items = limited_items
             stats['token_limit_reached'] = token_limit_reached
             stats['size_limit_reached'] = size_limit_reached
@@ -2624,6 +2665,12 @@ def main():
         const=True,
         metavar="REF",
         help="Include only files that have changed in Git. If a REF is provided (like 'main'), it finds changes since that commit. Otherwise, it finds unstaged, staged, and untracked changes.",
+    )
+    filtering_group.add_argument(
+        "--unique",
+        "-u",
+        action="store_true",
+        help="Skip duplicate files by absolute path or content.",
     )
     filtering_group.add_argument(
         "--map-lang",
@@ -3181,6 +3228,9 @@ def main():
     if args.skip_binary:
         config['filters']['skip_binary'] = True
 
+    if args.unique:
+        config['filters']['unique'] = True
+
     if args.git_files:
         config['search']['use_git'] = True
 
@@ -3688,6 +3738,20 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         stats['filter_reasons']['file_limit'] = len(filtered_files) - limit
         filtered_files = filtered_files[:limit]
         stats['limit_reached'] = True
+
+    # Content-based deduplication for extraction
+    if filter_opts.get('unique'):
+        processor = FileProcessor(config, {}, dry_run=True)
+        unique_files = []
+        for path_str, file_content, meta in filtered_files:
+            content_hash = processor.get_content_hash(file_content)
+            if content_hash in processor.seen_hashes:
+                logging.debug("Skipping duplicate content in extraction: %s", path_str)
+                stats['filter_reasons']['duplicate_content'] = stats['filter_reasons'].get('duplicate_content', 0) + 1
+                continue
+            processor.seen_hashes.add(content_hash)
+            unique_files.append((path_str, file_content, meta))
+        filtered_files = unique_files
 
     # Initial metadata calculation needed for sorting and limits
     for path_str, file_content, meta in filtered_files:
