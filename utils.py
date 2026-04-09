@@ -161,6 +161,7 @@ DEFAULT_CONFIG = {
         'paired_filename_template': '{{STEM}}.combined',
         'add_line_numbers': False,
         'table_of_contents': False,
+        'project_overview': False,
         'header_template': f"--- {FILENAME_PLACEHOLDER} ---\n",
         'footer_template': f"\n--- end {FILENAME_PLACEHOLDER} ---\n",
         'global_header_template': None,
@@ -719,6 +720,10 @@ def _validate_output_section(config):
     toc = output_conf.get('table_of_contents')
     if toc is not None and not isinstance(toc, bool):
         raise InvalidConfigError("'output.table_of_contents' must be true or false.")
+
+    overview = output_conf.get('project_overview')
+    if overview is not None and not isinstance(overview, bool):
+        raise InvalidConfigError("'output.project_overview' must be true or false.")
 
     placeholder = output_conf.get('max_size_placeholder')
 

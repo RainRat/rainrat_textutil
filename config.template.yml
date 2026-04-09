@@ -87,6 +87,10 @@ output:
   # (only when combining many files into one; ignored in JSON format).
   include_tree: false
 
+  # Add a project overview summary with statistics and language breakdown to the start
+  # of the output (only when combining many files into one; ignored in JSON format).
+  project_overview: false
+
   # Template written before each file's content.
   # Placeholders: {{FILENAME}}, {{EXT}}, {{STEM}}, {{DIR}}, {{DIR_SLUG}}, {{SIZE}}, {{TOKENS}}, {{LINE_COUNT}}, {{MODIFIED}}, {{LANG}}.
   # Set to null or an empty text to omit the header.
