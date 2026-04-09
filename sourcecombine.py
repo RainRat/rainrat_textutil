@@ -4133,7 +4133,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     is_approx = stats.get('token_count_is_approx', False)
 
     if token_count > 0:
-        data_hint = f"{'~' if is_approx else ''}{token_count:,} tokens"
+        data_hint = f"{'~' if is_approx else ''}{token_count:,} tokens • {total_size_str}"
     else:
         data_hint = total_size_str
 
@@ -4185,13 +4185,14 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     label_width = 24
     print(f"  {C_BOLD}{C_CYAN}Files{C_RESET}", file=sys.stderr)
     included_color = f"{C_BOLD}{C_GREEN}" if total_included > 0 else C_RESET
-    filtered_color = f"{C_BOLD}{C_YELLOW}" if total_filtered > 0 else C_RESET
+    skipped_label_color = C_BOLD if total_filtered > 0 else C_DIM
+    filtered_color = f"{C_BOLD}{C_YELLOW}" if total_filtered > 0 else C_DIM
 
     included_percent = (total_included / total_discovered * 100) if total_discovered > 0 else 0
     skipped_percent = (total_filtered / total_discovered * 100) if total_discovered > 0 else 0
 
     print(f"    {C_BOLD}{'Included:':<{label_width}}{C_RESET}{included_color}{total_included:12,}{C_RESET} {C_DIM}({included_percent:>5.1f}%){C_RESET}", file=sys.stderr)
-    print(f"    {C_BOLD}{'Skipped:':<{label_width}}{C_RESET}{filtered_color}{total_filtered:12,}{C_RESET} {C_DIM}({skipped_percent:>5.1f}%){C_RESET}", file=sys.stderr)
+    print(f"    {skipped_label_color}{'Skipped:':<{label_width}}{C_RESET}{filtered_color}{total_filtered:12,}{C_RESET} {C_DIM}({skipped_percent:>5.1f}%){C_RESET}", file=sys.stderr)
 
     # Detailed breakdown of filtering reasons
     if stats.get('filter_reasons'):
@@ -4343,14 +4344,14 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 total_tokens = stats.get('total_tokens', 0)
                 if total_tokens > 0:
                     weight_percent = (tokens_by_ext.get(ext, 0) / total_tokens) * 100
-                    weight_str = f"{C_DIM} • {weight_percent:>5.1f}%{C_RESET}"
-                    raw_weight_str = f" • {weight_percent:>5.1f}%"
+                    weight_str = f" • {weight_percent:>5.1f}%"
+                    raw_weight_str = weight_str
             else:
                 total_size = stats.get('total_size_bytes', 0)
                 if total_size > 0:
                     weight_percent = (size_by_ext.get(ext, 0) / total_size) * 100
-                    weight_str = f"{C_DIM} • {weight_percent:>5.1f}%{C_RESET}"
-                    raw_weight_str = f" • {weight_percent:>5.1f}%"
+                    weight_str = f" • {weight_percent:>5.1f}%"
+                    raw_weight_str = weight_str
 
             # Combine count, percentage of files, and weight
             ext_label = ext + ":"
