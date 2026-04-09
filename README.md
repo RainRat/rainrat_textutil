@@ -22,22 +22,28 @@ A versatile tool for your terminal to find, filter, and combine source code file
 ### Prerequisites
 
 *   Python 3.10 or higher.
-*   Git (for downloading the code and using Git-based features).
+*   Git.
 
 ### Steps
 
-1.  Clone the repository:
+1.  Clone the repo:
     ```bash
     git clone https://github.com/RainRat/rainrat_textutil.git
     cd rainrat_textutil
     ```
 
-2.  Install the required dependencies:
+2.  (Recommended) Create and activate a virtual environment:
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    ```
+
+3.  Install dependencies:
     ```bash
     pip install -r requirements.txt
     ```
 
-3.  (Optional) Install the `tiktoken` package for more accurate token counting:
+4.  (Optional) Install `tiktoken` for more accurate token counting:
     ```bash
     pip install tiktoken
     ```
@@ -53,16 +59,16 @@ python sourcecombine.py --version
 Combine all Python files in the current folder into `combined_files.txt`:
 
 ```bash
-python sourcecombine.py . -o combined_files.txt --include "*.py"
+python sourcecombine.py -o combined_files.txt --include "*.py"
 ```
 
 Combine only Python and JavaScript files:
 
 ```bash
-python sourcecombine.py . -o output.txt --lang python --lang javascript
+python sourcecombine.py -o output.txt --lang python --lang javascript
 ```
 
-Combine all files in `src/` and `lib/`, skip the `test/` folder, and estimate tokens:
+Combine files in `src/` and `lib/`, skip the `test/` folder, and estimate tokens:
 
 ```bash
 python sourcecombine.py src lib -o output/ --exclude-folder "test" --estimate-tokens
@@ -71,7 +77,7 @@ python sourcecombine.py src lib -o output/ --exclude-folder "test" --estimate-to
 Prepare a project for an AI assistant (Markdown format, line numbers, and copied to clipboard):
 
 ```bash
-python sourcecombine.py . --ai
+python sourcecombine.py --ai
 ```
 
 Combine related source and header pairs (like `.cpp` and `.h`) into an `outputs/` folder:
@@ -102,7 +108,7 @@ Used in `header_template` and `footer_template` for each file:
 *   `{{EXT}}`: The file extension (for example, `py`).
 *   `{{STEM}}`: The filename without its extension (for example, `main` from `main.py`).
 *   `{{DIR}}`: The relative folder path (or `.` for the root folder).
-*   `{{DIR_SLUG}}`: A simplified version of the folder path (`root` when `DIR` is `.`).
+*   `{{DIR_SLUG}}`: A filesystem-safe, lowercase version of the folder path (`root` when `DIR` is `.`).
 *   `{{LANG}}`: The language identifier for syntax highlighting (for example, `python`).
 *   `{{SIZE}}`: The human-readable file size (for example, `1.5KB`).
 *   `{{TOKENS}}`: The number of tokens in the file.
