@@ -3490,23 +3490,14 @@ def main():
         explicit_files = []
         try:
             if args.files_from == '-':
-                # stdin is already open, but we need to ensure we read it line by line
-                # without closing it if it's reused (though here we just consume it).
-                # Using sys.stdin directly.
-                input_source = sys.stdin
                 source_name = "stdin"
+                input_ctx = nullcontext(sys.stdin)
             else:
-                input_source = open(args.files_from, 'r', encoding='utf-8')
                 source_name = args.files_from
+                input_ctx = open(args.files_from, 'r', encoding='utf-8')
 
-            if source_name != "stdin":
-                with input_source as f:
-                    for line in f:
-                        line = line.strip()
-                        if line:
-                            explicit_files.append(Path(line).resolve())
-            else:
-                for line in input_source:
+            with input_ctx as f:
+                for line in f:
                     line = line.strip()
                     if line:
                         explicit_files.append(Path(line).resolve())
