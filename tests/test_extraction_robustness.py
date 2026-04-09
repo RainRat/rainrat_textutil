@@ -2,7 +2,6 @@ import sys; import os; from pathlib import Path; sys.path.insert(0, os.fspath(Pa
 
 import json
 from sourcecombine import extract_files, _to_int_or_none
-import pytest
 
 def test_to_int_or_none():
     assert _to_int_or_none("123") == 123

@@ -1,5 +1,3 @@
-import os
-import pytest
 import copy
 from pathlib import Path
 from sourcecombine import find_and_combine_files, extract_files
@@ -30,7 +28,7 @@ def test_sort_by_language(tmp_path):
     # 'bash' < 'cpp' < 'python'
     # Expected order: script.sh, m.cpp, a.py, z.py
 
-    stats = find_and_combine_files(config, config['output']['file'])
+    find_and_combine_files(config, config['output']['file'])
 
     combined_content = Path(config['output']['file']).read_text(encoding='utf-8')
 

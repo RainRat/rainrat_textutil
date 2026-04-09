@@ -2,7 +2,6 @@ import sys; import os; from pathlib import Path; sys.path.insert(0, os.fspath(Pa
 import json
 import logging
 from sourcecombine import extract_files, _parse_combined_content
-from utils import DEFAULT_CONFIG
 
 def test_extract_text_format_coverage(tmp_path):
     """Test extraction from SourceCombine default text format to cover branch in _parse_combined_content."""

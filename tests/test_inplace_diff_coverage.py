@@ -1,6 +1,4 @@
 import sys
-import pytest
-from pathlib import Path
 from sourcecombine import main
 
 def test_inplace_diff_during_metadata_pass(tmp_path, monkeypatch, capsys):

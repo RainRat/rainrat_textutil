@@ -1,6 +1,4 @@
-import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
-import utils
-import sourcecombine
+import sys; import os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 from sourcecombine import _process_paired_files, extract_files, main
 import pytest
 import logging

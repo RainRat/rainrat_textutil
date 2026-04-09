@@ -1,7 +1,4 @@
-import subprocess
-from pathlib import Path
 from unittest.mock import MagicMock, patch
-import pytest
 import sourcecombine
 
 def test_collect_git_diff_files_current(tmp_path):

@@ -1,6 +1,5 @@
 import sys
 import pytest
-import logging
 import yaml
 from unittest.mock import patch
 import sourcecombine

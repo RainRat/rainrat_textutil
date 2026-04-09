@@ -1,24 +1,74 @@
 import argparse
-from datetime import datetime
+import copy
 import difflib
+import fnmatch
 import hashlib
 import importlib.util
-import platform
-import subprocess
-import time
-from typing import Any, Mapping
-from contextlib import nullcontext
-import copy
-import fnmatch
 import io
+import json
 import logging
 import os
+import platform
 import re
 import shutil
+import subprocess
 import sys
-import json
 import textwrap
+import time
+from contextlib import nullcontext
+from datetime import datetime
+from functools import lru_cache
+from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
+from typing import Any, Mapping
 from xml.sax.saxutils import escape as _xml_escape
+import xml.etree.ElementTree as ET
+
+# Local imports
+import utils
+from utils import (
+    FILENAME_PLACEHOLDER,
+    DEFAULT_OUTPUT_FILENAME,
+    ConfigNotFoundError,
+    add_line_numbers,
+    load_and_validate_config,
+    process_content,
+    read_file_best_effort,
+    validate_config,
+    _looks_binary,
+)
+
+# Export for backward compatibility and to handle module reloads correctly
+InvalidConfigError = utils.InvalidConfigError
+DEFAULT_CONFIG = utils.DEFAULT_CONFIG
+
+__version__ = "0.5.0"
+
+
+def _get_tqdm():
+    """Lazy-load tqdm for progress bars."""
+    try:
+        from tqdm import tqdm as _tqdm
+        return _tqdm
+    except ImportError:
+        return None
+
+
+def _get_yaml():
+    """Lazy-load yaml for configuration support."""
+    try:
+        import yaml
+        return yaml
+    except ImportError:
+        return None
+
+
+def _get_pyperclip():
+    """Lazy-load pyperclip for clipboard support."""
+    try:
+        import pyperclip
+        return pyperclip
+    except ImportError:
+        return None
 
 
 def xml_escape(data: str) -> str:
@@ -113,13 +163,6 @@ def _write_json_summary(stats, file_path, duration=None, source_desc=None, desti
         logging.error("Failed to write JSON summary to '%s': %s", file_path, e)
 
 
-from functools import lru_cache
-from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
-
-
-__version__ = "0.5.0"
-
-
 class _LazyColor:
     """A helper for ANSI colors that respects isatty and NO_COLOR."""
 
@@ -202,12 +245,6 @@ class CLILogFormatter(logging.Formatter):
         return f"{prefix}{message}"
 
 
-try:  # Optional tool for progress reporting
-    from tqdm import tqdm as _tqdm
-except ImportError:  # pragma: no cover - gracefully handle missing tqdm
-    _tqdm = None
-
-
 class _DevNull:
     """A file-like object that discards all writes."""
     def write(self, *args, **kwargs):
@@ -265,26 +302,10 @@ def _progress_enabled(dry_run):
 
 def _progress_bar(iterable=None, *, enabled=True, **kwargs):
     """Return a progress iterator/context manager with graceful fallback."""
-
+    _tqdm = _get_tqdm()
     if not enabled or _tqdm is None:
         return _SilentProgress(iterable)
     return _tqdm(iterable, **kwargs)
-import utils
-from utils import (
-    read_file_best_effort,
-    process_content,
-    load_and_validate_config,
-    validate_config,
-    add_line_numbers,
-    ConfigNotFoundError,
-    FILENAME_PLACEHOLDER,
-    DEFAULT_OUTPUT_FILENAME,
-    _looks_binary,
-    DEFAULT_CONFIG,
-)
-
-# Export for backward compatibility and to handle module reloads correctly
-InvalidConfigError = utils.InvalidConfigError
 
 
 def _get_rel_path(path, root_path):
@@ -2592,11 +2613,19 @@ def find_and_combine_files(
     stats['excluded_folder_count'] = total_excluded_folders
 
     if clipboard and clipboard_buffer is not None:
-        import pyperclip
-
         combined_output = clipboard_buffer.getvalue()
-        pyperclip.copy(combined_output)
-        logging.info("Copied combined output to clipboard.")
+        pyperclip = _get_pyperclip()
+        if pyperclip:
+            pyperclip.copy(combined_output)
+            logging.info("Copied combined output to clipboard.")
+        else:
+            logging.error("The 'pyperclip' tool is required for clipboard support. Install it with: pip install pyperclip")
+            # We don't exit here as the output might have been written elsewhere or be the only intended action.
+            # But usually if --clipboard is requested, user wants it there.
+            # If they didn't specify an output file, it goes to stdout by default too?
+            # Let's check if we should exit.
+            # The previous code didn't check, just failed with AttributeError.
+            pass
 
     return stats
 
@@ -3110,9 +3139,12 @@ def main():
             logging.warning("Template not found at %s; creating a simple configuration.", template_path)
             try:
                 with open(target_config, 'w', encoding='utf-8') as f:
-                    import yaml
                     f.write("# Default SourceCombine Configuration\n")
-                    yaml.dump(utils.DEFAULT_CONFIG, f, sort_keys=False)
+                    yaml = _get_yaml()
+                    if yaml:
+                        yaml.dump(utils.DEFAULT_CONFIG, f, sort_keys=False)
+                    else:
+                        logging.warning("PyYAML not found; creating an empty configuration.")
                 logging.info("Created a simple configuration at %s", target_config.resolve())
             except OSError as exc:
                 logging.error("Could not write the configuration file: %s", exc)
@@ -3505,9 +3537,12 @@ def main():
     output_conf['format'] = args.format
 
     if args.show_config:
-        import yaml
         logging.info("Final merged configuration:")
-        yaml.dump(_convert_to_json_friendly(config), sys.stdout, sort_keys=False)
+        yaml = _get_yaml()
+        if yaml:
+            yaml.dump(_convert_to_json_friendly(config), sys.stdout, sort_keys=False)
+        else:
+            json.dump(_convert_to_json_friendly(config), sys.stdout, indent=2)
         sys.exit(0)
 
     if pairing_enabled:
@@ -3563,10 +3598,14 @@ def main():
         sources = []
 
         if args.clipboard:
-            try:
-                import pyperclip
-                sources.append(("clipboard", pyperclip.paste()))
-            except ImportError:
+            pyperclip = _get_pyperclip()
+            if pyperclip:
+                try:
+                    sources.append(("clipboard", pyperclip.paste()))
+                except Exception as e:
+                    logging.error("Failed to paste from clipboard: %s", e)
+                    sys.exit(1)
+            else:
                 logging.error("The 'pyperclip' tool is required for clipboard support. Install it with: pip install pyperclip")
                 sys.exit(1)
 
@@ -3733,7 +3772,6 @@ def _parse_combined_content(content, source_name="combined file"):
 
     # 2. Try XML
     try:
-        import xml.etree.ElementTree as ET
         root = ET.fromstring(content)
         # Support both flat and nested <file> tags
         for file_node in root.iter('file'):

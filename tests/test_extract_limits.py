@@ -9,7 +9,6 @@ import pytest
 sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
 from sourcecombine import extract_files
-import utils
 
 @pytest.fixture
 def combined_json_content():

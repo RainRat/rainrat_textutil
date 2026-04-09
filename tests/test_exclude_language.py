@@ -1,7 +1,5 @@
-import pytest
 from pathlib import Path
 from sourcecombine import should_include
-import utils
 import sys
 import sourcecombine
 

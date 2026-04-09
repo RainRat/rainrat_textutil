@@ -1,5 +1,3 @@
-import pytest
-from pathlib import Path
 from sourcecombine import _generate_project_overview, find_and_combine_files
 import utils
 

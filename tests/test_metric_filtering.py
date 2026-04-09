@@ -1,5 +1,4 @@
 import pytest
-from pathlib import Path
 from sourcecombine import find_and_combine_files, extract_files
 import utils
 

@@ -3,7 +3,7 @@ import utils
 
 import yaml
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import sourcecombine
 from utils import remove_line_numbers, process_content, validate_config
 
@@ -125,7 +125,9 @@ def test_main_source_desc_empty():
 
 def test_progress_bar_hits_tqdm():
     # Covers sourcecombine.py line 175
-    with patch("sourcecombine._tqdm") as mock_tqdm:
+    with patch("sourcecombine._get_tqdm") as mock_get_tqdm:
+        mock_tqdm = MagicMock()
+        mock_get_tqdm.return_value = mock_tqdm
         with patch("sourcecombine._progress_enabled", return_value=True):
             sourcecombine._progress_bar(range(10), enabled=True)
             mock_tqdm.assert_called_once()

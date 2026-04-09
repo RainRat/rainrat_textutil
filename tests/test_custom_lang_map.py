@@ -1,5 +1,3 @@
-import pytest
-from pathlib import Path
 from sourcecombine import find_and_combine_files
 from utils import DEFAULT_CONFIG
 import copy

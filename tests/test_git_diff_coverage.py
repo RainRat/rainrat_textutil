@@ -1,8 +1,6 @@
 import subprocess
 import logging
-from pathlib import Path
 from unittest.mock import MagicMock, patch
-import pytest
 import sourcecombine
 import utils
 

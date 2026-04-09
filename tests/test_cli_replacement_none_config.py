@@ -1,8 +1,6 @@
 import sys; import os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import sourcecombine
-import copy
 
 def test_main_cli_replacement_injection_none_config(tmp_path):
     """
