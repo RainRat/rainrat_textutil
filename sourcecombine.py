@@ -3672,7 +3672,8 @@ def main():
     elif args.estimate_tokens:
         logging.info("%sOutput: Token estimation only%s %s(no files will be written)%s", C_CYAN, C_RESET, C_DIM, C_RESET)
     else:
-        logging.info("%sOutput:%s %s%s%s", C_CYAN, C_RESET, C_BOLD, destination_desc, C_RESET)
+        dry_run_indicator = f" {C_DIM}(dry run){C_RESET}" if args.dry_run else ""
+        logging.info("%sOutput:%s %s%s%s%s", C_CYAN, C_RESET, C_BOLD, destination_desc, C_RESET, dry_run_indicator)
 
     try:
         stats = find_and_combine_files(
