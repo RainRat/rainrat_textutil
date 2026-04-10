@@ -4478,7 +4478,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         max_ext_len = max(len(ext) + 1 for ext, _ in sorted_exts) if sorted_exts else 0
 
         items = []
-        raw_items = []
 
         # Decide whether to show tokens percentage or size percentage as weight
         # Prefer tokens if they were estimated
@@ -4492,41 +4491,39 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
             # Weight percentage (new behavior)
             weight_str = ""
-            raw_weight_str = ""
 
             if has_ext_tokens:
                 total_tokens = stats.get('total_tokens', 0)
                 if total_tokens > 0:
                     weight_percent = (tokens_by_ext.get(ext, 0) / total_tokens) * 100
                     weight_str = f" • {weight_percent:>5.1f}%"
-                    raw_weight_str = weight_str
             else:
                 total_size = stats.get('total_size_bytes', 0)
                 if total_size > 0:
                     weight_percent = (size_by_ext.get(ext, 0) / total_size) * 100
                     weight_str = f" • {weight_percent:>5.1f}%"
-                    raw_weight_str = weight_str
 
             # Combine count, percentage of files, and weight
             ext_label = ext + ":"
             items.append(f"{C_DIM}{ext_label:<{max_ext_len}}{C_RESET} {C_BOLD}{C_CYAN}{count:>5,}{C_RESET} {C_DIM}({file_percent:>5.1f}%{weight_str}){C_RESET}")
-            raw_items.append(f"{ext_label:<{max_ext_len}} {count:>5,} ({file_percent:>5.1f}%{raw_weight_str})")
 
-        max_len = max(len(s) for s in raw_items) + 3
+        # Calculate display widths of colored items to determine grid layout
+        item_widths = [len(_ANSI_ESCAPE.sub('', s)) for s in items]
+        max_len = max(item_widths) + 3 if item_widths else 0
 
         # Indent is 4
         avail_width = max(40, term_width - 4)
-        cols = max(1, avail_width // max_len)
+        cols = max(1, avail_width // max_len) if max_len > 0 else 1
 
         legend = "count • % files • % tokens" if has_ext_tokens else "count • % files • % size"
         print(f"\n  {C_BOLD}{C_CYAN}File Types {C_DIM}({legend}){C_RESET}", file=sys.stderr)
 
         for i in range(0, len(items), cols):
             chunk = items[i:i + cols]
-            raw_chunk = raw_items[i:i + cols]
+            chunk_widths = item_widths[i:i + cols]
             line_parts = []
-            for item, raw_item in zip(chunk, raw_chunk):
-                padding = " " * (max_len - len(raw_item))
+            for item, width in zip(chunk, chunk_widths):
+                padding = " " * (max_len - width)
                 line_parts.append(item + padding)
             print(f"    {''.join(line_parts).rstrip()}", file=sys.stderr)
 
