@@ -1208,7 +1208,7 @@ def parse_size_value(value: str) -> int:
     if not value:
         return 0
 
-    value = value.strip().upper().replace(',', '')
+    value = value.strip().upper().replace(',', '').lstrip('~').strip()
     match = re.match(r'^([\d.]+)\s*([A-Z]*)$', value)
     if not match:
         raise InvalidConfigError(f"Invalid size value: '{value}'. Use '10KB', '1.5MB', etc.")

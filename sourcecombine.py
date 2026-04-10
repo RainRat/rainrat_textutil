@@ -3780,11 +3780,19 @@ def _parse_combined_content(content, source_name="combined file"):
                     lines_val = file_node.get('lines')
                     mod_val = file_node.get('modified')
 
+                    tokens = _to_int_or_none(tokens_val)
+                    size = utils.parse_size_value(size_val) if size_val else None
+                    is_approx = False
+                    if tokens_val and str(tokens_val).strip().startswith('~'):
+                        is_approx = True
+                    if size_val and str(size_val).strip().startswith('~'):
+                        is_approx = True
+
                     meta = {
-                        'tokens': _to_int_or_none(tokens_val),
-                        'size': utils.parse_size_value(size_val) if size_val else None,
+                        'tokens': tokens,
+                        'size': size,
                         'lines': _to_int_or_none(lines_val),
-                        'is_approx': (str(tokens_val).startswith('~')) if tokens_val else False,
+                        'is_approx': is_approx,
                         'modified': datetime.fromisoformat(mod_val).timestamp() if mod_val else None,
                     }
                     files_found.append((path, file_content, meta))
@@ -3950,8 +3958,7 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
             elif sort_by == 'tokens':
                 val = meta.get('tokens', 0)
             elif sort_by == 'modified':
-                # Modification time is not typically preserved in combined files
-                val = 0
+                val = meta.get('modified', 0)
             elif sort_by == 'language':
                 val = utils.get_language_tag(path_str, content=file_content, overrides=config.get('search', {}).get('custom_languages'))
             elif sort_by == 'depth':
@@ -4016,8 +4023,9 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         if tokens is not None:
             stats['total_tokens'] += tokens
             stats['tokens_by_extension'][ext] = stats['tokens_by_extension'].get(ext, 0) + tokens
-            if meta.get('is_approx'):
-                stats['token_count_is_approx'] = True
+
+        if meta.get('is_approx'):
+            stats['token_count_is_approx'] = True
 
         stats['top_files'].append((meta.get('tokens') or 0, meta['size'], path_str))
 
