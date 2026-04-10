@@ -2871,13 +2871,13 @@ def main():
         "--ai",
         "-a",
         action="store_true",
-        help="Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, folder tree, and skipping binary files. This also copies to your terminal's clipboard if you do not specify an output.",
+        help="Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, folder tree, and skipping binary files. This also copies to your system clipboard if you do not specify an output.",
     )
     output_group.add_argument(
         "--clipboard",
         "-c",
         action="store_true",
-        help="Copy the combined text to the clipboard instead of creating a file (only when combining many files into one).",
+        help="Use the system clipboard to save combined output or read content for extraction.",
     )
     output_group.add_argument(
         "--format",
@@ -2928,7 +2928,7 @@ def main():
     )
     output_group.add_argument(
         "--json-summary",
-        help="Save a machine-readable execution summary (file counts, tokens, time taken) in JSON format. Use '-' to print it to your terminal.",
+        help="Save an execution summary (file counts, tokens, time taken) in JSON format. Use '-' to print it to your terminal.",
     )
 
     # Pairing Options Group

@@ -80,6 +80,12 @@ Prepare a project for an AI assistant (Markdown format, line numbers, and copied
 python sourcecombine.py --ai
 ```
 
+Extract files directly from the system clipboard into a folder:
+
+```bash
+python sourcecombine.py --extract --clipboard -o extracted_files/
+```
+
 Combine related source and header pairs (like `.cpp` and `.h`) into an `outputs/` folder:
 
 ```bash
@@ -183,8 +189,8 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--max-total-lines`: Stop adding files once you reach the total lines limit (only when combining many files or extracting).
 
 ### Output Options
-*   `-a` / `--ai`: Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, folder tree, and skipping binary files. This also copies to your terminal's clipboard if you do not specify an output.
-*   `--clipboard` / `-c`: Copy the combined text to the clipboard instead of creating a file (only when combining many files into one).
+*   `-a` / `--ai`: Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, folder tree, and skipping binary files. This also copies to your system clipboard if you do not specify an output.
+*   `--clipboard` / `-c`: Use the system clipboard to save combined output or read content for extraction.
 *   `--format` / `-f`: Choose the output format ('text', 'json', 'jsonl', 'markdown', 'xml'). 'json' and 'jsonl' only work when combining many files into one.
 *   `-m` / `--markdown`: Shortcut for `--format markdown`.
 *   `-j` / `--json`: Shortcut for `--format json`.
@@ -193,7 +199,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--toc` / `-T`: Add a Table of Contents with sizes and tokens to the start of the output (only when combining many files into one in 'text' or 'markdown' formats).
 *   `--include-tree` / `-p`: Include a visual folder tree with details at the start of the output (only when combining many files into one).
 *   `--overview`: Add a project overview summary with statistics and language breakdown to the start of the output (only when combining many files into one).
-*   `--json-summary`: Save a machine-readable execution summary (file counts, tokens, time taken) in JSON format. Use `-` to print it to your terminal.
+*   `--json-summary`: Save an execution summary (file counts, tokens, time taken) in JSON format. Use `-` to print it to your terminal.
 
 ### Display & Preview
 *   `--list-files` / `-l`: Show a list of all files that would be included and then stop.
@@ -212,7 +218,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 ### Utility Commands
 *   `--init`: Create a basic `sourcecombine.yml` configuration file in your current folder to get started.
 *   `--list-languages`: Show a list of all supported language identifiers and then stop.
-*   `--extract`: Rebuild your original files and folders from combined files (like JSON, XML, or Markdown). You can read from one or more files, folders, your terminal (`-`), or your clipboard. For example: `python sourcecombine.py --extract outputs/`. Filtering, sorting, and preview options are supported. Line numbers are removed automatically unless you use `--keep-line-numbers`.
+*   `--extract`: Rebuild your original files and folders from combined files (like JSON, XML, or Markdown). You can read from one or more files, folders, your terminal (`-`), or the system clipboard. For example: `python sourcecombine.py --extract outputs/`. Filtering, sorting, and preview options are supported. Line numbers are removed automatically unless you use `--keep-line-numbers`.
 *   `--keep-line-numbers`: Keep line numbers when extracting files. By default, the tool removes them automatically if detected.
 *   `--restore`: Undo 'apply-in-place' changes by restoring original files from their `.bak` copies. This command scans your target folders recursively for backup files.
 *   `--delete-backups`: Remove all `.bak` files from your target folders. Use this to clean up after you are done with `--apply-in-place`.
