@@ -4291,13 +4291,11 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     else:
         data_hint = total_size_str
 
-    if args.dry_run:
+    limit_reached = any(stats.get(k) for k in ('token_limit_reached', 'size_limit_reached', 'line_limit_reached', 'limit_reached'))
+
+    if args.dry_run or total_included == 0 or limit_reached:
         title_color = C_YELLOW
-    elif args.estimate_tokens:
-        title_color = C_CYAN
-    elif args.list_files:
-        title_color = C_CYAN
-    elif args.tree:
+    elif args.estimate_tokens or args.list_files or args.tree:
         title_color = C_CYAN
     else:
         title_color = C_GREEN
@@ -4306,17 +4304,23 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     highlighted_dest = f"{C_CYAN}{destination_desc}{title_color}" if destination_desc else ""
 
     file_word = "file" if total_included == 1 else "files"
+    status_suffix = ""
+    if total_included == 0:
+        status_suffix = " (NO FILES FOUND)"
+    elif limit_reached:
+        status_suffix = " (TRUNCATED)"
+
     if args.dry_run:
-        summary_title = f"DRY RUN COMPLETE: Would combine {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
+        summary_title = f"DRY RUN COMPLETE{status_suffix}: Would combine {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
     elif args.estimate_tokens:
-        summary_title = f"TOKEN ESTIMATION COMPLETE: {total_included:,} {file_word} {source_desc or ''}".strip()
+        summary_title = f"TOKEN ESTIMATION COMPLETE{status_suffix}: {total_included:,} {file_word} {source_desc or ''}".strip()
     elif args.list_files:
-        summary_title = f"FILE LISTING COMPLETE: {total_included:,} {file_word} {source_desc or ''}".strip()
+        summary_title = f"FILE LISTING COMPLETE{status_suffix}: {total_included:,} {file_word} {source_desc or ''}".strip()
     elif args.tree:
-        summary_title = f"TREE VIEW COMPLETE: {total_included:,} {file_word} {source_desc or ''}".strip()
+        summary_title = f"TREE VIEW COMPLETE{status_suffix}: {total_included:,} {file_word} {source_desc or ''}".strip()
     else:
         action = "Extracted" if getattr(args, 'extract', False) else "Combined"
-        summary_title = f"SUCCESS: {action} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
+        summary_title = f"SUCCESS{status_suffix}: {action} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
 
     # Collapse any accidental double spaces caused by empty optional fields
     summary_title = re.sub(r'\s+', ' ', summary_title)
@@ -4336,7 +4340,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to file limit.{C_RESET}", file=sys.stderr)
 
     # Files Section
-    label_width = 24
+    label_width = 20
     print(f"  {C_BOLD}{C_CYAN}Files{C_RESET}", file=sys.stderr)
     included_color = f"{C_BOLD}{C_GREEN}" if total_included > 0 else C_RESET
     skipped_label_color = C_BOLD if total_filtered > 0 else C_DIM
