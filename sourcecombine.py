@@ -3001,6 +3001,11 @@ def main():
         help="Truncate each file to this many lines before combining.",
     )
     processing_group.add_argument(
+        "--truncate-tokens",
+        type=int,
+        help="Truncate each file to this many tokens before combining.",
+    )
+    processing_group.add_argument(
         "--replace",
         nargs=2,
         action="append",
@@ -3454,6 +3459,9 @@ def main():
 
     if args.max_lines is not None:
         config['processing']['max_lines'] = args.max_lines
+
+    if args.truncate_tokens is not None:
+        config['processing']['max_tokens'] = args.truncate_tokens
 
     if args.replace:
         regex_rules = config['processing'].setdefault('regex_replacements', [])
