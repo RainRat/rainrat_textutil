@@ -4350,6 +4350,11 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     # Files Section
     label_width = 20
     print(f"  {C_BOLD}{C_CYAN}Files{C_RESET}", file=sys.stderr)
+
+    found_label_style = C_DIM if (total_discovered == total_included and not stats.get('filter_reasons')) else C_BOLD
+    found_value_style = C_DIM if (total_discovered == total_included and not stats.get('filter_reasons')) else f"{C_BOLD}{C_CYAN}"
+    print(f"    {found_label_style}{'Total Found:':<{label_width}}{C_RESET}{found_value_style}{total_discovered:12,}{C_RESET}", file=sys.stderr)
+
     included_color = f"{C_BOLD}{C_GREEN}" if total_included > 0 else C_RESET
     skipped_label_color = C_BOLD if total_filtered > 0 else C_DIM
     filtered_color = f"{C_BOLD}{C_YELLOW}" if total_filtered > 0 else C_DIM
@@ -4357,8 +4362,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     included_percent = (total_included / total_discovered * 100) if total_discovered > 0 else 0
     skipped_percent = (total_filtered / total_discovered * 100) if total_discovered > 0 else 0
 
-    print(f"    {C_BOLD}{'Included:':<{label_width}}{C_RESET}{included_color}{total_included:12,}{C_RESET} {C_DIM}({included_percent:>5.1f}%){C_RESET}", file=sys.stderr)
-    print(f"    {skipped_label_color}{'Skipped:':<{label_width}}{C_RESET}{filtered_color}{total_filtered:12,}{C_RESET} {C_DIM}({skipped_percent:>5.1f}%){C_RESET}", file=sys.stderr)
+    print(f"    {C_DIM}├── {C_RESET}{C_BOLD}{'Included:':<{label_width - 4}}{C_RESET}{included_color}{total_included:12,}{C_RESET} {C_DIM}({included_percent:>5.1f}%){C_RESET}", file=sys.stderr)
+    print(f"    {C_DIM}└── {C_RESET}{skipped_label_color}{'Skipped:':<{label_width - 4}}{C_RESET}{filtered_color}{total_filtered:12,}{C_RESET} {C_DIM}({skipped_percent:>5.1f}%){C_RESET}", file=sys.stderr)
 
     # Detailed breakdown of filtering reasons
     if stats.get('filter_reasons'):
@@ -4375,11 +4380,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
             # Use dim for less visual noise in the breakdown
             # Align with 'Included/Filtered' by adjusting for the bullet indent and connector
-            print(f"      {C_DIM}{connector}{display_reason:<{label_width - 6}}{C_RESET}{C_DIM}{count:12,}{C_RESET} {C_DIM}({reason_percent:>5.1f}%){C_RESET}", file=sys.stderr)
+            # Indented further to show it belongs to "Skipped"
+            print(f"            {C_DIM}{connector}{display_reason:<{label_width - 10}}{C_RESET}{C_DIM}{count:12,}{C_RESET} {C_DIM}({reason_percent:>5.1f}%){C_RESET}", file=sys.stderr)
 
-    found_label_style = C_DIM if (total_discovered == total_included and not stats.get('filter_reasons')) else C_BOLD
-    found_value_style = C_DIM if (total_discovered == total_included and not stats.get('filter_reasons')) else f"{C_BOLD}{C_CYAN}"
-    print(f"    {found_label_style}{'Total Found:':<{label_width}}{C_RESET}{found_value_style}{total_discovered:12,}{C_RESET}", file=sys.stderr)
     if excluded_folders > 0:
         print(f"    {C_BOLD}{'Skipped Folders:':<{label_width}}{C_RESET}{C_CYAN}{excluded_folders:12,}{C_RESET}", file=sys.stderr)
 
@@ -4401,7 +4404,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     if token_count > 0:
         token_str = f"{'~' if is_approx else ''}{token_count:,}"
         print(
-            f"    {C_BOLD}{'Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET}",
+            f"    {C_BOLD}{'Total Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET}",
             file=sys.stderr,
         )
         if is_approx:
