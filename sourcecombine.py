@@ -779,52 +779,33 @@ def collect_file_paths(root_folder, recursive, exclude_folders, progress=None, m
             root = root_path.parent if root_path.is_absolute() else Path('.')
             return [root_path], root, 0
 
+        git_results = None
         if use_git_diff:
             git_results = collect_git_diff_files(root_folder, diff_ref=git_diff_ref, progress=progress)
-            if git_results is not None:
-                file_paths, root, excluded = git_results
-                # Apply max_depth if requested
-                if max_depth > 0:
-                    file_paths = [
-                        p for p in file_paths
-                        if len(p.relative_to(root).parts) <= max_depth
-                    ]
 
-                # Apply folder exclusions if requested
-                exclude_patterns = _normalize_patterns(exclude_folders)
-                if exclude_patterns:
-                    def _is_excluded(p):
-                        rel_p = p.relative_to(root)
-                        return _matches_folder_glob_cached(rel_p.parent.as_posix(), rel_p.parent.parts, exclude_patterns)
-                    file_paths = [p for p in file_paths if not _is_excluded(p)]
-
-                return file_paths, root, excluded
-
-        if use_git:
+        if git_results is None and use_git:
             git_results = collect_git_files(root_folder, progress=progress)
-            if git_results is not None:
-                file_paths, root, excluded = git_results
 
-                # Apply max_depth if requested
-                if max_depth > 0:
-                    file_paths = [
-                        p for p in file_paths
-                        if len(p.relative_to(root).parts) <= max_depth
-                    ]
+        if git_results is not None:
+            file_paths, root, excluded = git_results
+            # Apply common Git post-processing filters (depth and exclusions)
+            if max_depth > 0:
+                file_paths = [
+                    p for p in file_paths
+                    if len(p.relative_to(root).parts) <= max_depth
+                ]
 
-                # Apply folder exclusions if requested (matching standard scan behavior)
-                exclude_patterns = _normalize_patterns(exclude_folders)
-                if exclude_patterns:
-                    def _is_excluded(p):
-                        rel_p = p.relative_to(root)
-                        # Check each parent folder against exclusion patterns
-                        return _matches_folder_glob_cached(rel_p.parent.as_posix(), rel_p.parent.parts, exclude_patterns)
+            exclude_patterns = _normalize_patterns(exclude_folders)
+            if exclude_patterns:
+                def _is_excluded(p):
+                    rel_p = p.relative_to(root)
+                    return _matches_folder_glob_cached(
+                        rel_p.parent.as_posix(), rel_p.parent.parts, exclude_patterns
+                    )
 
-                    file_paths = [p for p in file_paths if not _is_excluded(p)]
-                    # Note: We don't accurately count excluded FOLDERS here,
-                    # but we've filtered the files.
+                file_paths = [p for p in file_paths if not _is_excluded(p)]
 
-                return file_paths, root, excluded
+            return file_paths, root, excluded
         is_directory = root_path.is_dir()
     except OSError as exc:
         logging.warning(
