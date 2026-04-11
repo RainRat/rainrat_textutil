@@ -95,15 +95,15 @@ def test_summary_printing(monkeypatch, capsys):
     stderr = captured.err
 
     assert "SUCCESS: Combined 123 files" in stderr
-    assert "Included:                        123" in stderr
-    assert "Total Size:                  1.50 MB" in stderr
+    assert "Included:                    123" in stderr
+    assert "Total Size:              1.50 MB" in stderr
     assert "Largest Files" in stderr
     assert "SIZE" in stderr
     assert "%" in stderr
     assert "PATH" in stderr
     assert "File Types" in stderr
-    assert "Skipped Folders:                   2" in stderr
-    assert "Tokens:                       ~5,000" in stderr
+    assert "Skipped Folders:               2" in stderr
+    assert "Tokens:                   ~5,000" in stderr
 
     # Check wrapping (grid layout)
     assert "\n    " in stderr
@@ -131,8 +131,8 @@ def test_summary_printing_dry_run(monkeypatch, capsys):
     captured = capsys.readouterr()
     stderr = captured.err
 
-    assert "DRY RUN COMPLETE: Would combine 0 files" in stderr
-    assert "Included:                          0" in stderr
+    assert "DRY RUN COMPLETE (NO FILES FOUND): Would combine 0 files" in stderr
+    assert "Included:                      0" in stderr
     assert "Token Count" not in stderr
 
 def test_output_truncated_warning(capsys):
@@ -229,5 +229,5 @@ def test_summary_throughput_line(capsys):
         _print_execution_summary(stats, args, pairing_enabled=False, duration=2.0)
 
     captured = capsys.readouterr()
-    assert "Time taken:                    2.00s" in captured.err
-    assert "Throughput:             50.0 files/s" in captured.err
+    assert "Time taken:                2.00s" in captured.err
+    assert "Throughput:         50.0 files/s" in captured.err
