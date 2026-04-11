@@ -74,7 +74,7 @@ Combine files in `src/` and `lib/`, skip the `test/` folder, and estimate tokens
 python sourcecombine.py src lib -o output/ --exclude-folder "test" --estimate-tokens
 ```
 
-Prepare a project for an AI assistant (Markdown format, line numbers, and copied to clipboard):
+Prepare a project for an AI assistant (Markdown, line numbers, Table of Contents, folder tree, and project overview):
 
 ```bash
 python sourcecombine.py --ai
@@ -189,7 +189,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--max-total-lines`: Stop adding files once you reach the total lines limit (only when combining many files or extracting).
 
 ### Output Options
-*   `-a` / `--ai`: Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, folder tree, and skipping binary files. This also copies to your system clipboard if you do not specify an output.
+*   `-a` / `--ai`: Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, folder tree, project overview, and skipping binary files. This also copies to your system clipboard if you do not specify an output.
 *   `--clipboard` / `-c`: Use the system clipboard to save combined output or read content for extraction.
 *   `--format` / `-f`: Choose the output format ('text', 'json', 'jsonl', 'markdown', 'xml'). 'json' and 'jsonl' only work when combining many files into one.
 *   `-m` / `--markdown`: Shortcut for `--format markdown`.
