@@ -21,8 +21,8 @@ A versatile tool for your terminal to find, filter, and combine source code file
 
 ### Prerequisites
 
-*   Python 3.10 or higher.
-*   Git.
+*   **Python 3.10 or higher.** Check your version: `python --version` (or `python3 --version`).
+*   **Git.** Check your version: `git --version`.
 
 ### Steps
 
@@ -34,14 +34,21 @@ A versatile tool for your terminal to find, filter, and combine source code file
 
 2.  (Recommended) Create and activate a virtual environment:
     ```bash
+    # Create the environment
     python -m venv venv
-    source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+    # Activate it:
+    # On Windows:
+    venv\Scripts\activate
+    # On macOS or Linux:
+    source venv/bin/activate
     ```
 
 3.  Install dependencies:
     ```bash
     pip install -r requirements.txt
     ```
+    *   **Note for Linux users:** You may need to install `xclip` or `xsel` to use clipboard features (for example: `sudo apt install xclip`).
 
 4.  (Optional) Install `tiktoken` for more accurate token counting:
     ```bash
