@@ -4369,8 +4369,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
             # Use dim for less visual noise in the breakdown
             # Align with 'Included/Filtered' by adjusting for the bullet indent and connector
-            # Indented further to show it belongs to "Skipped"
-            print(f"            {C_DIM}{connector}{display_reason:<{label_width - 10}}{C_RESET}{C_DIM}{count:12,}{C_RESET} {C_DIM}({reason_percent:>5.1f}%){C_RESET}", file=sys.stderr)
+            print(f"          {C_DIM}{connector}{display_reason:<{label_width - 10}}{C_RESET}{C_DIM}{count:12,}{C_RESET} {C_DIM}({reason_percent:>5.1f}%){C_RESET}", file=sys.stderr)
 
     if excluded_folders > 0:
         print(f"    {C_BOLD}{'Skipped Folders:':<{label_width}}{C_RESET}{C_CYAN}{excluded_folders:12,}{C_RESET}", file=sys.stderr)
@@ -4470,66 +4469,62 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             else:
                 print(f"    {C_BOLD}{C_CYAN}{size_str:>10}{C_RESET}  {C_DIM}{percent_str}{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
 
-    # Extensions Grid
+    # Extensions List
     if stats['files_by_extension']:
-        # Sort by count desc, then alpha
-        sorted_exts = sorted(
-            stats['files_by_extension'].items(),
-            key=lambda item: (-item[1], item[0])
-        )
-
-        # Calculate max extension length for alignment (including the colon)
-        max_ext_len = max(len(ext) + 1 for ext, _ in sorted_exts) if sorted_exts else 0
-
-        items = []
-
-        # Decide whether to show tokens percentage or size percentage as weight
-        # Prefer tokens if they were estimated
         tokens_by_ext = stats.get('tokens_by_extension', {})
         size_by_ext = stats.get('size_by_extension', {})
         has_ext_tokens = any(v > 0 for v in tokens_by_ext.values())
 
-        for ext, count in sorted_exts:
-            # File count percentage (existing behavior)
-            file_percent = (count / total_included) * 100 if total_included > 0 else 0
+        if has_ext_tokens:
+            total_weight = stats.get('total_tokens', 0)
+            weight_by_ext = tokens_by_ext
+            legend = "count • % files • % tokens"
+        else:
+            total_weight = stats.get('total_size_bytes', 0)
+            weight_by_ext = size_by_ext
+            legend = "count • % files • % size"
 
-            # Weight percentage (new behavior)
-            weight_str = ""
+        # Sort by weight desc, then count desc, then alpha
+        sorted_exts = sorted(
+            stats['files_by_extension'].items(),
+            key=lambda item: (-weight_by_ext.get(item[0], 0), -item[1], item[0])
+        )
 
-            if has_ext_tokens:
-                total_tokens = stats.get('total_tokens', 0)
-                if total_tokens > 0:
-                    weight_percent = (tokens_by_ext.get(ext, 0) / total_tokens) * 100
-                    weight_str = f" • {weight_percent:>5.1f}%"
-            else:
-                total_size = stats.get('total_size_bytes', 0)
-                if total_size > 0:
-                    weight_percent = (size_by_ext.get(ext, 0) / total_size) * 100
-                    weight_str = f" • {weight_percent:>5.1f}%"
+        display_items = []
+        top_10 = sorted_exts[:10]
+        others = sorted_exts[10:]
 
-            # Combine count, percentage of files, and weight
-            ext_label = ext + ":"
-            items.append(f"{C_DIM}{ext_label:<{max_ext_len}}{C_RESET} {C_BOLD}{C_CYAN}{count:>5,}{C_RESET} {C_DIM}({file_percent:>5.1f}%{weight_str}){C_RESET}")
+        for ext, count in top_10:
+            weight = weight_by_ext.get(ext, 0)
+            display_items.append({'ext': ext, 'count': count, 'weight': weight})
 
-        # Calculate display widths of colored items to determine grid layout
-        item_widths = [len(_ANSI_ESCAPE.sub('', s)) for s in items]
-        max_len = max(item_widths) + 3 if item_widths else 0
+        if others:
+            other_count = sum(c for e, c in others)
+            other_weight = sum(weight_by_ext.get(e, 0) for e, c in others)
+            display_items.append({'ext': '(others)', 'count': other_count, 'weight': other_weight})
 
-        # Indent is 4
-        avail_width = max(40, term_width - 4)
-        cols = max(1, avail_width // max_len) if max_len > 0 else 1
-
-        legend = "count • % files • % tokens" if has_ext_tokens else "count • % files • % size"
         print(f"\n  {C_BOLD}{C_CYAN}File Types {C_DIM}({legend}){C_RESET}", file=sys.stderr)
 
-        for i in range(0, len(items), cols):
-            chunk = items[i:i + cols]
-            chunk_widths = item_widths[i:i + cols]
-            line_parts = []
-            for item, width in zip(chunk, chunk_widths):
-                padding = " " * (max_len - width)
-                line_parts.append(item + padding)
-            print(f"    {''.join(line_parts).rstrip()}", file=sys.stderr)
+        max_ext_len = max(len(d['ext']) + 1 for d in display_items) if display_items else 0
+
+        for d in display_items:
+            ext = d['ext']
+            count = d['count']
+            weight = d['weight']
+
+            file_percent = (count / total_included * 100) if total_included > 0 else 0
+            weight_percent = (weight / total_weight * 100) if total_weight > 0 else 0
+
+            # 10-character ASCII distribution bar
+            bar_len = 10
+            filled = int((weight_percent / 100) * bar_len + 0.5)
+            if weight_percent > 0 and filled == 0:
+                filled = 1
+            filled = min(bar_len, filled)
+            bar = f"{C_CYAN}{'#' * filled}{C_RESET}{C_DIM}{'-' * (bar_len - filled)}{C_RESET}"
+
+            ext_label = ext + ":"
+            print(f"    {C_DIM}{ext_label:<{max_ext_len}}{C_RESET} {C_BOLD}{C_CYAN}{count:>5,}{C_RESET} {C_DIM}({file_percent:>5.1f}% • {weight_percent:>5.1f}%){C_RESET} [{bar}]", file=sys.stderr)
 
     # Footer
     print(f"\n{title_color}{'=' * len(raw_title)}{C_RESET}", file=sys.stderr)

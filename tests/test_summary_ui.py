@@ -1,11 +1,11 @@
-import sys; import os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
-
-from unittest.mock import MagicMock, patch
 import sys
 import os
 from pathlib import Path
+from unittest.mock import MagicMock, patch
+import pytest
 
 # Adjust sys.path to include the project root
+sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
 import sourcecombine
 
@@ -107,9 +107,6 @@ def test_summary_printing(monkeypatch, capsys):
     assert "Skipped Folders:               2" in stderr
     assert "Total Tokens:             ~5,000" in stderr
 
-    # Check wrapping (grid layout)
-    assert "\n    " in stderr
-
 def test_summary_printing_dry_run(monkeypatch, capsys):
     stats = {
         'total_files': 0,
@@ -140,7 +137,7 @@ def test_summary_printing_dry_run(monkeypatch, capsys):
     assert "Token Count" not in stderr
 
 def test_output_truncated_warning(capsys):
-    """Test summary shows truncation warning (line 2265)."""
+    """Test summary shows truncation warning."""
     stats = {
         'total_files': 1,
         'total_size_bytes': 10,
@@ -151,20 +148,21 @@ def test_output_truncated_warning(capsys):
         'top_files': []
     }
 
-    from sourcecombine import _print_execution_summary
     args = MagicMock()
     args.list_files = False
     args.tree = False
     args.extract = False
+    args.dry_run = False
+    args.estimate_tokens = False
 
     with patch.dict(os.environ, {"NO_COLOR": "1"}):
-        _print_execution_summary(stats, args, pairing_enabled=False)
+        sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
 
     captured = capsys.readouterr()
     assert "WARNING: Output truncated due to token limit." in captured.err
 
 def test_limit_bar_no_color(capsys):
-    """Test limit bar with NO_COLOR=1 (line 2321)."""
+    """Test limit bar with NO_COLOR=1."""
     stats = {
         'total_files': 1,
         'total_size_bytes': 10,
@@ -174,21 +172,22 @@ def test_limit_bar_no_color(capsys):
         'top_files': []
     }
 
-    from sourcecombine import _print_execution_summary
     args = MagicMock()
     args.list_files = False
     args.tree = False
     args.extract = False
+    args.dry_run = False
+    args.estimate_tokens = False
 
     with patch.dict(os.environ, {"NO_COLOR": "1"}):
-        _print_execution_summary(stats, args, pairing_enabled=False)
+        sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
 
     captured = capsys.readouterr()
     assert "Token Limit Usage:" in captured.err
     assert "[#####-----]" in captured.err
 
 def test_summary_terminal_size_fallback(capsys):
-    """Test terminal size fallback in extensions grid (lines 2351-2354)."""
+    """Test terminal size fallback in extensions section."""
     stats = {
         'total_files': 1,
         'total_size_bytes': 10,
@@ -196,16 +195,17 @@ def test_summary_terminal_size_fallback(capsys):
         'top_files': []
     }
 
-    from sourcecombine import _print_execution_summary
     args = MagicMock()
     args.list_files = False
     args.tree = False
     args.extract = False
+    args.dry_run = False
+    args.estimate_tokens = False
 
     with patch('sys.stderr.isatty', return_value=True):
         with patch.dict(os.environ, {"NO_COLOR": "1"}):
             with patch('shutil.get_terminal_size', side_effect=Exception("Terminal error")):
-                _print_execution_summary(stats, args, pairing_enabled=False)
+                sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
 
     captured = capsys.readouterr()
     assert "File Types (count • % files • % size)" in captured.err
@@ -221,7 +221,6 @@ def test_summary_throughput_line(capsys):
         'top_files': []
     }
 
-    from sourcecombine import _print_execution_summary
     args = MagicMock()
     args.list_files = False
     args.tree = False
@@ -230,8 +229,86 @@ def test_summary_throughput_line(capsys):
     args.estimate_tokens = False
 
     with patch.dict(os.environ, {"NO_COLOR": "1"}):
-        _print_execution_summary(stats, args, pairing_enabled=False, duration=2.0)
+        sourcecombine._print_execution_summary(stats, args, pairing_enabled=False, duration=2.0)
 
     captured = capsys.readouterr()
     assert "Time taken:                2.00s" in captured.err
     assert "Throughput:         50.0 files/s" in captured.err
+
+def test_file_types_redesign_sorting_and_others(monkeypatch, capsys):
+    # Mock stats with 12 extensions.
+    # .py should be top by weight even if .txt has more files.
+    stats = {
+        'total_files': 100,
+        'total_discovered': 100,
+        'total_included': 100,
+        'total_size_bytes': 10000,
+        'files_by_extension': {
+            '.py': 10, '.txt': 50, '.md': 5, '.c1': 1, '.c2': 1,
+            '.c3': 1, '.c4': 1, '.c5': 1, '.c6': 1, '.c7': 1,
+            '.c8': 1, '.c9': 1
+        },
+        'tokens_by_extension': {
+            '.py': 8000, '.txt': 1000, '.md': 500, '.c1': 50
+        },
+        'total_tokens': 10000,
+        'token_count_is_approx': False,
+        'top_files': []
+    }
+
+    args = MagicMock()
+    args.dry_run = False
+    args.estimate_tokens = True
+    args.list_files = False
+    args.tree = False
+    args.extract = False
+
+    monkeypatch.setenv("NO_COLOR", "1")
+
+    sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
+
+    captured = capsys.readouterr()
+    stderr = captured.err
+
+    # Check sorting: .py should be first despite having fewer files than .txt
+    ext_lines = [line for line in stderr.splitlines() if line.strip().endswith("]") and ":" in line]
+
+    assert ".py:" in ext_lines[0]
+    assert ".txt:" in ext_lines[1]
+
+    # Check "others" aggregation (12 extensions total, top 10 shown, others aggregated)
+    assert "(others):" in stderr
+
+    # Check distribution bar
+    # 80% -> 8 blocks -> [########--]
+    assert "[########--]" in ext_lines[0]
+    # 10% -> 1 block -> [#---------]
+    assert "[#---------]" in ext_lines[1]
+
+def test_skip_reasons_alignment(monkeypatch, capsys):
+    stats = {
+        'total_files': 5,
+        'total_discovered': 10,
+        'filter_reasons': {'excluded': 5},
+        'total_size_bytes': 100,
+        'files_by_extension': {'.py': 5},
+        'total_tokens': 0,
+        'top_files': []
+    }
+
+    args = MagicMock()
+    args.dry_run = False
+    args.estimate_tokens = False
+    args.list_files = False
+    args.tree = False
+    args.extract = False
+
+    monkeypatch.setenv("NO_COLOR", "1")
+
+    sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
+
+    captured = capsys.readouterr()
+    stderr = captured.err
+
+    # Check indentation of skip reason
+    assert "          └── excluded" in stderr
