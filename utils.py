@@ -177,6 +177,7 @@ DEFAULT_CONFIG = {
         'apply_in_place': False,
         'create_backups': True,
         'max_lines': 0,
+        'max_tokens': 0,
     },
 }
 
@@ -649,6 +650,13 @@ def _validate_processing_section(config, *, source=None):
                 "'processing.max_lines' must be 0 or more"
             )
 
+    max_tokens = processing_conf.get('max_tokens')
+    if max_tokens is not None:
+        if not isinstance(max_tokens, int) or max_tokens < 0:
+            raise InvalidConfigError(
+                "'processing.max_tokens' must be 0 or more"
+            )
+
     if 'in_place_groups' in processing_conf:
         raise InvalidConfigError(
             "'processing.in_place_groups' is no longer used. "
@@ -875,6 +883,7 @@ def process_content(buffer: str, options: Mapping[str, Any]) -> str:
       specific whitespace transformations. Supported keys are defined in
       ``COMPACT_WHITESPACE_GROUPS``.
     - ``max_lines`` (int): if greater than zero, truncate the output to this many lines.
+    - ``max_tokens`` (int): if greater than zero, truncate the output to this many tokens.
     """
     if not options:
         return buffer
@@ -936,6 +945,10 @@ def process_content(buffer: str, options: Mapping[str, Any]) -> str:
         lines = buffer.splitlines(keepends=True)
         if len(lines) > max_lines:
             buffer = "".join(lines[:max_lines])
+
+    max_tokens = options.get('max_tokens', 0)
+    if max_tokens > 0:
+        buffer = truncate_tokens(buffer, max_tokens)
 
     return buffer
 
@@ -1138,6 +1151,33 @@ def estimate_tokens(text: str, encoding_name: str = "cl100k_base") -> tuple[int,
 
     # Approx: 1 token ~= 4 chars
     return len(text) // 4, True
+
+
+def truncate_tokens(text: str, max_tokens: int, encoding_name: str = "cl100k_base") -> str:
+    """Truncate the text to a maximum number of tokens.
+
+    If tiktoken is available, it uses the specified encoding to truncate accurately.
+    Otherwise, it uses a character-based approximation (1 token ~= 4 characters).
+    """
+    if max_tokens <= 0:
+        return text
+
+    if tiktoken:
+        try:
+            encoding = tiktoken.get_encoding(encoding_name)
+            tokens = encoding.encode(text, disallowed_special=())
+            if len(tokens) <= max_tokens:
+                return text
+            return encoding.decode(tokens[:max_tokens])
+        except Exception:
+            pass
+
+    # Fallback to character-based truncation
+    # 1 token ~= 4 chars, so we take max_tokens * 4
+    char_limit = max_tokens * 4
+    if len(text) <= char_limit:
+        return text
+    return text[:char_limit]
 
 
 def format_size(size_bytes: int) -> str:

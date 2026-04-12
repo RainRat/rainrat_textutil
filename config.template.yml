@@ -255,6 +255,7 @@ processing:
   #   - pattern: '^\s*//\s*TODO:.*$'
   #     replacement: ''
   max_lines: 0                     # Truncate each file to this many lines before combining
+  max_tokens: 0                    # Truncate each file to this many tokens before combining
   apply_in_place: false            # Apply these processing rules back to the source files
   create_backups: true             # Create .bak backups before rewriting when apply_in_place is true
 

@@ -210,6 +210,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 ### Processing
 *   `--compact` / `-C`: Clean up extra spaces and blank lines in the output.
 *   `--max-lines`: Truncate each file to this many lines before combining.
+*   `--truncate-tokens`: Truncate each file to this many tokens before combining.
 *   `--replace PATTERN REPLACEMENT`: Add a global search-and-replace rule using regular expressions. Use this option again to add more.
 *   `--replace-line PATTERN REPLACEMENT`: Add a line-based regular expression rule to find and replace content. Matching lines that follow each other collapse into a single replacement. Use this option again to add more.
 *   `--apply-in-place`: Apply processing rules directly to your source files (WARNING: modifies your files!).
