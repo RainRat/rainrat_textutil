@@ -500,9 +500,12 @@ def _validate_search_section(config):
     if custom_langs is not None:
         if not isinstance(custom_langs, dict):
             raise InvalidConfigError("search.custom_languages must be a dictionary.")
+        normalized = {}
         for key, val in custom_langs.items():
             if not isinstance(key, str) or not isinstance(val, str):
                 raise InvalidConfigError("Both keys and values in 'search.custom_languages' must be text.")
+            normalized[key.lower()] = val
+        search['custom_languages'] = normalized
 
 
 def _validate_filters_section(config):
