@@ -120,6 +120,11 @@ Used in `header_template` and `footer_template` for each file:
 *   `{{TOKENS}}`: The number of tokens in the file.
 *   `{{LINE_COUNT}}`: The number of lines in the file.
 *   `{{MODIFIED}}`: The last modified time in ISO 8601 format.
+*   `{{INDEX}}`: The 1-based index of the current file in the sequence.
+*   `{{TOTAL}}`: The total number of files being combined.
+*   `{{SIZE_PERCENT}}`: The percentage of the total size contributed by this file.
+*   `{{TOKEN_PERCENT}}`: The percentage of the total tokens contributed by this file.
+*   `{{LINE_PERCENT}}`: The percentage of the total lines contributed by this file.
 
 ### Project Templates
 Used in `global_header_template` and `global_footer_template` for the whole project:
