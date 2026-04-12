@@ -64,6 +64,7 @@ def test_summary_printing(monkeypatch, capsys):
     # Mock stats
     stats = {
         'total_files': 123,
+        'total_discovered': 123,
         'total_size_bytes': 1024 * 1024 * 1.5, # 1.5 MB
         'files_by_extension': {
             '.py': 10, '.txt': 5, '.md': 3, '.c': 1, '.h': 1,
@@ -95,7 +96,8 @@ def test_summary_printing(monkeypatch, capsys):
     stderr = captured.err
 
     assert "SUCCESS: Combined 123 files" in stderr
-    assert "Included:                    123" in stderr
+    assert "Total Found:                 123" in stderr
+    assert "├── Included:                123" in stderr
     assert "Total Size:              1.50 MB" in stderr
     assert "Largest Files" in stderr
     assert "SIZE" in stderr
@@ -103,7 +105,7 @@ def test_summary_printing(monkeypatch, capsys):
     assert "PATH" in stderr
     assert "File Types" in stderr
     assert "Skipped Folders:               2" in stderr
-    assert "Tokens:                   ~5,000" in stderr
+    assert "Total Tokens:             ~5,000" in stderr
 
     # Check wrapping (grid layout)
     assert "\n    " in stderr
@@ -111,6 +113,7 @@ def test_summary_printing(monkeypatch, capsys):
 def test_summary_printing_dry_run(monkeypatch, capsys):
     stats = {
         'total_files': 0,
+        'total_discovered': 0,
         'total_size_bytes': 0,
         'files_by_extension': {},
         'total_tokens': 0,
@@ -132,7 +135,8 @@ def test_summary_printing_dry_run(monkeypatch, capsys):
     stderr = captured.err
 
     assert "DRY RUN COMPLETE (NO FILES FOUND): Would combine 0 files" in stderr
-    assert "Included:                      0" in stderr
+    assert "Total Found:                   0" in stderr
+    assert "├── Included:                  0" in stderr
     assert "Token Count" not in stderr
 
 def test_output_truncated_warning(capsys):
