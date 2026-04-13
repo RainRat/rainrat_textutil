@@ -56,8 +56,8 @@ def test_summary_redesign_largest_files(monkeypatch, capsys):
     assert "1.95 KB" in stderr # (2000 bytes)
 
     # Check for truncated path
-    assert "a/very/long/path" in stderr
-    assert "truncation/file.py" in stderr
+    assert "a/very/long/" in stderr
+    assert "file.py" in stderr
 
 def test_summary_printing(monkeypatch, capsys):
     # Mock stats
@@ -97,7 +97,7 @@ def test_summary_printing(monkeypatch, capsys):
     assert "SUCCESS: Combined 123 files" in stderr
     assert "Total Found:                 123" in stderr
     assert "├── Included:                123" in stderr
-    assert "Total Size:              1.50 MB" in stderr
+    assert "Total Size:                 1.50 MB" in stderr
     assert "Largest Files" in stderr
     assert "SIZE" in stderr
     assert "%" in stderr
@@ -231,8 +231,8 @@ def test_summary_throughput_line(capsys):
         sourcecombine._print_execution_summary(stats, args, pairing_enabled=False, duration=2.0)
 
     captured = capsys.readouterr()
-    assert "Time taken:                2.00s" in captured.err
-    assert "Throughput:         50.0 files/s" in captured.err
+    assert "Time taken:                 2.00 s" in captured.err
+    assert "Throughput:                 50.0 files/s" in captured.err
 
 def test_file_types_redesign_sorting_and_others(monkeypatch, capsys):
     # Mock stats with 12 extensions.

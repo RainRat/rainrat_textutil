@@ -4472,7 +4472,12 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         fmt_name = (getattr(args, 'format', None) or stats.get('output_format', 'text')).upper()
         print(f"    {C_BOLD}{'Format:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{str(fmt_name):>12}{C_RESET}", file=sys.stderr)
 
-    print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_size_str:>12}{C_RESET}", file=sys.stderr)
+    if ' ' in total_size_str:
+        size_num, size_unit = total_size_str.split(' ', 1)
+        print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{size_num:>12}{C_RESET} {C_DIM}{size_unit}{C_RESET}", file=sys.stderr)
+    else:
+        print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_size_str:>12}{C_RESET}", file=sys.stderr)
+
     if total_lines > 0:
         print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET}", file=sys.stderr)
 
@@ -4496,13 +4501,13 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         print(f"\n  {C_BOLD}{C_CYAN}Time and Limits{C_RESET}", file=sys.stderr)
 
         if duration is not None:
-            print(f"    {C_BOLD}{'Time taken:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{duration:11.2f}s{C_RESET}", file=sys.stderr)
+            print(f"    {C_BOLD}{'Time taken:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{duration:12.2f}{C_RESET} {C_DIM}s{C_RESET}", file=sys.stderr)
             if duration > 0 and total_discovered > 1:
                 fps = total_discovered / duration
                 bps = total_size_bytes / duration
                 tps = token_count / duration if token_count > 0 else 0
 
-                fps_str = f"{fps:,.1f} files/s"
+                fps_str = f"{fps:12,.1f}"
 
                 throughput_details = [f"{utils.format_size(bps)}/s"]
                 if tps > 0:
@@ -4510,7 +4515,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                     throughput_details.append(tps_str)
 
                 details_str = f"({' • '.join(throughput_details)})"
-                print(f"    {C_BOLD}{'Throughput:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{fps_str:>12}{C_RESET} {C_DIM}{details_str}{C_RESET}", file=sys.stderr)
+                print(f"    {C_BOLD}{'Throughput:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{fps_str}{C_RESET} {C_DIM}files/s {details_str}{C_RESET}", file=sys.stderr)
 
         _print_limit_usage_bar('File Limit Usage:', total_included, stats.get('max_files', 0), label_width)
         _print_limit_usage_bar('Token Limit Usage:', token_count, stats.get('max_total_tokens', 0), label_width)
@@ -4525,23 +4530,31 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             print(f"\n  {C_BOLD}{C_CYAN}Largest Files (by tokens){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[0], x[2]))[:5]
             total_for_percent = stats.get('total_tokens', 0)
-            # Indent(4) + TokenCount(11) + Space(2) + Percent(6) + Space(2) + Size(10) + Space(2) = 37
-            path_width = max(30, term_width - 37)
-            print(f"    {C_DIM}{'TOKENS':>11}  {'%':>6}  {'SIZE':>10}  PATH{C_RESET}", file=sys.stderr)
+            # Indent(4) + TokenCount(11) + Space(2) + Percent(6) + Space(1) + Bar(12) + Space(1) + Size(10) + Space(2) = 49
+            path_width = max(30, term_width - 49)
+            print(f"    {C_DIM}{'TOKENS':>11}  {'%':>6} {'DISTRIBUTION':^12} {'SIZE':>10}  PATH{C_RESET}", file=sys.stderr)
         else:
             print(f"\n  {C_BOLD}{C_CYAN}Largest Files (by size){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[1], x[2]))[:5]
             total_for_percent = stats.get('total_size_bytes', 0)
-            # Indent(4) + Size(10) + Space(2) + Percent(6) + Space(2) = 24
-            path_width = max(30, term_width - 24)
-            print(f"    {C_DIM}{'SIZE':>10}  {'%':>6}  PATH{C_RESET}", file=sys.stderr)
+            # Indent(4) + Size(10) + Space(2) + Percent(6) + Space(1) + Bar(12) + Space(2) = 37
+            path_width = max(30, term_width - 37)
+            print(f"    {C_DIM}{'SIZE':>10}  {'%':>6} {'DISTRIBUTION':^12}  PATH{C_RESET}", file=sys.stderr)
 
         for tokens, f_size, path in top:
             val = tokens if has_tokens else f_size
-            percent_str = "  0.0%"
+            percent = 0.0
             if total_for_percent > 0:
                 percent = (val / total_for_percent) * 100
-                percent_str = f"{percent:>5.1f}%"
+            percent_str = f"{percent:>5.1f}%"
+
+            # 10-character ASCII distribution bar
+            bar_len = 10
+            filled = int((percent / 100) * bar_len + 0.5)
+            if percent > 0 and filled == 0:
+                filled = 1
+            filled = min(bar_len, filled)
+            bar = f"[{C_CYAN}{'#' * filled}{C_RESET}{C_DIM}{'-' * (bar_len - filled)}{C_RESET}]"
 
             if has_tokens:
                 token_str = f"{'~' if is_approx else ''}{tokens:,}"
@@ -4554,9 +4567,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
             # Align token counts at 11, percentages at 6, and sizes at 10 to keep paths consistent
             if has_tokens:
-                print(f"    {C_BOLD}{C_CYAN}{token_str:>11}{C_RESET}  {C_DIM}{percent_str}{C_RESET}  {C_DIM}{size_str:>10}{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
+                print(f"    {C_BOLD}{C_CYAN}{token_str:>11}{C_RESET}  {C_DIM}{percent_str}{C_RESET} {bar} {C_DIM}{size_str:>10}{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
             else:
-                print(f"    {C_BOLD}{C_CYAN}{size_str:>10}{C_RESET}  {C_DIM}{percent_str}{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
+                print(f"    {C_BOLD}{C_CYAN}{size_str:>10}{C_RESET}  {C_DIM}{percent_str}{C_RESET} {bar}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
 
     # Extensions List
     if stats['files_by_extension']:
