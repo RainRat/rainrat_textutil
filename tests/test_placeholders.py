@@ -191,3 +191,97 @@ def test_placeholder_prefix_matching(tmp_path):
     # If DIR was matched first, SLUG would be corrupted (e.g., sub_SLUG}})
     assert "DIR:sub SLUG:sub" in result
     assert "_SLUG}}" not in result
+import os
+import pytest
+from pathlib import Path
+from sourcecombine import find_and_combine_files
+from utils import DEFAULT_CONFIG
+
+def test_extended_placeholders(tmp_path):
+    """Test the new placeholders (INDEX, TOTAL, PERCENTs) in combine mode."""
+    # Setup test files
+    src_dir = tmp_path / "src"
+    src_dir.mkdir()
+    (src_dir / "file1.txt").write_text("Hello World", encoding="utf-8") # 11 chars
+    (src_dir / "file2.txt").write_text("Test", encoding="utf-8") # 4 chars
+
+    output_file = tmp_path / "combined.txt"
+
+    config = {
+        'search': {'root_folders': [str(src_dir)]},
+        'output': {
+            'header_template': "File {{INDEX}} of {{TOTAL}} ({{SIZE_PERCENT}}): {{FILENAME}}\n",
+            'footer_template': "\n",
+            'file': str(output_file)
+        }
+    }
+
+    # We need to deepcopy the default config and merge our test config
+    import copy
+    final_config = copy.deepcopy(DEFAULT_CONFIG)
+    for section in config:
+        final_config[section].update(config[section])
+
+    find_and_combine_files(final_config, str(output_file))
+
+    content = output_file.read_text(encoding="utf-8")
+
+    # Check if placeholders were replaced correctly
+    # Total size is 11 + 4 = 15
+    # file1: 11/15 = 73.3%
+    # file2: 4/15 = 26.7%
+
+    assert "File 1 of 2 (73.3%): file1.txt" in content
+    assert "File 2 of 2 (26.7%): file2.txt" in content
+
+def test_extended_placeholders_pairing(tmp_path):
+    """Test the new placeholders in pairing mode."""
+    src_dir = tmp_path / "src"
+    src_dir.mkdir()
+    (src_dir / "main.cpp").write_text("int main() {}", encoding="utf-8") # 13 chars
+    (src_dir / "main.h").write_text("void main();", encoding="utf-8") # 12 chars
+    (src_dir / "util.cpp").write_text("void util() {}", encoding="utf-8") # 14 chars
+    (src_dir / "util.h").write_text("void util();", encoding="utf-8") # 12 chars
+
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()
+
+    import copy
+    config = copy.deepcopy(DEFAULT_CONFIG)
+    config['search']['root_folders'] = [str(src_dir)]
+    config['pairing'] = {
+        'enabled': True,
+        'source_extensions': ['.cpp'],
+        'header_extensions': ['.h']
+    }
+    config['output'] = {
+        'header_template': "Pair {{INDEX}} of {{TOTAL}} ({{SIZE_PERCENT}}): {{FILENAME}}\n",
+        'footer_template': "\n",
+        'folder': str(out_dir)
+    }
+
+    # In pairing mode, total_size is computed per pair for percentages
+    # Pair 1: main (13+12=25)
+    # Pair 2: util (14+12=26)
+    # total_size_for_main = 25
+    # main.cpp: 13/25 = 52.0%
+    # main.h: 12/25 = 48.0%
+
+    find_and_combine_files(config, str(out_dir))
+
+    main_combined = out_dir / "main.combined"
+    util_combined = out_dir / "util.combined"
+
+    assert main_combined.exists()
+    assert util_combined.exists()
+
+    main_content = main_combined.read_text(encoding="utf-8")
+    # We sort by name by default, so main should be index 1 or 2.
+    # main.cpp, main.h, util.cpp, util.h -> main comes before util
+
+    assert "Pair 1 of 2 (52.0%): main.cpp" in main_content
+    assert "Pair 1 of 2 (48.0%): main.h" in main_content
+
+    util_content = util_combined.read_text(encoding="utf-8")
+    assert "Pair 2 of 2 (53.8%): util.cpp" in util_content # 14/26 = 53.84...
+    assert "Pair 2 of 2 (46.2%): util.h" in util_content # 12/26 = 46.15...

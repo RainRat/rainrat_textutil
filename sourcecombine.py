@@ -373,11 +373,11 @@ def _render_single_pass(template, replacements):
     return pattern.sub(lambda m: str(replacements[m.group(0)]), template)
 
 
-def _render_template(template, relative_path, size=None, tokens=None, lines=None, escape_func=None, modified=None, content=None, custom_languages=None):
+def _render_template(template, relative_path, size=None, tokens=None, lines=None, escape_func=None, modified=None, content=None, custom_languages=None, index=None, total=None, global_size=None, global_tokens=None, global_lines=None):
     """Replace placeholders in a template with file information.
 
     The placeholders include FILENAME, EXT, STEM, DIR, DIR_SLUG, SIZE,
-    TOKENS, LINE_COUNT, MODIFIED, and LANG.
+    TOKENS, LINE_COUNT, MODIFIED, LANG, INDEX, TOTAL, and various percentages.
     """
     if not template:
         return ""
@@ -411,6 +411,18 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
     replacements["{{MODIFIED}}"] = (
         datetime.fromtimestamp(modified).isoformat() if modified is not None else ""
     )
+
+    replacements["{{INDEX}}"] = str(index) if index is not None else ""
+    replacements["{{TOTAL}}"] = str(total) if total is not None else ""
+
+    def _calc_percent(val, total_val):
+        if val is not None and total_val and total_val > 0:
+            return f"{(val / total_val * 100):.1f}%"
+        return ""
+
+    replacements["{{SIZE_PERCENT}}"] = _calc_percent(size, global_size)
+    replacements["{{TOKEN_PERCENT}}"] = _calc_percent(tokens, global_tokens)
+    replacements["{{LINE_PERCENT}}"] = _calc_percent(lines, global_lines)
 
     return _render_single_pass(template, replacements)
 
@@ -1108,13 +1120,17 @@ def _process_paired_files(
     global_header=None,
     global_footer=None,
     stats=None,
+    pair_index=None,
+    total_pairs=None,
 ):
     """Process paired files and write combined outputs."""
 
     size_excluded_set = set(size_excluded or [])
     running_tokens = 0
     running_size = 0
-    for pairing_key, paths in paired_items:
+    total_items = total_pairs if total_pairs is not None else len(paired_items)
+    for i, (pairing_key, paths) in enumerate(paired_items):
+        item_index = pair_index if pair_index is not None else (i + 1)
         stem = Path(pairing_key).name
         if processing_bar:
             processing_bar.set_description(f"Pairing {stem}")
@@ -1183,8 +1199,23 @@ def _process_paired_files(
             if global_header and not estimate_tokens:
                 pair_out.write(_render_global_template(global_header, stats))
 
+            pair_size = sum(p.stat().st_size if p.exists() else 0 for p in paths)
+            pair_tokens = 0
+            pair_lines = 0
+
+            # For percentages in paired mode, we might want them relative to the pair
+            # but the processor usually uses global stats.
+            # If we want them relative to the pair, we need to pass the pair totals.
+            # The test expects them relative to the pair.
+
             if primary_path in size_excluded_set:
-                token_count, is_approx, line_count = processor.write_max_size_placeholder(primary_path, root_path, pair_out)
+                token_count, is_approx, line_count = processor.write_max_size_placeholder(
+                    primary_path, root_path, pair_out,
+                    index=item_index, total=total_items,
+                    global_size=pair_size,
+                    global_tokens=None, # We don't have pair tokens yet
+                    global_lines=None
+                )
                 f_size = primary_path.stat().st_size if primary_path.exists() else 0
                 if stats is not None:
                     stats['total_tokens'] = stats.get('total_tokens', 0) + token_count
@@ -1200,16 +1231,34 @@ def _process_paired_files(
                     processing_bar.set_postfix(size=utils.format_size(running_size), tokens=f"{running_tokens:,}")
                     processing_bar.update(len(paths))
             else:
+                # First pass to get pair totals if needed for percentages
+                pair_tokens = 0
+                pair_lines = 0
+                for file_path in paths:
+                    content, _ = read_file_best_effort(file_path)
+                    processed = process_content(content, processor.processing_opts)
+                    tokens, _ = utils.estimate_tokens(processed)
+                    pair_tokens += tokens
+                    pair_lines += utils.count_lines(processed)
+
                 for file_path in paths:
                     if file_path in size_excluded_set:
                         token_count, is_approx, line_count = processor.write_max_size_placeholder(
-                            file_path, root_path, pair_out
+                            file_path, root_path, pair_out,
+                            index=item_index, total=total_items,
+                            global_size=pair_size,
+                            global_tokens=pair_tokens,
+                            global_lines=pair_lines
                         )
                     else:
                         token_count, is_approx, line_count = processor.process_and_write(
                             file_path,
                             root_path,
                             pair_out,
+                            index=item_index, total=total_items,
+                            global_size=pair_size,
+                            global_tokens=pair_tokens,
+                            global_lines=pair_lines
                         )
                     f_size = file_path.stat().st_size if file_path.exists() else 0
                     if stats is not None:
@@ -1288,7 +1337,7 @@ class FileProcessor:
     def _make_bar(self, **kwargs):
         return _progress_bar(enabled=_progress_enabled(self.dry_run), **kwargs)
 
-    def _write_with_templates(self, outfile, content, relative_path, size=None, tokens=None, lines=None, modified=None):
+    def _write_with_templates(self, outfile, content, relative_path, size=None, tokens=None, lines=None, modified=None, index=None, total=None, global_size=None, global_tokens=None, global_lines=None):
         """Write ``content`` with configured header/footer templates."""
 
         header_template = self.output_opts.get(
@@ -1300,9 +1349,9 @@ class FileProcessor:
 
         escape_func = xml_escape if self.output_format == 'xml' else None
 
-        outfile.write(_render_template(header_template, relative_path, size=size, tokens=tokens, lines=lines, escape_func=escape_func, modified=modified, content=content, custom_languages=self.custom_languages))
+        outfile.write(_render_template(header_template, relative_path, size=size, tokens=tokens, lines=lines, escape_func=escape_func, modified=modified, content=content, custom_languages=self.custom_languages, index=index, total=total, global_size=global_size, global_tokens=global_tokens, global_lines=global_lines))
         outfile.write(content)
-        outfile.write(_render_template(footer_template, relative_path, size=size, tokens=tokens, lines=lines, escape_func=escape_func, modified=modified, content=content, custom_languages=self.custom_languages))
+        outfile.write(_render_template(footer_template, relative_path, size=size, tokens=tokens, lines=lines, escape_func=escape_func, modified=modified, content=content, custom_languages=self.custom_languages, index=index, total=total, global_size=global_size, global_tokens=global_tokens, global_lines=global_lines))
 
     def get_content_hash(self, content):
         """Return the SHA-256 hash of the content."""
@@ -1357,6 +1406,11 @@ class FileProcessor:
         line_count,
         include_line_numbers=True,
         modified=None,
+        index=None,
+        total=None,
+        global_size=None,
+        global_tokens=None,
+        global_lines=None,
     ):
         """Format and write a single file entry to the output stream."""
         if self.estimate_tokens:
@@ -1389,9 +1443,14 @@ class FileProcessor:
                 tokens=token_count,
                 lines=line_count,
                 modified=modified,
+                index=index,
+                total=total,
+                global_size=global_size,
+                global_tokens=global_tokens,
+                global_lines=global_lines,
             )
 
-    def process_and_write(self, file_path, root_path, outfile, cached_content=None):
+    def process_and_write(self, file_path, root_path, outfile, cached_content=None, index=None, total=None, global_size=None, global_tokens=None, global_lines=None):
         """Read, process, and write a single file.
 
         Returns
@@ -1431,11 +1490,16 @@ class FileProcessor:
                 is_approx,
                 line_count,
                 modified=modified,
+                index=index,
+                total=total,
+                global_size=global_size,
+                global_tokens=global_tokens,
+                global_lines=global_lines,
             )
 
         return token_count, is_approx, line_count
 
-    def write_max_size_placeholder(self, file_path, root_path, outfile):
+    def write_max_size_placeholder(self, file_path, root_path, outfile, index=None, total=None, global_size=None, global_tokens=None, global_lines=None):
         """Write the placeholder for files skipped for exceeding max size.
 
         Returns
@@ -1460,7 +1524,7 @@ class FileProcessor:
         # Estimate tokens on the placeholder content (but the placeholder itself might have tokens placeholder)
         # For max_size_placeholder, it's a bit tricky because we don't know the token count of the placeholder
         # until it's rendered. But we want to support {{SIZE}} in it.
-        rendered = _render_template(placeholder, relative_path, size=file_size, modified=modified, content=None, custom_languages=self.custom_languages)
+        rendered = _render_template(placeholder, relative_path, size=file_size, modified=modified, content=None, custom_languages=self.custom_languages, index=index, total=total, global_size=global_size, global_tokens=global_tokens, global_lines=global_lines)
 
         token_count, is_approx = utils.estimate_tokens(rendered)
         line_count = utils.count_lines(rendered)
@@ -1475,6 +1539,11 @@ class FileProcessor:
             line_count,
             include_line_numbers=False,
             modified=modified,
+            index=index,
+            total=total,
+            global_size=global_size,
+            global_tokens=global_tokens,
+            global_lines=global_lines,
         )
 
         return token_count, is_approx, line_count
@@ -2080,10 +2149,17 @@ def find_and_combine_files(
         max_total_tokens = filter_opts.get('max_total_tokens', 0)
         max_total_size = filter_opts.get('max_total_size_bytes', 0)
         max_total_lines = filter_opts.get('max_total_lines', 0)
+        new_placeholders = ["{{INDEX}}", "{{TOTAL}}", "{{SIZE_PERCENT}}", "{{TOKEN_PERCENT}}", "{{LINE_PERCENT}}"]
+        header_template = output_opts.get('header_template') or ""
+        footer_template = output_opts.get('footer_template') or ""
+        has_new_placeholders = any(p in header_template for p in new_placeholders) or \
+                               any(p in footer_template for p in new_placeholders)
+
         needs_metadata = bool(
             output_opts.get('include_tree')
             or output_opts.get('table_of_contents')
             or output_opts.get('project_overview')
+            or has_new_placeholders
         )
 
         # We need metadata for sorting (except name), token limit, size limit, TOC/Tree, or global placeholders
@@ -2394,7 +2470,8 @@ def find_and_combine_files(
             # I'll adapt it or call it per pair.
 
             # Since we want to support global sorting, we should process in the sorted order.
-            for root_path, pair_key, paths in all_paired_items:
+            total_pairs = len(all_paired_items)
+            for i, (root_path, pair_key, paths) in enumerate(all_paired_items):
                 _process_paired_files(
                     [(pair_key, paths)],
                     template=template,
@@ -2410,6 +2487,8 @@ def find_and_combine_files(
                     global_header=global_header,
                     global_footer=global_footer,
                     stats=stats,
+                    pair_index=i + 1,
+                    total_pairs=total_pairs,
                 )
             processing_bar.close()
 
@@ -2512,9 +2591,11 @@ def find_and_combine_files(
             running_tokens = 0
             running_size = 0
 
-            for item in all_combined_items:
+            total_items = len(all_combined_items)
+            for i, item in enumerate(all_combined_items):
                 file_path, root_path, is_excluded_by_size = item[:3]
                 cached_processed = item[3] if len(item) > 3 else None
+                item_index = i + 1
 
                 rel_p_str = _get_rel_path(file_path, root_path).as_posix()
                 processing_bar.set_description(f"Processing {_truncate_path(rel_p_str, 40)}")
@@ -2533,14 +2614,22 @@ def find_and_combine_files(
                         "File exceeds max size; writing placeholder: %s", rel_path
                     )
                     token_count, is_approx, line_count = processor.write_max_size_placeholder(
-                        file_path, root_path, outfile
+                        file_path, root_path, outfile,
+                        index=item_index, total=total_items,
+                        global_size=stats.get('total_size_bytes'),
+                        global_tokens=stats.get('total_tokens'),
+                        global_lines=stats.get('total_lines')
                     )
                 else:
                     token_count, is_approx, line_count = processor.process_and_write(
                         file_path,
                         root_path,
                         outfile,
-                        cached_content=cached_processed
+                        cached_content=cached_processed,
+                        index=item_index, total=total_items,
+                        global_size=stats.get('total_size_bytes'),
+                        global_tokens=stats.get('total_tokens'),
+                        global_lines=stats.get('total_lines')
                     )
 
                 if not token_limit_pass_performed and (not dry_run or estimate_tokens):
@@ -2550,8 +2639,8 @@ def find_and_combine_files(
                     rel_p = _get_rel_path(file_path, root_path)
                     f_size = file_path.stat().st_size if file_path.exists() else 0
 
-                    rendered_h = _render_template(h_template, rel_p, size=f_size, tokens=token_count, lines=line_count, custom_languages=search_opts.get('custom_languages'))
-                    rendered_f = _render_template(f_template, rel_p, size=f_size, tokens=token_count, lines=line_count, custom_languages=search_opts.get('custom_languages'))
+                    rendered_h = _render_template(h_template, rel_p, size=f_size, tokens=token_count, lines=line_count, custom_languages=search_opts.get('custom_languages'), index=item_index, total=total_items, global_size=stats.get('total_size_bytes'), global_tokens=stats.get('total_tokens'), global_lines=stats.get('total_lines'))
+                    rendered_f = _render_template(f_template, rel_p, size=f_size, tokens=token_count, lines=line_count, custom_languages=search_opts.get('custom_languages'), index=item_index, total=total_items, global_size=stats.get('total_size_bytes'), global_tokens=stats.get('total_tokens'), global_lines=stats.get('total_lines'))
 
                     header_tokens = utils.estimate_tokens(rendered_h)[0]
                     footer_tokens = utils.estimate_tokens(rendered_f)[0]
