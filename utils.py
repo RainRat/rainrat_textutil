@@ -422,7 +422,7 @@ def _replace_line_block(text, regex, replacement=None):
             out_lines.append(replacement)
 
     result = "\n".join(out_lines)
-    if text.endswith("\n"):
+    if text.endswith("\n") and out_lines:
         result += "\n"
     return result
 

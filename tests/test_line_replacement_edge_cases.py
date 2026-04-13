@@ -99,3 +99,10 @@ def test_apply_line_regex_replacements_raises_on_invalid_regex():
     rules = [{"pattern": "["}] # Invalid regex
     with pytest.raises(utils.InvalidConfigError):
         apply_line_regex_replacements(text, rules)
+
+def test_replace_line_block_avoids_stray_newline_when_all_removed():
+    """Verify that no stray newline is returned when all content is removed from a file with a trailing newline."""
+    text = "# remove me\n"
+    regex = validate_regex_pattern(r"^#")
+    result = _replace_line_block(text, regex, replacement=None)
+    assert result == ""
