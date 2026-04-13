@@ -2,8 +2,6 @@ import pytest
 from unittest.mock import patch, MagicMock
 from sourcecombine import main
 import utils
-from io import StringIO
-import sys
 
 def test_main_truncate_tokens_flag(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)

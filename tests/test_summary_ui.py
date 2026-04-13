@@ -2,7 +2,6 @@ import sys
 import os
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-import pytest
 
 # Adjust sys.path to include the project root
 sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
