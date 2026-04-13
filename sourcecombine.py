@@ -373,11 +373,11 @@ def _render_single_pass(template, replacements):
     return pattern.sub(lambda m: str(replacements[m.group(0)]), template)
 
 
-def _render_template(template, relative_path, size=None, tokens=None, lines=None, escape_func=None, modified=None, content=None, custom_languages=None, index=None, total=None, global_size=None, global_tokens=None, global_lines=None):
+def _render_template(template, relative_path, size=None, tokens=None, lines=None, escape_func=None, modified=None, content=None, custom_languages=None, index=None, total=None, global_size=None, global_tokens=None, global_lines=None, git_info=None):
     """Replace placeholders in a template with file information.
 
     The placeholders include FILENAME, EXT, STEM, DIR, DIR_SLUG, SIZE,
-    TOKENS, LINE_COUNT, MODIFIED, LANG, INDEX, TOTAL, and various percentages.
+    TOKENS, LINE_COUNT, MODIFIED, LANG, INDEX, TOTAL, percentages, and Git info.
     """
     if not template:
         return ""
@@ -424,13 +424,19 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
     replacements["{{TOKEN_PERCENT}}"] = _calc_percent(tokens, global_tokens)
     replacements["{{LINE_PERCENT}}"] = _calc_percent(lines, global_lines)
 
+    if git_info:
+        replacements["{{GIT_BRANCH}}"] = git_info.get('git_branch', '')
+        replacements["{{GIT_COMMIT}}"] = git_info.get('git_commit', '')
+        replacements["{{GIT_COMMIT_SHORT}}"] = git_info.get('git_commit_short', '')
+
     return _render_single_pass(template, replacements)
 
 
 def _render_global_template(template, stats):
     """Replace placeholders in a global template with project information.
 
-    The placeholders include FILE_COUNT, TOTAL_SIZE, TOTAL_TOKENS, and TOTAL_LINES.
+    The placeholders include FILE_COUNT, TOTAL_SIZE, TOTAL_TOKENS, and TOTAL_LINES,
+    as well as Git information if available.
     """
     if not template:
         return ""
@@ -450,6 +456,9 @@ def _render_global_template(template, stats):
         "{{TOTAL_SIZE}}": total_size,
         "{{TOTAL_TOKENS}}": token_str,
         "{{TOTAL_LINES}}": f"{total_lines:,}",
+        "{{GIT_BRANCH}}": stats.get('git_branch', ''),
+        "{{GIT_COMMIT}}": stats.get('git_commit', ''),
+        "{{GIT_COMMIT_SHORT}}": stats.get('git_commit_short', ''),
     }
 
     return _render_single_pass(template, replacements)
@@ -673,6 +682,40 @@ def should_include(
     return (True, None) if return_reason else True
 
 
+def _get_git_info(root_folder):
+    """Retrieve Git branch and commit information for the project.
+
+    Returns a dictionary containing 'git_branch', 'git_commit', and 'git_commit_short'.
+    """
+    info = {
+        'git_branch': 'N/A',
+        'git_commit': 'N/A',
+        'git_commit_short': 'N/A'
+    }
+
+    root_path = Path(root_folder)
+    try:
+        # Get branch name
+        result = subprocess.run(
+            ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+            cwd=root_path, capture_output=True, text=True, check=True
+        )
+        info['git_branch'] = result.stdout.strip()
+
+        # Get full commit hash
+        result = subprocess.run(
+            ['git', 'rev-parse', 'HEAD'],
+            cwd=root_path, capture_output=True, text=True, check=True
+        )
+        info['git_commit'] = result.stdout.strip()
+        info['git_commit_short'] = info['git_commit'][:7]
+
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+        pass
+
+    return info
+
+
 def collect_git_files(root_folder, progress=None):
     """Use git ls-files to find files in the repository.
 
@@ -710,7 +753,7 @@ def collect_git_files(root_folder, progress=None):
         return None
 
 
-def collect_git_diff_files(root_folder, diff_ref=None, progress=None):
+def collect_git_diff_files(root_folder, diff_ref=None, progress=None, staged_only=False, unstaged_only=False):
     """Use git diff to find changed files in the repository.
 
     Returns (file_paths, root_path, excluded_folder_count) if successful, else None.
@@ -719,44 +762,66 @@ def collect_git_diff_files(root_folder, diff_ref=None, progress=None):
     try:
         file_paths_set = set()
 
-        if diff_ref:
-            # Changes between current state and a reference (includes staged/unstaged)
-            # git diff --name-only --relative REF
-            result = subprocess.run(
-                ['git', 'diff', '--name-only', '--relative', diff_ref],
-                cwd=root_path,
-                capture_output=True,
-                text=True,
-                check=True
-            )
+        # Determine which changes to include
+        if staged_only:
+            # Staged changes only
+            cmd = ['git', 'diff', '--name-only', '--cached', '--relative']
+            if diff_ref:
+                cmd.append(diff_ref)
+
+            result = subprocess.run(cmd, cwd=root_path, capture_output=True, text=True, check=True)
             for line in result.stdout.splitlines():
                 if line:
                     file_paths_set.add(line)
-        else:
-            # Current working set: staged + unstaged
-            # git diff --name-only --relative HEAD
+
+        elif unstaged_only:
+            # Unstaged changes only (modified but not staged).
+            # We ignore diff_ref here because 'unstaged' is defined relative to the index.
+            cmd = ['git', 'diff', '--name-only', '--relative']
+
+            result = subprocess.run(cmd, cwd=root_path, capture_output=True, text=True, check=True)
+            for line in result.stdout.splitlines():
+                if line:
+                    file_paths_set.add(line)
+
+            # Also include untracked files for unstaged search
             result = subprocess.run(
-                ['git', 'diff', '--name-only', '--relative', 'HEAD'],
-                cwd=root_path,
-                capture_output=True,
-                text=True,
-                check=True
+                ['git', 'ls-files', '--others', '--exclude-standard', '--', '.'],
+                cwd=root_path, capture_output=True, text=True, check=True
             )
             for line in result.stdout.splitlines():
                 if line:
                     file_paths_set.add(line)
 
-        # Untracked files relative to the root_path
-        result = subprocess.run(
-            ['git', 'ls-files', '--others', '--exclude-standard', '--', '.'],
-            cwd=root_path,
-            capture_output=True,
-            text=True,
-            check=True
-        )
-        for line in result.stdout.splitlines():
-            if line:
-                file_paths_set.add(line)
+        else:
+            # Default: staged + unstaged + untracked
+            if diff_ref:
+                # git diff --name-only --relative REF
+                result = subprocess.run(
+                    ['git', 'diff', '--name-only', '--relative', diff_ref],
+                    cwd=root_path, capture_output=True, text=True, check=True
+                )
+                for line in result.stdout.splitlines():
+                    if line:
+                        file_paths_set.add(line)
+            else:
+                # git diff --name-only --relative HEAD
+                result = subprocess.run(
+                    ['git', 'diff', '--name-only', '--relative', 'HEAD'],
+                    cwd=root_path, capture_output=True, text=True, check=True
+                )
+                for line in result.stdout.splitlines():
+                    if line:
+                        file_paths_set.add(line)
+
+            # Untracked files
+            result = subprocess.run(
+                ['git', 'ls-files', '--others', '--exclude-standard', '--', '.'],
+                cwd=root_path, capture_output=True, text=True, check=True
+            )
+            for line in result.stdout.splitlines():
+                if line:
+                    file_paths_set.add(line)
 
         file_paths = []
         for rel_path in sorted(file_paths_set):
@@ -777,7 +842,7 @@ def collect_git_diff_files(root_folder, diff_ref=None, progress=None):
         return None
 
 
-def collect_file_paths(root_folder, recursive, exclude_folders, progress=None, max_depth=0, use_git=False, use_git_diff=False, git_diff_ref=None):
+def collect_file_paths(root_folder, recursive, exclude_folders, progress=None, max_depth=0, use_git=False, use_git_diff=False, git_diff_ref=None, git_staged=False, git_unstaged=False):
     """Return all paths in ``root_folder`` while skipping excluded folders.
 
     If ``root_folder`` is a file, it returns a list containing only that file.
@@ -793,7 +858,10 @@ def collect_file_paths(root_folder, recursive, exclude_folders, progress=None, m
 
         git_results = None
         if use_git_diff:
-            git_results = collect_git_diff_files(root_folder, diff_ref=git_diff_ref, progress=progress)
+            git_results = collect_git_diff_files(
+                root_folder, diff_ref=git_diff_ref, progress=progress,
+                staged_only=git_staged, unstaged_only=git_unstaged
+            )
 
         if git_results is None and use_git:
             git_results = collect_git_files(root_folder, progress=progress)
@@ -1315,11 +1383,12 @@ class FileProcessor:
         performing any writes.
     """
 
-    def __init__(self, config, output_opts, dry_run=False, estimate_tokens=False, output_format='text'):
+    def __init__(self, config, output_opts, dry_run=False, estimate_tokens=False, output_format='text', git_info=None):
         self.config = config
         self.search_opts = config.get('search', {}) or {}
         self.custom_languages = self.search_opts.get('custom_languages', {})
         self.output_opts = output_opts or {}
+        self.git_info = git_info
         self.dry_run = dry_run
         self.estimate_tokens = estimate_tokens
         self.output_format = output_format
@@ -1349,9 +1418,21 @@ class FileProcessor:
 
         escape_func = xml_escape if self.output_format == 'xml' else None
 
-        outfile.write(_render_template(header_template, relative_path, size=size, tokens=tokens, lines=lines, escape_func=escape_func, modified=modified, content=content, custom_languages=self.custom_languages, index=index, total=total, global_size=global_size, global_tokens=global_tokens, global_lines=global_lines))
+        outfile.write(_render_template(
+            header_template, relative_path, size=size, tokens=tokens, lines=lines,
+            escape_func=escape_func, modified=modified, content=content,
+            custom_languages=self.custom_languages, index=index, total=total,
+            global_size=global_size, global_tokens=global_tokens, global_lines=global_lines,
+            git_info=self.git_info
+        ))
         outfile.write(content)
-        outfile.write(_render_template(footer_template, relative_path, size=size, tokens=tokens, lines=lines, escape_func=escape_func, modified=modified, content=content, custom_languages=self.custom_languages, index=index, total=total, global_size=global_size, global_tokens=global_tokens, global_lines=global_lines))
+        outfile.write(_render_template(
+            footer_template, relative_path, size=size, tokens=tokens, lines=lines,
+            escape_func=escape_func, modified=modified, content=content,
+            custom_languages=self.custom_languages, index=index, total=total,
+            global_size=global_size, global_tokens=global_tokens, global_lines=global_lines,
+            git_info=self.git_info
+        ))
 
     def get_content_hash(self, content):
         """Return the SHA-256 hash of the content."""
@@ -1524,7 +1605,13 @@ class FileProcessor:
         # Estimate tokens on the placeholder content (but the placeholder itself might have tokens placeholder)
         # For max_size_placeholder, it's a bit tricky because we don't know the token count of the placeholder
         # until it's rendered. But we want to support {{SIZE}} in it.
-        rendered = _render_template(placeholder, relative_path, size=file_size, modified=modified, content=None, custom_languages=self.custom_languages, index=index, total=total, global_size=global_size, global_tokens=global_tokens, global_lines=global_lines)
+        rendered = _render_template(
+            placeholder, relative_path, size=file_size, modified=modified,
+            content=None, custom_languages=self.custom_languages,
+            index=index, total=total, global_size=global_size,
+            global_tokens=global_tokens, global_lines=global_lines,
+            git_info=self.git_info
+        )
 
         token_count, is_approx = utils.estimate_tokens(rendered)
         line_count = utils.count_lines(rendered)
@@ -1819,6 +1906,13 @@ def find_and_combine_files(
         'max_files': config.get('filters', {}).get('max_files', 0),
         'filter_reasons': {},
     }
+
+    # Gather Git info for templates
+    first_root = "."
+    if config.get('search', {}).get('root_folders'):
+        first_root = config['search']['root_folders'][0]
+    stats.update(_get_git_info(first_root))
+
     search_opts = config.get('search', {})
     filter_opts = config.get('filters', {})
     output_opts = config.get('output', {})
@@ -1905,7 +1999,8 @@ def find_and_combine_files(
         output_opts,
         dry_run=processor_dry_run,
         estimate_tokens=estimate_tokens,
-        output_format=output_format
+        output_format=output_format,
+        git_info=stats  # stats already contains git_branch, etc.
     )
 
     total_excluded_folders = 0
@@ -1955,6 +2050,8 @@ def find_and_combine_files(
                         use_git=search_opts.get('use_git', False),
                         use_git_diff=search_opts.get('use_git_diff', False),
                         git_diff_ref=search_opts.get('git_diff_ref'),
+                        git_staged=search_opts.get('git_staged', False),
+                        git_unstaged=search_opts.get('git_unstaged', False),
                     )
                 finally:
                     finding_bar.close()
@@ -2299,7 +2396,12 @@ def find_and_combine_files(
                     if is_excluded_by_size:
                         placeholder = output_opts.get('max_size_placeholder')
                         # Note: 1372-1373 ensures placeholder exists if we are here
-                        rendered = _render_template(placeholder, rel_p, size=file_path.stat().st_size if file_path.exists() else 0, custom_languages=search_opts.get('custom_languages'))
+                        rendered = _render_template(
+                            placeholder, rel_p,
+                            size=file_path.stat().st_size if file_path.exists() else 0,
+                            custom_languages=search_opts.get('custom_languages'),
+                            git_info=stats
+                        )
                         tokens, _ = utils.estimate_tokens(rendered)
                     else:
                         content, _ = read_file_best_effort(file_path)
@@ -2333,7 +2435,8 @@ def find_and_combine_files(
             for i, item in enumerate(all_combined_items):
                 file_path, root_path, is_excluded_by_size = item
 
-                rel_p_str = _get_rel_path(file_path, root_path).as_posix()
+                rel_p = _get_rel_path(file_path, root_path)
+                rel_p_str = rel_p.as_posix()
                 est_bar.set_description(f"Analyzing {_truncate_path(rel_p_str, 40)}")
                 content_tokens = 0
                 content_lines = 0
@@ -2346,7 +2449,11 @@ def find_and_combine_files(
                 if is_excluded_by_size:
                     placeholder = output_opts.get('max_size_placeholder')
                     if placeholder:
-                        rendered = _render_template(placeholder, rel_p, size=file_size, custom_languages=search_opts.get('custom_languages'))
+                        rendered = _render_template(
+                            placeholder, rel_p, size=file_size,
+                            custom_languages=search_opts.get('custom_languages'),
+                            git_info=stats
+                        )
                         content_tokens, is_approx = utils.estimate_tokens(rendered)
                         content_lines = utils.count_lines(rendered)
                         content_size = len(rendered.encode('utf-8'))
@@ -2385,8 +2492,16 @@ def find_and_combine_files(
                 h_template = output_opts.get('header_template', utils.DEFAULT_CONFIG['output']['header_template'])
                 f_template = output_opts.get('footer_template', utils.DEFAULT_CONFIG['output']['footer_template'])
 
-                rendered_h = _render_template(h_template, rel_p, size=file_size, tokens=content_tokens, lines=content_lines, custom_languages=search_opts.get('custom_languages'))
-                rendered_f = _render_template(f_template, rel_p, size=file_size, tokens=content_tokens, lines=content_lines, custom_languages=search_opts.get('custom_languages'))
+                rendered_h = _render_template(
+                    h_template, rel_p, size=file_size, tokens=content_tokens,
+                    lines=content_lines, custom_languages=search_opts.get('custom_languages'),
+                    git_info=stats
+                )
+                rendered_f = _render_template(
+                    f_template, rel_p, size=file_size, tokens=content_tokens,
+                    lines=content_lines, custom_languages=search_opts.get('custom_languages'),
+                    git_info=stats
+                )
 
                 header_tokens = utils.estimate_tokens(rendered_h)[0]
                 footer_tokens = utils.estimate_tokens(rendered_f)[0]
@@ -2884,6 +2999,16 @@ def main():
         const=True,
         metavar="REF",
         help="Include only files that have changed in Git. If a REF is provided (like 'main'), it finds changes since that commit. Otherwise, it finds unstaged, staged, and untracked changes.",
+    )
+    filtering_group.add_argument(
+        "--staged",
+        action="store_true",
+        help="Include only staged changes in Git (requires --git-diff).",
+    )
+    filtering_group.add_argument(
+        "--unstaged",
+        action="store_true",
+        help="Include only unstaged and untracked changes in Git (requires --git-diff).",
     )
     filtering_group.add_argument(
         "--unique",
@@ -3471,6 +3596,14 @@ def main():
         config['search']['use_git_diff'] = True
         if isinstance(args.git_diff, str):
             config['search']['git_diff_ref'] = args.git_diff
+
+    if args.staged:
+        config['search']['git_staged'] = True
+        config['search']['use_git_diff'] = True
+
+    if args.unstaged:
+        config['search']['git_unstaged'] = True
+        config['search']['use_git_diff'] = True
 
     if args.since or args.until:
         filters = config['filters']

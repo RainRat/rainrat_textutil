@@ -22,6 +22,12 @@ search:
   # Include only files that have changed in Git.
   use_git_diff: false
 
+  # Include only staged changes in Git (requires use_git_diff: true).
+  git_staged: false
+
+  # Include only unstaged and untracked changes in Git (requires use_git_diff: true).
+  git_unstaged: false
+
   # If use_git_diff is true, this finds changes since this commit reference
   # (for example, 'main' or a commit hash). Omit or set to null to find
   # unstaged, staged, and untracked changes.
@@ -92,7 +98,7 @@ output:
   project_overview: false
 
   # Template written before each file's content.
-  # Placeholders: {{FILENAME}}, {{EXT}}, {{STEM}}, {{DIR}}, {{DIR_SLUG}}, {{SIZE}}, {{TOKENS}}, {{LINE_COUNT}}, {{MODIFIED}}, {{LANG}}, {{INDEX}}, {{TOTAL}}, {{SIZE_PERCENT}}, {{TOKEN_PERCENT}}, {{LINE_PERCENT}}.
+  # Placeholders: {{FILENAME}}, {{EXT}}, {{STEM}}, {{DIR}}, {{DIR_SLUG}}, {{SIZE}}, {{TOKENS}}, {{LINE_COUNT}}, {{MODIFIED}}, {{LANG}}, {{INDEX}}, {{TOTAL}}, {{GIT_BRANCH}}, {{GIT_COMMIT}}, {{GIT_COMMIT_SHORT}}, {{SIZE_PERCENT}}, {{TOKEN_PERCENT}}, {{LINE_PERCENT}}.
   # Set to null or an empty text to omit the header.
   header_template: "--- {{FILENAME}} ---\n"
 

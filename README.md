@@ -129,6 +129,9 @@ Used in `header_template` and `footer_template` for each file:
 *   `{{MODIFIED}}`: The last modified time in ISO 8601 format.
 *   `{{INDEX}}`: The 1-based index of the current file in the sequence.
 *   `{{TOTAL}}`: The total number of files being combined.
+*   `{{GIT_BRANCH}}`: The current Git branch name.
+*   `{{GIT_COMMIT}}`: The full current Git commit hash.
+*   `{{GIT_COMMIT_SHORT}}`: The short (7-character) Git commit hash.
 *   `{{SIZE_PERCENT}}`: The percentage of the total size contributed by this file.
 *   `{{TOKEN_PERCENT}}`: The percentage of the total tokens contributed by this file.
 *   `{{LINE_PERCENT}}`: The percentage of the total lines contributed by this file.
@@ -183,6 +186,8 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--max-depth` / `-D`: Limit folder scanning to this depth (for example, `-D 1` for root files only; 0 for no limit).
 *   `--git-files` / `-G`: Use `git ls-files` to find files. This follows your `.gitignore` rules.
 *   `--git-diff [REF]`: Include only files that have changed in Git. If you provide a REF (like `main`), it finds changes since that commit. Otherwise, it finds unstaged, staged, and untracked changes.
+*   `--staged`: Include only staged changes in Git (requires `--git-diff`).
+*   `--unstaged`: Include only unstaged and untracked changes in Git (requires `--git-diff`).
 *   `--unique` / `-u`: Skip duplicate files by absolute path or content.
 *   `--map-lang EXTENSION LANGUAGE`: Manually map a file extension or filename to a specific language (for example, `.mjml` `html`). Use this option again to add more.
 *   `--files-from`: Read a list of files from a text file (use '-' for your terminal). This skips looking for files in folders.
