@@ -2741,7 +2741,7 @@ def main():
         "targets",
         nargs="*",
         metavar="TARGET",
-        help="Folders or files to search. If you provide none, the tool searches the current folder. If the first target is a '.yml' or '.yaml' file, the tool uses it as its configuration.",
+        help="Folders or files to search. If you do not provide any, the tool searches the current folder. If the first target is a '.yml' or '.yaml' file, the tool uses it as its configuration.",
     )
     core_group.add_argument(
         "--config",
@@ -3107,8 +3107,8 @@ def main():
         action="store_true",
         help=(
             "Rebuild your original files and folders from combined files (like JSON, XML, or Markdown). "
-            "You can read from one or more files, folders, your terminal ('-'), or your clipboard. "
-            "Filtering, sorting, and preview options are supported. Line numbers are removed "
+            "You can read from one or more files, folders, your terminal ('-'), or the system clipboard. "
+            "Filtering, sorting, and preview options (like --diff) are supported. Line numbers are removed "
             "automatically unless you use --keep-line-numbers."
         ),
     )
