@@ -12,6 +12,7 @@ A versatile tool for your terminal to find, filter, and combine source code file
 *   **File Extraction:** Rebuild your original files and folders from combined files (like JSON, XML, or Markdown). Batch process multiple files or entire folders.
 *   **Sorting:** Sort files by `name`, `size`, `modified`, `tokens`, `depth`, or `language`.
 *   **Limiting:** Stop at a file limit, total tokens, total lines, or total size.
+*   **Project Overview:** Include a formatted summary with statistics and a language breakdown at the start of your combined output.
 *   **In-Place Processing:** Clean up extra spaces or blank lines directly in your source files.
 *   **Smart Combining:** Combine files while keeping headers and structural markers.
 *   **Estimation:** See total tokens without writing any files.
