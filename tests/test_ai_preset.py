@@ -49,6 +49,8 @@ class TestAIPreset(unittest.TestCase):
             exclude_grep=None,
             max_depth=None,
             git_files=False,
+            staged=False,
+            unstaged=False,
             min_size=None,
             max_size=None,
             max_total_size=None,
