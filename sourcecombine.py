@@ -4487,6 +4487,11 @@ def _print_limit_usage_bar(label, current, maximum, label_width, is_size=False):
 def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None, duration=None, source_desc=None):
     """Print a summary of the totals to your terminal."""
 
+    def _split_unit(s):
+        """Split a string like '1.50 MB' or '1,000 tokens' into (value, unit)."""
+        parts = s.split(' ', 1)
+        return (parts[0], f" {parts[1]}") if len(parts) == 2 else (s, "")
+
     # Determine available width for layout and truncation
     term_width = 80
     if sys.stderr.isatty():
@@ -4564,7 +4569,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
     found_label_style = C_DIM if (total_discovered == total_included and not stats.get('filter_reasons')) else C_BOLD
     found_value_style = C_DIM if (total_discovered == total_included and not stats.get('filter_reasons')) else f"{C_BOLD}{C_CYAN}"
-    print(f"    {found_label_style}{'Total Found:':<{label_width}}{C_RESET}{found_value_style}{total_discovered:12,}{C_RESET}", file=sys.stderr)
+    print(f"    {found_label_style}{'Total Found:':<{label_width}}{C_RESET}{found_value_style}{total_discovered:12,}{C_RESET}{C_DIM} files{C_RESET}", file=sys.stderr)
 
     included_color = f"{C_BOLD}{C_GREEN}" if total_included > 0 else C_RESET
     skipped_label_color = C_BOLD if total_filtered > 0 else C_DIM
@@ -4573,14 +4578,20 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     included_percent = (total_included / total_discovered * 100) if total_discovered > 0 else 0
     skipped_percent = (total_filtered / total_discovered * 100) if total_discovered > 0 else 0
 
+    has_skipped_folders = excluded_folders > 0
+    skipped_connector = "├── " if has_skipped_folders else "└── "
+
     print(f"    {C_DIM}├── {C_RESET}{C_BOLD}{'Included:':<{label_width - 4}}{C_RESET}{included_color}{total_included:12,}{C_RESET} {C_DIM}({included_percent:>5.1f}%){C_RESET}", file=sys.stderr)
-    print(f"    {C_DIM}└── {C_RESET}{skipped_label_color}{'Skipped:':<{label_width - 4}}{C_RESET}{filtered_color}{total_filtered:12,}{C_RESET} {C_DIM}({skipped_percent:>5.1f}%){C_RESET}", file=sys.stderr)
+    print(f"    {C_DIM}{skipped_connector}{C_RESET}{skipped_label_color}{'Skipped:':<{label_width - 4}}{C_RESET}{filtered_color}{total_filtered:12,}{C_RESET} {C_DIM}({skipped_percent:>5.1f}%){C_RESET}", file=sys.stderr)
 
     # Detailed breakdown of filtering reasons
     if stats.get('filter_reasons'):
         # Sort by count descending, then alphabetically
         relevant_reasons = [(r, c) for r, c in stats['filter_reasons'].items() if r != 'excluded_folder' and c > 0]
         sorted_reasons = sorted(relevant_reasons, key=lambda x: (-x[1], x[0]))
+
+        # We need to know if there's a following sibling (Skipped Folders) to use the right connector
+        outer_skipped_indent = "│         " if has_skipped_folders else "          "
 
         for i, (reason, count) in enumerate(sorted_reasons):
             is_last = i == len(sorted_reasons) - 1
@@ -4590,11 +4601,10 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             reason_percent = (count / total_filtered * 100) if total_filtered > 0 else 0
 
             # Use dim for less visual noise in the breakdown
-            # Align with 'Included/Filtered' by adjusting for the bullet indent and connector
-            print(f"          {C_DIM}{connector}{display_reason:<{label_width - 10}}{C_RESET}{C_DIM}{count:12,}{C_RESET} {C_DIM}({reason_percent:>5.1f}%){C_RESET}", file=sys.stderr)
+            print(f"    {C_DIM}{outer_skipped_indent}{connector}{C_RESET}{C_DIM}{display_reason:<{label_width - 10}}{count:12,}{C_RESET} {C_DIM}({reason_percent:>5.1f}%){C_RESET}", file=sys.stderr)
 
-    if excluded_folders > 0:
-        print(f"    {C_BOLD}{'Skipped Folders:':<{label_width}}{C_RESET}{C_CYAN}{excluded_folders:12,}{C_RESET}", file=sys.stderr)
+    if has_skipped_folders:
+        print(f"    {C_DIM}└── {C_RESET}{C_BOLD}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_CYAN}{excluded_folders:12,}{C_RESET}", file=sys.stderr)
 
     # Details Section
     total_lines = stats.get('total_lines', 0)
@@ -4605,7 +4615,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         fmt_name = (getattr(args, 'format', None) or stats.get('output_format', 'text')).upper()
         print(f"    {C_BOLD}{'Format:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{str(fmt_name):>12}{C_RESET}", file=sys.stderr)
 
-    print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_size_str:>12}{C_RESET}", file=sys.stderr)
+    val, unit = _split_unit(total_size_str)
+    print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{val:>12}{C_RESET}{C_DIM}{unit}{C_RESET}", file=sys.stderr)
+
     if total_lines > 0:
         print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET}", file=sys.stderr)
 
@@ -4614,7 +4626,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     if token_count > 0:
         token_str = f"{'~' if is_approx else ''}{token_count:,}"
         print(
-            f"    {C_BOLD}{'Total Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET}",
+            f"    {C_BOLD}{'Total Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET}{C_DIM} tokens{C_RESET}",
             file=sys.stderr,
         )
         if is_approx:
@@ -4629,21 +4641,19 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         print(f"\n  {C_BOLD}{C_CYAN}Time and Limits{C_RESET}", file=sys.stderr)
 
         if duration is not None:
-            print(f"    {C_BOLD}{'Time taken:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{duration:11.2f}s{C_RESET}", file=sys.stderr)
+            print(f"    {C_BOLD}{'Time taken:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{duration:12.2f}{C_RESET}{C_DIM} s{C_RESET}", file=sys.stderr)
             if duration > 0 and total_discovered > 1:
                 fps = total_discovered / duration
                 bps = total_size_bytes / duration
                 tps = token_count / duration if token_count > 0 else 0
 
-                fps_str = f"{fps:,.1f} files/s"
-
-                throughput_details = [f"{utils.format_size(bps)}/s"]
+                val, unit = _split_unit(utils.format_size(bps))
+                throughput_details = [f"{val}{C_DIM}{unit}/s{C_RESET}"]
                 if tps > 0:
-                    tps_str = f"{tps:,.0f} tokens/s"
-                    throughput_details.append(tps_str)
+                    throughput_details.append(f"{tps:,.0f}{C_DIM} tokens/s{C_RESET}")
 
-                details_str = f"({' • '.join(throughput_details)})"
-                print(f"    {C_BOLD}{'Throughput:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{fps_str:>12}{C_RESET} {C_DIM}{details_str}{C_RESET}", file=sys.stderr)
+                details_str = f"{C_DIM}({C_RESET}{' • '.join(throughput_details)}{C_DIM}){C_RESET}"
+                print(f"    {C_BOLD}{'Throughput:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{fps:12,.1f}{C_RESET} {C_DIM}files/s{C_RESET} {details_str}", file=sys.stderr)
 
         _print_limit_usage_bar('File Limit Usage:', total_included, stats.get('max_files', 0), label_width)
         _print_limit_usage_bar('Token Limit Usage:', token_count, stats.get('max_total_tokens', 0), label_width)
@@ -4658,22 +4668,22 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             print(f"\n  {C_BOLD}{C_CYAN}Largest Files (by tokens){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[0], x[2]))[:5]
             total_for_percent = stats.get('total_tokens', 0)
-            # Indent(4) + TokenCount(11) + Space(2) + Percent(6) + Space(2) + Size(10) + Space(2) = 37
-            path_width = max(30, term_width - 37)
-            print(f"    {C_DIM}{'TOKENS':>11}  {'%':>6}  {'SIZE':>10}  PATH{C_RESET}", file=sys.stderr)
+            # Indent(4) + TokenCount(11) + Space(2) + Percent(6) + Space(2) + Size(12) + Space(2) = 39
+            path_width = max(30, term_width - 39)
+            print(f"    {C_DIM}{'TOKENS':>11}  {'%':>6}  {'SIZE':>12}  PATH{C_RESET}", file=sys.stderr)
         else:
             print(f"\n  {C_BOLD}{C_CYAN}Largest Files (by size){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[1], x[2]))[:5]
             total_for_percent = stats.get('total_size_bytes', 0)
-            # Indent(4) + Size(10) + Space(2) + Percent(6) + Space(2) = 24
-            path_width = max(30, term_width - 24)
-            print(f"    {C_DIM}{'SIZE':>10}  {'%':>6}  PATH{C_RESET}", file=sys.stderr)
+            # Indent(4) + Size(12) + Space(2) + Percent(6) + Space(2) = 26
+            path_width = max(30, term_width - 26)
+            print(f"    {C_DIM}{'SIZE':>12}  {'%':>6}  PATH{C_RESET}", file=sys.stderr)
 
         for tokens, f_size, path in top:
-            val = tokens if has_tokens else f_size
+            val_num = tokens if has_tokens else f_size
             percent_str = "  0.0%"
             if total_for_percent > 0:
-                percent = (val / total_for_percent) * 100
+                percent = (val_num / total_for_percent) * 100
                 percent_str = f"{percent:>5.1f}%"
 
             if has_tokens:
@@ -4682,14 +4692,16 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 token_str = f"{tokens:,}"
 
             size_str = utils.format_size(f_size)
+            s_val, s_unit = _split_unit(size_str)
             # Use smart middle-truncation for paths
             display_path = _truncate_path(path, path_width)
 
-            # Align token counts at 11, percentages at 6, and sizes at 10 to keep paths consistent
+            # Align values while keeping units dimmed
+            size_padding = " " * max(0, 12 - len(s_val) - len(s_unit))
             if has_tokens:
-                print(f"    {C_BOLD}{C_CYAN}{token_str:>11}{C_RESET}  {C_DIM}{percent_str}{C_RESET}  {C_DIM}{size_str:>10}{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
+                print(f"    {C_BOLD}{C_CYAN}{token_str:>11}{C_RESET}  {C_DIM}{percent_str}  {size_padding}{s_val}{s_unit}{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
             else:
-                print(f"    {C_BOLD}{C_CYAN}{size_str:>10}{C_RESET}  {C_DIM}{percent_str}{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
+                print(f"    {size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}  {C_DIM}{percent_str}{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
 
     # Extensions List
     if stats['files_by_extension']:
