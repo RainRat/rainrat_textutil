@@ -86,4 +86,7 @@ def test_collect_file_paths_with_git_diff(tmp_path):
         )
 
         assert paths == [root / "file.py"]
-        mock_collect.assert_called_once_with(root, diff_ref="some-ref", progress=None)
+        mock_collect.assert_called_once_with(
+            root, diff_ref="some-ref", progress=None,
+            staged_only=False, unstaged_only=False
+        )

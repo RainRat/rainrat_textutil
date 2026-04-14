@@ -113,6 +113,8 @@ DEFAULT_CONFIG = {
         'use_git': False,
         'use_git_diff': False,
         'git_diff_ref': None,
+        'git_staged': False,
+        'git_unstaged': False,
         'allowed_languages': [],
         'exclude_languages': [],
         'custom_languages': {},
@@ -471,6 +473,18 @@ def _validate_search_section(config):
     if git_diff_ref is not None and not isinstance(git_diff_ref, str):
         raise InvalidConfigError(
             "search.git_diff_ref must be text or nothing"
+        )
+
+    git_staged = search.get('git_staged')
+    if git_staged is not None and not isinstance(git_staged, bool):
+        raise InvalidConfigError(
+            "search.git_staged must be true or false"
+        )
+
+    git_unstaged = search.get('git_unstaged')
+    if git_unstaged is not None and not isinstance(git_unstaged, bool):
+        raise InvalidConfigError(
+            "search.git_unstaged must be true or false"
         )
 
     root_folders = search.get('root_folders')
