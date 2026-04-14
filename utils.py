@@ -488,6 +488,7 @@ def _validate_search_section(config):
         for lang in allowed_langs:
             if not isinstance(lang, str):
                 raise InvalidConfigError("Values in 'search.allowed_languages' must be text.")
+        search['allowed_languages'] = [lang.lower() for lang in allowed_langs]
 
     exclude_langs = search.get('exclude_languages')
     if exclude_langs is not None:
@@ -496,6 +497,7 @@ def _validate_search_section(config):
         for lang in exclude_langs:
             if not isinstance(lang, str):
                 raise InvalidConfigError("Values in 'search.exclude_languages' must be text.")
+        search['exclude_languages'] = [lang.lower() for lang in exclude_langs]
 
     custom_langs = search.get('custom_languages')
     if custom_langs is not None:
@@ -505,7 +507,7 @@ def _validate_search_section(config):
         for key, val in custom_langs.items():
             if not isinstance(key, str) or not isinstance(val, str):
                 raise InvalidConfigError("Both keys and values in 'search.custom_languages' must be text.")
-            normalized[key.lower()] = val
+            normalized[key.lower()] = val.lower()
         search['custom_languages'] = normalized
 
 
