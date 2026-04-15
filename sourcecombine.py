@@ -4510,10 +4510,13 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     token_count = stats.get('total_tokens', 0)
     is_approx = stats.get('token_count_is_approx', False)
 
+    parts = []
     if token_count > 0:
-        data_hint = f"{'~' if is_approx else ''}{token_count:,} tokens • {total_size_str}"
-    else:
-        data_hint = total_size_str
+        parts.append(f"{'~' if is_approx else ''}{token_count:,} tokens")
+    if stats.get('total_lines', 0) > 0:
+        parts.append(f"{stats['total_lines']:,} lines")
+    parts.append(total_size_str)
+    data_hint = " • ".join(parts)
 
     limit_reached = any(stats.get(k) for k in ('token_limit_reached', 'size_limit_reached', 'line_limit_reached', 'limit_reached'))
 
@@ -4619,7 +4622,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{val:>12}{C_RESET}{C_DIM}{unit}{C_RESET}", file=sys.stderr)
 
     if total_lines > 0:
-        print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET}", file=sys.stderr)
+        print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET}{C_DIM} lines{C_RESET}", file=sys.stderr)
 
     # Token Counts
     # Show token counts if tokens were estimated
