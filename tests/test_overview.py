@@ -11,8 +11,8 @@ def test_overview_generation_text():
     }
     overview = _generate_project_overview(stats, output_format='text')
     assert "Project Overview:" in overview
-    assert "Files: 2" in overview
-    assert "Total Size: 1.00 KB" in overview
+    assert "Files:        2" in overview
+    assert "Total Size:   1.00 KB" in overview
     assert ".py" in overview
     assert ".md" in overview
 
@@ -77,7 +77,7 @@ def test_find_and_combine_with_overview(tmp_path):
 
     content = output_file.read_text(encoding='utf-8')
     assert "Project Overview:" in content
-    assert "Files: 2" in content
+    assert "Files:        2" in content
     assert ".py" in content
     assert ".txt" in content
     assert "--- file1.py ---" in content
