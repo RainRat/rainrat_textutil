@@ -143,6 +143,9 @@ Used in `global_header_template` and `global_footer_template` for the whole proj
 *   `{{TOTAL_SIZE}}`: The combined size of all files in a human-readable format.
 *   `{{TOTAL_TOKENS}}`: The total number of tokens across all included files.
 *   `{{TOTAL_LINES}}`: The total number of lines across all included files.
+*   `{{GIT_BRANCH}}`: The current Git branch name.
+*   `{{GIT_COMMIT}}`: The full current Git commit hash.
+*   `{{GIT_COMMIT_SHORT}}`: The short (7-character) Git commit hash.
 
 ### Pairing Templates
 Used in `paired_filename_template` when combining related files:
