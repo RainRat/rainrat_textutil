@@ -56,8 +56,8 @@ def test_summary_redesign_largest_files(monkeypatch, capsys):
     assert "1.95 KB" in stderr # (2000 bytes)
 
     # Check for truncated path
-    assert "a/very/long/path" in stderr
-    assert "truncation/file.py" in stderr
+    assert "a/very/long..." in stderr
+    assert "ation/file.py" in stderr
 
 def test_summary_printing(monkeypatch, capsys):
     # Mock stats
@@ -97,6 +97,7 @@ def test_summary_printing(monkeypatch, capsys):
     assert "SUCCESS: Combined 123 files" in stderr
     assert "Total Found:" in stderr
     assert "123 files" in stderr
+    assert "Skipped Folders:           2 folders" in stderr
     assert "├── Included:" in stderr
     assert "Total Size:" in stderr
     assert "1.50 MB" in stderr

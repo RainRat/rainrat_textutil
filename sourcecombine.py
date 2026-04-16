@@ -4648,7 +4648,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             print(f"    {C_DIM}{outer_skipped_indent}{connector}{C_RESET}{C_DIM}{display_reason:<{label_width - 10}}{count:12,}{C_RESET} {C_DIM}({reason_percent:>5.1f}%){C_RESET}", file=sys.stderr)
 
     if has_skipped_folders:
-        print(f"    {C_DIM}└── {C_RESET}{C_BOLD}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_CYAN}{excluded_folders:12,}{C_RESET}", file=sys.stderr)
+        print(f"    {C_DIM}└── {C_RESET}{C_BOLD}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_CYAN}{excluded_folders:12,}{C_RESET}{C_DIM} folders{C_RESET}", file=sys.stderr)
 
     # Details Section
     total_lines = stats.get('total_lines', 0)
@@ -4712,23 +4712,32 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             print(f"\n  {C_BOLD}{C_CYAN}Largest Files (by tokens){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[0], x[2]))[:5]
             total_for_percent = stats.get('total_tokens', 0)
-            # Indent(4) + TokenCount(11) + Space(2) + Percent(6) + Space(2) + Size(12) + Space(2) = 39
-            path_width = max(30, term_width - 39)
-            print(f"    {C_DIM}{'TOKENS':>11}  {'%':>6}  {'SIZE':>12}  PATH{C_RESET}", file=sys.stderr)
+            # Indent(4) + TokenCount(11) + Space(2) + Percent(6) + Space(2) + Size(12) + Space(2) + Bar(12) + Space(2) = 53
+            path_width = max(20, term_width - 53)
+            print(f"    {C_DIM}{'TOKENS':>11}  {'%':>6}  {'SIZE':>12}  {'DISTRIBUTION':<12}  PATH{C_RESET}", file=sys.stderr)
         else:
             print(f"\n  {C_BOLD}{C_CYAN}Largest Files (by size){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[1], x[2]))[:5]
             total_for_percent = stats.get('total_size_bytes', 0)
-            # Indent(4) + Size(12) + Space(2) + Percent(6) + Space(2) = 26
-            path_width = max(30, term_width - 26)
-            print(f"    {C_DIM}{'SIZE':>12}  {'%':>6}  PATH{C_RESET}", file=sys.stderr)
+            # Indent(4) + Size(12) + Space(2) + Percent(6) + Space(2) + Bar(12) + Space(2) = 40
+            path_width = max(20, term_width - 40)
+            print(f"    {C_DIM}{'SIZE':>12}  {'%':>6}  {'DISTRIBUTION':<12}  PATH{C_RESET}", file=sys.stderr)
 
         for tokens, f_size, path in top:
             val_num = tokens if has_tokens else f_size
             percent_str = "  0.0%"
+            percent = 0.0
             if total_for_percent > 0:
                 percent = (val_num / total_for_percent) * 100
                 percent_str = f"{percent:>5.1f}%"
+
+            # 10-character ASCII distribution bar
+            bar_len = 10
+            filled = int((percent / 100) * bar_len + 0.5)
+            if percent > 0 and filled == 0:
+                filled = 1
+            filled = min(bar_len, filled)
+            bar = f"{C_CYAN}{'#' * filled}{C_RESET}{C_DIM}{'-' * (bar_len - filled)}{C_RESET}"
 
             if has_tokens:
                 token_str = f"{'~' if is_approx else ''}{tokens:,}"
@@ -4743,9 +4752,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             # Align values while keeping units dimmed
             size_padding = " " * max(0, 12 - len(s_val) - len(s_unit))
             if has_tokens:
-                print(f"    {C_BOLD}{C_CYAN}{token_str:>11}{C_RESET}  {C_DIM}{percent_str}  {size_padding}{s_val}{s_unit}{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
+                print(f"    {C_BOLD}{C_CYAN}{token_str:>11}{C_RESET}  {C_DIM}{percent_str}  {size_padding}{s_val}{s_unit}{C_RESET}  [{bar}]  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
             else:
-                print(f"    {size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}  {C_DIM}{percent_str}{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
+                print(f"    {size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}  {C_DIM}{percent_str}{C_RESET}  [{bar}]  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
 
     # Extensions List
     if stats['files_by_extension']:
