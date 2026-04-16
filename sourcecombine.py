@@ -762,66 +762,34 @@ def collect_git_diff_files(root_folder, diff_ref=None, progress=None, staged_onl
     try:
         file_paths_set = set()
 
+        def _run_git(args):
+            result = subprocess.run(
+                args, cwd=root_path, capture_output=True, text=True, check=True
+            )
+            for line in result.stdout.splitlines():
+                if line:
+                    file_paths_set.add(line)
+
         # Determine which changes to include
         if staged_only:
             # Staged changes only
             cmd = ['git', 'diff', '--name-only', '--cached', '--relative']
             if diff_ref:
                 cmd.append(diff_ref)
-
-            result = subprocess.run(cmd, cwd=root_path, capture_output=True, text=True, check=True)
-            for line in result.stdout.splitlines():
-                if line:
-                    file_paths_set.add(line)
+            _run_git(cmd)
 
         elif unstaged_only:
             # Unstaged changes only (modified but not staged).
             # We ignore diff_ref here because 'unstaged' is defined relative to the index.
-            cmd = ['git', 'diff', '--name-only', '--relative']
-
-            result = subprocess.run(cmd, cwd=root_path, capture_output=True, text=True, check=True)
-            for line in result.stdout.splitlines():
-                if line:
-                    file_paths_set.add(line)
-
+            _run_git(['git', 'diff', '--name-only', '--relative'])
             # Also include untracked files for unstaged search
-            result = subprocess.run(
-                ['git', 'ls-files', '--others', '--exclude-standard', '--', '.'],
-                cwd=root_path, capture_output=True, text=True, check=True
-            )
-            for line in result.stdout.splitlines():
-                if line:
-                    file_paths_set.add(line)
+            _run_git(['git', 'ls-files', '--others', '--exclude-standard', '--', '.'])
 
         else:
             # Default: staged + unstaged + untracked
-            if diff_ref:
-                # git diff --name-only --relative REF
-                result = subprocess.run(
-                    ['git', 'diff', '--name-only', '--relative', diff_ref],
-                    cwd=root_path, capture_output=True, text=True, check=True
-                )
-                for line in result.stdout.splitlines():
-                    if line:
-                        file_paths_set.add(line)
-            else:
-                # git diff --name-only --relative HEAD
-                result = subprocess.run(
-                    ['git', 'diff', '--name-only', '--relative', 'HEAD'],
-                    cwd=root_path, capture_output=True, text=True, check=True
-                )
-                for line in result.stdout.splitlines():
-                    if line:
-                        file_paths_set.add(line)
-
+            _run_git(['git', 'diff', '--name-only', '--relative', diff_ref or 'HEAD'])
             # Untracked files
-            result = subprocess.run(
-                ['git', 'ls-files', '--others', '--exclude-standard', '--', '.'],
-                cwd=root_path, capture_output=True, text=True, check=True
-            )
-            for line in result.stdout.splitlines():
-                if line:
-                    file_paths_set.add(line)
+            _run_git(['git', 'ls-files', '--others', '--exclude-standard', '--', '.'])
 
         file_paths = []
         for rel_path in sorted(file_paths_set):
