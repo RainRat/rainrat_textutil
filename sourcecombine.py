@@ -4579,7 +4579,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         status_suffix = " (TRUNCATED)"
 
     if args.dry_run:
-        summary_title = f"DRY RUN COMPLETE{status_suffix}: Would combine {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
+        verb = "extract" if getattr(args, 'extract', False) else "combine"
+        summary_title = f"DRY RUN COMPLETE{status_suffix}: Would {verb} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
     elif args.estimate_tokens:
         summary_title = f"TOKEN ESTIMATION COMPLETE{status_suffix}: {total_included:,} {file_word} {source_desc or ''}".strip()
     elif args.list_files:
