@@ -1717,22 +1717,36 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
         lines.append("Project Overview:")
 
     total_files = stats.get('total_files', 0)
-    total_size = utils.format_size(stats.get('total_size_bytes', 0))
+    total_size_bytes = stats.get('total_size_bytes', 0)
+    total_size = utils.format_size(total_size_bytes)
     total_tokens = stats.get('total_tokens', 0)
     total_lines = stats.get('total_lines', 0)
     is_approx = stats.get('token_count_is_approx', False)
 
     token_str = f"{'~' if is_approx else ''}{total_tokens:,}"
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     if output_format == 'markdown':
+        lines.append(f"- **Generated at:** {timestamp}")
+        if stats.get('git_branch') and stats.get('git_branch') != 'N/A':
+            lines.append(f"- **Git Branch:** {stats['git_branch']}")
+        if stats.get('git_commit_short') and stats.get('git_commit_short') != 'N/A':
+            lines.append(f"- **Git Commit:** {stats['git_commit_short']}")
+
         lines.append(f"- **Files:** {total_files:,}")
         lines.append(f"- **Total Size:** {total_size}")
         lines.append(f"- **Total Lines:** {total_lines:,}")
         lines.append(f"- **Total Tokens:** {token_str}")
     else:
-        lines.append(f"  Files: {total_files:,}")
-        lines.append(f"  Total Size: {total_size}")
-        lines.append(f"  Total Lines: {total_lines:,}")
+        lines.append(f"  Generated at: {timestamp}")
+        if stats.get('git_branch') and stats.get('git_branch') != 'N/A':
+            lines.append(f"  Git Branch:   {stats['git_branch']}")
+        if stats.get('git_commit_short') and stats.get('git_commit_short') != 'N/A':
+            lines.append(f"  Git Commit:   {stats['git_commit_short']}")
+
+        lines.append(f"  Files:        {total_files:,}")
+        lines.append(f"  Total Size:   {total_size}")
+        lines.append(f"  Total Lines:  {total_lines:,}")
         lines.append(f"  Total Tokens: {token_str}")
 
     # Truncation Notices
@@ -1773,22 +1787,81 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
                 for rule in active_rules:
                     lines.append(f"    - {rule}")
 
+    # Largest Files
+    top_files = stats.get('top_files')
+    if top_files:
+        # Sort and limit to top 5
+        has_tokens = any(f[0] > 0 for f in top_files)
+        if has_tokens:
+            sorted_top = sorted(top_files, key=lambda x: (-x[0], x[2]))[:5]
+            title = "Largest Files (by tokens)"
+        else:
+            sorted_top = sorted(top_files, key=lambda x: (-x[1], x[2]))[:5]
+            title = "Largest Files (by size)"
+
+        if output_format == 'markdown':
+            lines.append(f"\n## {title}")
+            lines.append("| File | Tokens | Size | % |")
+            lines.append("| :--- | :--- | :--- | :--- |")
+            for tokens, size, path in sorted_top:
+                weight = tokens if has_tokens else size
+                total_weight = total_tokens if has_tokens else total_size_bytes
+                percent = (weight / total_weight * 100) if total_weight > 0 else 0
+                t_str = f"{tokens:,}" if has_tokens else "-"
+                lines.append(f"| `{path}` | {t_str} | {utils.format_size(size)} | {percent:.1f}% |")
+        else:
+            lines.append(f"\n  {title}:")
+            for tokens, size, path in sorted_top:
+                weight = tokens if has_tokens else size
+                total_weight = total_tokens if has_tokens else total_size_bytes
+                percent = (weight / total_weight * 100) if total_weight > 0 else 0
+                t_str = f"{tokens:,}" if has_tokens else "-"
+                lines.append(f"    {path:<30} {t_str:>10} tokens • {utils.format_size(size):>10} ({percent:>5.1f}%)")
+
     # Language Breakdown
     ext_stats = stats.get('files_by_extension', {})
     if ext_stats:
-        sorted_exts = sorted(ext_stats.items(), key=lambda x: (-x[1], x[0]))
+        tokens_by_ext = stats.get('tokens_by_extension', {})
+        size_by_ext = stats.get('size_by_extension', {})
+        has_ext_tokens = any(v > 0 for v in tokens_by_ext.values())
+
+        if has_ext_tokens:
+            total_weight = total_tokens
+            weight_by_ext = tokens_by_ext
+            weight_label = "% Tokens"
+        else:
+            total_weight = total_size_bytes
+            weight_by_ext = size_by_ext
+            weight_label = "% Size"
+
+        sorted_exts = sorted(
+            ext_stats.items(),
+            key=lambda item: (-weight_by_ext.get(item[0], 0), -item[1], item[0])
+        )
+
         if output_format == 'markdown':
             lines.append("\n## File Types")
-            lines.append("| Extension | Count | % Files |")
-            lines.append("| :--- | :--- | :--- |")
+            lines.append(f"| Extension | Count | % Files | {weight_label} |")
+            lines.append("| :--- | :--- | :--- | :--- |")
             for ext, count in sorted_exts:
-                percent = (count / total_files * 100) if total_files > 0 else 0
-                lines.append(f"| `{ext}` | {count:,} | {percent:.1f}% |")
+                f_percent = (count / total_files * 100) if total_files > 0 else 0
+                w_percent = (weight_by_ext.get(ext, 0) / total_weight * 100) if total_weight > 0 else 0
+                lines.append(f"| `{ext}` | {count:,} | {f_percent:.1f}% | {w_percent:.1f}% |")
         else:
             lines.append("\n  File Types:")
             for ext, count in sorted_exts:
-                percent = (count / total_files * 100) if total_files > 0 else 0
-                lines.append(f"    {ext:<10} {count:>5,} ({percent:>5.1f}%)")
+                f_percent = (count / total_files * 100) if total_files > 0 else 0
+                w_percent = (weight_by_ext.get(ext, 0) / total_weight * 100) if total_weight > 0 else 0
+
+                # ASCII bar
+                bar_len = 10
+                filled = int((w_percent / 100) * bar_len + 0.5)
+                if w_percent > 0 and filled == 0:
+                    filled = 1
+                filled = min(bar_len, filled)
+                bar = f"[{'#' * filled}{'-' * (bar_len - filled)}]"
+
+                lines.append(f"    {ext:<10} {count:>5,} files ({f_percent:>5.1f}% • {w_percent:>5.1f}%) {bar}")
 
     if output_format == 'markdown':
         lines.append("\n---")
