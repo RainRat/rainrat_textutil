@@ -802,7 +802,7 @@ def test_validate_output_sort_by_invalid(tmp_path):
             }
         }
     )
-    with pytest.raises(utils.InvalidConfigError, match="'output.sort_by' must be one of: name, size, modified, tokens, depth"):
+    with pytest.raises(utils.InvalidConfigError, match="'output.sort_by' must be one of: name, size, modified, tokens, lines, depth, language"):
         load_and_validate_config(config_path)
 
 def test_validate_output_sort_reverse_non_bool(tmp_path):

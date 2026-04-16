@@ -10,7 +10,7 @@ A versatile tool for your terminal to find, filter, and combine source code file
 *   **Include Groups:** Group specific files to always include, even if you skip others.
 *   **Pairing:** Combine related files (like source and header pairs) into their own individual output files.
 *   **File Extraction:** Rebuild your original files and folders from combined files (like JSON, XML, or Markdown). Batch process multiple files or entire folders.
-*   **Sorting:** Sort files by `name`, `size`, `modified`, `tokens`, `depth`, or `language`.
+*   **Sorting:** Sort files by `name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`.
 *   **Limiting:** Stop at a file limit, total tokens, total lines, or total size.
 *   **Project Overview:** Include a formatted summary with statistics and a language breakdown at the start of your combined output.
 *   **In-Place Processing:** Clean up extra spaces or blank lines directly in your source files.
@@ -202,7 +202,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--pair-template TEMPLATE`: Set the filename template for paired output (for example, `{{STEM}}.combined`).
 
 ### Sorting & Limiting
-*   `--sort` / `-s`: Sort files by name, size, date (modified), tokens, folder depth, or language before combining.
+*   `--sort` / `-s`: Sort files by name, size, date (modified), tokens, lines, folder depth, or language before combining.
 *   `--reverse` / `-r`: Reverse the sort order.
 *   `--limit` / `-L`: Stop adding files once you reach this file limit.
 *   `--max-tokens` / `-M`: Stop adding files once you reach the total tokens limit (only when combining many files or extracting).

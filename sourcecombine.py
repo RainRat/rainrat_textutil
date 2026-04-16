@@ -2326,6 +2326,10 @@ def find_and_combine_files(
                         content, _ = read_file_best_effort(primary_path)
                         processed = process_content(content, processor.processing_opts)
                         val, _ = utils.estimate_tokens(processed)
+                    elif sort_by == 'lines':
+                        content, _ = read_file_best_effort(primary_path)
+                        processed = process_content(content, processor.processing_opts)
+                        val = utils.count_lines(processed)
                     elif sort_by == 'language':
                         val = utils.get_language_tag(primary_path, overrides=processor.custom_languages)
                     else:
@@ -2351,7 +2355,7 @@ def find_and_combine_files(
                             val = rel_p.as_posix()
                         return (val, rel_p.as_posix())
                     all_combined_items.sort(key=get_single_sort_key, reverse=sort_reverse)
-                # Note: 'tokens' sort when combining many files into one is handled inside the metadata pass below
+                # Note: 'tokens' and 'lines' sort when combining many files into one is handled inside the metadata pass below
 
         # Apply file limit after global sorting
         max_files = filter_opts.get('max_files', 0)
@@ -2363,7 +2367,7 @@ def find_and_combine_files(
                     all_paired_items = all_paired_items[:max_files]
                     stats['limit_reached'] = True
                     limit_applied = True
-            elif sort_by != 'tokens':
+            elif sort_by not in ('tokens', 'lines'):
                 if len(all_combined_items) > max_files:
                     stats['filter_reasons']['file_limit'] = len(all_combined_items) - max_files
                     all_combined_items = all_combined_items[:max_files]
@@ -2420,15 +2424,15 @@ def find_and_combine_files(
                     overhead_tokens += len(all_combined_items) * 12
                     overhead_size += len(all_combined_items) * 50
 
-            # If sorting by tokens, we must calculate tokens for all files first
-            if sort_by == 'tokens':
-                token_data = []
+            # If sorting by tokens or lines, we must calculate metrics for all files first
+            if sort_by in ('tokens', 'lines'):
+                metric_data = []
                 sort_bar = processor._make_bar(
                     total=len(all_combined_items),
-                    desc="Calculating tokens for sorting",
+                    desc=f"Calculating {sort_by} for sorting",
                     unit="file",
                 )
-                running_tokens = 0
+                running_metric = 0
                 for item in all_combined_items:
                     file_path, root_path, is_excluded_by_size = item
                     rel_p = _get_rel_path(file_path, root_path)
@@ -2443,27 +2447,33 @@ def find_and_combine_files(
                             custom_languages=search_opts.get('custom_languages'),
                             git_info=stats
                         )
-                        tokens, _ = utils.estimate_tokens(rendered)
+                        if sort_by == 'tokens':
+                            val, _ = utils.estimate_tokens(rendered)
+                        else:
+                            val = utils.count_lines(rendered)
                     else:
                         content, _ = read_file_best_effort(file_path)
                         processed = process_content(content, processor.processing_opts)
-                        tokens, _ = utils.estimate_tokens(processed)
-                    token_data.append((tokens, rel_p_str))
-                    running_tokens += tokens
-                    sort_bar.set_postfix(tokens=f"{running_tokens:,}")
+                        if sort_by == 'tokens':
+                            val, _ = utils.estimate_tokens(processed)
+                        else:
+                            val = utils.count_lines(processed)
+                    metric_data.append((val, rel_p_str))
+                    running_metric += val
+                    sort_bar.set_postfix(**{sort_by: f"{running_metric:,}"})
                     sort_bar.update(1)
                 sort_bar.close()
 
-                # Sort by tokens
-                # Zip tokens with items to sort them together
+                # Sort by metric
+                # Zip metric with items to sort them together
                 indexed_items = sorted(
-                    zip(all_combined_items, token_data),
+                    zip(all_combined_items, metric_data),
                     key=lambda x: (x[1][0], x[1][1]),
                     reverse=sort_reverse
                 )
                 all_combined_items = [x[0] for x in indexed_items]
 
-            if max_files > 0 and sort_by == 'tokens' and len(all_combined_items) > max_files:
+            if max_files > 0 and sort_by in ('tokens', 'lines') and len(all_combined_items) > max_files:
                 stats['filter_reasons']['file_limit'] = len(all_combined_items) - max_files
                 all_combined_items = all_combined_items[:max_files]
                 stats['limit_reached'] = True
@@ -3070,8 +3080,8 @@ def main():
     sorting_group.add_argument(
         "--sort",
         "-s",
-        choices=["name", "size", "modified", "tokens", "depth", "language"],
-        help="Sort files by name, size, date (modified), tokens, folder depth, or language before combining.",
+        choices=["name", "size", "modified", "tokens", "lines", "depth", "language"],
+        help="Sort files by name, size, date (modified), tokens, lines, folder depth, or language before combining.",
     )
     sorting_group.add_argument(
         "--reverse",
@@ -4209,6 +4219,8 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
                 val = meta['size']
             elif sort_by == 'tokens':
                 val = meta.get('tokens', 0)
+            elif sort_by == 'lines':
+                val = meta.get('lines', 0)
             elif sort_by == 'modified':
                 val = meta.get('modified', 0)
             elif sort_by == 'language':
