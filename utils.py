@@ -764,9 +764,9 @@ def _validate_output_section(config):
         raise InvalidConfigError("'output.format' must be one of: text, json, jsonl, markdown, xml")
 
     sort_by = output_conf.get('sort_by')
-    if sort_by is not None and sort_by not in ('name', 'size', 'modified', 'tokens', 'depth', 'language'):
+    if sort_by is not None and sort_by not in ('name', 'size', 'modified', 'tokens', 'lines', 'depth', 'language'):
         raise InvalidConfigError(
-            "'output.sort_by' must be one of: name, size, modified, tokens, depth, language"
+            "'output.sort_by' must be one of: name, size, modified, tokens, lines, depth, language"
         )
 
     sort_reverse = output_conf.get('sort_reverse')
