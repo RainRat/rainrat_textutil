@@ -4565,11 +4565,12 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
     parts = []
     if token_count > 0:
-        parts.append(f"{'~' if is_approx else ''}{token_count:,} tokens")
+        parts.append(f"{C_BOLD}{C_CYAN}{'~' if is_approx else ''}{token_count:,}{C_RESET} {C_DIM}tokens{C_RESET}")
     if stats.get('total_lines', 0) > 0:
-        parts.append(f"{stats['total_lines']:,} lines")
-    parts.append(total_size_str)
-    data_hint = " • ".join(parts)
+        parts.append(f"{C_BOLD}{C_CYAN}{stats['total_lines']:,}{C_RESET} {C_DIM}lines{C_RESET}")
+    val, unit = _split_unit(total_size_str)
+    parts.append(f"{C_BOLD}{C_CYAN}{val}{C_RESET}{C_DIM}{unit}{C_RESET}")
+    data_hint = f"{C_DIM} • {C_RESET}".join(parts)
 
     limit_reached = any(stats.get(k) for k in ('token_limit_reached', 'size_limit_reached', 'line_limit_reached', 'limit_reached'))
 
@@ -4609,7 +4610,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     # Header
     # We use _ANSI_ESCAPE to correctly calculate the visible length of the title for the border
     raw_title = _ANSI_ESCAPE.sub('', f"=== {summary_title} [{data_hint}] ===")
-    print(f"\n{title_color}{C_BOLD}=== {summary_title} [{data_hint}] ==={C_RESET}", file=sys.stderr)
+    print(f"\n{title_color}{C_BOLD}=== {summary_title} {C_RESET}{C_DIM}[{C_RESET}{data_hint}{C_DIM}]{C_RESET}{title_color}{C_BOLD} ==={C_RESET}", file=sys.stderr)
 
     if stats.get('token_limit_reached'):
         print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to token limit.{C_RESET}", file=sys.stderr)
@@ -4705,11 +4706,11 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 tps = token_count / duration if token_count > 0 else 0
 
                 val, unit = _split_unit(utils.format_size(bps))
-                throughput_details = [f"{val}{C_DIM}{unit}/s{C_RESET}"]
+                throughput_details = [f"{C_BOLD}{C_CYAN}{val}{C_RESET}{C_DIM}{unit}/s{C_RESET}"]
                 if tps > 0:
-                    throughput_details.append(f"{tps:,.0f}{C_DIM} tokens/s{C_RESET}")
+                    throughput_details.append(f"{C_BOLD}{C_CYAN}{tps:,.0f}{C_RESET}{C_DIM} tokens/s{C_RESET}")
 
-                details_str = f"{C_DIM}({C_RESET}{' • '.join(throughput_details)}{C_DIM}){C_RESET}"
+                details_str = f"{C_DIM}({C_RESET}{f'{C_DIM} • {C_RESET}'.join(throughput_details)}{C_DIM}){C_RESET}"
                 print(f"    {C_BOLD}{'Throughput:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{fps:12,.1f}{C_RESET} {C_DIM}files/s{C_RESET} {details_str}", file=sys.stderr)
 
         _print_limit_usage_bar('File Limit Usage:', total_included, stats.get('max_files', 0), label_width)
@@ -4765,9 +4766,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             # Align values while keeping units dimmed
             size_padding = " " * max(0, 12 - len(s_val) - len(s_unit))
             if has_tokens:
-                print(f"    {C_BOLD}{C_CYAN}{token_str:>11}{C_RESET}  {C_DIM}{percent_str}  {size_padding}{s_val}{s_unit}{C_RESET}  [{bar}]  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
+                print(f"    {C_BOLD}{C_CYAN}{token_str:>11}{C_RESET}  {C_BOLD}{C_CYAN}{percent_str}{C_RESET}  {size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}  {C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
             else:
-                print(f"    {size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}  {C_DIM}{percent_str}{C_RESET}  [{bar}]  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
+                print(f"    {size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}  {C_BOLD}{C_CYAN}{percent_str}{C_RESET}  {C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
 
     # Extensions List
     if stats['files_by_extension']:
@@ -4824,7 +4825,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             bar = f"{C_CYAN}{'#' * filled}{C_RESET}{C_DIM}{'-' * (bar_len - filled)}{C_RESET}"
 
             ext_label = ext + ":"
-            print(f"    {C_DIM}{ext_label:<{max_ext_len}}{C_RESET} {C_BOLD}{C_CYAN}{count:>5,}{C_RESET} {C_DIM}({file_percent:>5.1f}% • {weight_percent:>5.1f}%){C_RESET} [{bar}]", file=sys.stderr)
+            print(f"    {C_DIM}{ext_label:<{max_ext_len}}{C_RESET} {C_BOLD}{C_CYAN}{count:>5,}{C_RESET} {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{file_percent:>5.1f}%{C_RESET}{C_DIM} • {C_RESET}{C_BOLD}{C_CYAN}{weight_percent:>5.1f}%{C_RESET}{C_DIM}){C_RESET} {C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}", file=sys.stderr)
 
     # Footer
     print(f"\n{title_color}{'=' * len(raw_title)}{C_RESET}", file=sys.stderr)
