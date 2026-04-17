@@ -341,6 +341,36 @@ def _truncate_path(path: str, max_width: int) -> str:
     return f"{path[:head_len]}...{path[-tail_len:]}"
 
 
+def _make_ascii_bar(
+    percent: float,
+    bar_len: int = 10,
+    colored: bool = False,
+    use_rounding: bool = True,
+    ensure_min_one: bool = True,
+) -> str:
+    """Create a fixed-width ASCII progress bar from a percentage.
+
+    The bar uses '#' for filled and '-' for empty space. It ensures that
+    any positive percentage shows at least one '#' block unless
+    ensure_min_one is False.
+    """
+    if use_rounding:
+        filled = int((percent / 100) * bar_len + 0.5)
+    else:
+        filled = int((percent / 100) * bar_len)
+
+    if ensure_min_one and percent > 0 and filled == 0:
+        filled = 1
+    filled = min(bar_len, filled)
+
+    hashes = '#' * filled
+    dashes = '-' * (bar_len - filled)
+
+    if colored:
+        return f"{C_CYAN}{hashes}{C_RESET}{C_DIM}{dashes}{C_RESET}"
+    return hashes + dashes
+
+
 def _format_metadata_summary(meta: Mapping[str, Any]) -> str:
     """Return file or folder details in an easy-to-read format."""
     parts = []
@@ -1854,12 +1884,7 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
                 w_percent = (weight_by_ext.get(ext, 0) / total_weight * 100) if total_weight > 0 else 0
 
                 # ASCII bar
-                bar_len = 10
-                filled = int((w_percent / 100) * bar_len + 0.5)
-                if w_percent > 0 and filled == 0:
-                    filled = 1
-                filled = min(bar_len, filled)
-                bar = f"[{'#' * filled}{'-' * (bar_len - filled)}]"
+                bar = f"[{_make_ascii_bar(w_percent)}]"
 
                 lines.append(f"    {ext:<10} {count:>5,} files ({f_percent:>5.1f}% • {w_percent:>5.1f}%) {bar}")
 
@@ -4519,9 +4544,7 @@ def _print_limit_usage_bar(label, current, maximum, label_width, is_size=False):
         return
     percent = (current / maximum) * 100
     # Create a 10-character ASCII bar
-    bar_len = 10
-    filled = min(bar_len, int((percent / 100) * bar_len))
-    bar = f"[{'#' * filled}{'-' * (bar_len - filled)}]"
+    bar = f"[{_make_ascii_bar(percent, use_rounding=False, ensure_min_one=False)}]"
     if percent >= 100:
         bar_color = C_RED
     elif percent > 90:
@@ -4745,12 +4768,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 percent_str = f"{percent:>5.1f}%"
 
             # 10-character ASCII distribution bar
-            bar_len = 10
-            filled = int((percent / 100) * bar_len + 0.5)
-            if percent > 0 and filled == 0:
-                filled = 1
-            filled = min(bar_len, filled)
-            bar = f"{C_CYAN}{'#' * filled}{C_RESET}{C_DIM}{'-' * (bar_len - filled)}{C_RESET}"
+            bar = _make_ascii_bar(percent, colored=True)
 
             if has_tokens:
                 token_str = f"{'~' if is_approx else ''}{tokens:,}"
@@ -4816,12 +4834,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             weight_percent = (weight / total_weight * 100) if total_weight > 0 else 0
 
             # 10-character ASCII distribution bar
-            bar_len = 10
-            filled = int((weight_percent / 100) * bar_len + 0.5)
-            if weight_percent > 0 and filled == 0:
-                filled = 1
-            filled = min(bar_len, filled)
-            bar = f"{C_CYAN}{'#' * filled}{C_RESET}{C_DIM}{'-' * (bar_len - filled)}{C_RESET}"
+            bar = _make_ascii_bar(weight_percent, colored=True)
 
             ext_label = ext + ":"
             print(f"    {C_DIM}{ext_label:<{max_ext_len}}{C_RESET} {C_BOLD}{C_CYAN}{count:>5,}{C_RESET} {C_DIM}({file_percent:>5.1f}% • {weight_percent:>5.1f}%){C_RESET} [{bar}]", file=sys.stderr)
