@@ -23,7 +23,7 @@ A versatile tool for your terminal to find, filter, and combine source code file
 ### Prerequisites
 
 *   **Python 3.10 or higher.** Check your version: `python --version` (or `python3 --version`).
-*   **Git.** Check your version: `git --version`.
+*   **Git (Optional).** Required for `.gitignore` support and Git-based filtering (like `--git-diff`). Check your version: `git --version`.
 
 ### Steps
 
