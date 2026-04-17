@@ -75,7 +75,8 @@ def test_line_count_in_summary(capsys, tmp_path):
         tree=False,
         max_depth=None,
         min_size=None,
-        max_size=None
+        max_size=None,
+        git_log=None,
     )
 
     _print_execution_summary(stats, args, pairing_enabled=False)

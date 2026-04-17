@@ -164,6 +164,7 @@ DEFAULT_CONFIG = {
         'add_line_numbers': False,
         'table_of_contents': False,
         'project_overview': False,
+        'git_log_count': 0,
         'header_template': f"--- {FILENAME_PLACEHOLDER} ---\n",
         'footer_template': f"\n--- end {FILENAME_PLACEHOLDER} ---\n",
         'global_header_template': None,
@@ -750,6 +751,11 @@ def _validate_output_section(config):
     overview = output_conf.get('project_overview')
     if overview is not None and not isinstance(overview, bool):
         raise InvalidConfigError("'output.project_overview' must be true or false.")
+
+    git_log_count = output_conf.get('git_log_count')
+    if git_log_count is not None:
+        if not isinstance(git_log_count, int) or git_log_count < 0:
+            raise InvalidConfigError("'output.git_log_count' must be 0 or more.")
 
     placeholder = output_conf.get('max_size_placeholder')
 

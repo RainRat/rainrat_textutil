@@ -165,6 +165,7 @@ def test_terminal_summary_approx_tokens(capsys):
         list_files=False,
         tree=False,
         clipboard=False,
+        git_log=None,
     )
 
     sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)

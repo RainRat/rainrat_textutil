@@ -682,15 +682,17 @@ def should_include(
     return (True, None) if return_reason else True
 
 
-def _get_git_info(root_folder):
+def _get_git_info(root_folder, log_count=0):
     """Retrieve Git branch and commit information for the project.
 
-    Returns a dictionary containing 'git_branch', 'git_commit', and 'git_commit_short'.
+    Returns a dictionary containing 'git_branch', 'git_commit', 'git_commit_short',
+    and optionally 'git_log'.
     """
     info = {
         'git_branch': 'N/A',
         'git_commit': 'N/A',
-        'git_commit_short': 'N/A'
+        'git_commit_short': 'N/A',
+        'git_log': None
     }
 
     root_path = Path(root_folder)
@@ -709,6 +711,14 @@ def _get_git_info(root_folder):
         )
         info['git_commit'] = result.stdout.strip()
         info['git_commit_short'] = info['git_commit'][:7]
+
+        # Get recent log if requested
+        if log_count > 0:
+            result = subprocess.run(
+                ['git', 'log', f'-{log_count}', '--oneline', '--no-decorate'],
+                cwd=root_path, capture_output=True, text=True, check=True
+            )
+            info['git_log'] = result.stdout.strip()
 
     except (subprocess.CalledProcessError, FileNotFoundError, OSError):
         pass
@@ -1733,6 +1743,13 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
         if stats.get('git_commit_short') and stats.get('git_commit_short') != 'N/A':
             lines.append(f"- **Git Commit:** {stats['git_commit_short']}")
 
+        git_log = stats.get('git_log')
+        if git_log:
+            lines.append("\n### Recent Changes")
+            lines.append("```text")
+            lines.append(git_log)
+            lines.append("```\n")
+
         lines.append(f"- **Files:** {total_files:,}")
         lines.append(f"- **Total Size:** {total_size}")
         lines.append(f"- **Total Lines:** {total_lines:,}")
@@ -1743,6 +1760,13 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
             lines.append(f"  Git Branch:   {stats['git_branch']}")
         if stats.get('git_commit_short') and stats.get('git_commit_short') != 'N/A':
             lines.append(f"  Git Commit:   {stats['git_commit_short']}")
+
+        git_log = stats.get('git_log')
+        if git_log:
+            lines.append("\n  Recent Changes:")
+            for line in git_log.splitlines():
+                lines.append(f"    {line}")
+            lines.append("")
 
         lines.append(f"  Files:        {total_files:,}")
         lines.append(f"  Total Size:   {total_size}")
@@ -1952,11 +1976,13 @@ def find_and_combine_files(
     first_root = "."
     if config.get('search', {}).get('root_folders'):
         first_root = config['search']['root_folders'][0]
-    stats.update(_get_git_info(first_root))
 
     search_opts = config.get('search', {})
     filter_opts = config.get('filters', {})
     output_opts = config.get('output', {})
+
+    git_log_count = output_opts.get('git_log_count', 0)
+    stats.update(_get_git_info(first_root, log_count=git_log_count))
     pair_opts = config.get('pairing', {})
 
     exclude_folders = filter_opts.get('exclusions', {}).get('folders') or []
@@ -3173,6 +3199,13 @@ def main():
         help="Add a project overview summary with statistics and language breakdown to the start of the output (only when combining many files into one).",
     )
     output_group.add_argument(
+        "--git-log",
+        nargs="?",
+        const=5,
+        type=int,
+        help="Include the last N git commit messages in the project overview (default: 5 if flag is present).",
+    )
+    output_group.add_argument(
         "--json-summary",
         help="Save an execution summary (file counts, tokens, time taken) in JSON format. Use '-' to print it to your terminal.",
     )
@@ -3740,6 +3773,10 @@ def main():
         output_conf['sort_reverse'] = True
 
     # Determine the effective output format. Terminal options take precedence over configuration.
+    # Handle git-log if provided
+    if args.git_log is not None:
+        output_conf['git_log_count'] = args.git_log
+
     if args.markdown:
         args.format = "markdown"
     elif args.json:
