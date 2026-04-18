@@ -584,8 +584,7 @@ def should_include(
         # For language filtering, we might need to look at the content if the extension is
         # missing or unrecognized.
         sample_content = None
-        suffix = relative_path.suffix.lower()
-        if not suffix or (suffix not in utils.EXTENSION_TO_LANG and relative_path.name.lower() not in utils.FILENAME_TO_LANG):
+        if not suffix or (suffix not in utils.EXTENSION_TO_LANG and file_name.lower() not in utils.FILENAME_TO_LANG):
             if virtual_content:
                 sample_content = (
                     virtual_content.decode('utf-8', errors='replace')
