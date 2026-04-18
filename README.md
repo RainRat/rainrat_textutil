@@ -184,8 +184,8 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--skip-binary` / `-B`: Skip files that contain non-text data (binary files).
 *   `--since` / `-S`: Include files modified since this time (for example, '1d', '2h', 'YYYY-MM-DD').
 *   `--until` / `-U`: Include files modified before this time (for example, '1d', '2h', 'YYYY-MM-DD').
-*   `--min-size`: Include only files larger than this size (for example, '10KB', '1MB').
-*   `--max-size`: Include only files smaller than this size (for example, '10KB', '1MB').
+*   `--min-size`: Include only files at least this size (for example, '10KB', '1MB').
+*   `--max-size`: Include only files at most this size (for example, '10KB', '1MB').
 *   `--min-tokens`: Include only files with at least this many tokens.
 *   `--max-file-tokens`: Include only files with at most this many tokens.
 *   `--min-lines`: Include only files with at least this many lines.
