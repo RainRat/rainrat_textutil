@@ -85,6 +85,7 @@ def test_summary_printing(monkeypatch, capsys):
     args.list_files = False
     args.tree = False
     args.extract = False
+    args.apply_in_place = False
 
     # Force NO_COLOR to avoid ANSI codes in test check
     monkeypatch.setenv("NO_COLOR", "1")
@@ -127,6 +128,7 @@ def test_summary_printing_dry_run(monkeypatch, capsys):
     args.list_files = False
     args.tree = False
     args.extract = False
+    args.apply_in_place = False
 
     monkeypatch.setenv("NO_COLOR", "1")
 

@@ -4652,7 +4652,12 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         status_suffix = " (TRUNCATED)"
 
     if args.dry_run:
-        verb = "extract" if getattr(args, 'extract', False) else "combine"
+        if getattr(args, 'extract', False):
+            verb = "extract"
+        elif getattr(args, 'apply_in_place', False):
+            verb = "update in-place"
+        else:
+            verb = "combine"
         summary_title = f"DRY RUN COMPLETE{status_suffix}: Would {verb} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
     elif args.estimate_tokens:
         summary_title = f"TOKEN ESTIMATION COMPLETE{status_suffix}: {total_included:,} {file_word} {source_desc or ''}".strip()
@@ -4661,7 +4666,12 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     elif args.tree:
         summary_title = f"TREE VIEW COMPLETE{status_suffix}: {total_included:,} {file_word} {source_desc or ''}".strip()
     else:
-        action = "Extracted" if getattr(args, 'extract', False) else "Combined"
+        if getattr(args, 'extract', False):
+            action = "Extracted"
+        elif getattr(args, 'apply_in_place', False):
+            action = "Updated in-place"
+        else:
+            action = "Combined"
         summary_title = f"SUCCESS{status_suffix}: {action} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
 
     # Collapse any accidental double spaces caused by empty optional fields
@@ -4756,7 +4766,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     # Time and Limits Section
     has_limits = any(stats.get(k, 0) > 0 for k in ('max_total_tokens', 'max_total_size_bytes', 'max_total_lines', 'max_files'))
     if duration is not None or has_limits:
-        print(f"\n  {C_BOLD}{C_CYAN}Time and Limits{C_RESET}", file=sys.stderr)
+        section_title = "Execution & Limits" if has_limits else "Execution"
+        print(f"\n  {C_BOLD}{C_CYAN}{section_title}{C_RESET}", file=sys.stderr)
 
         if duration is not None:
             print(f"    {C_BOLD}{'Time taken:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{duration:12.2f}{C_RESET}{C_DIM} s{C_RESET}", file=sys.stderr)
@@ -4764,11 +4775,14 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 fps = total_discovered / duration
                 bps = total_size_bytes / duration
                 tps = token_count / duration if token_count > 0 else 0
+                lps = total_lines / duration if total_lines > 0 else 0
 
                 val, unit = _split_unit(utils.format_size(bps))
                 throughput_details = [f"{C_BOLD}{C_CYAN}{val}{C_RESET}{C_DIM}{unit}/s{C_RESET}"]
                 if tps > 0:
                     throughput_details.append(f"{C_BOLD}{C_CYAN}{tps:,.0f}{C_RESET}{C_DIM} tokens/s{C_RESET}")
+                if lps > 0:
+                    throughput_details.append(f"{C_BOLD}{C_CYAN}{lps:,.0f}{C_RESET}{C_DIM} lines/s{C_RESET}")
 
                 details_str = f"{C_DIM}({C_RESET}{f'{C_DIM} • {C_RESET}'.join(throughput_details)}{C_DIM}){C_RESET}"
                 print(f"    {C_BOLD}{'Throughput:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{fps:12,.1f}{C_RESET} {C_DIM}files/s{C_RESET} {details_str}", file=sys.stderr)
