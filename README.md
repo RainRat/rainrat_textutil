@@ -13,6 +13,7 @@ A versatile tool for your terminal to find, filter, and combine source code file
 *   **Sorting:** Sort files by `name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`.
 *   **Limiting:** Stop at a file limit, total tokens, total lines, or total size.
 *   **Project Overview:** Include a formatted summary with statistics and a language breakdown at the start of your combined output.
+*   **Git History:** Include recent git commit messages in your project overview to provide better context for AI.
 *   **In-Place Processing:** Clean up extra spaces or blank lines directly in your source files.
 *   **Smart Combining:** Combine files while keeping headers and structural markers.
 *   **Estimation:** See total tokens without writing any files.
@@ -220,6 +221,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--toc` / `-T`: Add a Table of Contents with sizes and tokens to the start of the output (only when combining many files into one in 'text' or 'markdown' formats).
 *   `--include-tree` / `-p`: Include a visual folder tree with details at the start of the output (only when combining many files into one).
 *   `--overview`: Add a project overview summary with statistics and language breakdown to the start of the output (only when combining many files into one).
+*   `--git-log [N]`: Include the last N git commit messages in the project overview (default: 5 if flag is present).
 *   `--json-summary`: Save an execution summary (file counts, tokens, time taken) in JSON format. Use `-` to print it to your terminal.
 
 ### Display & Preview

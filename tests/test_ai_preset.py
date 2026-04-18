@@ -81,6 +81,7 @@ class TestAIPreset(unittest.TestCase):
             include_unpaired=False,
             pair_template=None,
             unique=False,
+            git_log=None,
         )
 
     @patch('argparse.ArgumentParser.parse_args')
