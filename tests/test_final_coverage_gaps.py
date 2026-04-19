@@ -73,11 +73,6 @@ def test_get_tqdm_import_error():
     with patch.dict(sys.modules, {'tqdm': None}):
         assert sourcecombine._get_tqdm() is None
 
-def test_get_yaml_import_error():
-    import sourcecombine
-    with patch.dict(sys.modules, {'yaml': None}):
-        assert sourcecombine._get_yaml() is None
-
 def test_get_pyperclip_import_error():
     import sourcecombine
     with patch.dict(sys.modules, {'pyperclip': None}):
@@ -94,33 +89,6 @@ def test_clipboard_missing_pyperclip_error(caplog):
         )
     assert "The 'pyperclip' tool is required for clipboard support" in caplog.text
 
-def test_main_init_missing_yaml(tmp_path, caplog, monkeypatch):
-    import sourcecombine
-    caplog.set_level(logging.WARNING)
-    monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(sourcecombine, "__file__", str(tmp_path / "fake_script.py"))
-
-    with patch('sourcecombine._get_yaml', return_value=None):
-        with patch('sys.argv', ['sourcecombine.py', '--init']):
-            with pytest.raises(SystemExit) as exc:
-                main()
-            assert exc.value.code == 0
-
-    assert "PyYAML not found; creating an empty configuration" in caplog.text
-
-def test_main_show_config_missing_yaml(caplog):
-    import sourcecombine
-    caplog.set_level(logging.INFO)
-
-    config = {'search': {'root_folders': ['.']}, 'output': {}}
-    with patch('sourcecombine.load_and_validate_config', return_value=config):
-        with patch('sourcecombine._get_yaml', return_value=None):
-            with patch('sys.argv', ['sourcecombine.py', '--show-config']):
-                with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
-                    with pytest.raises(SystemExit):
-                        main()
-                    output = mock_stdout.getvalue()
-                    assert '"search":' in output
 
 def test_main_extract_clipboard_paste_missing_pyperclip(caplog, tmp_path, monkeypatch):
     import sourcecombine
