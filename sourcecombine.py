@@ -458,6 +458,7 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
         replacements["{{GIT_BRANCH}}"] = git_info.get('git_branch', '')
         replacements["{{GIT_COMMIT}}"] = git_info.get('git_commit', '')
         replacements["{{GIT_COMMIT_SHORT}}"] = git_info.get('git_commit_short', '')
+        replacements["{{GIT_DIFF}}"] = git_info.get('git_diff', '')
 
     return _render_single_pass(template, replacements)
 
@@ -489,6 +490,7 @@ def _render_global_template(template, stats):
         "{{GIT_BRANCH}}": stats.get('git_branch', ''),
         "{{GIT_COMMIT}}": stats.get('git_commit', ''),
         "{{GIT_COMMIT_SHORT}}": stats.get('git_commit_short', ''),
+        "{{GIT_DIFF}}": stats.get('git_diff', ''),
     }
 
     return _render_single_pass(template, replacements)
@@ -711,17 +713,18 @@ def should_include(
     return (True, None) if return_reason else True
 
 
-def _get_git_info(root_folder, log_count=0):
+def _get_git_info(root_folder, log_count=0, include_diff=False, diff_ref=None, staged=False, unstaged=False):
     """Retrieve Git branch and commit information for the project.
 
     Returns a dictionary containing 'git_branch', 'git_commit', 'git_commit_short',
-    and optionally 'git_log'.
+    'git_log', and optionally 'git_diff'.
     """
     info = {
         'git_branch': 'N/A',
         'git_commit': 'N/A',
         'git_commit_short': 'N/A',
-        'git_log': None
+        'git_log': None,
+        'git_diff': None
     }
 
     root_path = Path(root_folder)
@@ -748,6 +751,28 @@ def _get_git_info(root_folder, log_count=0):
                 cwd=root_path, capture_output=True, text=True, check=True
             )
             info['git_log'] = result.stdout.strip()
+
+        # Get diff if requested
+        if include_diff:
+            diff_cmd = ['git', 'diff', '--relative']
+            if staged:
+                diff_cmd.append('--cached')
+                if diff_ref:
+                    diff_cmd.append(diff_ref)
+            elif unstaged:
+                # No extra flags needed for unstaged, but we don't pass diff_ref
+                # to match collect_git_diff_files behavior for unstaged.
+                pass
+            elif diff_ref:
+                diff_cmd.append(diff_ref)
+            else:
+                diff_cmd.append('HEAD')
+
+            result = subprocess.run(
+                diff_cmd,
+                cwd=root_path, capture_output=True, text=True, check=True
+            )
+            info['git_diff'] = result.stdout.strip()
 
     except (subprocess.CalledProcessError, FileNotFoundError, OSError):
         pass
@@ -1779,6 +1804,13 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
             lines.append(git_log)
             lines.append("```\n")
 
+        git_diff = stats.get('git_diff')
+        if git_diff:
+            lines.append("\n### Current Changes")
+            lines.append("```diff")
+            lines.append(git_diff)
+            lines.append("```\n")
+
         lines.append(f"- **Files:** {total_files:,}")
         lines.append(f"- **Total Size:** {total_size}")
         lines.append(f"- **Total Lines:** {total_lines:,}")
@@ -1794,6 +1826,13 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
         if git_log:
             lines.append("\n  Recent Changes:")
             for line in git_log.splitlines():
+                lines.append(f"    {line}")
+            lines.append("")
+
+        git_diff = stats.get('git_diff')
+        if git_diff:
+            lines.append("\n  Current Changes:")
+            for line in git_diff.splitlines():
                 lines.append(f"    {line}")
             lines.append("")
 
@@ -2006,7 +2045,14 @@ def find_and_combine_files(
     output_opts = config.get('output', {})
 
     git_log_count = output_opts.get('git_log_count', 0)
-    stats.update(_get_git_info(first_root, log_count=git_log_count))
+    stats.update(_get_git_info(
+        first_root,
+        log_count=git_log_count,
+        include_diff=output_opts.get('include_diff', False),
+        diff_ref=search_opts.get('git_diff_ref'),
+        staged=search_opts.get('git_staged', False),
+        unstaged=search_opts.get('git_unstaged', False)
+    ))
     pair_opts = config.get('pairing', {})
 
     exclude_folders = filter_opts.get('exclusions', {}).get('folders') or []
@@ -3254,6 +3300,11 @@ def main():
         help="Include the last N git commit messages in the project overview (default: 5 if flag is present).",
     )
     output_group.add_argument(
+        "--include-diff",
+        action="store_true",
+        help="Include the Git diff in the project overview and templates ({{GIT_DIFF}}).",
+    )
+    output_group.add_argument(
         "--json-summary",
         metavar="PATH",
         help="Save an execution summary (file counts, tokens, time taken) in JSON format. Use '-' to print it to your terminal.",
@@ -3827,6 +3878,9 @@ def main():
     # Handle git-log if provided
     if args.git_log is not None:
         output_conf['git_log_count'] = args.git_log
+
+    if getattr(args, 'include_diff', False):
+        output_conf['include_diff'] = True
 
     if args.markdown:
         args.format = "markdown"

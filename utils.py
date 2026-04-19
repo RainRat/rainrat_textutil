@@ -175,6 +175,7 @@ DEFAULT_CONFIG = {
         'sort_reverse': False,
         'summary_json': None,
         'show_diff': False,
+        'include_diff': False,
     },
     'processing': {
         'apply_in_place': False,
@@ -782,6 +783,10 @@ def _validate_output_section(config):
     show_diff = output_conf.get('show_diff')
     if show_diff is not None and not isinstance(show_diff, bool):
         raise InvalidConfigError("'output.show_diff' must be true or false.")
+
+    include_diff = output_conf.get('include_diff')
+    if include_diff is not None and not isinstance(include_diff, bool):
+        raise InvalidConfigError("'output.include_diff' must be true or false.")
 
 
 def apply_line_regex_replacements(text, rules):
