@@ -4632,7 +4632,13 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     parts.append(f"{C_BOLD}{C_CYAN}{val}{C_RESET}{C_DIM}{unit}{C_RESET}")
     data_hint = f"{C_DIM} • {C_RESET}".join(parts)
 
-    limit_reached = any(stats.get(k) for k in ('token_limit_reached', 'size_limit_reached', 'line_limit_reached', 'limit_reached'))
+    truncation_checks = [
+        ('token_limit_reached', 'token limit'),
+        ('size_limit_reached', 'total size limit'),
+        ('line_limit_reached', 'total line limit'),
+        ('limit_reached', 'file limit'),
+    ]
+    limit_reached = any(stats.get(k) for k, _ in truncation_checks)
 
     if args.dry_run or total_included == 0 or limit_reached:
         title_color = C_YELLOW
@@ -4672,14 +4678,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     raw_title = _ANSI_ESCAPE.sub('', f"=== {summary_title} [{data_hint}] ===")
     print(f"\n{title_color}{C_BOLD}=== {summary_title} {C_RESET}{C_DIM}[{C_RESET}{data_hint}{C_DIM}]{C_RESET}{title_color}{C_BOLD} ==={C_RESET}", file=sys.stderr)
 
-    if stats.get('token_limit_reached'):
-        print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to token limit.{C_RESET}", file=sys.stderr)
-    if stats.get('size_limit_reached'):
-        print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to total size limit.{C_RESET}", file=sys.stderr)
-    if stats.get('line_limit_reached'):
-        print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to total line limit.{C_RESET}", file=sys.stderr)
-    if stats.get('limit_reached'):
-        print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to file limit.{C_RESET}", file=sys.stderr)
+    for key, label in truncation_checks:
+        if stats.get(key):
+            print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to {label}.{C_RESET}", file=sys.stderr)
 
     # Files Section
     label_width = 20
