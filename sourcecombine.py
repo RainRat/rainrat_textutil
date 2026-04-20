@@ -4634,9 +4634,11 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
     limit_reached = any(stats.get(k) for k in ('token_limit_reached', 'size_limit_reached', 'line_limit_reached', 'limit_reached'))
 
-    if args.dry_run or total_included == 0 or limit_reached:
+    if getattr(args, 'dry_run', False) is True or total_included == 0 or limit_reached:
         title_color = C_YELLOW
-    elif args.estimate_tokens or args.list_files or args.tree:
+    elif (getattr(args, 'estimate_tokens', False) is True or
+          getattr(args, 'list_files', False) is True or
+          getattr(args, 'tree', False) is True):
         title_color = C_CYAN
     else:
         title_color = C_GREEN
@@ -4651,17 +4653,27 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     elif limit_reached:
         status_suffix = " (TRUNCATED)"
 
-    if args.dry_run:
-        verb = "extract" if getattr(args, 'extract', False) else "combine"
+    if getattr(args, 'dry_run', False) is True:
+        if getattr(args, 'extract', False) is True:
+            verb = "extract"
+        elif getattr(args, 'apply_in_place', False) is True:
+            verb = "update in-place"
+        else:
+            verb = "combine"
         summary_title = f"DRY RUN COMPLETE{status_suffix}: Would {verb} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
-    elif args.estimate_tokens:
+    elif getattr(args, 'estimate_tokens', False) is True:
         summary_title = f"TOKEN ESTIMATION COMPLETE{status_suffix}: {total_included:,} {file_word} {source_desc or ''}".strip()
-    elif args.list_files:
+    elif getattr(args, 'list_files', False) is True:
         summary_title = f"FILE LISTING COMPLETE{status_suffix}: {total_included:,} {file_word} {source_desc or ''}".strip()
-    elif args.tree:
+    elif getattr(args, 'tree', False) is True:
         summary_title = f"TREE VIEW COMPLETE{status_suffix}: {total_included:,} {file_word} {source_desc or ''}".strip()
     else:
-        action = "Extracted" if getattr(args, 'extract', False) else "Combined"
+        if getattr(args, 'extract', False) is True:
+            action = "Extracted"
+        elif getattr(args, 'apply_in_place', False) is True:
+            action = "Updated in-place"
+        else:
+            action = "Combined"
         summary_title = f"SUCCESS{status_suffix}: {action} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
 
     # Collapse any accidental double spaces caused by empty optional fields
@@ -4722,14 +4734,14 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             print(f"    {C_DIM}{outer_skipped_indent}{connector}{C_RESET}{C_DIM}{display_reason:<{label_width - 10}}{count:12,}{C_RESET} {C_DIM}({reason_percent:>5.1f}%){C_RESET}", file=sys.stderr)
 
     if has_skipped_folders:
-        print(f"    {C_DIM}└── {C_RESET}{C_BOLD}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_CYAN}{excluded_folders:12,}{C_RESET}{C_DIM} folders{C_RESET}", file=sys.stderr)
+        print(f"    {C_DIM}└── {C_RESET}{C_BOLD}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_CYAN}{excluded_folders:12,}{C_RESET}{C_DIM} folders{C_RESET}", file=sys.stderr)
 
     # Details Section
     total_lines = stats.get('total_lines', 0)
     print(f"\n  {C_BOLD}{C_CYAN}Details{C_RESET}", file=sys.stderr)
 
     # Show output format if not extracting or listing
-    if not getattr(args, 'extract', False) and not (args.list_files or args.tree):
+    if getattr(args, 'extract', False) is not True and not (getattr(args, 'list_files', False) is True or getattr(args, 'tree', False) is True):
         fmt_name = (getattr(args, 'format', None) or stats.get('output_format', 'text')).upper()
         print(f"    {C_BOLD}{'Format:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{str(fmt_name):>12}{C_RESET}", file=sys.stderr)
 
@@ -4755,8 +4767,13 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
     # Time and Limits Section
     has_limits = any(stats.get(k, 0) > 0 for k in ('max_total_tokens', 'max_total_size_bytes', 'max_total_lines', 'max_files'))
+    if not has_limits:
+        # Also check if any limit was reached, even if not explicitly configured in stats
+        has_limits = any(stats.get(k) for k in ('token_limit_reached', 'size_limit_reached', 'line_limit_reached', 'limit_reached'))
+
     if duration is not None or has_limits:
-        print(f"\n  {C_BOLD}{C_CYAN}Time and Limits{C_RESET}", file=sys.stderr)
+        section_title = "Time and Limits" if has_limits else "Execution"
+        print(f"\n  {C_BOLD}{C_CYAN}{section_title}{C_RESET}", file=sys.stderr)
 
         if duration is not None:
             print(f"    {C_BOLD}{'Time taken:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{duration:12.2f}{C_RESET}{C_DIM} s{C_RESET}", file=sys.stderr)
@@ -4769,6 +4786,10 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 throughput_details = [f"{C_BOLD}{C_CYAN}{val}{C_RESET}{C_DIM}{unit}/s{C_RESET}"]
                 if tps > 0:
                     throughput_details.append(f"{C_BOLD}{C_CYAN}{tps:,.0f}{C_RESET}{C_DIM} tokens/s{C_RESET}")
+
+                if stats.get('total_lines', 0) > 0:
+                    lps = stats['total_lines'] / duration
+                    throughput_details.append(f"{C_BOLD}{C_CYAN}{lps:,.0f}{C_RESET}{C_DIM} lines/s{C_RESET}")
 
                 details_str = f"{C_DIM}({C_RESET}{f'{C_DIM} • {C_RESET}'.join(throughput_details)}{C_DIM}){C_RESET}"
                 print(f"    {C_BOLD}{'Throughput:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{fps:12,.1f}{C_RESET} {C_DIM}files/s{C_RESET} {details_str}", file=sys.stderr)
