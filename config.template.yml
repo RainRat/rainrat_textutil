@@ -97,6 +97,10 @@ output:
   # of the output (only when combining many files into one; ignored in JSON format).
   project_overview: false
 
+  # Include the last N git commit messages in the project overview.
+  # Set to 0 to disable.
+  git_log_count: 0
+
   # Template written before each file's content.
   # Placeholders: {{FILENAME}}, {{EXT}}, {{STEM}}, {{DIR}}, {{DIR_SLUG}}, {{SIZE}}, {{TOKENS}}, {{LINE_COUNT}}, {{MODIFIED}}, {{LANG}}, {{INDEX}}, {{TOTAL}}, {{GIT_BRANCH}}, {{GIT_COMMIT}}, {{GIT_COMMIT_SHORT}}, {{SIZE_PERCENT}}, {{TOKEN_PERCENT}}, {{LINE_PERCENT}}.
   # Set to null or an empty text to omit the header.
