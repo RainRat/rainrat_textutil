@@ -3367,10 +3367,10 @@ def main():
         "--extract",
         action="store_true",
         help=(
-            "Rebuild your original files and folders from combined files (like JSON, XML, or Markdown). "
-            "You can read from one or more files, folders, your terminal ('-'), or the system clipboard. "
-            "Filtering, sorting, and preview options (like --diff) are supported. Line numbers are removed "
-            "automatically unless you use --keep-line-numbers."
+            "Rebuild files and folders from combined formats like JSON, XML, or Markdown. "
+            "Read from files, folders, the terminal (-), or the clipboard. Supports "
+            "filtering, sorting, and previews. Line numbers are removed automatically "
+            "unless you use --keep-line-numbers."
         ),
     )
     utility_group.add_argument(
