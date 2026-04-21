@@ -134,6 +134,7 @@ Used in `header_template` and `footer_template` for each file:
 *   `{{GIT_BRANCH}}`: The current Git branch name.
 *   `{{GIT_COMMIT}}`: The full current Git commit hash.
 *   `{{GIT_COMMIT_SHORT}}`: The short (7-character) Git commit hash.
+*   `{{GIT_DIFF}}`: The current Git diff (staged and unstaged changes).
 *   `{{SIZE_PERCENT}}`: The percentage of the total size contributed by this file.
 *   `{{TOKEN_PERCENT}}`: The percentage of the total tokens contributed by this file.
 *   `{{LINE_PERCENT}}`: The percentage of the total lines contributed by this file.
@@ -147,6 +148,7 @@ Used in `global_header_template` and `global_footer_template` for the whole proj
 *   `{{GIT_BRANCH}}`: The current Git branch name.
 *   `{{GIT_COMMIT}}`: The full current Git commit hash.
 *   `{{GIT_COMMIT_SHORT}}`: The short (7-character) Git commit hash.
+*   `{{GIT_DIFF}}`: The current Git diff (staged and unstaged changes).
 
 ### Pairing Templates
 Used in `paired_filename_template` when combining related files:
@@ -222,6 +224,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--include-tree` / `-p`: Include a visual folder tree with details at the start of the output (only when combining many files into one).
 *   `--overview`: Add a project overview summary with statistics and language breakdown to the start of the output (only when combining many files into one).
 *   `--git-log [N]`: Include the last N git commit messages in the project overview (default: 5 if flag is present).
+*   `--include-diff`: Include the current Git diff (staged and unstaged changes) in the project overview and templates (`{{GIT_DIFF}}`).
 *   `--json-summary`: Save an execution summary (file counts, tokens, time taken) in JSON format. Use `-` to print it to your terminal.
 
 ### Display & Preview
