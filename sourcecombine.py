@@ -2963,11 +2963,13 @@ def main():
     core_group.add_argument(
         "--config",
         "-k",
+        metavar="PATH",
         help="Use a specific configuration file. This stops the tool from trying to find one automatically in your target list.",
     )
     core_group.add_argument(
         "--output",
         "-o",
+        metavar="PATH",
         help="Save the result to a specific file or folder. This takes priority over the path in your settings.",
     )
     core_group.add_argument(
@@ -2991,6 +2993,7 @@ def main():
         "-x",
         dest="exclude_file",
         action="append",
+        metavar="PATTERN",
         default=[],
         help="Skip files that match this search pattern (for example, '*.log'). Use this option again to skip more.",
     )
@@ -3000,6 +3003,7 @@ def main():
         "-X",
         dest="exclude_folder",
         action="append",
+        metavar="PATTERN",
         default=[],
         help="Skip folders that match this search pattern (for example, 'build'). Use this option again to skip more.",
     )
@@ -3008,6 +3012,7 @@ def main():
         "--include-file",
         "-i",
         action="append",
+        metavar="PATTERN",
         default=[],
         help="Include only files that match this search pattern (for example, '*.py'). Use this option again to include more.",
     )
@@ -3015,6 +3020,7 @@ def main():
         "--language",
         "--lang",
         action="append",
+        metavar="LANG",
         default=[],
         help="Include only files of these languages (for example, 'python', 'cpp'). Use this option again to include more. See --list-languages for a full list.",
     )
@@ -3022,59 +3028,71 @@ def main():
         "--exclude-language",
         "--exclude-lang",
         action="append",
+        metavar="LANG",
         default=[],
         help="Skip files of these languages (for example, 'javascript', 'html'). Use this option again to skip more.",
     )
     filtering_group.add_argument(
         "--since",
         "-S",
+        metavar="TIME",
         help="Include files modified since this time (for example, '1d', '2h', 'YYYY-MM-DD').",
     )
     filtering_group.add_argument(
         "--until",
         "-U",
+        metavar="TIME",
         help="Include files modified before this time (for example, '1d', '2h', 'YYYY-MM-DD').",
     )
     filtering_group.add_argument(
         "--min-size",
+        metavar="SIZE",
         help="Include only files larger than this size (for example, '10KB', '1MB').",
     )
     filtering_group.add_argument(
         "--max-size",
+        metavar="SIZE",
         help="Include only files smaller than this size (for example, '10KB', '1MB').",
     )
     filtering_group.add_argument(
         "--min-tokens",
         type=int,
+        metavar="N",
         help="Include only files with at least this many tokens.",
     )
     filtering_group.add_argument(
         "--max-file-tokens",
         type=int,
+        metavar="N",
         help="Include only files with at most this many tokens.",
     )
     filtering_group.add_argument(
         "--min-lines",
         type=int,
+        metavar="N",
         help="Include only files with at least this many lines.",
     )
     filtering_group.add_argument(
         "--max-file-lines",
         type=int,
+        metavar="N",
         help="Include only files with at most this many lines.",
     )
     filtering_group.add_argument(
         "--files-from",
+        metavar="PATH",
         help="Read a list of files from a text file (use '-' for your terminal). This skips looking for files in folders.",
     )
     filtering_group.add_argument(
         "--grep",
         "-g",
+        metavar="REGEX",
         help="Include only files whose content matches this regular expression.",
     )
     filtering_group.add_argument(
         "--exclude-grep",
         "-E",
+        metavar="REGEX",
         help="Skip files whose content matches this regular expression.",
     )
     filtering_group.add_argument(
@@ -3087,6 +3105,7 @@ def main():
         "--max-depth",
         "-D",
         type=int,
+        metavar="N",
         help="Limit folder scanning to this depth (for example, '-D 1' for root files only; 0 for no limit).",
     )
     filtering_group.add_argument(
@@ -3144,21 +3163,25 @@ def main():
         "--limit",
         "-L",
         type=int,
+        metavar="N",
         help="Stop adding files once you reach this file limit.",
     )
     sorting_group.add_argument(
         "--max-tokens",
         "-M",
         type=int,
+        metavar="N",
         help="Stop adding files once you reach the total tokens limit (only when combining many files or extracting).",
     )
     sorting_group.add_argument(
         "--max-total-size",
+        metavar="SIZE",
         help="Stop adding files once you reach the total size limit (for example, '5MB') (only when combining many files or extracting).",
     )
     sorting_group.add_argument(
         "--max-total-lines",
         type=int,
+        metavar="N",
         help="Stop adding files once you reach the total lines limit (only when combining many files or extracting).",
     )
 
@@ -3228,10 +3251,12 @@ def main():
         nargs="?",
         const=5,
         type=int,
+        metavar="N",
         help="Include the last N git commit messages in the project overview (default: 5 if flag is present).",
     )
     output_group.add_argument(
         "--json-summary",
+        metavar="PATH",
         help="Save an execution summary (file counts, tokens, time taken) in JSON format. Use '-' to print it to your terminal.",
     )
 
@@ -3302,11 +3327,13 @@ def main():
     processing_group.add_argument(
         "--max-lines",
         type=int,
+        metavar="N",
         help="Truncate each file to this many lines before combining.",
     )
     processing_group.add_argument(
         "--truncate-tokens",
         type=int,
+        metavar="N",
         help="Truncate each file to this many tokens before combining.",
     )
     processing_group.add_argument(
