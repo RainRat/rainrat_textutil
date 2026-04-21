@@ -3092,12 +3092,12 @@ def main():
     filtering_group.add_argument(
         "--min-size",
         metavar="SIZE",
-        help="Include only files larger than this size (for example, '10KB', '1MB').",
+        help="Include only files at least this size (for example, '10KB', '1MB').",
     )
     filtering_group.add_argument(
         "--max-size",
         metavar="SIZE",
-        help="Include only files smaller than this size (for example, '10KB', '1MB').",
+        help="Include only files at most this size (for example, '10KB', '1MB').",
     )
     filtering_group.add_argument(
         "--min-tokens",
