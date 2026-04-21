@@ -9,7 +9,7 @@ A versatile tool for your terminal to find, filter, and combine source code file
 *   **Deduplication:** Skip duplicate files by absolute path or content.
 *   **Include Groups:** Group specific files to always include, even if you skip others.
 *   **Pairing:** Combine related files (like source and header pairs) into their own individual output files.
-*   **File Extraction:** Rebuild your original files and folders from combined files (like JSON, XML, or Markdown). Batch process multiple files or entire folders.
+*   **File Extraction:** Rebuild your original files and folders from combined files (like JSON, XML, or Markdown). Filtering, sorting, and processing rules are supported. Batch process multiple files or entire folders.
 *   **Sorting:** Sort files by `name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`.
 *   **Limiting:** Stop at a file limit, total tokens, total lines, or total size.
 *   **Project Overview:** Include a formatted summary with statistics and a language breakdown at the start of your combined output.
