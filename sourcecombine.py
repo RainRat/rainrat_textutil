@@ -459,6 +459,8 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
         replacements["{{GIT_COMMIT}}"] = git_info.get('git_commit', '')
         replacements["{{GIT_COMMIT_SHORT}}"] = git_info.get('git_commit_short', '')
         replacements["{{GIT_DIFF}}"] = git_info.get('git_diff', '')
+        replacements["{{FILE_DIFF}}"] = git_info.get('file_diffs', {}).get(filename, '')
+        replacements["{{GIT_LOG}}"] = git_info.get('git_log', '')
 
     return _render_single_pass(template, replacements)
 
@@ -491,6 +493,7 @@ def _render_global_template(template, stats):
         "{{GIT_COMMIT}}": stats.get('git_commit', ''),
         "{{GIT_COMMIT_SHORT}}": stats.get('git_commit_short', ''),
         "{{GIT_DIFF}}": stats.get('git_diff', ''),
+        "{{GIT_LOG}}": stats.get('git_log', ''),
     }
 
     return _render_single_pass(template, replacements)
@@ -713,6 +716,26 @@ def should_include(
     return (True, None) if return_reason else True
 
 
+def _parse_git_diff_by_file(diff_text):
+    """Parse a multi-file Git diff into a dictionary of file paths to diff hunks."""
+    if not diff_text:
+        return {}
+
+    file_diffs = {}
+    # Pattern to match the start of a new file diff
+    # git diff uses a/ and b/ prefixes for paths
+    file_start_re = re.compile(r'^diff --git a/(.*) b/(.*)$', re.MULTILINE)
+
+    matches = list(file_start_re.finditer(diff_text))
+    for i, match in enumerate(matches):
+        filename = match.group(2)
+        start = match.start()
+        end = matches[i+1].start() if i + 1 < len(matches) else len(diff_text)
+        file_diffs[filename] = diff_text[start:end].strip()
+
+    return file_diffs
+
+
 def _get_git_info(root_folder, log_count=0, include_diff=False, diff_ref=None, staged=False, unstaged=False):
     """Retrieve Git branch and commit information for the project.
 
@@ -724,7 +747,8 @@ def _get_git_info(root_folder, log_count=0, include_diff=False, diff_ref=None, s
         'git_commit': 'N/A',
         'git_commit_short': 'N/A',
         'git_log': None,
-        'git_diff': None
+        'git_diff': None,
+        'file_diffs': {}
     }
 
     root_path = Path(root_folder)
@@ -773,6 +797,7 @@ def _get_git_info(root_folder, log_count=0, include_diff=False, diff_ref=None, s
                 cwd=root_path, capture_output=True, text=True, check=True
             )
             info['git_diff'] = result.stdout.strip()
+            info['file_diffs'] = _parse_git_diff_by_file(info['git_diff'])
 
     except (subprocess.CalledProcessError, FileNotFoundError, OSError):
         pass
