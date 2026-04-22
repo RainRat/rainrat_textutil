@@ -3417,7 +3417,7 @@ def main():
         "--extract",
         action="store_true",
         help=(
-            "Rebuild your original files and folders from combined files (like JSON, XML, or Markdown). "
+            "Rebuild your original files and folders from combined files (like JSON, XML, JSONL, or Markdown). "
             "You can read from one or more files, folders, your terminal ('-'), or the system clipboard. "
             "Filtering, sorting, processing (like --compact or --replace), and preview options "
             "(like --diff) are supported. Line numbers are removed automatically unless you use "
