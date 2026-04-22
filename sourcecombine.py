@@ -1318,10 +1318,7 @@ def _process_paired_files(
                 )
                 f_size = primary_path.stat().st_size if primary_path.exists() else 0
                 if stats is not None:
-                    stats['total_tokens'] = stats.get('total_tokens', 0) + token_count
-                    stats['total_lines'] = stats.get('total_lines', 0) + line_count
-                    if is_approx:
-                        stats['token_count_is_approx'] = True
+                    _update_stats_metrics(stats, token_count, line_count, is_approx)
                     _update_token_stats(stats, primary_path, token_count)
                     stats['top_files'].append((token_count, f_size, _get_rel_path(primary_path, root_path).as_posix()))
 
@@ -1362,10 +1359,7 @@ def _process_paired_files(
                         )
                     f_size = file_path.stat().st_size if file_path.exists() else 0
                     if stats is not None:
-                        stats['total_tokens'] = stats.get('total_tokens', 0) + token_count
-                        stats['total_lines'] = stats.get('total_lines', 0) + line_count
-                        if is_approx:
-                            stats['token_count_is_approx'] = True
+                        _update_stats_metrics(stats, token_count, line_count, is_approx)
                         _update_token_stats(stats, file_path, token_count)
                         stats['top_files'].append((token_count, f_size, _get_rel_path(file_path, root_path).as_posix()))
 
@@ -1398,6 +1392,14 @@ def _update_token_stats(stats, file_path, tokens):
     if tokens and 'tokens_by_extension' in stats:
         ext = file_path.suffix.lower() or '.no_extension'
         stats['tokens_by_extension'][ext] = stats['tokens_by_extension'].get(ext, 0) + tokens
+
+
+def _update_stats_metrics(stats, tokens, lines, is_approx):
+    """Update global project metrics in the stats dictionary."""
+    stats['total_tokens'] = stats.get('total_tokens', 0) + tokens
+    stats['total_lines'] = stats.get('total_lines', 0) + lines
+    if is_approx:
+        stats['token_count_is_approx'] = True
 
 
 class FileProcessor:
@@ -2303,10 +2305,7 @@ def find_and_combine_files(
                         processed = process_content(content, processor.processing_opts)
                         tokens, is_approx = utils.estimate_tokens(processed)
                         lines = utils.count_lines(processed)
-                        stats['total_tokens'] += tokens
-                        stats['total_lines'] += lines
-                        if is_approx:
-                            stats['token_count_is_approx'] = True
+                        _update_stats_metrics(stats, tokens, lines, is_approx)
                         _update_token_stats(stats, p, tokens)
 
                     view_metadata[p] = {'size': f_size, 'tokens': tokens, 'lines': lines}
@@ -2762,10 +2761,7 @@ def find_and_combine_files(
                     rendered_h = _render_global_template(global_header, stats)
                     tokens, is_approx = utils.estimate_tokens(rendered_h)
                     lines = utils.count_lines(rendered_h)
-                    stats['total_tokens'] += tokens
-                    stats['total_lines'] += lines
-                    if is_approx:
-                        stats['token_count_is_approx'] = True
+                    _update_stats_metrics(stats, tokens, lines, is_approx)
 
             # Write global header after metadata pass to ensure placeholders are filled
             if global_header and not dry_run and not estimate_tokens and output_format in ('text', 'markdown', 'xml'):
@@ -2778,10 +2774,7 @@ def find_and_combine_files(
                 if not dry_run or estimate_tokens:
                     token_count, is_approx = utils.estimate_tokens(overview_content)
                     line_count = utils.count_lines(overview_content)
-                    stats['total_tokens'] += token_count
-                    stats['total_lines'] += line_count
-                    if is_approx:
-                        stats['token_count_is_approx'] = True
+                    _update_stats_metrics(stats, token_count, line_count, is_approx)
                 if not dry_run and not estimate_tokens:
                     outfile.write(overview_content + "\n")
 
@@ -2820,10 +2813,7 @@ def find_and_combine_files(
                         if not dry_run or estimate_tokens:
                             token_count, is_approx = utils.estimate_tokens(tree_content)
                             line_count = utils.count_lines(tree_content)
-                            stats['total_tokens'] += token_count
-                            stats['total_lines'] += line_count
-                            if is_approx:
-                                stats['token_count_is_approx'] = True
+                            _update_stats_metrics(stats, token_count, line_count, is_approx)
                         if not dry_run and not estimate_tokens:
                             outfile.write(tree_content + "\n")
 
@@ -2837,10 +2827,7 @@ def find_and_combine_files(
                 if not dry_run or estimate_tokens:
                     token_count, is_approx = utils.estimate_tokens(toc_content)
                     line_count = utils.count_lines(toc_content)
-                    stats['total_tokens'] += token_count
-                    stats['total_lines'] += line_count
-                    if is_approx:
-                        stats['token_count_is_approx'] = True
+                    _update_stats_metrics(stats, token_count, line_count, is_approx)
                 if not dry_run and not estimate_tokens:
                     outfile.write(toc_content)
 
@@ -2909,10 +2896,7 @@ def find_and_combine_files(
                     header_lines = utils.count_lines(rendered_h)
                     footer_lines = utils.count_lines(rendered_f)
 
-                    stats['total_tokens'] += token_count + header_tokens + footer_tokens
-                    stats['total_lines'] += line_count + header_lines + footer_lines
-                    if is_approx:
-                        stats['token_count_is_approx'] = True
+                    _update_stats_metrics(stats, token_count + header_tokens + footer_tokens, line_count + header_lines + footer_lines, is_approx)
                     _update_token_stats(stats, file_path, token_count)
 
                 f_size = file_path.stat().st_size if file_path.exists() else 0
@@ -2931,10 +2915,7 @@ def find_and_combine_files(
                 rendered_f = _render_global_template(global_footer, stats)
                 tokens, is_approx = utils.estimate_tokens(rendered_f)
                 lines = utils.count_lines(rendered_f)
-                stats['total_tokens'] += tokens
-                stats['total_lines'] += lines
-                if is_approx:
-                    stats['token_count_is_approx'] = True
+                _update_stats_metrics(stats, tokens, lines, is_approx)
 
             if not dry_run and not estimate_tokens:
                 outfile.write(_render_global_template(global_footer, stats))
@@ -4436,15 +4417,11 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
 
         stats['total_size_bytes'] += meta['size']
         stats['size_by_extension'][ext] = stats['size_by_extension'].get(ext, 0) + meta['size']
-        stats['total_lines'] += meta['lines']
 
-        tokens = meta.get('tokens')
-        if tokens is not None:
-            stats['total_tokens'] += tokens
+        tokens = meta.get('tokens') or 0
+        _update_stats_metrics(stats, tokens, meta['lines'], meta.get('is_approx', False))
+        if tokens:
             stats['tokens_by_extension'][ext] = stats['tokens_by_extension'].get(ext, 0) + tokens
-
-        if meta.get('is_approx'):
-            stats['token_count_is_approx'] = True
 
         stats['top_files'].append((meta.get('tokens') or 0, meta['size'], path_str))
 
