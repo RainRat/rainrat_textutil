@@ -138,7 +138,7 @@ def test_summary_printing_dry_run(monkeypatch, capsys):
     assert "DRY RUN COMPLETE (NO FILES FOUND): Would combine 0 files" in stderr
     assert "Total Found:" in stderr
     assert "0 files" in stderr
-    assert "├── Included:                  0" in stderr
+    assert "├── Included:" not in stderr
     assert "Token Count" not in stderr
 
 def test_output_truncated_warning(capsys):
@@ -291,6 +291,30 @@ def test_file_types_redesign_sorting_and_others(monkeypatch, capsys):
     assert "[########--]" in ext_lines[0]
     # 10% -> 1 block -> [#---------]
     assert "[#---------]" in ext_lines[1]
+
+def test_jsonl_shortcut(monkeypatch):
+    """Test that -J sets format to jsonl."""
+    import argparse
+    from unittest.mock import patch
+
+    # We need to simulate the main() logic or at least the part that handles the shortcut
+    # Actually, we can just test the parser and the subsequent logic in main()
+
+    with patch('sys.argv', ['sourcecombine.py', '-J']):
+        # We need to mock things so main doesn't actually run find_and_combine_files
+        with patch('sourcecombine.find_and_combine_files') as mock_find:
+            mock_find.return_value = {}
+            with patch('sourcecombine._print_execution_summary'):
+                with patch('sys.exit') as mock_exit:
+                    try:
+                        sourcecombine.main()
+                    except SystemExit:
+                        pass
+
+                    # Check if format was set to jsonl in the config passed to find_and_combine_files
+                    args, kwargs = mock_find.call_args
+                    config = args[0]
+                    assert config['output']['format'] == 'jsonl'
 
 def test_skip_reasons_alignment(monkeypatch, capsys):
     stats = {

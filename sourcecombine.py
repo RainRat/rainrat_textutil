@@ -3263,6 +3263,12 @@ def main():
         help="Shortcut for '--format json'.",
     )
     output_group.add_argument(
+        "--jsonl",
+        "-J",
+        action="store_true",
+        help="Shortcut for '--format jsonl'.",
+    )
+    output_group.add_argument(
         "--xml",
         "-w",
         action="store_true",
@@ -3887,6 +3893,8 @@ def main():
         args.format = "markdown"
     elif args.json:
         args.format = "json"
+    elif getattr(args, 'jsonl', False):
+        args.format = "jsonl"
     elif args.xml:
         args.format = "xml"
 
@@ -4067,8 +4075,8 @@ def main():
         _write_json_summary(stats, output_conf.get('summary_json'), duration=duration, source_desc=source_desc, destination_desc=dest)
         sys.exit(0)
 
-    action_desc = "pairing" if pairing_enabled else "combining many files into one"
-    logging.info("%sSourceCombine starting. Action: %s%s", C_DIM, action_desc, C_RESET)
+    action_desc = "Pair" if pairing_enabled else "Combine"
+    logging.info("%sOperation: %s%s", C_DIM, action_desc, C_RESET)
 
     if args.list_files:
         logging.info("%sOutput: Listing files only%s %s(no files will be written)%s", C_CYAN, C_RESET, C_DIM, C_RESET)
@@ -4789,44 +4797,40 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     label_width = 20
     print(f"  {C_BOLD}{C_CYAN}Files{C_RESET}", file=sys.stderr)
 
-    found_label_style = C_DIM if (total_discovered == total_included and not stats.get('filter_reasons')) else C_BOLD
-    found_value_style = C_DIM if (total_discovered == total_included and not stats.get('filter_reasons')) else f"{C_BOLD}{C_CYAN}"
+    has_skipped_files = total_filtered > 0
+    has_skipped_folders = excluded_folders > 0
+    has_any_skips = has_skipped_files or has_skipped_folders
+
+    found_label_style = C_DIM if not has_any_skips else C_BOLD
+    found_value_style = C_DIM if not has_any_skips else f"{C_BOLD}{C_CYAN}"
     print(f"    {found_label_style}{'Total Found:':<{label_width}}{C_RESET}{found_value_style}{total_discovered:12,}{C_RESET}{C_DIM} files{C_RESET}", file=sys.stderr)
 
-    included_color = f"{C_BOLD}{C_GREEN}" if total_included > 0 else C_RESET
-    skipped_label_color = C_BOLD if total_filtered > 0 else C_DIM
-    filtered_color = f"{C_BOLD}{C_YELLOW}" if total_filtered > 0 else C_DIM
+    if has_any_skips:
+        included_percent = (total_included / total_discovered * 100) if total_discovered > 0 else 0
+        skipped_percent = (total_filtered / total_discovered * 100) if total_discovered > 0 else 0
 
-    included_percent = (total_included / total_discovered * 100) if total_discovered > 0 else 0
-    skipped_percent = (total_filtered / total_discovered * 100) if total_discovered > 0 else 0
+        # Files tree branches
+        print(f"    {C_DIM}├── {C_RESET}{C_BOLD}{'Included:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_GREEN}{total_included:12,}{C_RESET} {C_DIM}({included_percent:>5.1f}%){C_RESET}", file=sys.stderr)
 
-    has_skipped_folders = excluded_folders > 0
-    skipped_connector = "├── " if has_skipped_folders else "└── "
+        if has_skipped_files:
+            skipped_connector = "├── " if has_skipped_folders else "└── "
+            print(f"    {C_DIM}{skipped_connector}{C_RESET}{C_BOLD}{'Skipped:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_YELLOW}{total_filtered:12,}{C_RESET} {C_DIM}({skipped_percent:>5.1f}%){C_RESET}", file=sys.stderr)
 
-    print(f"    {C_DIM}├── {C_RESET}{C_BOLD}{'Included:':<{label_width - 4}}{C_RESET}{included_color}{total_included:12,}{C_RESET} {C_DIM}({included_percent:>5.1f}%){C_RESET}", file=sys.stderr)
-    print(f"    {C_DIM}{skipped_connector}{C_RESET}{skipped_label_color}{'Skipped:':<{label_width - 4}}{C_RESET}{filtered_color}{total_filtered:12,}{C_RESET} {C_DIM}({skipped_percent:>5.1f}%){C_RESET}", file=sys.stderr)
+            # Detailed breakdown of filtering reasons
+            relevant_reasons = [(r, c) for r, c in stats.get('filter_reasons', {}).items() if r != 'excluded_folder' and c > 0]
+            if relevant_reasons:
+                sorted_reasons = sorted(relevant_reasons, key=lambda x: (-x[1], x[0]))
+                outer_skipped_indent = "│         " if has_skipped_folders else "          "
 
-    # Detailed breakdown of filtering reasons
-    if stats.get('filter_reasons'):
-        # Sort by count descending, then alphabetically
-        relevant_reasons = [(r, c) for r, c in stats['filter_reasons'].items() if r != 'excluded_folder' and c > 0]
-        sorted_reasons = sorted(relevant_reasons, key=lambda x: (-x[1], x[0]))
+                for i, (reason, count) in enumerate(sorted_reasons):
+                    is_last = i == len(sorted_reasons) - 1
+                    connector = "└── " if is_last else "├── "
+                    display_reason = reason.replace('_', ' ')
+                    reason_percent = (count / total_filtered * 100) if total_filtered > 0 else 0
+                    print(f"    {C_DIM}{outer_skipped_indent}{connector}{C_RESET}{C_DIM}{display_reason:<{label_width - 10}}{count:12,}{C_RESET} {C_DIM}({reason_percent:>5.1f}%){C_RESET}", file=sys.stderr)
 
-        # We need to know if there's a following sibling (Skipped Folders) to use the right connector
-        outer_skipped_indent = "│         " if has_skipped_folders else "          "
-
-        for i, (reason, count) in enumerate(sorted_reasons):
-            is_last = i == len(sorted_reasons) - 1
-            connector = "└── " if is_last else "├── "
-
-            display_reason = reason.replace('_', ' ')
-            reason_percent = (count / total_filtered * 100) if total_filtered > 0 else 0
-
-            # Use dim for less visual noise in the breakdown
-            print(f"    {C_DIM}{outer_skipped_indent}{connector}{C_RESET}{C_DIM}{display_reason:<{label_width - 10}}{count:12,}{C_RESET} {C_DIM}({reason_percent:>5.1f}%){C_RESET}", file=sys.stderr)
-
-    if has_skipped_folders:
-        print(f"    {C_DIM}└── {C_RESET}{C_BOLD}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_CYAN}{excluded_folders:12,}{C_RESET}{C_DIM} folders{C_RESET}", file=sys.stderr)
+        if has_skipped_folders:
+            print(f"    {C_DIM}└── {C_RESET}{C_BOLD}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_CYAN}{excluded_folders:12,}{C_RESET}{C_DIM} folders{C_RESET}", file=sys.stderr)
 
     # Details Section
     total_lines = stats.get('total_lines', 0)
