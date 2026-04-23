@@ -722,15 +722,33 @@ def _parse_git_diff_by_file(diff_text):
         return {}
 
     file_diffs = {}
-    # Pattern to match the start of a new file diff
-    # git diff uses a/ and b/ prefixes for paths
-    file_start_re = re.compile(r'^diff --git a/(.*) b/(.*)$', re.MULTILINE)
+    # Use finditer to locate all lines starting with 'diff --git '
+    diff_headers = []
+    for match in re.finditer(r'^diff --git (.*)$', diff_text, re.MULTILINE):
+        diff_headers.append((match.start(), match.group(1)))
 
-    matches = list(file_start_re.finditer(diff_text))
-    for i, match in enumerate(matches):
-        filename = match.group(2)
-        start = match.start()
-        end = matches[i+1].start() if i + 1 < len(matches) else len(diff_text)
+    for i, (start, header) in enumerate(diff_headers):
+        # The header is typically 'a/path b/path' or '"a/path" "b/path"'
+        # Git quotes the path if it contains special characters like spaces.
+        if header.endswith('"'):
+            # Find the start of the second path part, which starts with ' "b/'
+            # rfind ensures we get the last occurrence, as the first path could also be quoted.
+            second_path_marker = header.rfind(' "b/')
+            if second_path_marker != -1:
+                filename = header[second_path_marker + 4 : -1]
+            else:
+                # Fallback for unexpected formats
+                filename = header.split(' ')[-1].strip('"').replace('b/', '', 1)
+        else:
+            # Unquoted path, find the last ' b/' marker.
+            second_path_marker = header.rfind(' b/')
+            if second_path_marker != -1:
+                filename = header[second_path_marker + 3 :]
+            else:
+                # Fallback for unexpected formats
+                filename = header.split(' ')[-1].replace('b/', '', 1)
+
+        end = diff_headers[i + 1][0] if i + 1 < len(diff_headers) else len(diff_text)
         file_diffs[filename] = diff_text[start:end].strip()
 
     return file_diffs
