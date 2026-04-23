@@ -221,6 +221,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--format` / `-f`: Choose the output format ('text', 'json', 'jsonl', 'markdown', 'xml'). 'json' and 'jsonl' only work when combining many files into one.
 *   `-m` / `--markdown`: Shortcut for `--format markdown`.
 *   `-j` / `--json`: Shortcut for `--format json`.
+*   `-J` / `--jsonl`: Shortcut for `--format jsonl`.
 *   `-w` / `--xml`: Shortcut for `--format xml`.
 *   `--line-numbers` / `-n`: Add line numbers to the beginning of each line in the combined output.
 *   `--toc` / `-T`: Add a Table of Contents with sizes and tokens to the start of the output (only when combining many files into one in 'text' or 'markdown' formats).
