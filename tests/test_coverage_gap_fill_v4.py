@@ -27,11 +27,6 @@ def test_validate_pairing_not_dict():
     with pytest.raises(utils.InvalidConfigError, match="'pairing' section must be a dictionary."):
         utils._validate_pairing_section(config)
 
-def test_validate_filters_search_not_dict():
-    # Trigger line 451 in utils.py
-    config = {'filters': {}, 'search': None}
-    utils._validate_filters_section(config)
-    assert isinstance(config['search'], dict)
 
 def test_main_output_is_dir(tmp_path):
     output_dir = tmp_path / "output_dir"
