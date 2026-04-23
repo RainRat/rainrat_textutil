@@ -868,10 +868,6 @@ def test_validate_config_search_not_dict():
     validate_config(config)
     assert isinstance(config["search"], dict)
 
-def test_validate_pairing_section_search_not_dict():
-    config = {"pairing": {"enabled": True}, "search": None}
-    _validate_pairing_section(config)
-    assert isinstance(config["search"], dict)
 
 def test_validate_output_table_of_contents_not_bool():
     config = {

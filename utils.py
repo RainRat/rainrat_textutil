@@ -599,11 +599,6 @@ def _validate_filters_section(config):
                 filenames, f"filters.inclusion_groups.{group_name}.filenames"
             )
 
-    search_conf = config.get('search')
-    if not isinstance(search_conf, dict):
-        search_conf = {}
-        config['search'] = search_conf
-
     if (
         isinstance(groups, dict)
         and any(
@@ -687,10 +682,7 @@ def _validate_pairing_section(config):
     if not isinstance(pairing_conf, dict):
         raise InvalidConfigError("'pairing' section must be a dictionary.")
 
-    search_conf = config.get('search')
-    if not isinstance(search_conf, dict):
-        search_conf = {}
-    config['search'] = search_conf
+    search_conf = config['search']
 
     if pairing_conf.get('enabled'):
         if search_conf.get('allowed_extensions'):
