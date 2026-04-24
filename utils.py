@@ -1081,8 +1081,8 @@ def remove_line_numbers(text):
 
     # If more than 50% of non-empty lines match, remove the prefix
     if non_empty_lines > 0 and (matches / non_empty_lines) > 0.5:
-        # Use a regex that specifically targets the 'N: ' at the start
-        processed = [re.sub(r"^\s*\d+:\s", "", line) for line in lines]
+        # Use the compiled regex that specifically targets the 'N: ' at the start
+        processed = [pattern.sub("", line) for line in lines]
         result = "\n".join(processed)
         if text.endswith("\n"):
             result += "\n"
