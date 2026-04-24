@@ -139,7 +139,7 @@ output:
   # in JSON format. Use '-' to print it to your terminal.
   summary_json: null
 
-  # Show a colored diff of changes (only when using --apply-in-place or --extract).
+  # Show a colored diff of changes (when using --output, --apply-in-place, or --extract).
   show_diff: false
 
 # --- File Filtering ---

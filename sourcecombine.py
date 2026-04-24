@@ -1326,14 +1326,18 @@ def _process_paired_files(
             for path in paths:
                 logging.info("  - %s", _get_rel_path(path, root_path))
 
-            if not estimate_tokens:
+            if not estimate_tokens and getattr(processor, 'show_diff', False) is not True:
                 if stats is not None:
                     for path in paths:
                         stats['top_files'].append((0, path.stat().st_size if path.exists() else 0, _get_rel_path(path, root_path).as_posix()))
                 continue
 
+        pair_buffer = None
         if estimate_tokens:
             pair_out_ctx = _DevNull()
+        elif dry_run and getattr(processor, 'show_diff', False) is True:
+            pair_buffer = io.StringIO()
+            pair_out_ctx = nullcontext(pair_buffer)
         else:
             out_file.parent.mkdir(parents=True, exist_ok=True)
             pair_out_ctx = open(out_file, 'w', encoding='utf8', newline='')
@@ -1414,6 +1418,11 @@ def _process_paired_files(
 
             if global_footer and not estimate_tokens:
                 pair_out.write(_render_global_template(global_footer, stats))
+
+        if dry_run and getattr(processor, 'show_diff', False) is True and pair_buffer is not None:
+            if out_file.exists():
+                old_content, _ = read_file_best_effort(out_file)
+                _print_diff(old_content, pair_buffer.getvalue(), out_file.as_posix())
 
 
 def _update_file_stats(stats, file_path, size=None):
@@ -1616,7 +1625,7 @@ class FileProcessor:
         tuple[int, bool, int]
             A tuple containing (token_count, is_approximate, line_count) for the written content.
         """
-        if self.dry_run and not (self.show_diff and self.apply_in_place):
+        if self.dry_run and not (self.show_diff and (self.apply_in_place or outfile is not None)):
             logging.info(_get_rel_path(file_path, root_path))
             return 0, True, 0
 
@@ -2165,6 +2174,9 @@ def find_and_combine_files(
 
     if estimate_tokens or list_files or tree_view:
         outfile_ctx = _DevNull()
+    elif (dry_run and output_opts.get('show_diff') and output_path and output_path != '-'):
+        clipboard_buffer = io.StringIO()
+        outfile_ctx = nullcontext(clipboard_buffer)
     elif pairing_enabled or dry_run or clipboard:
         outfile_ctx = nullcontext(clipboard_buffer)
     elif output_path == '-':
@@ -2968,6 +2980,12 @@ def find_and_combine_files(
 
     stats['excluded_folder_count'] = total_excluded_folders
 
+    if (dry_run and output_opts.get('show_diff') and output_path and output_path != '-' and not pairing_enabled):
+        new_content = clipboard_buffer.getvalue()
+        if Path(output_path).exists():
+            old_content, _ = read_file_best_effort(output_path)
+            _print_diff(old_content, new_content, output_path)
+
     if clipboard and clipboard_buffer is not None:
         combined_output = clipboard_buffer.getvalue()
         pyperclip = _get_pyperclip()
@@ -3383,7 +3401,7 @@ def main():
     display_group.add_argument(
         "--diff",
         action="store_true",
-        help="Show a colored diff of changes (only when using --apply-in-place or --extract).",
+        help="Show a colored diff of changes (when using --output, --apply-in-place, or --extract).",
     )
 
     # Processing Group
