@@ -88,14 +88,19 @@ def test_get_git_info_success(tmp_path):
     mock_commit = MagicMock()
     mock_commit.stdout = "1234567890abcdef1234567890abcdef12345678\n"
 
+    mock_status = MagicMock()
+    mock_status.stdout = " M file1.txt\n?? file2.txt\n"
+
     with patch("subprocess.run") as mock_run:
-        mock_run.side_effect = [mock_branch, mock_commit]
+        mock_run.side_effect = [mock_branch, mock_commit, mock_status]
 
         info = sourcecombine._get_git_info(root)
 
         assert info['git_branch'] == 'main'
         assert info['git_commit'] == '1234567890abcdef1234567890abcdef12345678'
         assert info['git_commit_short'] == '1234567'
+        assert info['git_status'] == "1 modified, 1 untracked"
+        assert info['file_statuses'] == {"file1.txt": "M", "file2.txt": "??"}
 
 def test_get_git_info_failure(tmp_path):
     """Test _get_git_info when not in a git repo."""

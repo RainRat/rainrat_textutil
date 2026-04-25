@@ -136,6 +136,7 @@ Used in `header_template` and `footer_template` for each file:
 *   `{{GIT_COMMIT_SHORT}}`: The short (7-character) Git commit hash.
 *   `{{GIT_DIFF}}`: The current Git diff (staged and unstaged changes).
 *   `{{FILE_DIFF}}`: The Git diff specific to this file.
+*   `{{FILE_STATUS}}`: The Git status of this file (e.g., `M`, `A`, `??`).
 *   `{{GIT_LOG}}`: Recent Git commit messages.
 *   `{{SIZE_PERCENT}}`: The percentage of the total size contributed by this file.
 *   `{{TOKEN_PERCENT}}`: The percentage of the total tokens contributed by this file.
@@ -152,6 +153,7 @@ Used in `global_header_template` and `global_footer_template` for the whole proj
 *   `{{GIT_COMMIT_SHORT}}`: The short (7-character) Git commit hash.
 *   `{{GIT_DIFF}}`: The current Git diff (staged and unstaged changes).
 *   `{{GIT_LOG}}`: Recent Git commit messages.
+*   `{{GIT_STATUS}}`: A summary of Git changes (e.g., `3 modified, 1 added`).
 
 ### Pairing Templates
 Used in `paired_filename_template` when combining related files:
