@@ -4953,9 +4953,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             print(f"\n  {C_BOLD}{C_CYAN}Largest Files (by tokens){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[0], x[2]))[:5]
             total_for_percent = stats.get('total_tokens', 0)
-            # Indent(4) + TokenCount(11) + Space(2) + Percent(6) + Space(2) + Size(12) + Space(2) + Bar(12) + Space(2) = 53
+            # Indent(4) + TokenCount(11) + Space(2) + Size(12) + Space(2) + Percent(6) + Space(2) + Bar(12) + Space(2) = 53
             path_width = max(20, term_width - 53)
-            print(f"    {C_DIM}{'TOKENS':>11}  {'%':>6}  {'SIZE':>12}  {'DISTRIBUTION':<12}  PATH{C_RESET}", file=sys.stderr)
+            print(f"    {C_DIM}{'TOKENS':>11}  {'SIZE':>12}  {'%':>6}  {'DISTRIBUTION':<12}  PATH{C_RESET}", file=sys.stderr)
         else:
             print(f"\n  {C_BOLD}{C_CYAN}Largest Files (by size){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[1], x[2]))[:5]
@@ -4988,7 +4988,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             # Align values while keeping units dimmed
             size_padding = " " * max(0, 12 - len(s_val) - len(s_unit))
             if has_tokens:
-                print(f"    {C_BOLD}{C_CYAN}{token_str:>11}{C_RESET}  {C_BOLD}{C_CYAN}{percent_str}{C_RESET}  {size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}  {C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
+                print(f"    {C_BOLD}{C_CYAN}{token_str:>11}{C_RESET}  {size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}  {C_BOLD}{C_CYAN}{percent_str}{C_RESET}  {C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
             else:
                 print(f"    {size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}  {C_BOLD}{C_CYAN}{percent_str}{C_RESET}  {C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
 
