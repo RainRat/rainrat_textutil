@@ -4850,7 +4850,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                     print(f"    {C_DIM}{outer_skipped_indent}{connector}{C_RESET}{C_DIM}{display_reason:<{label_width - 10}}{count:12,}{C_RESET} {C_DIM}({reason_percent:>5.1f}%){C_RESET}", file=sys.stderr)
 
         if has_skipped_folders:
-            print(f"    {C_DIM}└── {C_RESET}{C_BOLD}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_CYAN}{excluded_folders:12,}{C_RESET}{C_DIM} folders{C_RESET}", file=sys.stderr)
+            print(f"    {C_DIM}└── {C_RESET}{C_BOLD}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_CYAN}{excluded_folders:12,}{C_RESET}{C_DIM} folders{C_RESET}", file=sys.stderr)
 
     # Details Section
     total_lines = stats.get('total_lines', 0)
@@ -4983,11 +4983,11 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         if has_ext_tokens:
             total_weight = stats.get('total_tokens', 0)
             weight_by_ext = tokens_by_ext
-            legend = "count • % files • % tokens"
+            legend = "count (% files • % tokens)"
         else:
             total_weight = stats.get('total_size_bytes', 0)
             weight_by_ext = size_by_ext
-            legend = "count • % files • % size"
+            legend = "count (% files • % size)"
 
         # Sort by weight desc, then count desc, then alpha
         sorted_exts = sorted(
@@ -5024,7 +5024,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             bar = _make_ascii_bar(weight_percent, colored=True)
 
             ext_label = ext + ":"
-            print(f"    {C_DIM}{ext_label:<{max_ext_len}}{C_RESET} {C_BOLD}{C_CYAN}{count:>5,}{C_RESET} {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{file_percent:>5.1f}%{C_RESET}{C_DIM} • {C_RESET}{C_BOLD}{C_CYAN}{weight_percent:>5.1f}%{C_RESET}{C_DIM}){C_RESET} {C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}", file=sys.stderr)
+            print(f"    {C_BOLD}{ext_label:<{max_ext_len}}{C_RESET} {C_BOLD}{C_CYAN}{count:>7,}{C_RESET} {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{file_percent:>5.1f}%{C_RESET}{C_DIM} • {C_RESET}{C_BOLD}{C_CYAN}{weight_percent:>5.1f}%{C_RESET}{C_DIM}){C_RESET} {C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}", file=sys.stderr)
 
     # Footer
     print(f"\n{title_color}{'=' * len(raw_title)}{C_RESET}", file=sys.stderr)

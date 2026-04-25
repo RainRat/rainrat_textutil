@@ -213,8 +213,8 @@ def test_summary_terminal_size_fallback(capsys):
                 sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
 
     captured = capsys.readouterr()
-    assert "File Types (count • % files • % size)" in captured.err
-    assert ".txt:     1" in captured.err
+    assert "File Types (count (% files • % size))" in captured.err
+    assert ".txt:       1" in captured.err
 
 def test_summary_throughput_line(capsys):
     """Test that throughput is shown on its own line."""
