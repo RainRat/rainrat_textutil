@@ -129,7 +129,7 @@ output:
   max_size_placeholder: null
 
   # Global sorting options for both combining many files into one and pairing.
-  # Choices: name, size, date (modified), tokens, depth, language.
+  # Choices: name, size, modified (date), tokens, lines, depth (folder), or language.
   sort_by: 'name'
 
   # If true, sort in descending order.
