@@ -1,8 +1,4 @@
 import sys
-import io
-import os
-from pathlib import Path
-import pytest
 from sourcecombine import main
 
 def test_diff_combined_output(tmp_path, monkeypatch, capsys):

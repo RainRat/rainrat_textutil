@@ -294,7 +294,6 @@ def test_file_types_redesign_sorting_and_others(monkeypatch, capsys):
 
 def test_jsonl_shortcut(monkeypatch):
     """Test that -J sets format to jsonl."""
-    import argparse
     from unittest.mock import patch
 
     # We need to simulate the main() logic or at least the part that handles the shortcut
@@ -305,7 +304,7 @@ def test_jsonl_shortcut(monkeypatch):
         with patch('sourcecombine.find_and_combine_files') as mock_find:
             mock_find.return_value = {}
             with patch('sourcecombine._print_execution_summary'):
-                with patch('sys.exit') as mock_exit:
+                with patch('sys.exit'):
                     try:
                         sourcecombine.main()
                     except SystemExit:
