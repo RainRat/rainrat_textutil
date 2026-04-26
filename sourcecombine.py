@@ -374,6 +374,12 @@ def _make_ascii_bar(
 def _format_metadata_summary(meta: Mapping[str, Any]) -> str:
     """Return file or folder details in an easy-to-read format."""
     parts = []
+
+    # Prepend status indicator if present (e.g., [M], [A], [??])
+    status_label = ""
+    if 'status' in meta and meta['status']:
+        status_label = f"[{meta['status']}] "
+
     if 'files' in meta:
         count = meta['files']
         parts.append(f"{count} {'file' if count == 1 else 'files'}")
@@ -384,7 +390,14 @@ def _format_metadata_summary(meta: Mapping[str, Any]) -> str:
     if 'tokens' in meta and meta['tokens'] is not None and meta['tokens'] > 0:
         parts.append(f"{meta['tokens']:,} tokens")
 
-    return f" ({' • '.join(parts)})" if parts else ""
+    summary = f"({' • '.join(parts)})" if parts else ""
+    if status_label and summary:
+        return f" {status_label} {summary}"
+    if status_label:
+        return f" {status_label.strip()}"
+    if summary:
+        return f" {summary}"
+    return ""
 
 
 def _render_single_pass(template, replacements):
@@ -462,6 +475,7 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
         replacements["{{GIT_DIFF}}"] = git_info.get('git_diff', '')
         replacements["{{FILE_DIFF}}"] = git_info.get('file_diffs', {}).get(filename, '')
         replacements["{{GIT_LOG}}"] = git_info.get('git_log', '')
+        replacements["{{FILE_STATUS}}"] = git_info.get('file_statuses', {}).get(filename, '')
 
     return _render_single_pass(template, replacements)
 
@@ -495,6 +509,7 @@ def _render_global_template(template, stats):
         "{{GIT_COMMIT_SHORT}}": stats.get('git_commit_short', ''),
         "{{GIT_DIFF}}": stats.get('git_diff', ''),
         "{{GIT_LOG}}": stats.get('git_log', ''),
+        "{{GIT_STATUS}}": stats.get('git_status', ''),
     }
 
     return _render_single_pass(template, replacements)
@@ -756,21 +771,26 @@ def _parse_git_diff_by_file(diff_text):
 
 
 def _get_git_info(root_folder, log_count=0, include_diff=False, diff_ref=None, staged=False, unstaged=False):
-    """Retrieve Git branch and commit information for the project.
+    """Retrieve Git branch, commit, and status information for the project.
 
     Returns a dictionary containing 'git_branch', 'git_commit', 'git_commit_short',
-    'git_log', and optionally 'git_diff'.
+    'git_log', 'git_status', 'file_statuses', and optionally 'git_diff'.
     """
     info = {
         'git_branch': 'N/A',
         'git_commit': 'N/A',
         'git_commit_short': 'N/A',
         'git_log': None,
+        'git_status': None,
         'git_diff': None,
+        'file_statuses': {},
         'file_diffs': {}
     }
 
     root_path = Path(root_folder)
+    if root_path.is_file():
+        root_path = root_path.parent
+
     try:
         # Get branch name
         result = subprocess.run(
@@ -786,6 +806,56 @@ def _get_git_info(root_folder, log_count=0, include_diff=False, diff_ref=None, s
         )
         info['git_commit'] = result.stdout.strip()
         info['git_commit_short'] = info['git_commit'][:7]
+
+        # Get porcelain status for WIP overview and tree labels
+        result = subprocess.run(
+            ['git', 'status', '--porcelain', '-uall'],
+            cwd=root_path, capture_output=True, text=True, check=True
+        )
+        status_lines = result.stdout.splitlines()
+        if status_lines:
+            counts = {'M': 0, 'A': 0, '?': 0, 'R': 0, 'D': 0}
+            for line in status_lines:
+                if len(line) < 4:
+                    continue
+                # X is index status, Y is work tree status
+                x, y = line[0], line[1]
+                path = line[3:].strip().strip('"')
+
+                # Determine primary status for this file
+                if x == '?' or y == '?':
+                    status_code = '??'
+                    counts['?'] += 1
+                elif x == 'A' or y == 'A':
+                    status_code = 'A'
+                    counts['A'] += 1
+                elif x == 'M' or y == 'M':
+                    status_code = 'M'
+                    counts['M'] += 1
+                elif x == 'R' or y == 'R':
+                    status_code = 'R'
+                    counts['R'] += 1
+                    # Handle renames like "old -> new"
+                    if " -> " in path:
+                        path = path.split(" -> ")[-1].strip().strip('"')
+                elif x == 'D' or y == 'D':
+                    status_code = 'D'
+                    counts['D'] += 1
+                else:
+                    status_code = None
+
+                if status_code:
+                    info['file_statuses'][path] = status_code
+
+            summary_parts = []
+            if counts['M'] > 0: summary_parts.append(f"{counts['M']} modified")
+            if counts['A'] > 0: summary_parts.append(f"{counts['A']} added")
+            if counts['?'] > 0: summary_parts.append(f"{counts['?']} untracked")
+            if counts['R'] > 0: summary_parts.append(f"{counts['R']} renamed")
+            if counts['D'] > 0: summary_parts.append(f"{counts['D']} deleted")
+
+            if summary_parts:
+                info['git_status'] = ", ".join(summary_parts)
 
         # Get recent log if requested
         if log_count > 0:
@@ -1854,6 +1924,8 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
             lines.append(f"- **Git Branch:** {stats['git_branch']}")
         if stats.get('git_commit_short') and stats.get('git_commit_short') != 'N/A':
             lines.append(f"- **Git Commit:** {stats['git_commit_short']}")
+        if stats.get('git_status'):
+            lines.append(f"- **Git Status:** {stats['git_status']}")
 
         git_log = stats.get('git_log')
         if git_log:
@@ -1879,6 +1951,8 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
             lines.append(f"  Git Branch:   {stats['git_branch']}")
         if stats.get('git_commit_short') and stats.get('git_commit_short') != 'N/A':
             lines.append(f"  Git Commit:   {stats['git_commit_short']}")
+        if stats.get('git_status'):
+            lines.append(f"  Git Status:   {stats['git_status']}")
 
         git_log = stats.get('git_log')
         if git_log:
@@ -2367,8 +2441,10 @@ def find_and_combine_files(
                         _update_stats_metrics(stats, tokens, lines, is_approx)
                         _update_token_stats(stats, p, tokens)
 
-                    view_metadata[p] = {'size': f_size, 'tokens': tokens, 'lines': lines}
-                    stats['top_files'].append((tokens, f_size, _get_rel_path(p, root_path).as_posix()))
+                    rel_p_str = _get_rel_path(p, root_path).as_posix()
+                    status = stats.get('file_statuses', {}).get(rel_p_str)
+                    view_metadata[p] = {'size': f_size, 'tokens': tokens, 'lines': lines, 'status': status}
+                    stats['top_files'].append((tokens, f_size, rel_p_str))
 
                 if tree_view:
                     print(_generate_tree_string(paths_to_list, root_path, include_header=False, metadata=view_metadata))
@@ -2687,10 +2763,13 @@ def find_and_combine_files(
                 _update_token_stats(stats, file_path, content_tokens)
 
                 # Store content details for TOC/Tree
+                rel_p_str = rel_p.as_posix()
+                status = stats.get('file_statuses', {}).get(rel_p_str)
                 file_metadata[file_path] = {
                     'size': file_size,
                     'tokens': content_tokens,
-                    'lines': content_lines
+                    'lines': content_lines,
+                    'status': status
                 }
 
                 # Account for header/footer templates in the limit
@@ -3354,7 +3433,7 @@ def main():
     output_group.add_argument(
         "--include-diff",
         action="store_true",
-        help="Include the Git diff in the project overview and templates ({{GIT_DIFF}}).",
+        help="Include the Git diff in the project overview and templates ({{GIT_DIFF}}, {{FILE_DIFF}}).",
     )
     output_group.add_argument(
         "--json-summary",
