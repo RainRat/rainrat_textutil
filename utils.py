@@ -759,8 +759,8 @@ def _validate_output_section(config):
         )
 
     fmt = output_conf.get('format')
-    if fmt is not None and fmt not in ('text', 'json', 'jsonl', 'markdown', 'xml'):
-        raise InvalidConfigError("'output.format' must be one of: text, json, jsonl, markdown, xml")
+    if fmt is not None and fmt not in ('text', 'json', 'jsonl', 'markdown', 'xml', 'manifest'):
+        raise InvalidConfigError("'output.format' must be one of: text, json, jsonl, markdown, xml, manifest")
 
     sort_by = output_conf.get('sort_by')
     if sort_by is not None and sort_by not in ('name', 'size', 'modified', 'tokens', 'lines', 'depth', 'language'):

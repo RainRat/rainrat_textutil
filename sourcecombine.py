@@ -433,6 +433,7 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
         "{{DIR}}": parent_dir,
         "{{DIR_SLUG}}": dir_slug,
         "{{LANG}}": lang,
+        "{{HASH}}": hashlib.sha256(content.encode('utf-8', errors='replace')).hexdigest() if content is not None else "",
     }
 
     replacements["{{SIZE}}"] = utils.format_size(size) if size is not None else ""
@@ -1583,15 +1584,18 @@ class FileProcessor:
         if self.estimate_tokens:
             return
 
-        if self.output_format in ("json", "jsonl"):
+        if self.output_format in ("json", "jsonl", "manifest"):
             entry = {
                 "path": relative_path.as_posix(),
                 "size_bytes": file_size,
                 "tokens": token_count,
                 "tokens_is_approx": is_approx,
                 "lines": line_count,
-                "content": content,
+                "language": utils.get_language_tag(relative_path, content=content, overrides=self.custom_languages),
+                "sha256": self.get_content_hash(content),
             }
+            if self.output_format != "manifest":
+                entry["content"] = content
             if modified is not None:
                 entry["modified"] = modified
             json.dump(entry, outfile)
@@ -2121,7 +2125,7 @@ def find_and_combine_files(
     if output_path == '-' and pairing_enabled:
         raise utils.InvalidConfigError("You cannot send output to your terminal when pairing files.")
 
-    if output_format in ('json', 'jsonl') and pairing_enabled:
+    if output_format in ('json', 'jsonl', 'manifest') and pairing_enabled:
         raise utils.InvalidConfigError(f"You cannot use {output_format.upper()} format when pairing files.")
 
     # Apply default Markdown templates if requested and not overridden
@@ -2216,7 +2220,7 @@ def find_and_combine_files(
         global_header = output_opts.get('global_header_template')
         global_footer = output_opts.get('global_footer_template')
 
-        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and output_format == 'json':
+        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and output_format in ('json', 'manifest'):
             outfile.write('[')
 
         first_item = True
@@ -2904,7 +2908,7 @@ def find_and_combine_files(
                 rel_p_str = _get_rel_path(file_path, root_path).as_posix()
                 processing_bar.set_description(f"Processing {_truncate_path(rel_p_str, 40)}")
 
-                if output_format == 'json' and not dry_run and not estimate_tokens:
+                if output_format in ('json', 'manifest') and not dry_run and not estimate_tokens:
                     if not first_item:
                         outfile.write(',')
                     first_item = False
@@ -2975,7 +2979,7 @@ def find_and_combine_files(
             if not dry_run and not estimate_tokens:
                 outfile.write(_render_global_template(global_footer, stats))
 
-        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and output_format == 'json':
+        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and output_format in ('json', 'manifest'):
             outfile.write(']')
 
     stats['excluded_folder_count'] = total_excluded_folders
@@ -3289,8 +3293,8 @@ def main():
     output_group.add_argument(
         "--format",
         "-f",
-        choices=["text", "json", "jsonl", "markdown", "xml"],
-        help="Choose the output format ('text', 'json', 'jsonl', 'markdown', 'xml'). 'json' and 'jsonl' only work when combining many files into one.",
+        choices=["text", "json", "jsonl", "markdown", "xml", "manifest"],
+        help="Choose the output format ('text', 'json', 'jsonl', 'markdown', 'xml', 'manifest'). 'json', 'jsonl', and 'manifest' only work when combining many files into one.",
     )
     output_group.add_argument(
         "--markdown",

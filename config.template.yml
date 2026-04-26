@@ -59,7 +59,7 @@ search:
 
 # --- Output Configuration ---
 output:
-  # Output format (text, json, jsonl, markdown, xml). Defaults to text.
+  # Output format (text, json, jsonl, markdown, xml, manifest). Defaults to text.
   format: 'text'
 
   # When pairing is disabled, all content is written to this file.
@@ -105,7 +105,7 @@ output:
   include_diff: false
 
   # Template written before each file's content.
-  # Placeholders: {{FILENAME}}, {{EXT}}, {{STEM}}, {{DIR}}, {{DIR_SLUG}}, {{SIZE}}, {{TOKENS}}, {{LINE_COUNT}}, {{MODIFIED}}, {{LANG}}, {{INDEX}}, {{TOTAL}}, {{GIT_BRANCH}}, {{GIT_COMMIT}}, {{GIT_COMMIT_SHORT}}, {{GIT_DIFF}}, {{FILE_DIFF}}, {{GIT_LOG}}, {{SIZE_PERCENT}}, {{TOKEN_PERCENT}}, {{LINE_PERCENT}}.
+  # Placeholders: {{FILENAME}}, {{EXT}}, {{STEM}}, {{DIR}}, {{DIR_SLUG}}, {{SIZE}}, {{TOKENS}}, {{LINE_COUNT}}, {{MODIFIED}}, {{LANG}}, {{HASH}}, {{INDEX}}, {{TOTAL}}, {{GIT_BRANCH}}, {{GIT_COMMIT}}, {{GIT_COMMIT_SHORT}}, {{GIT_DIFF}}, {{FILE_DIFF}}, {{GIT_LOG}}, {{SIZE_PERCENT}}, {{TOKEN_PERCENT}}, {{LINE_PERCENT}}.
   # Set to null or an empty text to omit the header.
   header_template: "--- {{FILENAME}} ---\n"
 

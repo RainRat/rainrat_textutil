@@ -125,6 +125,7 @@ Used in `header_template` and `footer_template` for each file:
 *   `{{DIR}}`: The relative folder path (or `.` for the root folder).
 *   `{{DIR_SLUG}}`: A filesystem-safe, lowercase version of the folder path (`root` when `DIR` is `.`).
 *   `{{LANG}}`: The language identifier for syntax highlighting (for example, `python`).
+*   `{{HASH}}`: The SHA-256 hash of the file content.
 *   `{{SIZE}}`: The human-readable file size (for example, `1.5KB`).
 *   `{{TOKENS}}`: The number of tokens in the file.
 *   `{{LINE_COUNT}}`: The number of lines in the file.
@@ -218,7 +219,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 ### Output Options
 *   `-a` / `--ai`: Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, folder tree, project overview, and skipping binary files. This also copies to your system clipboard if you do not specify an output.
 *   `--clipboard` / `-c`: Use the system clipboard to save combined output or read content for extraction.
-*   `--format` / `-f`: Choose the output format ('text', 'json', 'jsonl', 'markdown', 'xml'). 'json' and 'jsonl' only work when combining many files into one.
+*   `--format` / `-f`: Choose the output format ('text', 'json', 'jsonl', 'markdown', 'xml', 'manifest'). 'json', 'jsonl', and 'manifest' only work when combining many files into one.
 *   `-m` / `--markdown`: Shortcut for `--format markdown`.
 *   `-j` / `--json`: Shortcut for `--format json`.
 *   `-J` / `--jsonl`: Shortcut for `--format jsonl`.
