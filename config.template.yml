@@ -97,11 +97,11 @@ output:
   # of the output (only when combining many files into one; ignored in JSON format).
   project_overview: false
 
-  # Include the last N git commit messages in the project overview.
+  # Include the last N git commit messages in the project overview and templates ({{GIT_LOG}}).
   # Set to 0 to disable.
   git_log_count: 0
 
-  # Include the current Git diff in the project overview and templates ({{GIT_DIFF}}).
+  # Include the current Git diff in the project overview and templates ({{GIT_DIFF}} and {{FILE_DIFF}}).
   include_diff: false
 
   # Template written before each file's content.

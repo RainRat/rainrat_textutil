@@ -158,8 +158,8 @@ Used in `paired_filename_template` when combining related files:
 *   `{{STEM}}`: The base name shared by the pair (for example, `main` from `main.cpp`).
 *   `{{SOURCE_EXT}}`: The extension of the source file (for example, `.cpp`).
 *   `{{HEADER_EXT}}`: The extension of the header file (for example, `.h`).
-*   `{{DIR}}`: The relative folder path.
-*   `{{DIR_SLUG}}`: A simplified folder name.
+*   `{{DIR}}`: The relative folder path (or `.` for the root folder).
+*   `{{DIR_SLUG}}`: A filesystem-safe, lowercase version of the folder path (`root` when `DIR` is `.`).
 
 ## Terminal Options
 
@@ -227,8 +227,8 @@ List one or more folders or files to search. If you do not provide any, the tool
 *   `--toc` / `-T`: Add a Table of Contents with sizes and tokens to the start of the output (only when combining many files into one in 'text' or 'markdown' formats).
 *   `--include-tree` / `-p`: Include a visual folder tree with details at the start of the output (only when combining many files into one).
 *   `--overview`: Add a project overview summary with statistics and language breakdown to the start of the output (only when combining many files into one).
-*   `--git-log [N]`: Include the last N git commit messages in the project overview (default: 5 if flag is present).
-*   `--include-diff`: Include the current Git diff (staged and unstaged changes) in the project overview and templates (`{{GIT_DIFF}}`).
+*   `--git-log [N]`: Include the last N git commit messages in the project overview and templates (`{{GIT_LOG}}`). Default is 5 if the flag is present.
+*   `--include-diff`: Include the current Git diff (staged and unstaged changes) in the project overview and templates (`{{GIT_DIFF}}` and `{{FILE_DIFF}}`).
 *   `--json-summary`: Save an execution summary (file counts, tokens, time taken) in JSON format. Use `-` to print it to your terminal.
 
 ### Display & Preview
