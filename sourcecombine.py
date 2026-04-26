@@ -4805,6 +4805,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             verb = "extract"
         elif getattr(args, 'apply_in_place', False) is True:
             verb = "update in-place"
+        elif pairing_enabled:
+            verb = "pair"
         else:
             verb = "combine"
         summary_title = f"DRY RUN COMPLETE{status_suffix}: Would {verb} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
@@ -4819,6 +4821,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             action = "Extracted"
         elif getattr(args, 'apply_in_place', False) is True:
             action = "Updated in-place"
+        elif pairing_enabled:
+            action = "Paired"
         else:
             action = "Combined"
         summary_title = f"SUCCESS{status_suffix}: {action} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
