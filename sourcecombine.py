@@ -774,7 +774,7 @@ def _get_git_info(root_folder, log_count=0, include_diff=False, diff_ref=None, s
     """Retrieve Git branch, commit, and status information for the project.
 
     Returns a dictionary containing 'git_branch', 'git_commit', 'git_commit_short',
-    'git_log', 'git_status', 'file_statuses', and optionally 'git_diff'.
+    'git_log', 'git_status', 'file_statuses', 'git_diff', and 'file_diffs'.
     """
     info = {
         'git_branch': 'N/A',
@@ -3428,12 +3428,12 @@ def main():
         const=5,
         type=int,
         metavar="N",
-        help="Include the last N git commit messages in the project overview (default: 5 if flag is present).",
+        help="Include the last N git commit messages in the project overview and templates ({{GIT_LOG}}). Default is 5 if the flag is present.",
     )
     output_group.add_argument(
         "--include-diff",
         action="store_true",
-        help="Include the Git diff in the project overview and templates ({{GIT_DIFF}}, {{FILE_DIFF}}).",
+        help="Include the Git diff in the project overview and templates ({{GIT_DIFF}} and {{FILE_DIFF}}).",
     )
     output_group.add_argument(
         "--json-summary",
