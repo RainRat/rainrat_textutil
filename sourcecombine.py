@@ -770,18 +770,19 @@ def _get_git_info(root_folder, log_count=0, include_diff=False, diff_ref=None, s
     }
 
     root_path = Path(root_folder)
+    git_cwd = root_path.parent if root_path.is_file() else root_path
     try:
         # Get branch name
         result = subprocess.run(
             ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
-            cwd=root_path, capture_output=True, text=True, check=True
+            cwd=git_cwd, capture_output=True, text=True, check=True
         )
         info['git_branch'] = result.stdout.strip()
 
         # Get full commit hash
         result = subprocess.run(
             ['git', 'rev-parse', 'HEAD'],
-            cwd=root_path, capture_output=True, text=True, check=True
+            cwd=git_cwd, capture_output=True, text=True, check=True
         )
         info['git_commit'] = result.stdout.strip()
         info['git_commit_short'] = info['git_commit'][:7]
@@ -790,7 +791,7 @@ def _get_git_info(root_folder, log_count=0, include_diff=False, diff_ref=None, s
         if log_count > 0:
             result = subprocess.run(
                 ['git', 'log', f'-{log_count}', '--oneline', '--no-decorate'],
-                cwd=root_path, capture_output=True, text=True, check=True
+                cwd=git_cwd, capture_output=True, text=True, check=True
             )
             info['git_log'] = result.stdout.strip()
 
@@ -812,7 +813,7 @@ def _get_git_info(root_folder, log_count=0, include_diff=False, diff_ref=None, s
 
             result = subprocess.run(
                 diff_cmd,
-                cwd=root_path, capture_output=True, text=True, check=True
+                cwd=git_cwd, capture_output=True, text=True, check=True
             )
             info['git_diff'] = result.stdout.strip()
             info['file_diffs'] = _parse_git_diff_by_file(info['git_diff'])
@@ -829,6 +830,7 @@ def collect_git_files(root_folder, progress=None):
     Returns (file_paths, root_path, excluded_folder_count) if successful, else None.
     """
     root_path = Path(root_folder)
+    git_cwd = root_path.parent if root_path.is_file() else root_path
     try:
         # Run git ls-files to get all tracked and untracked files (ignoring those in .gitignore)
         # --cached: show tracked files
@@ -836,7 +838,7 @@ def collect_git_files(root_folder, progress=None):
         # --exclude-standard: use standard git exclusion rules (.gitignore, etc.)
         result = subprocess.run(
             ['git', 'ls-files', '--cached', '--others', '--exclude-standard'],
-            cwd=root_path,
+            cwd=git_cwd,
             capture_output=True,
             text=True,
             check=True
@@ -844,13 +846,13 @@ def collect_git_files(root_folder, progress=None):
         file_paths = []
         for line in result.stdout.splitlines():
             if line:
-                file_paths.append(root_path / line)
+                file_paths.append(git_cwd / line)
                 if progress:
                     progress.update(1)
 
         # Sort for deterministic output
         file_paths.sort()
-        return file_paths, root_path, 0
+        return file_paths, git_cwd, 0
     except (subprocess.CalledProcessError, FileNotFoundError, OSError) as exc:
         logging.warning(
             "Finding files with Git failed in '%s': %s. Falling back to standard scanning.",
@@ -866,12 +868,13 @@ def collect_git_diff_files(root_folder, diff_ref=None, progress=None, staged_onl
     Returns (file_paths, root_path, excluded_folder_count) if successful, else None.
     """
     root_path = Path(root_folder)
+    git_cwd = root_path.parent if root_path.is_file() else root_path
     try:
         file_paths_set = set()
 
         def _run_git(args):
             result = subprocess.run(
-                args, cwd=root_path, capture_output=True, text=True, check=True
+                args, cwd=git_cwd, capture_output=True, text=True, check=True
             )
             for line in result.stdout.splitlines():
                 if line:
@@ -900,14 +903,14 @@ def collect_git_diff_files(root_folder, diff_ref=None, progress=None, staged_onl
 
         file_paths = []
         for rel_path in sorted(file_paths_set):
-            p = root_path / rel_path
+            p = git_cwd / rel_path
             # Filter out deleted files
             if p.is_file():
                 file_paths.append(p)
                 if progress:
                     progress.update(1)
 
-        return file_paths, root_path, 0
+        return file_paths, git_cwd, 0
     except (subprocess.CalledProcessError, FileNotFoundError, OSError) as exc:
         logging.warning(
             "Finding changed files with Git failed in '%s': %s. Falling back to standard scanning.",
