@@ -3550,6 +3550,7 @@ def main():
         help=(
             "Rebuild your original files and folders from combined files (like JSON, XML, JSONL, or Markdown). "
             "You can read from one or more files, folders, your terminal ('-'), or the system clipboard. "
+            "If no input is specified, the tool automatically looks for 'combined_files.txt' (or .md, .json, .jsonl, .xml) in the current folder. "
             "Filtering, sorting, processing (like --compact or --replace), and preview options "
             "(like --diff) are supported. Line numbers are removed automatically unless you use "
             "--keep-line-numbers."
