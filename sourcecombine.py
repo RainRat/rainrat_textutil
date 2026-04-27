@@ -5088,11 +5088,11 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         if has_ext_tokens:
             total_weight = stats.get('total_tokens', 0)
             weight_by_ext = tokens_by_ext
-            legend = "count (% files • % tokens)"
+            weight_label = "% TOKENS"
         else:
             total_weight = stats.get('total_size_bytes', 0)
             weight_by_ext = size_by_ext
-            legend = "count (% files • % size)"
+            weight_label = "% SIZE"
 
         # Sort by weight desc, then count desc, then alpha
         sorted_exts = sorted(
@@ -5113,9 +5113,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             other_weight = sum(weight_by_ext.get(e, 0) for e, c in others)
             display_items.append({'ext': '(others)', 'count': other_count, 'weight': other_weight})
 
-        print(f"\n  {C_BOLD}{C_CYAN}File Types {C_DIM}({legend}){C_RESET}", file=sys.stderr)
-
-        max_ext_len = max(len(d['ext']) + 1 for d in display_items) if display_items else 0
+        print(f"\n  {C_BOLD}{C_CYAN}File Types{C_RESET}", file=sys.stderr)
+        print(f"    {C_DIM}{'COUNT':>7}  {'% FILES':>9}  {weight_label:>9}  {'DISTRIBUTION':<12}  EXTENSION{C_RESET}", file=sys.stderr)
 
         for d in display_items:
             ext = d['ext']
@@ -5128,8 +5127,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             # 10-character ASCII distribution bar
             bar = _make_ascii_bar(weight_percent, colored=True)
 
-            ext_label = ext + ":"
-            print(f"    {C_BOLD}{ext_label:<{max_ext_len}}{C_RESET} {C_BOLD}{C_CYAN}{count:>7,}{C_RESET} {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{file_percent:>5.1f}%{C_RESET}{C_DIM} • {C_RESET}{C_BOLD}{C_CYAN}{weight_percent:>5.1f}%{C_RESET}{C_DIM}){C_RESET} {C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}", file=sys.stderr)
+            print(f"    {C_BOLD}{C_CYAN}{count:7,}{C_RESET}  {C_BOLD}{C_CYAN}{file_percent:>8.1f}%{C_RESET}  {C_BOLD}{C_CYAN}{weight_percent:>8.1f}%{C_RESET}  {C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}  {C_BOLD}{ext}{C_RESET}", file=sys.stderr)
 
     # Footer
     print(f"\n{title_color}{'=' * len(raw_title)}{C_RESET}", file=sys.stderr)
