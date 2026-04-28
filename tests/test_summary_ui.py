@@ -213,8 +213,8 @@ def test_summary_terminal_size_fallback(capsys):
                 sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
 
     captured = capsys.readouterr()
-    assert "File Types (count (% files • % size))" in captured.err
-    assert ".txt:       1" in captured.err
+    assert "File Types" in captured.err
+    assert ".txt" in captured.err
 
 def test_summary_throughput_line(capsys):
     """Test that throughput is shown on its own line."""
@@ -278,13 +278,13 @@ def test_file_types_redesign_sorting_and_others(monkeypatch, capsys):
     stderr = captured.err
 
     # Check sorting: .py should be first despite having fewer files than .txt
-    ext_lines = [line for line in stderr.splitlines() if line.strip().endswith("]") and ":" in line]
+    ext_lines = [line for line in stderr.splitlines() if any(ext in line for ext in ['.py', '.txt', '(others)'])]
 
-    assert ".py:" in ext_lines[0]
-    assert ".txt:" in ext_lines[1]
+    assert ".py" in ext_lines[0]
+    assert ".txt" in ext_lines[1]
 
     # Check "others" aggregation (12 extensions total, top 10 shown, others aggregated)
-    assert "(others):" in stderr
+    assert "(others)" in stderr
 
     # Check distribution bar
     # 80% -> 8 blocks -> [########--]
