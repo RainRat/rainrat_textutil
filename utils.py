@@ -593,8 +593,7 @@ def _validate_filters_section(config):
                     f"filters.inclusion_groups.{group_name} must be a dictionary."
                 )
             group.setdefault('enabled', False)
-            group.setdefault('filenames', [])
-            filenames = group.get('filenames', [])
+            filenames = group.setdefault('filenames', [])
             _validate_glob_list(
                 filenames, f"filters.inclusion_groups.{group_name}.filenames"
             )
