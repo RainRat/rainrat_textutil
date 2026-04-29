@@ -252,7 +252,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 ### Utility Commands
 *   `--init`: Create a basic `sourcecombine.yml` configuration file in your current folder to get started.
 *   `--list-languages`: Show a list of all supported language identifiers and then stop.
-*   `--extract`: Rebuild your original files and folders from combined files (like JSON, XML, JSONL, or Markdown). You can read from one or more files, folders, your terminal (`-`), or the system clipboard. For example: `python sourcecombine.py --extract outputs/`. Filtering, sorting, and preview options are supported. Line numbers are removed automatically unless you use `--keep-line-numbers`.
+*   `--extract`: Rebuild your original files and folders from combined files (like JSON, XML, JSONL, or Markdown). You can read from one or more files, folders, your terminal (`-`), or the system clipboard. If no input is provided, the tool searches for `combined_files.txt` (or .md, .json, .xml, .jsonl) in your current folder. Filtering, sorting, and preview options are supported. Line numbers are removed automatically unless you use `--keep-line-numbers`.
 *   `--keep-line-numbers`: Keep line numbers when extracting files. By default, the tool removes them automatically if detected.
 *   `--restore`: Undo 'apply-in-place' changes by restoring original files from their `.bak` copies. This command scans your target folders recursively for backup files.
 *   `--delete-backups`: Remove all `.bak` files from your target folders. Use this to clean up after you are done with `--apply-in-place`.

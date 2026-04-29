@@ -3114,6 +3114,9 @@ def main():
               # Copy the result to your clipboard
               python sourcecombine.py src/ -c
 
+              # Rebuild files from a combined file into 'output_dir/'
+              python sourcecombine.py --extract combined_files.txt -o output_dir/
+
               # Estimate how many tokens the output will use
               python sourcecombine.py -e
 
@@ -3550,9 +3553,10 @@ def main():
         help=(
             "Rebuild your original files and folders from combined files (like JSON, XML, JSONL, or Markdown). "
             "You can read from one or more files, folders, your terminal ('-'), or the system clipboard. "
-            "Filtering, sorting, processing (like --compact or --replace), and preview options "
-            "(like --diff) are supported. Line numbers are removed automatically unless you use "
-            "--keep-line-numbers."
+            "If no input is provided, the tool searches for 'combined_files.txt' (or .md, .json, .xml, .jsonl) "
+            "in your current folder. Filtering, sorting, processing (like --compact or --replace), and "
+            "preview options (like --diff) are supported. Line numbers are removed automatically "
+            "unless you use --keep-line-numbers."
         ),
     )
     utility_group.add_argument(
@@ -4172,7 +4176,11 @@ def main():
                 content, _ = read_file_best_effort(input_path)
                 sources.append((str(input_path), content))
             else:
-                logging.error("No input specified for extraction. Use a file path, folder, '-' for your terminal, or --clipboard.")
+                logging.error(
+                    "No input specified for extraction and could not find a default combined file "
+                    "(like 'combined_files.txt', '.md', '.json', '.xml', or '.jsonl') in the current folder. "
+                    "Use a file path, folder, '-' for your terminal, or --clipboard."
+                )
                 sys.exit(1)
 
         stats = extract_files(
