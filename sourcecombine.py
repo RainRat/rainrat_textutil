@@ -5086,13 +5086,15 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         has_ext_tokens = any(v > 0 for v in tokens_by_ext.values())
 
         if has_ext_tokens:
+            print(f"\n  {C_BOLD}{C_CYAN}File Types (by tokens){C_RESET}", file=sys.stderr)
             total_weight = stats.get('total_tokens', 0)
             weight_by_ext = tokens_by_ext
-            legend = "count (% files • % tokens)"
+            print(f"    {C_DIM}{'COUNT':>7}  {'% FILES':>7}  {'TOKENS':>11}  {'SIZE':>12}  {'%':>6}  {'DISTRIBUTION':<12}  EXTENSION{C_RESET}", file=sys.stderr)
         else:
+            print(f"\n  {C_BOLD}{C_CYAN}File Types (by size){C_RESET}", file=sys.stderr)
             total_weight = stats.get('total_size_bytes', 0)
             weight_by_ext = size_by_ext
-            legend = "count (% files • % size)"
+            print(f"    {C_DIM}{'COUNT':>7}  {'% FILES':>7}  {'SIZE':>12}  {'%':>6}  {'DISTRIBUTION':<12}  EXTENSION{C_RESET}", file=sys.stderr)
 
         # Sort by weight desc, then count desc, then alpha
         sorted_exts = sorted(
@@ -5113,10 +5115,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             other_weight = sum(weight_by_ext.get(e, 0) for e, c in others)
             display_items.append({'ext': '(others)', 'count': other_count, 'weight': other_weight})
 
-        print(f"\n  {C_BOLD}{C_CYAN}File Types {C_DIM}({legend}){C_RESET}", file=sys.stderr)
-
-        max_ext_len = max(len(d['ext']) + 1 for d in display_items) if display_items else 0
-
         for d in display_items:
             ext = d['ext']
             count = d['count']
@@ -5128,8 +5126,18 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             # 10-character ASCII distribution bar
             bar = _make_ascii_bar(weight_percent, colored=True)
 
-            ext_label = ext + ":"
-            print(f"    {C_BOLD}{ext_label:<{max_ext_len}}{C_RESET} {C_BOLD}{C_CYAN}{count:>7,}{C_RESET} {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{file_percent:>5.1f}%{C_RESET}{C_DIM} • {C_RESET}{C_BOLD}{C_CYAN}{weight_percent:>5.1f}%{C_RESET}{C_DIM}){C_RESET} {C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}", file=sys.stderr)
+            if has_ext_tokens:
+                weight_str = f"{'~' if is_approx else ''}{weight:,}"
+                e_size = size_by_ext.get(ext, 0)
+                size_str = utils.format_size(e_size)
+                s_val, s_unit = _split_unit(size_str)
+                size_padding = " " * max(0, 12 - len(s_val) - len(s_unit))
+                print(f"    {C_BOLD}{C_CYAN}{count:7,}{C_RESET}  {C_BOLD}{C_CYAN}{file_percent:>6.1f}%{C_RESET}  {C_BOLD}{C_CYAN}{weight_str:>11}{C_RESET}  {size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}  {C_BOLD}{C_CYAN}{weight_percent:>5.1f}%{C_RESET}  {C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}  {C_BOLD}{ext}{C_RESET}", file=sys.stderr)
+            else:
+                size_str = utils.format_size(weight)
+                s_val, s_unit = _split_unit(size_str)
+                size_padding = " " * max(0, 12 - len(s_val) - len(s_unit))
+                print(f"    {C_BOLD}{C_CYAN}{count:7,}{C_RESET}  {C_BOLD}{C_CYAN}{file_percent:>6.1f}%{C_RESET}  {size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}  {C_BOLD}{C_CYAN}{weight_percent:>5.1f}%{C_RESET}  {C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}  {C_BOLD}{ext}{C_RESET}", file=sys.stderr)
 
     # Footer
     print(f"\n{title_color}{'=' * len(raw_title)}{C_RESET}", file=sys.stderr)
