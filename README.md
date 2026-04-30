@@ -1,274 +1,37 @@
-# SourceCombine
+# rainrat_textutil
 
-A versatile tool for your terminal to find, filter, and combine source code files from a project into one file (or folder). Use it to give better context to AI assistants, generate documentation, or save your work.
+A versatile command-line utility for discovering, filtering, processing, and combining text files into various formats (JSON, XML, JSONL, CSV, or Markdown). Designed for developers and data processing, it simplifies complex file management tasks and streamlines the preparation of datasets for LLMs and other tools.
 
 ## Key Features
-
 *   **Find files in many folders:** Scan many folders at once. Use Git to find files and follow your `.gitignore` rules automatically.
 *   **Filtering:** Skip folders, files, or specific names using search patterns. You can also filter by language, file content, or Git changes.
 *   **Deduplication:** Skip duplicate files by absolute path or content.
 *   **Include Groups:** Group specific files to always include, even if you skip others.
 *   **Pairing:** Combine related files (like source and header pairs) into their own individual output files.
-*   **File Extraction:** Rebuild your original files and folders from combined files (like JSON, XML, JSONL, CSV, or Markdown). Filtering, sorting, and processing rules are supported. Batch process multiple files or entire folders.
+*   **File Extraction:** Rebuild your original files and folders from combined files (like JSON, XML, JSONL, CSV, or Markdown). Filtering, sorting, and processing rules are supported. Batch process multiple files or entire folders. If no input is provided, the tool automatically searches for standard defaults (`combined_files.txt`, `.md`, `.json`, `.xml`, or `.jsonl`).
 *   **Sorting:** Sort files by `name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`.
-*   **Limiting:** Stop at a file limit, total tokens, total lines, or total size.
-*   **Project Overview:** Include a formatted summary with statistics and a language breakdown at the start of your combined output.
-*   **Git History:** Include recent git commit messages in your project overview to provide better context for AI.
-*   **In-Place Processing:** Clean up extra spaces or blank lines directly in your source files.
-*   **Smart Combining:** Combine files while keeping headers and structural markers.
-*   **Estimation:** See total tokens without writing any files.
-*   **Configuration:** Save your settings in a `sourcecombine.yml` configuration file.
+*   **Flexible Outputs:** Save results to your terminal, a file (JSON, XML, JSONL, CSV, or Markdown), or copy them to your system clipboard.
+*   **AI Metadata Integration:** Automatically include environment metadata (e.g., Python version, OS, timestamp, Git status) for AI context.
 
-## Installation
-
-### Prerequisites
-
-*   **Python 3.10 or higher.** Check your version: `python --version` (or `python3 --version`).
-*   **Git (Optional).** Required for `.gitignore` support and Git-based filtering (like `--git-diff`). Check your version: `git --version`.
-
-### Steps
-
-1.  Clone the repo:
-    ```bash
-    git clone https://github.com/RainRat/rainrat_textutil.git
-    cd rainrat_textutil
-    ```
-
-2.  (Recommended) Create and activate a virtual environment:
-    ```bash
-    # Create the environment
-    python -m venv venv
-
-    # Activate it:
-    # On Windows:
-    venv\Scripts\activate
-    # On macOS or Linux:
-    source venv/bin/activate
-    ```
-
-3.  Install dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
-    *   **Note for Linux users:** You may need to install `xclip` or `xsel` to use clipboard features (for example: `sudo apt install xclip`).
-
-4.  (Optional) Install `tiktoken` for more accurate token counting:
-    ```bash
-    pip install tiktoken
-    ```
-
-### Verify it works
-
-```bash
-python sourcecombine.py --version
-```
-
-## Quick Start
-
-Combine all Python files in the current folder into `combined_files.txt`:
-
-```bash
-python sourcecombine.py -o combined_files.txt --include "*.py"
-```
-
-Combine only Python and JavaScript files:
-
-```bash
-python sourcecombine.py -o output.txt --lang python --lang javascript
-```
-
-Combine files in `src/` and `lib/`, skip the `test/` folder, and estimate tokens:
-
-```bash
-python sourcecombine.py src lib -o output/ --exclude-folder "test" --estimate-tokens
-```
-
-Prepare a project for an AI assistant (Markdown, line numbers, Table of Contents, folder tree, and project overview):
-
-```bash
-python sourcecombine.py --ai
-```
-
-Extract files directly from the system clipboard into a folder:
-
-```bash
-python sourcecombine.py --extract --clipboard -o extracted_files/
-```
-
-Combine related source and header pairs (like `.cpp` and `.h`) into an `outputs/` folder:
-
-```bash
-python sourcecombine.py src/ -o outputs/ --config example_cpp_h.yml
-```
-
-Rebuild original files from a combined file into a destination folder:
-
-```bash
-python sourcecombine.py --extract combined_files.txt -o extracted_files/
-```
-
-## Configuration
-
-The tool automatically searches for a configuration file (`sourcecombine.yml`, `sourcecombine.yaml`, `config.yml`, or `config.yaml`) in your current folder when you do not provide any search targets. Use it to set complex exclusion rules, inclusion groups, and default output paths.
-
-See `config.template.yml` for a fully documented example.
-
-## Custom Templates
-
-You can customize the output by using templates in your configuration file. Templates use placeholders in double curly braces (for example, `{{FILENAME}}`) that the tool replaces with actual data.
-
-### File Templates
-Used in `header_template` and `footer_template` for each file:
-*   `{{FILENAME}}`: The relative path to the file (for example, `src/main.py`).
-*   `{{EXT}}`: The file extension (for example, `py`).
-*   `{{STEM}}`: The filename without its extension (for example, `main` from `main.py`).
-*   `{{DIR}}`: The relative folder path (or `.` for the root folder).
-*   `{{DIR_SLUG}}`: A filesystem-safe, lowercase version of the folder path (`root` when `DIR` is `.`).
-*   `{{LANG}}`: The language identifier for syntax highlighting (for example, `python`).
-*   `{{HASH}}`: The SHA-256 hash of the file content.
-*   `{{SIZE}}`: The human-readable file size (for example, `1.5KB`).
-*   `{{TOKENS}}`: The number of tokens in the file.
-*   `{{LINE_COUNT}}`: The number of lines in the file.
-*   `{{MODIFIED}}`: The last modified time in ISO 8601 format.
-*   `{{INDEX}}`: The 1-based index of the current file in the sequence.
-*   `{{TOTAL}}`: The total number of files being combined.
-*   `{{GIT_BRANCH}}`: The current Git branch name (requires Git).
-*   `{{GIT_COMMIT}}`: The full current Git commit hash (requires Git).
-*   `{{GIT_COMMIT_SHORT}}`: The short (7-character) Git commit hash (requires Git).
-*   `{{GIT_DIFF}}`: The current Git diff (requires `--include-diff`).
-*   `{{FILE_DIFF}}`: The Git diff specific to this file (requires `--include-diff`).
-*   `{{FILE_STATUS}}`: The Git status of this file (e.g., `M`, `A`, `??`) (requires Git).
-*   `{{GIT_LOG}}`: Recent Git commit messages (requires `--git-log`).
-*   `{{SIZE_PERCENT}}`: The percentage of the total size contributed by this file.
-*   `{{TOKEN_PERCENT}}`: The percentage of the total tokens contributed by this file.
-*   `{{LINE_PERCENT}}`: The percentage of the total lines contributed by this file.
-*   `{{PROJECT_NAME}}`: The name of the project (detected from manifest files or folder name).
-*   `{{DATE}}`: The current date (YYYY-MM-DD).
-*   `{{TIME}}`: The current time (HH:MM:SS).
-*   `{{DATETIME}}`: The current date and time (YYYY-MM-DD HH:MM:SS).
-
-### Project Templates
-Used in `global_header_template` and `global_footer_template` for the whole project:
-*   `{{FILE_COUNT}}`: The total number of files included.
-*   `{{TOTAL_SIZE}}`: The combined size of all files in a human-readable format.
-*   `{{TOTAL_TOKENS}}`: The total number of tokens across all included files.
-*   `{{TOTAL_LINES}}`: The total number of lines across all included files.
-*   `{{PROJECT_NAME}}`: The name of the project (detected from manifest files or folder name).
-*   `{{DATE}}`: The current date (YYYY-MM-DD).
-*   `{{TIME}}`: The current time (HH:MM:SS).
-*   `{{DATETIME}}`: The current date and time (YYYY-MM-DD HH:MM:SS).
-*   `{{GIT_BRANCH}}`: The current Git branch name (requires Git).
-*   `{{GIT_COMMIT}}`: The full current Git commit hash (requires Git).
-*   `{{GIT_COMMIT_SHORT}}`: The short (7-character) Git commit hash (requires Git).
-*   `{{GIT_DIFF}}`: The current Git diff (requires `--include-diff`).
-*   `{{GIT_LOG}}`: Recent Git commit messages (requires `--git-log`).
-*   `{{GIT_STATUS}}`: A summary of Git changes (e.g., `3 modified, 1 added`) (requires Git).
-
-### Pairing Templates
-Used in `paired_filename_template` when combining related files:
-*   `{{STEM}}`: The base name shared by the pair (for example, `main` from `main.cpp`).
-*   `{{SOURCE_EXT}}`: The extension of the source file (for example, `.cpp`).
-*   `{{HEADER_EXT}}`: The extension of the header file (for example, `.h`).
-*   `{{DIR}}`: The relative folder path (or `.` for the root folder).
-*   `{{DIR_SLUG}}`: A filesystem-safe, lowercase version of the folder path (`root` when `DIR` is `.`).
-
-## Terminal Options
-
-```bash
-python sourcecombine.py [TARGET ...] [OPTIONS]
-```
-
-### Targets
-List one or more folders or files to search. If you do not provide any, the tool searches the current folder. If the first target is a `.yml` or `.yaml` file, the tool uses it as its configuration.
-
-### Core Options
-*   `-o` / `--output`: Save the result to a specific file or folder. This takes priority over the path in your settings.
-*   `--dry-run` / `-d`: Show what would happen without making any changes.
-*   `--verbose` / `-v`: Show detailed status messages to help find and fix problems.
-*   `--config` / `-k`: Use a specific configuration file. This stops the tool from trying to find one automatically in your target list.
-
-### Filtering & Selection
-*   `-i` / `--include` / `--include-file`: Include only files that match this search pattern (for example, `*.py`). Use this option again to include more.
-*   `--language` / `--lang`: Include only files of these languages (for example, `python`, `cpp`). Use this option again to include more. See `--list-languages` for a full list.
-*   `--exclude-language` / `--exclude-lang`: Skip files of these languages (for example, `javascript`, `html`). Use this option again to skip more.
-*   `-x` / `--exclude-file` / `--exclude`: Skip files that match this search pattern (for example, `*.log`).
-*   `-X` / `--exclude-folder` / `--exclude-dir`: Skip folders that match this search pattern (for example, `node_modules`, `.git`).
-*   `--grep` / `-g`: Include only files whose content matches this regular expression.
-*   `--exclude-grep` / `-E`: Skip files whose content matches this regular expression.
-*   `--skip-binary` / `-B`: Skip files that contain non-text data (binary files).
-*   `--since` / `-S`: Include files modified since this time (for example, '1d', '2h', 'YYYY-MM-DD').
-*   `--until` / `-U`: Include files modified before this time (for example, '1d', '2h', 'YYYY-MM-DD').
-*   `--min-size`: Include only files at least this size (for example, '10KB', '1MB').
-*   `--max-size`: Include only files at most this size (for example, '10KB', '1MB').
-*   `--min-tokens`: Include only files with at least this many tokens.
-*   `--max-file-tokens`: Include only files with at most this many tokens.
-*   `--min-lines`: Include only files with at least this many lines.
-*   `--max-file-lines`: Include only files with at most this many lines.
-*   `--max-depth` / `-D`: Limit folder scanning to this depth (for example, `-D 1` for root files only; 0 for no limit).
-*   `--git-files` / `-G`: Use `git ls-files` to find files. This follows your `.gitignore` rules.
-*   `--git-diff [REF]`: Include only files that have changed in Git. If you provide a REF (like `main`), it finds changes since that commit. Otherwise, it finds unstaged, staged, and untracked changes.
-*   `--staged`: Include only staged changes in Git (requires `--git-diff`).
-*   `--unstaged`: Include only unstaged and untracked changes in Git (requires `--git-diff`).
-*   `--unique` / `-u`: Skip duplicate files by absolute path or content.
-*   `--map-lang EXTENSION LANGUAGE`: Manually map a file extension or filename to a specific language (for example, `.mjml` `html`). Use this option again to add more.
-*   `--files-from`: Read a list of files from a text file (use '-' for your terminal). This skips looking for files in folders.
-
-### Pairing Options
-*   `--pair SOURCE_EXT HEADER_EXT`: Enable file pairing by matching source and header extensions (for example, `.cpp` `.h`). Use this option again to add more pairs.
-*   `--include-unpaired`: Include files that do not have a matching pair when pairing is enabled.
-*   `--pair-template TEMPLATE`: Set the filename template for paired output (for example, `{{STEM}}.combined`).
-
-### Sorting & Limiting
-*   `--sort` / `-s`: Sort files by name, size, date (modified), tokens, lines, folder depth, or language before combining.
-*   `--reverse` / `-r`: Reverse the sort order.
-*   `--limit` / `-L`: Stop adding files once you reach this file limit.
-*   `--max-tokens` / `-M`: Stop adding files once you reach the total tokens limit (only when combining many files or extracting).
-*   `--max-total-size`: Stop adding files once you reach the total size limit (for example, '5MB') (only when combining many files or extracting).
-*   `--max-total-lines`: Stop adding files once you reach the total lines limit (only when combining many files or extracting).
-
-### Output Options
-*   `-a` / `--ai`: Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, folder tree, project overview, and skipping binary files. This also copies to your system clipboard if you do not specify an output.
-*   `--clipboard` / `-c`: Use the system clipboard to save combined output or read content for extraction.
-*   `--format` / `-f`: Choose the output format ('text', 'json', 'jsonl', 'markdown', 'xml', 'manifest', 'csv'). 'json', 'jsonl', 'manifest', and 'csv' only work when combining many files into one.
-*   `-m` / `--markdown`: Shortcut for `--format markdown`.
-*   `-j` / `--json`: Shortcut for `--format json`.
-*   `-J` / `--jsonl`: Shortcut for `--format jsonl`.
-*   `-w` / `--xml`: Shortcut for `--format xml`.
-*   `--csv`: Shortcut for `--format csv`.
-*   `--line-numbers` / `-n`: Add line numbers to the beginning of each line in the combined output.
-*   `--toc` / `-T`: Add a Table of Contents with sizes and tokens to the start of the output (only when combining many files into one in 'text' or 'markdown' formats).
-*   `--include-tree` / `-p`: Include a visual folder tree with details at the start of the output (only when combining many files into one).
-*   `--overview`: Add a project overview summary with statistics and language breakdown to the start of the output (only when combining many files into one).
-*   `--git-log [N]`: Include the last N git commit messages in the project overview and templates (`{{GIT_LOG}}`). Default is 5 if the flag is present.
-*   `--include-diff`: Include the current Git diff (staged and unstaged changes) in the project overview and templates (`{{GIT_DIFF}}` and `{{FILE_DIFF}}`).
-*   `--json-summary`: Save an execution summary (file counts, tokens, time taken) in JSON format. Use `-` to print it to your terminal.
-
-### Display & Preview
-*   `--list-files` / `-l`: Show a list of all files that would be included and then stop.
-*   `--tree` / `-t`: Show a visual folder tree of all included files with details and then stop.
-*   `--diff`: Show a colored diff of changes (only when using `--apply-in-place` or `--extract`).
-*   `--estimate-tokens` / `-e`: Calculate total tokens without writing any files. This is slower because every file must be read.
-
-### Processing
-*   `--compact` / `-C`: Clean up extra spaces and blank lines in the output.
-*   `--max-lines`: Truncate each file to this many lines before combining.
-*   `--truncate-tokens`: Truncate each file to this many tokens before combining.
-*   `--replace PATTERN REPLACEMENT`: Add a global search-and-replace rule using regular expressions. Use this option again to add more.
-*   `--replace-line PATTERN REPLACEMENT`: Add a line-based regular expression rule to find and replace content. Matching lines that follow each other collapse into a single replacement. Use this option again to add more.
-*   `--apply-in-place`: Apply processing rules directly to your source files (WARNING: modifies your files!).
+## Common Flags
+*   `--config`: Use a custom configuration file (YAML) to manage complex tasks.
+*   `--output`: Save results to a file (JSON, XML, JSONL, CSV, or Markdown) instead of the terminal.
+*   `--copy`: Copy the combined output to your system clipboard.
+*   `--apply-in-place`: Save each processed file's changes back to the original file (e.g., for batch replacements).
 *   `--create-backups`: Create `.bak` copies of your original files when using `--apply-in-place`.
 
 ### Utility Commands
 *   `--init`: Create a basic `sourcecombine.yml` configuration file in your current folder to get started.
 *   `--list-languages`: Show a list of all supported language identifiers and then stop.
-*   `--extract`: Rebuild your original files and folders from combined files (like JSON, XML, JSONL, CSV, or Markdown). You can read from one or more files, folders, your terminal (`-`), or the system clipboard. For example: `python sourcecombine.py --extract outputs/`. Filtering, sorting, and preview options are supported. Line numbers are removed automatically unless you use `--keep-line-numbers`.
+*   `--extract`: Rebuild your original files and folders from combined files (like JSON, XML, JSONL, CSV, or Markdown). You can read from one or more files, folders, your terminal (`-`), or the system clipboard. If no input is provided, the tool automatically searches for standard defaults (`combined_files.txt`, `.md`, `.json`, `.xml`, or `.jsonl`). For example: `python sourcecombine.py --extract outputs/`. Filtering, sorting, and preview options are supported. Line numbers are removed automatically unless you use `--keep-line-numbers`.
 *   `--keep-line-numbers`: Keep line numbers when extracting files. By default, the tool removes them automatically if detected.
-*   `--restore`: Undo 'apply-in-place' changes by restoring original files from their `.bak` copies. This command scans your target folders recursively for backup files.
-*   `--delete-backups`: Remove all `.bak` files from your target folders. Use this to clean up after you are done with `--apply-in-place`.
-*   `--show-config`: Show the final combined configuration (including defaults, files, and options) and exit.
-*   `--system-info`: Show details about your computer and environment.
-*   `-V` / `--version`: Show the tool's version and exit.
+*   `--preview`: See what files would be extracted without actually writing them to disk.
+*   `--clean`: Remove all `.bak` backup files from the current directory and its subfolders.
+*   `--version`: Show the application version and exit.
 
-## License
+## Getting Started
+1.  **Clone the Repository:** `git clone https://github.com/RainRat/rainrat_textutil.git`
+2.  **Install Dependencies:** `pip install -r requirements.txt`
+3.  **Run the Utility:** `python sourcecombine.py [flags]`
 
-This project is licensed under the MIT License - see the `LICENSE.txt` file for details.
+For more details, use `python sourcecombine.py --help` or check the `config.template.yml`.

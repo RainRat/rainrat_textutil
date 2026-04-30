@@ -3168,6 +3168,9 @@ def main():
 
               # Skip the 'tests' folder and all '.json' files
               python sourcecombine.py -X tests -x "*.json"
+
+              # Rebuild files from a combined file
+              python sourcecombine.py --extract combined_files.txt
         """),
     )
 
@@ -3604,6 +3607,7 @@ def main():
         help=(
             "Rebuild your original files and folders from combined files (like JSON, XML, JSONL, or Markdown). "
             "You can read from one or more files, folders, your terminal ('-'), or the system clipboard. "
+            "If no input is provided, the tool automatically searches for combined_files.txt, .md, .json, .xml, or .jsonl. "
             "Filtering, sorting, processing (like --compact or --replace), and preview options "
             "(like --diff) are supported. Line numbers are removed automatically unless you use "
             "--keep-line-numbers."
