@@ -9,7 +9,7 @@ A versatile tool for your terminal to find, filter, and combine source code file
 *   **Deduplication:** Skip duplicate files by absolute path or content.
 *   **Include Groups:** Group specific files to always include, even if you skip others.
 *   **Pairing:** Combine related files (like source and header pairs) into their own individual output files.
-*   **File Extraction:** Rebuild your original files and folders from combined files (like JSON, XML, JSONL, or Markdown). Filtering, sorting, and processing rules are supported. Batch process multiple files or entire folders.
+*   **File Extraction:** Rebuild your original files and folders from combined files (like JSON, XML, JSONL, or Markdown). Filtering, sorting, and processing rules are supported. Batch process multiple files or entire folders. If no input is provided, the tool automatically searches for standard defaults (`combined_files.txt`, `.md`, `.json`, `.xml`, or `.jsonl`).
 *   **Sorting:** Sort files by `name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`.
 *   **Limiting:** Stop at a file limit, total tokens, total lines, or total size.
 *   **Project Overview:** Include a formatted summary with statistics and a language breakdown at the start of your combined output.
@@ -252,7 +252,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 ### Utility Commands
 *   `--init`: Create a basic `sourcecombine.yml` configuration file in your current folder to get started.
 *   `--list-languages`: Show a list of all supported language identifiers and then stop.
-*   `--extract`: Rebuild your original files and folders from combined files (like JSON, XML, JSONL, or Markdown). You can read from one or more files, folders, your terminal (`-`), or the system clipboard. For example: `python sourcecombine.py --extract outputs/`. Filtering, sorting, and preview options are supported. Line numbers are removed automatically unless you use `--keep-line-numbers`.
+*   `--extract`: Rebuild your original files and folders from combined files (like JSON, XML, JSONL, or Markdown). You can read from one or more files, folders, your terminal (`-`), or the system clipboard. If no input is provided, the tool automatically searches for standard defaults (`combined_files.txt`, `.md`, `.json`, `.xml`, or `.jsonl`). For example: `python sourcecombine.py --extract outputs/`. Filtering, sorting, and preview options are supported. Line numbers are removed automatically unless you use `--keep-line-numbers`.
 *   `--keep-line-numbers`: Keep line numbers when extracting files. By default, the tool removes them automatically if detected.
 *   `--restore`: Undo 'apply-in-place' changes by restoring original files from their `.bak` copies. This command scans your target folders recursively for backup files.
 *   `--delete-backups`: Remove all `.bak` files from your target folders. Use this to clean up after you are done with `--apply-in-place`.
