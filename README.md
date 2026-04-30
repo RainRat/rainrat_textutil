@@ -9,7 +9,7 @@ A versatile tool for your terminal to find, filter, and combine source code file
 *   **Deduplication:** Skip duplicate files by absolute path or content.
 *   **Include Groups:** Group specific files to always include, even if you skip others.
 *   **Pairing:** Combine related files (like source and header pairs) into their own individual output files.
-*   **File Extraction:** Rebuild your original files and folders from combined files (like JSON, XML, JSONL, or Markdown). Filtering, sorting, and processing rules are supported. Batch process multiple files or entire folders.
+*   **File Extraction:** Rebuild your original files and folders from combined files (like JSON, XML, JSONL, CSV, or Markdown). Filtering, sorting, and processing rules are supported. Batch process multiple files or entire folders.
 *   **Sorting:** Sort files by `name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`.
 *   **Limiting:** Stop at a file limit, total tokens, total lines, or total size.
 *   **Project Overview:** Include a formatted summary with statistics and a language breakdown at the start of your combined output.
@@ -221,11 +221,12 @@ List one or more folders or files to search. If you do not provide any, the tool
 ### Output Options
 *   `-a` / `--ai`: Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, folder tree, project overview, and skipping binary files. This also copies to your system clipboard if you do not specify an output.
 *   `--clipboard` / `-c`: Use the system clipboard to save combined output or read content for extraction.
-*   `--format` / `-f`: Choose the output format ('text', 'json', 'jsonl', 'markdown', 'xml', 'manifest'). 'json', 'jsonl', and 'manifest' only work when combining many files into one.
+*   `--format` / `-f`: Choose the output format ('text', 'json', 'jsonl', 'markdown', 'xml', 'manifest', 'csv'). 'json', 'jsonl', 'manifest', and 'csv' only work when combining many files into one.
 *   `-m` / `--markdown`: Shortcut for `--format markdown`.
 *   `-j` / `--json`: Shortcut for `--format json`.
 *   `-J` / `--jsonl`: Shortcut for `--format jsonl`.
 *   `-w` / `--xml`: Shortcut for `--format xml`.
+*   `--csv`: Shortcut for `--format csv`.
 *   `--line-numbers` / `-n`: Add line numbers to the beginning of each line in the combined output.
 *   `--toc` / `-T`: Add a Table of Contents with sizes and tokens to the start of the output (only when combining many files into one in 'text' or 'markdown' formats).
 *   `--include-tree` / `-p`: Include a visual folder tree with details at the start of the output (only when combining many files into one).
@@ -252,7 +253,7 @@ List one or more folders or files to search. If you do not provide any, the tool
 ### Utility Commands
 *   `--init`: Create a basic `sourcecombine.yml` configuration file in your current folder to get started.
 *   `--list-languages`: Show a list of all supported language identifiers and then stop.
-*   `--extract`: Rebuild your original files and folders from combined files (like JSON, XML, JSONL, or Markdown). You can read from one or more files, folders, your terminal (`-`), or the system clipboard. For example: `python sourcecombine.py --extract outputs/`. Filtering, sorting, and preview options are supported. Line numbers are removed automatically unless you use `--keep-line-numbers`.
+*   `--extract`: Rebuild your original files and folders from combined files (like JSON, XML, JSONL, CSV, or Markdown). You can read from one or more files, folders, your terminal (`-`), or the system clipboard. For example: `python sourcecombine.py --extract outputs/`. Filtering, sorting, and preview options are supported. Line numbers are removed automatically unless you use `--keep-line-numbers`.
 *   `--keep-line-numbers`: Keep line numbers when extracting files. By default, the tool removes them automatically if detected.
 *   `--restore`: Undo 'apply-in-place' changes by restoring original files from their `.bak` copies. This command scans your target folders recursively for backup files.
 *   `--delete-backups`: Remove all `.bak` files from your target folders. Use this to clean up after you are done with `--apply-in-place`.

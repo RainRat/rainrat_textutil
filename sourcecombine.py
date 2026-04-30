@@ -1,5 +1,6 @@
 import argparse
 import copy
+import csv
 import difflib
 import fnmatch
 import hashlib
@@ -1559,6 +1560,7 @@ class FileProcessor:
         else:
             self.create_backups = False
         self.seen_hashes = set()
+        self.csv_writer = None
 
     def _make_bar(self, **kwargs):
         return _progress_bar(enabled=_progress_enabled(self.dry_run), **kwargs)
@@ -1671,6 +1673,25 @@ class FileProcessor:
             json.dump(entry, outfile)
             if self.output_format == "jsonl":
                 outfile.write("\n")
+        elif self.output_format == "csv":
+            fieldnames = ["path", "size_bytes", "tokens", "tokens_is_approx", "lines", "language", "sha256", "content", "modified"]
+
+            if self.csv_writer is None:
+                self.csv_writer = csv.DictWriter(outfile, fieldnames=fieldnames, lineterminator='\n')
+                self.csv_writer.writeheader()
+
+            entry = {
+                "path": relative_path.as_posix(),
+                "size_bytes": file_size,
+                "tokens": token_count,
+                "tokens_is_approx": is_approx,
+                "lines": line_count,
+                "language": utils.get_language_tag(relative_path, content=content, overrides=self.custom_languages),
+                "sha256": self.get_content_hash(content),
+                "content": content,
+                "modified": modified if modified is not None else "",
+            }
+            self.csv_writer.writerow(entry)
         else:
             if include_line_numbers and self.output_opts.get("add_line_numbers", False):
                 content = add_line_numbers(content)
@@ -2199,7 +2220,7 @@ def find_and_combine_files(
     if output_path == '-' and pairing_enabled:
         raise utils.InvalidConfigError("You cannot send output to your terminal when pairing files.")
 
-    if output_format in ('json', 'jsonl', 'manifest') and pairing_enabled:
+    if output_format in ('json', 'jsonl', 'manifest', 'csv') and pairing_enabled:
         raise utils.InvalidConfigError(f"You cannot use {output_format.upper()} format when pairing files.")
 
     # Apply default Markdown templates if requested and not overridden
@@ -3372,8 +3393,8 @@ def main():
     output_group.add_argument(
         "--format",
         "-f",
-        choices=["text", "json", "jsonl", "markdown", "xml", "manifest"],
-        help="Choose the output format ('text', 'json', 'jsonl', 'markdown', 'xml', 'manifest'). 'json', 'jsonl', and 'manifest' only work when combining many files into one.",
+        choices=["text", "json", "jsonl", "markdown", "xml", "manifest", "csv"],
+        help="Choose the output format ('text', 'json', 'jsonl', 'markdown', 'xml', 'manifest', 'csv'). 'json', 'jsonl', 'manifest', and 'csv' only work when combining many files into one.",
     )
     output_group.add_argument(
         "--markdown",
@@ -3398,6 +3419,11 @@ def main():
         "-w",
         action="store_true",
         help="Shortcut for '--format xml'.",
+    )
+    output_group.add_argument(
+        "--csv",
+        action="store_true",
+        help="Shortcut for '--format csv'.",
     )
     output_group.add_argument(
         "--line-numbers",
@@ -4022,6 +4048,8 @@ def main():
         args.format = "jsonl"
     elif args.xml:
         args.format = "xml"
+    elif getattr(args, 'csv', False):
+        args.format = "csv"
 
     explicit_files = None
     if args.files_from:
@@ -4060,6 +4088,8 @@ def main():
             args.format = 'jsonl'
         elif ext == '.xml':
             args.format = 'xml'
+        elif ext == '.csv':
+            args.format = 'csv'
 
     if not args.format:
         args.format = output_conf.get('format', 'text')
@@ -4105,6 +4135,8 @@ def main():
                 output_conf['file'] = str(Path(current_output_file).with_suffix('.jsonl'))
             elif args.format == 'xml':
                 output_conf['file'] = str(Path(current_output_file).with_suffix('.xml'))
+            elif args.format == 'csv':
+                output_conf['file'] = str(Path(current_output_file).with_suffix('.csv'))
 
         output_path = output_conf.get('file', DEFAULT_OUTPUT_FILENAME)
 
@@ -4342,6 +4374,25 @@ def _parse_combined_content(content, source_name="combined file"):
             return files_found
     except (ET.ParseError, ImportError):
         pass
+
+    # 2.5 Try CSV
+    if content.startswith("path,size_bytes,tokens,"):
+        try:
+            reader = csv.DictReader(io.StringIO(content))
+            for row in reader:
+                if row.get("path") and row.get("content") is not None:
+                    meta = {
+                        'tokens': _to_int_or_none(row.get('tokens')),
+                        'size': _to_int_or_none(row.get('size_bytes')),
+                        'lines': _to_int_or_none(row.get('lines')),
+                        'is_approx': row.get('tokens_is_approx') == 'True',
+                        'modified': float(row['modified']) if row.get('modified') else None,
+                    }
+                    files_found.append((row['path'], row['content'], meta))
+            if files_found:
+                return files_found
+        except (csv.Error, ValueError, KeyError):
+            pass
 
     # 3. Try Text format (Default SourceCombine output)
     pattern = re.compile(r'^---\s+(.+?)\s+---\n([\s\S]*?)\n--- end \1 ---', re.MULTILINE)
