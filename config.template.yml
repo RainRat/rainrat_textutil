@@ -59,7 +59,7 @@ search:
 
 # --- Output Configuration ---
 output:
-  # Output format (text, json, jsonl, markdown, xml, manifest). Defaults to text.
+  # Output format (text, json, jsonl, markdown, xml, manifest, csv). Defaults to text.
   format: 'text'
 
   # When pairing is disabled, all content is written to this file.
