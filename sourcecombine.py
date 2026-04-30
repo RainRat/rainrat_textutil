@@ -421,7 +421,8 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
     """Replace placeholders in a template with file information.
 
     The placeholders include FILENAME, EXT, STEM, DIR, DIR_SLUG, SIZE,
-    TOKENS, LINE_COUNT, MODIFIED, LANG, INDEX, TOTAL, percentages, and Git info.
+    TOKENS, LINE_COUNT, MODIFIED, LANG, INDEX, TOTAL, percentages,
+    Git info, PROJECT_NAME, and current DATE/TIME.
     """
     if not template:
         return ""
@@ -449,6 +450,12 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
         "{{LANG}}": lang,
         "{{HASH}}": hashlib.sha256(content.encode('utf-8', errors='replace')).hexdigest() if content is not None else "",
     }
+
+    # Project-level replacements
+    replacements["{{PROJECT_NAME}}"] = (git_info or {}).get('project_name', 'Project')
+    replacements["{{DATE}}"] = (git_info or {}).get('date', '')
+    replacements["{{TIME}}"] = (git_info or {}).get('time', '')
+    replacements["{{DATETIME}}"] = (git_info or {}).get('datetime', '')
 
     replacements["{{SIZE}}"] = utils.format_size(size) if size is not None else ""
     replacements["{{TOKENS}}"] = f"{tokens:,}" if tokens is not None else ""
@@ -485,7 +492,7 @@ def _render_global_template(template, stats):
     """Replace placeholders in a global template with project information.
 
     The placeholders include FILE_COUNT, TOTAL_SIZE, TOTAL_TOKENS, and TOTAL_LINES,
-    as well as Git information if available.
+    as well as Git information, PROJECT_NAME, and current DATE/TIME if available.
     """
     if not template:
         return ""
@@ -511,6 +518,10 @@ def _render_global_template(template, stats):
         "{{GIT_DIFF}}": stats.get('git_diff', ''),
         "{{GIT_LOG}}": stats.get('git_log', ''),
         "{{GIT_STATUS}}": stats.get('git_status', ''),
+        "{{PROJECT_NAME}}": stats.get('project_name', 'Project'),
+        "{{DATE}}": stats.get('date', ''),
+        "{{TIME}}": stats.get('time', ''),
+        "{{DATETIME}}": stats.get('datetime', ''),
     }
 
     return _render_single_pass(template, replacements)
@@ -1920,9 +1931,11 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
     is_approx = stats.get('token_count_is_approx', False)
 
     token_str = f"{'~' if is_approx else ''}{total_tokens:,}"
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    timestamp = stats.get('datetime') or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    project_name = stats.get('project_name', 'Project')
 
     if output_format == 'markdown':
+        lines.append(f"- **Project:** {project_name}")
         lines.append(f"- **Generated at:** {timestamp}")
         if stats.get('git_branch') and stats.get('git_branch') != 'N/A':
             lines.append(f"- **Git Branch:** {stats['git_branch']}")
@@ -1950,6 +1963,7 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
         lines.append(f"- **Total Lines:** {total_lines:,}")
         lines.append(f"- **Total Tokens:** {token_str}")
     else:
+        lines.append(f"  Project:      {project_name}")
         lines.append(f"  Generated at: {timestamp}")
         if stats.get('git_branch') and stats.get('git_branch') != 'N/A':
             lines.append(f"  Git Branch:   {stats['git_branch']}")
@@ -2171,10 +2185,13 @@ def find_and_combine_files(
         'filter_reasons': {},
     }
 
-    # Gather Git info for templates
+    # Gather project metadata for templates
     first_root = "."
     if config.get('search', {}).get('root_folders'):
         first_root = config['search']['root_folders'][0]
+
+    stats['project_name'] = utils.get_project_name(first_root)
+    stats.update(utils.get_datetime_placeholders())
 
     search_opts = config.get('search', {})
     filter_opts = config.get('filters', {})
@@ -2244,7 +2261,14 @@ def find_and_combine_files(
 
     abs_output_path = None
     if not pairing_enabled and output_path and output_path != '-':
-        abs_output_path = Path(output_path).resolve()
+        try:
+            abs_output_path = Path(output_path).resolve()
+        except OSError:
+            # Fallback to absolute path if resolve fails (e.g. file doesn't exist yet and parent is weird)
+            try:
+                abs_output_path = Path(output_path).absolute()
+            except OSError:
+                abs_output_path = None
 
     out_folder = None
     if pairing_enabled and output_path:
@@ -4883,6 +4907,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     elif limit_reached:
         status_suffix = " (TRUNCATED)"
 
+    project_name = stats.get('project_name', 'Project')
     if getattr(args, 'dry_run', False) is True:
         if getattr(args, 'extract', False) is True:
             verb = "extract"
@@ -4892,13 +4917,13 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             verb = "pair"
         else:
             verb = "combine"
-        summary_title = f"DRY RUN COMPLETE{status_suffix}: Would {verb} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
+        summary_title = f"DRY RUN COMPLETE{status_suffix}: [{project_name}] Would {verb} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
     elif getattr(args, 'estimate_tokens', False) is True:
-        summary_title = f"TOKEN ESTIMATION COMPLETE{status_suffix}: {total_included:,} {file_word} {source_desc or ''}".strip()
+        summary_title = f"TOKEN ESTIMATION COMPLETE{status_suffix}: [{project_name}] {total_included:,} {file_word} {source_desc or ''}".strip()
     elif getattr(args, 'list_files', False) is True:
-        summary_title = f"FILE LISTING COMPLETE{status_suffix}: {total_included:,} {file_word} {source_desc or ''}".strip()
+        summary_title = f"FILE LISTING COMPLETE{status_suffix}: [{project_name}] {total_included:,} {file_word} {source_desc or ''}".strip()
     elif getattr(args, 'tree', False) is True:
-        summary_title = f"TREE VIEW COMPLETE{status_suffix}: {total_included:,} {file_word} {source_desc or ''}".strip()
+        summary_title = f"TREE VIEW COMPLETE{status_suffix}: [{project_name}] {total_included:,} {file_word} {source_desc or ''}".strip()
     else:
         if getattr(args, 'extract', False) is True:
             action = "Extracted"
@@ -4908,7 +4933,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             action = "Paired"
         else:
             action = "Combined"
-        summary_title = f"SUCCESS{status_suffix}: {action} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
+        summary_title = f"SUCCESS{status_suffix}: [{project_name}] {action} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
 
     # Collapse any accidental double spaces caused by empty optional fields
     summary_title = re.sub(r'\s+', ' ', summary_title)

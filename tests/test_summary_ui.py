@@ -40,7 +40,7 @@ def test_summary_redesign_largest_files(monkeypatch, capsys):
     stderr = captured.err
 
     # Check for the new sections
-    assert "TOKEN ESTIMATION COMPLETE: 10 files" in stderr
+    assert "TOKEN ESTIMATION COMPLETE: [Project] 10 files" in stderr
     assert "Largest Files" in stderr
     assert "TOKENS" in stderr
     assert "%" in stderr
@@ -94,7 +94,7 @@ def test_summary_printing(monkeypatch, capsys):
     captured = capsys.readouterr()
     stderr = captured.err
 
-    assert "SUCCESS: Combined 123 files" in stderr
+    assert "SUCCESS: [Project] Combined 123 files" in stderr
     assert "Total Found:" in stderr
     assert "123 files" in stderr
     assert "Skipped Folders:           2 folders" in stderr
@@ -135,7 +135,7 @@ def test_summary_printing_dry_run(monkeypatch, capsys):
     captured = capsys.readouterr()
     stderr = captured.err
 
-    assert "DRY RUN COMPLETE (NO FILES FOUND): Would combine 0 files" in stderr
+    assert "DRY RUN COMPLETE (NO FILES FOUND): [Project] Would combine 0 files" in stderr
     assert "Total Found:" in stderr
     assert "0 files" in stderr
     assert "├── Included:" not in stderr

@@ -1,6 +1,8 @@
 import copy
+import json
 import logging
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -1299,3 +1301,49 @@ def parse_size_value(value: str) -> int:
         raise InvalidConfigError(f"Unknown size unit: '{unit}' in '{value}'")
 
     return int(number * units[unit])
+
+
+def get_project_name(root_folder: str | Path) -> str:
+    """Detect the project name from the folder name or manifest files."""
+    try:
+        root_path = Path(root_folder).resolve()
+
+        # Try package.json
+        pkg_json = root_path / "package.json"
+        if pkg_json.is_file():
+            try:
+                data = json.loads(pkg_json.read_text(encoding='utf-8'))
+                if isinstance(data, dict) and data.get('name'):
+                    return str(data['name'])
+            except Exception:
+                pass
+
+        # Try pyproject.toml
+        pyproject = root_path / "pyproject.toml"
+        if pyproject.is_file():
+            try:
+                content = pyproject.read_text(encoding='utf-8')
+                # Simple regex to avoid needing a TOML parser
+                # Look for name = "..." in the [project] section or at top level
+                match = re.search(r'^name\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
+                if match:
+                    return match.group(1)
+                match = re.search(r'\[project\][^\[]*name\s*=\s*["\']([^"\']+)["\']', content, re.DOTALL)
+                if match:
+                    return match.group(1)
+            except Exception:
+                pass
+
+        return root_path.name or "Project"
+    except Exception:
+        return "Project"
+
+
+def get_datetime_placeholders() -> dict:
+    """Return a dictionary of current date and time values."""
+    now = datetime.now()
+    return {
+        "date": now.strftime("%Y-%m-%d"),
+        "time": now.strftime("%H:%M:%S"),
+        "datetime": now.strftime("%Y-%m-%d %H:%M:%S"),
+    }

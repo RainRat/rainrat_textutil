@@ -142,6 +142,10 @@ Used in `header_template` and `footer_template` for each file:
 *   `{{SIZE_PERCENT}}`: The percentage of the total size contributed by this file.
 *   `{{TOKEN_PERCENT}}`: The percentage of the total tokens contributed by this file.
 *   `{{LINE_PERCENT}}`: The percentage of the total lines contributed by this file.
+*   `{{PROJECT_NAME}}`: The name of the project (detected from manifest files or folder name).
+*   `{{DATE}}`: The current date (YYYY-MM-DD).
+*   `{{TIME}}`: The current time (HH:MM:SS).
+*   `{{DATETIME}}`: The current date and time (YYYY-MM-DD HH:MM:SS).
 
 ### Project Templates
 Used in `global_header_template` and `global_footer_template` for the whole project:
@@ -149,6 +153,10 @@ Used in `global_header_template` and `global_footer_template` for the whole proj
 *   `{{TOTAL_SIZE}}`: The combined size of all files in a human-readable format.
 *   `{{TOTAL_TOKENS}}`: The total number of tokens across all included files.
 *   `{{TOTAL_LINES}}`: The total number of lines across all included files.
+*   `{{PROJECT_NAME}}`: The name of the project (detected from manifest files or folder name).
+*   `{{DATE}}`: The current date (YYYY-MM-DD).
+*   `{{TIME}}`: The current time (HH:MM:SS).
+*   `{{DATETIME}}`: The current date and time (YYYY-MM-DD HH:MM:SS).
 *   `{{GIT_BRANCH}}`: The current Git branch name (requires Git).
 *   `{{GIT_COMMIT}}`: The full current Git commit hash (requires Git).
 *   `{{GIT_COMMIT_SHORT}}`: The short (7-character) Git commit hash (requires Git).
