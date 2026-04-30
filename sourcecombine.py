@@ -1377,7 +1377,10 @@ def _process_paired_files(
         if out_folder:
             out_file = out_folder / out_path
         else:
-            out_file = primary_path.parent / out_path
+            if len(out_path.parts) > 1:
+                out_file = root_path / out_path
+            else:
+                out_file = primary_path.parent / out_path
 
         try:
             abs_out = out_file.resolve()
