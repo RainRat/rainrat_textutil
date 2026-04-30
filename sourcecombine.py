@@ -388,7 +388,8 @@ def _format_metadata_summary(meta: Mapping[str, Any]) -> str:
     if 'lines' in meta and meta['lines'] > 0:
         parts.append(f"{meta['lines']:,} {'line' if meta['lines'] == 1 else 'lines'}")
     if 'tokens' in meta and meta['tokens'] is not None and meta['tokens'] > 0:
-        parts.append(f"{meta['tokens']:,} tokens")
+        count = meta['tokens']
+        parts.append(f"{count:,} {'token' if count == 1 else 'tokens'}")
 
     summary = f"({' • '.join(parts)})" if parts else ""
     if status_label and summary:
