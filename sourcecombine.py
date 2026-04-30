@@ -1,5 +1,6 @@
 import argparse
 import copy
+import csv
 import difflib
 import fnmatch
 import hashlib
@@ -388,7 +389,8 @@ def _format_metadata_summary(meta: Mapping[str, Any]) -> str:
     if 'lines' in meta and meta['lines'] > 0:
         parts.append(f"{meta['lines']:,} {'line' if meta['lines'] == 1 else 'lines'}")
     if 'tokens' in meta and meta['tokens'] is not None and meta['tokens'] > 0:
-        parts.append(f"{meta['tokens']:,} tokens")
+        count = meta['tokens']
+        parts.append(f"{count:,} {'token' if count == 1 else 'tokens'}")
 
     summary = f"({' • '.join(parts)})" if parts else ""
     if status_label and summary:
@@ -420,7 +422,8 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
     """Replace placeholders in a template with file information.
 
     The placeholders include FILENAME, EXT, STEM, DIR, DIR_SLUG, SIZE,
-    TOKENS, LINE_COUNT, MODIFIED, LANG, INDEX, TOTAL, percentages, and Git info.
+    TOKENS, LINE_COUNT, MODIFIED, LANG, INDEX, TOTAL, percentages,
+    Git info, PROJECT_NAME, and current DATE/TIME.
     """
     if not template:
         return ""
@@ -448,6 +451,12 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
         "{{LANG}}": lang,
         "{{HASH}}": hashlib.sha256(content.encode('utf-8', errors='replace')).hexdigest() if content is not None else "",
     }
+
+    # Project-level replacements
+    replacements["{{PROJECT_NAME}}"] = (git_info or {}).get('project_name', 'Project')
+    replacements["{{DATE}}"] = (git_info or {}).get('date', '')
+    replacements["{{TIME}}"] = (git_info or {}).get('time', '')
+    replacements["{{DATETIME}}"] = (git_info or {}).get('datetime', '')
 
     replacements["{{SIZE}}"] = utils.format_size(size) if size is not None else ""
     replacements["{{TOKENS}}"] = f"{tokens:,}" if tokens is not None else ""
@@ -484,7 +493,7 @@ def _render_global_template(template, stats):
     """Replace placeholders in a global template with project information.
 
     The placeholders include FILE_COUNT, TOTAL_SIZE, TOTAL_TOKENS, and TOTAL_LINES,
-    as well as Git information if available.
+    as well as Git information, PROJECT_NAME, and current DATE/TIME if available.
     """
     if not template:
         return ""
@@ -510,6 +519,10 @@ def _render_global_template(template, stats):
         "{{GIT_DIFF}}": stats.get('git_diff', ''),
         "{{GIT_LOG}}": stats.get('git_log', ''),
         "{{GIT_STATUS}}": stats.get('git_status', ''),
+        "{{PROJECT_NAME}}": stats.get('project_name', 'Project'),
+        "{{DATE}}": stats.get('date', ''),
+        "{{TIME}}": stats.get('time', ''),
+        "{{DATETIME}}": stats.get('datetime', ''),
     }
 
     return _render_single_pass(template, replacements)
@@ -1377,7 +1390,10 @@ def _process_paired_files(
         if out_folder:
             out_file = out_folder / out_path
         else:
-            out_file = primary_path.parent / out_path
+            if len(out_path.parts) > 1:
+                out_file = root_path / out_path
+            else:
+                out_file = primary_path.parent / out_path
 
         try:
             abs_out = out_file.resolve()
@@ -1559,6 +1575,7 @@ class FileProcessor:
         else:
             self.create_backups = False
         self.seen_hashes = set()
+        self.csv_writer = None
 
     def _make_bar(self, **kwargs):
         return _progress_bar(enabled=_progress_enabled(self.dry_run), **kwargs)
@@ -1671,6 +1688,25 @@ class FileProcessor:
             json.dump(entry, outfile)
             if self.output_format == "jsonl":
                 outfile.write("\n")
+        elif self.output_format == "csv":
+            fieldnames = ["path", "size_bytes", "tokens", "tokens_is_approx", "lines", "language", "sha256", "content", "modified"]
+
+            if self.csv_writer is None:
+                self.csv_writer = csv.DictWriter(outfile, fieldnames=fieldnames, lineterminator='\n')
+                self.csv_writer.writeheader()
+
+            entry = {
+                "path": relative_path.as_posix(),
+                "size_bytes": file_size,
+                "tokens": token_count,
+                "tokens_is_approx": is_approx,
+                "lines": line_count,
+                "language": utils.get_language_tag(relative_path, content=content, overrides=self.custom_languages),
+                "sha256": self.get_content_hash(content),
+                "content": content,
+                "modified": modified if modified is not None else "",
+            }
+            self.csv_writer.writerow(entry)
         else:
             if include_line_numbers and self.output_opts.get("add_line_numbers", False):
                 content = add_line_numbers(content)
@@ -1916,9 +1952,11 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
     is_approx = stats.get('token_count_is_approx', False)
 
     token_str = f"{'~' if is_approx else ''}{total_tokens:,}"
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    timestamp = stats.get('datetime') or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    project_name = stats.get('project_name', 'Project')
 
     if output_format == 'markdown':
+        lines.append(f"- **Project:** {project_name}")
         lines.append(f"- **Generated at:** {timestamp}")
         if stats.get('git_branch') and stats.get('git_branch') != 'N/A':
             lines.append(f"- **Git Branch:** {stats['git_branch']}")
@@ -1946,6 +1984,7 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
         lines.append(f"- **Total Lines:** {total_lines:,}")
         lines.append(f"- **Total Tokens:** {token_str}")
     else:
+        lines.append(f"  Project:      {project_name}")
         lines.append(f"  Generated at: {timestamp}")
         if stats.get('git_branch') and stats.get('git_branch') != 'N/A':
             lines.append(f"  Git Branch:   {stats['git_branch']}")
@@ -2167,10 +2206,13 @@ def find_and_combine_files(
         'filter_reasons': {},
     }
 
-    # Gather Git info for templates
+    # Gather project metadata for templates
     first_root = "."
     if config.get('search', {}).get('root_folders'):
         first_root = config['search']['root_folders'][0]
+
+    stats['project_name'] = utils.get_project_name(first_root)
+    stats.update(utils.get_datetime_placeholders())
 
     search_opts = config.get('search', {})
     filter_opts = config.get('filters', {})
@@ -2199,7 +2241,7 @@ def find_and_combine_files(
     if output_path == '-' and pairing_enabled:
         raise utils.InvalidConfigError("You cannot send output to your terminal when pairing files.")
 
-    if output_format in ('json', 'jsonl', 'manifest') and pairing_enabled:
+    if output_format in ('json', 'jsonl', 'manifest', 'csv') and pairing_enabled:
         raise utils.InvalidConfigError(f"You cannot use {output_format.upper()} format when pairing files.")
 
     # Apply default Markdown templates if requested and not overridden
@@ -2240,7 +2282,14 @@ def find_and_combine_files(
 
     abs_output_path = None
     if not pairing_enabled and output_path and output_path != '-':
-        abs_output_path = Path(output_path).resolve()
+        try:
+            abs_output_path = Path(output_path).resolve()
+        except OSError:
+            # Fallback to absolute path if resolve fails (e.g. file doesn't exist yet and parent is weird)
+            try:
+                abs_output_path = Path(output_path).absolute()
+            except OSError:
+                abs_output_path = None
 
     out_folder = None
     if pairing_enabled and output_path:
@@ -3375,8 +3424,8 @@ def main():
     output_group.add_argument(
         "--format",
         "-f",
-        choices=["text", "json", "jsonl", "markdown", "xml", "manifest"],
-        help="Choose the output format ('text', 'json', 'jsonl', 'markdown', 'xml', 'manifest'). 'json', 'jsonl', and 'manifest' only work when combining many files into one.",
+        choices=["text", "json", "jsonl", "markdown", "xml", "manifest", "csv"],
+        help="Choose the output format ('text', 'json', 'jsonl', 'markdown', 'xml', 'manifest', 'csv'). 'json', 'jsonl', 'manifest', and 'csv' only work when combining many files into one.",
     )
     output_group.add_argument(
         "--markdown",
@@ -3401,6 +3450,11 @@ def main():
         "-w",
         action="store_true",
         help="Shortcut for '--format xml'.",
+    )
+    output_group.add_argument(
+        "--csv",
+        action="store_true",
+        help="Shortcut for '--format csv'.",
     )
     output_group.add_argument(
         "--line-numbers",
@@ -4026,6 +4080,8 @@ def main():
         args.format = "jsonl"
     elif args.xml:
         args.format = "xml"
+    elif getattr(args, 'csv', False):
+        args.format = "csv"
 
     explicit_files = None
     if args.files_from:
@@ -4064,6 +4120,8 @@ def main():
             args.format = 'jsonl'
         elif ext == '.xml':
             args.format = 'xml'
+        elif ext == '.csv':
+            args.format = 'csv'
 
     if not args.format:
         args.format = output_conf.get('format', 'text')
@@ -4109,6 +4167,8 @@ def main():
                 output_conf['file'] = str(Path(current_output_file).with_suffix('.jsonl'))
             elif args.format == 'xml':
                 output_conf['file'] = str(Path(current_output_file).with_suffix('.xml'))
+            elif args.format == 'csv':
+                output_conf['file'] = str(Path(current_output_file).with_suffix('.csv'))
 
         output_path = output_conf.get('file', DEFAULT_OUTPUT_FILENAME)
 
@@ -4346,6 +4406,25 @@ def _parse_combined_content(content, source_name="combined file"):
             return files_found
     except (ET.ParseError, ImportError):
         pass
+
+    # 2.5 Try CSV
+    if content.startswith("path,size_bytes,tokens,"):
+        try:
+            reader = csv.DictReader(io.StringIO(content))
+            for row in reader:
+                if row.get("path") and row.get("content") is not None:
+                    meta = {
+                        'tokens': _to_int_or_none(row.get('tokens')),
+                        'size': _to_int_or_none(row.get('size_bytes')),
+                        'lines': _to_int_or_none(row.get('lines')),
+                        'is_approx': row.get('tokens_is_approx') == 'True',
+                        'modified': float(row['modified']) if row.get('modified') else None,
+                    }
+                    files_found.append((row['path'], row['content'], meta))
+            if files_found:
+                return files_found
+        except (csv.Error, ValueError, KeyError):
+            pass
 
     # 3. Try Text format (Default SourceCombine output)
     pattern = re.compile(r'^---\s+(.+?)\s+---\n([\s\S]*?)\n--- end \1 ---', re.MULTILINE)
@@ -4883,6 +4962,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     elif limit_reached:
         status_suffix = " (TRUNCATED)"
 
+    project_name = stats.get('project_name', 'Project')
     if getattr(args, 'dry_run', False) is True:
         if getattr(args, 'extract', False) is True:
             verb = "extract"
@@ -4892,13 +4972,13 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             verb = "pair"
         else:
             verb = "combine"
-        summary_title = f"DRY RUN COMPLETE{status_suffix}: Would {verb} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
+        summary_title = f"DRY RUN COMPLETE{status_suffix}: [{project_name}] Would {verb} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
     elif getattr(args, 'estimate_tokens', False) is True:
-        summary_title = f"TOKEN ESTIMATION COMPLETE{status_suffix}: {total_included:,} {file_word} {source_desc or ''}".strip()
+        summary_title = f"TOKEN ESTIMATION COMPLETE{status_suffix}: [{project_name}] {total_included:,} {file_word} {source_desc or ''}".strip()
     elif getattr(args, 'list_files', False) is True:
-        summary_title = f"FILE LISTING COMPLETE{status_suffix}: {total_included:,} {file_word} {source_desc or ''}".strip()
+        summary_title = f"FILE LISTING COMPLETE{status_suffix}: [{project_name}] {total_included:,} {file_word} {source_desc or ''}".strip()
     elif getattr(args, 'tree', False) is True:
-        summary_title = f"TREE VIEW COMPLETE{status_suffix}: {total_included:,} {file_word} {source_desc or ''}".strip()
+        summary_title = f"TREE VIEW COMPLETE{status_suffix}: [{project_name}] {total_included:,} {file_word} {source_desc or ''}".strip()
     else:
         if getattr(args, 'extract', False) is True:
             action = "Extracted"
@@ -4908,7 +4988,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             action = "Paired"
         else:
             action = "Combined"
-        summary_title = f"SUCCESS{status_suffix}: {action} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
+        summary_title = f"SUCCESS{status_suffix}: [{project_name}] {action} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
 
     # Collapse any accidental double spaces caused by empty optional fields
     summary_title = re.sub(r'\s+', ' ', summary_title)
@@ -5092,11 +5172,11 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         if has_ext_tokens:
             total_weight = stats.get('total_tokens', 0)
             weight_by_ext = tokens_by_ext
-            legend = "count (% files • % tokens)"
+            header = f"    {C_DIM}{'COUNT':>7}  {'% FILES':>7}  {'TOKENS':>11}  {'SIZE':>12}  {'%':>6}  {'DISTRIBUTION':<12}  EXTENSION{C_RESET}"
         else:
             total_weight = stats.get('total_size_bytes', 0)
             weight_by_ext = size_by_ext
-            legend = "count (% files • % size)"
+            header = f"    {C_DIM}{'COUNT':>7}  {'% FILES':>7}  {'SIZE':>12}  {'%':>6}  {'DISTRIBUTION':<12}  EXTENSION{C_RESET}"
 
         # Sort by weight desc, then count desc, then alpha
         sorted_exts = sorted(
@@ -5109,31 +5189,46 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         others = sorted_exts[10:]
 
         for ext, count in top_10:
-            weight = weight_by_ext.get(ext, 0)
-            display_items.append({'ext': ext, 'count': count, 'weight': weight})
+            display_items.append({
+                'ext': ext,
+                'count': count,
+                'weight': weight_by_ext.get(ext, 0),
+                'tokens': tokens_by_ext.get(ext, 0),
+                'size': size_by_ext.get(ext, 0)
+            })
 
         if others:
-            other_count = sum(c for e, c in others)
-            other_weight = sum(weight_by_ext.get(e, 0) for e, c in others)
-            display_items.append({'ext': '(others)', 'count': other_count, 'weight': other_weight})
+            display_items.append({
+                'ext': '(others)',
+                'count': sum(c for e, c in others),
+                'weight': sum(weight_by_ext.get(e, 0) for e, c in others),
+                'tokens': sum(tokens_by_ext.get(e, 0) for e, c in others),
+                'size': sum(size_by_ext.get(e, 0) for e, c in others)
+            })
 
-        print(f"\n  {C_BOLD}{C_CYAN}File Types {C_DIM}({legend}){C_RESET}", file=sys.stderr)
-
-        max_ext_len = max(len(d['ext']) + 1 for d in display_items) if display_items else 0
+        print(f"\n  {C_BOLD}{C_CYAN}File Types{C_RESET}", file=sys.stderr)
+        print(header, file=sys.stderr)
 
         for d in display_items:
-            ext = d['ext']
             count = d['count']
             weight = d['weight']
+            f_percent = (count / total_included * 100) if total_included > 0 else 0
+            w_percent = (weight / total_weight * 100) if total_weight > 0 else 0
+            bar = _make_ascii_bar(w_percent, colored=True)
 
-            file_percent = (count / total_included * 100) if total_included > 0 else 0
-            weight_percent = (weight / total_weight * 100) if total_weight > 0 else 0
+            size_str = utils.format_size(d['size'])
+            s_val, s_unit = _split_unit(size_str)
+            size_padding = " " * max(0, 12 - len(s_val) - len(s_unit))
 
-            # 10-character ASCII distribution bar
-            bar = _make_ascii_bar(weight_percent, colored=True)
+            row_start = f"    {C_BOLD}{C_CYAN}{count:7,}{C_RESET}  {C_BOLD}{C_CYAN}{f_percent:>6.1f}%{C_RESET}  "
 
-            ext_label = ext + ":"
-            print(f"    {C_BOLD}{ext_label:<{max_ext_len}}{C_RESET} {C_BOLD}{C_CYAN}{count:>7,}{C_RESET} {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{file_percent:>5.1f}%{C_RESET}{C_DIM} • {C_RESET}{C_BOLD}{C_CYAN}{weight_percent:>5.1f}%{C_RESET}{C_DIM}){C_RESET} {C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}", file=sys.stderr)
+            if has_ext_tokens:
+                token_str = f"{'~' if is_approx else ''}{d['tokens']:,}"
+                row_metrics = f"{C_BOLD}{C_CYAN}{token_str:>11}{C_RESET}  {size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}  "
+            else:
+                row_metrics = f"{size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}  "
+
+            print(f"{row_start}{row_metrics}{C_BOLD}{C_CYAN}{w_percent:>5.1f}%{C_RESET}  {C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}  {C_BOLD}{d['ext']}{C_RESET}", file=sys.stderr)
 
     # Footer
     print(f"\n{title_color}{'=' * len(raw_title)}{C_RESET}", file=sys.stderr)

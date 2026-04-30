@@ -40,7 +40,7 @@ def test_summary_redesign_largest_files(monkeypatch, capsys):
     stderr = captured.err
 
     # Check for the new sections
-    assert "TOKEN ESTIMATION COMPLETE: 10 files" in stderr
+    assert "TOKEN ESTIMATION COMPLETE: [Project] 10 files" in stderr
     assert "Largest Files" in stderr
     assert "TOKENS" in stderr
     assert "%" in stderr
@@ -94,7 +94,7 @@ def test_summary_printing(monkeypatch, capsys):
     captured = capsys.readouterr()
     stderr = captured.err
 
-    assert "SUCCESS: Combined 123 files" in stderr
+    assert "SUCCESS: [Project] Combined 123 files" in stderr
     assert "Total Found:" in stderr
     assert "123 files" in stderr
     assert "Skipped Folders:           2 folders" in stderr
@@ -135,7 +135,7 @@ def test_summary_printing_dry_run(monkeypatch, capsys):
     captured = capsys.readouterr()
     stderr = captured.err
 
-    assert "DRY RUN COMPLETE (NO FILES FOUND): Would combine 0 files" in stderr
+    assert "DRY RUN COMPLETE (NO FILES FOUND): [Project] Would combine 0 files" in stderr
     assert "Total Found:" in stderr
     assert "0 files" in stderr
     assert "├── Included:" not in stderr
@@ -213,8 +213,10 @@ def test_summary_terminal_size_fallback(capsys):
                 sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
 
     captured = capsys.readouterr()
-    assert "File Types (count (% files • % size))" in captured.err
-    assert ".txt:       1" in captured.err
+    stderr = captured.err
+    assert "File Types" in stderr
+    assert "EXTENSION" in stderr
+    assert ".txt" in stderr
 
 def test_summary_throughput_line(capsys):
     """Test that throughput is shown on its own line."""
@@ -278,13 +280,14 @@ def test_file_types_redesign_sorting_and_others(monkeypatch, capsys):
     stderr = captured.err
 
     # Check sorting: .py should be first despite having fewer files than .txt
-    ext_lines = [line for line in stderr.splitlines() if line.strip().endswith("]") and ":" in line]
+    # Redesign uses a tabular format without colons
+    ext_lines = [line for line in stderr.splitlines() if " [" in line and "]" in line and ("." in line or "(others)" in line) and "EXTENSION" not in line and "===" not in line]
 
-    assert ".py:" in ext_lines[0]
-    assert ".txt:" in ext_lines[1]
+    assert ".py" in ext_lines[0]
+    assert ".txt" in ext_lines[1]
 
     # Check "others" aggregation (12 extensions total, top 10 shown, others aggregated)
-    assert "(others):" in stderr
+    assert "(others)" in stderr
 
     # Check distribution bar
     # 80% -> 8 blocks -> [########--]
