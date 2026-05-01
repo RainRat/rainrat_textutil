@@ -19,7 +19,11 @@ def test_parse_combined_content_json_invalid_entries():
         {"content": "only_content"},
         "not_a_dict"
     ])
-    assert _parse_combined_content(content) == []
+    # Now that we support entries with only 'path', 'only_path' is valid.
+    # 'only_content' and 'not_a_dict' are still invalid.
+    result = _parse_combined_content(content)
+    assert len(result) == 1
+    assert result[0][0] == "only_path"
 
 def test_parse_combined_content_xml_empty():
     """Cover branch where XML is valid but contains no files (4258->4264)."""

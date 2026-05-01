@@ -3196,6 +3196,7 @@ def main():
     )
     core_group.add_argument(
         "--dry-run",
+        "--preview",
         "-d",
         action="store_true",
         help="Show what would happen without making any changes.",
@@ -3624,7 +3625,17 @@ def main():
         help="Undo 'apply-in-place' changes by restoring original files from their .bak copies. This command scans your target folders recursively for backup files.",
     )
     utility_group.add_argument(
+        "--verify",
+        action="store_true",
+        help=(
+            "Verify that files on disk match the content or hashes in combined files or manifests. "
+            "You can read from one or more files, folders, your terminal ('-'), or the system clipboard. "
+            "If no input is provided, the tool automatically searches for combined_files.txt, .md, .json, .xml, or .jsonl."
+        ),
+    )
+    utility_group.add_argument(
         "--delete-backups",
+        "--clean",
         action="store_true",
         help="Remove all '.bak' files from your target folders. Use this to clean up after you are done with '--apply-in-place'.",
     )
@@ -4186,8 +4197,7 @@ def main():
     else:
         destination_desc = f"to '{output_path}'"
 
-    if args.extract:
-        output_folder = args.output or "."
+    if args.extract or args.verify:
         sources = []
 
         if args.clipboard:
@@ -4219,7 +4229,7 @@ def main():
                     content, _ = read_file_best_effort(input_path)
                     sources.append((str(input_path), content))
                 else:
-                    logging.warning("Extraction target not found: %s", target)
+                    logging.warning("%s target not found: %s", "Verification" if args.verify else "Extraction", target)
 
         if not sources:
             # Fallback: look for the default combined file
@@ -4232,13 +4242,18 @@ def main():
                         break
 
             if input_path.is_file():
-                logging.info("No input specified for extraction. Using found file: %s", input_path)
+                logging.info("No input specified. Using found file: %s", input_path)
                 content, _ = read_file_best_effort(input_path)
                 sources.append((str(input_path), content))
             else:
-                logging.error("No input specified for extraction. Use a file path, folder, '-' for your terminal, or --clipboard.")
+                logging.error("No input specified. Use a file path, folder, '-' for your terminal, or --clipboard.")
                 sys.exit(1)
 
+        if args.verify:
+            verify_files(sources, root_folder=".", config=config)
+            sys.exit(0)
+
+        output_folder = args.output or "."
         stats = extract_files(
             sources,
             output_folder,
@@ -4325,15 +4340,16 @@ def _parse_combined_content(content, source_name="combined file"):
         data = json.loads(content)
         if isinstance(data, list):
             for entry in data:
-                if isinstance(entry, dict) and 'path' in entry and 'content' in entry:
+                if isinstance(entry, dict) and 'path' in entry:
                     meta = {
                         'tokens': _to_int_or_none(entry.get('tokens')),
                         'size': _to_int_or_none(entry.get('size_bytes')),
                         'lines': _to_int_or_none(entry.get('lines')),
                         'is_approx': entry.get('tokens_is_approx', False),
                         'modified': entry.get('modified'),
+                        'sha256': entry.get('sha256'),
                     }
-                    files_found.append((entry['path'], entry['content'], meta))
+                    files_found.append((entry['path'], entry.get('content'), meta))
             if files_found:
                 return files_found
     except json.JSONDecodeError:
@@ -4347,15 +4363,16 @@ def _parse_combined_content(content, source_name="combined file"):
             continue
         try:
             entry = json.loads(line)
-            if isinstance(entry, dict) and 'path' in entry and 'content' in entry:
+            if isinstance(entry, dict) and 'path' in entry:
                 meta = {
                     'tokens': _to_int_or_none(entry.get('tokens')),
                     'size': _to_int_or_none(entry.get('size_bytes')),
                     'lines': _to_int_or_none(entry.get('lines')),
                     'is_approx': entry.get('tokens_is_approx', False),
                     'modified': entry.get('modified'),
+                    'sha256': entry.get('sha256'),
                 }
-                potential_files.append((entry['path'], entry['content'], meta))
+                potential_files.append((entry['path'], entry.get('content'), meta))
             else:
                 logging.debug("Skipping malformed JSONL line in %s: %s", source_name, line)
         except (json.JSONDecodeError, TypeError):
@@ -4372,15 +4389,16 @@ def _parse_combined_content(content, source_name="combined file"):
             try:
                 path = file_node.get('path')
                 file_content = file_node.text
-                if path and file_content is not None:
+                if path:
                     # XML extraction often has extra newlines due to templates
-                    if file_content.startswith('\n') and file_content.endswith('\n'):
+                    if file_content and file_content.startswith('\n') and file_content.endswith('\n'):
                         file_content = file_content[1:-1]
 
                     tokens_val = file_node.get('tokens')
                     size_val = file_node.get('size')
                     lines_val = file_node.get('lines')
                     mod_val = file_node.get('modified')
+                    sha_val = file_node.get('sha256')
 
                     tokens = _to_int_or_none(tokens_val)
                     size = utils.parse_size_value(size_val) if size_val else None
@@ -4396,6 +4414,7 @@ def _parse_combined_content(content, source_name="combined file"):
                         'lines': _to_int_or_none(lines_val),
                         'is_approx': is_approx,
                         'modified': datetime.fromisoformat(mod_val).timestamp() if mod_val else None,
+                        'sha256': sha_val,
                     }
                     files_found.append((path, file_content, meta))
             except (ValueError, TypeError, Exception) as exc:
@@ -4412,15 +4431,16 @@ def _parse_combined_content(content, source_name="combined file"):
         try:
             reader = csv.DictReader(io.StringIO(content))
             for row in reader:
-                if row.get("path") and row.get("content") is not None:
+                if row.get("path"):
                     meta = {
                         'tokens': _to_int_or_none(row.get('tokens')),
                         'size': _to_int_or_none(row.get('size_bytes')),
                         'lines': _to_int_or_none(row.get('lines')),
                         'is_approx': row.get('tokens_is_approx') == 'True',
                         'modified': float(row['modified']) if row.get('modified') else None,
+                        'sha256': row.get('sha256'),
                     }
-                    files_found.append((row['path'], row['content'], meta))
+                    files_found.append((row['path'], row.get('content'), meta))
             if files_found:
                 return files_found
         except (csv.Error, ValueError, KeyError):
@@ -4449,6 +4469,91 @@ def _parse_combined_content(content, source_name="combined file"):
         last_pos = cb_match.end()
 
     return files_found
+
+
+def verify_files(sources, root_folder=".", config=None):
+    """Verify that files on disk match the manifest or combined file."""
+    root_folder = Path(root_folder)
+    if config is None:
+        config = copy.deepcopy(utils.DEFAULT_CONFIG)
+
+    files_to_verify = []
+    for name, content in sources:
+        found = _parse_combined_content(content, source_name=name)
+        if not found:
+            logging.warning("No files found to verify in %s.", name)
+        files_to_verify.extend(found)
+
+    if not files_to_verify:
+        logging.error("No files found to verify in any of the sources.")
+        sys.exit(1)
+
+    print(f"\n{C_BOLD}=== Verification Report ==={C_RESET}")
+
+    matches = 0
+    mismatches = 0
+    missing = 0
+    total = len(files_to_verify)
+
+    for rel_path_str, expected_content, meta in files_to_verify:
+        # Safety check: prevent path traversal (similar to extract_files)
+        try:
+            requested_path = Path(rel_path_str)
+            if requested_path.is_absolute() or PurePosixPath(rel_path_str).is_absolute() or PureWindowsPath(rel_path_str).is_absolute() or '..' in requested_path.parts or ':' in rel_path_str:
+                logging.warning("Skipping unsafe path: %s", rel_path_str)
+                continue
+            target_path = (root_folder / requested_path).resolve()
+        except (ValueError, OSError):
+            logging.warning("Skipping invalid path: %s", rel_path_str)
+            continue
+
+        if not target_path.exists():
+            print(f"  {C_RED}[MISSING]{C_RESET} {rel_path_str}")
+            missing += 1
+            continue
+
+        # Priority 1: Check SHA-256 if available in metadata
+        expected_sha = meta.get('sha256')
+        if expected_sha:
+            try:
+                actual_sha = hashlib.sha256(target_path.read_bytes()).hexdigest()
+                if actual_sha == expected_sha:
+                    print(f"  {C_GREEN}[OK]{C_RESET}      {rel_path_str} {C_DIM}(hash match){C_RESET}")
+                    matches += 1
+                else:
+                    print(f"  {C_RED}[MISMATCH]{C_RESET} {rel_path_str} {C_DIM}(hash mismatch){C_RESET}")
+                    mismatches += 1
+            except OSError as e:
+                print(f"  {C_RED}[ERROR]{C_RESET}    {rel_path_str} {C_DIM}({e}){C_RESET}")
+                mismatches += 1
+            continue
+
+        # Priority 2: Check content if available
+        if expected_content is not None:
+            actual_content, _ = read_file_best_effort(target_path)
+            # Normalize line endings for content comparison to be robust across OS
+            if actual_content.replace('\r\n', '\n') == expected_content.replace('\r\n', '\n'):
+                print(f"  {C_GREEN}[OK]{C_RESET}      {rel_path_str} {C_DIM}(content match){C_RESET}")
+                matches += 1
+            else:
+                print(f"  {C_RED}[MISMATCH]{C_RESET} {rel_path_str} {C_DIM}(content mismatch){C_RESET}")
+                mismatches += 1
+            continue
+
+        print(f"  {C_YELLOW}[SKIPPED]{C_RESET}  {rel_path_str} {C_DIM}(no hash or content to verify against){C_RESET}")
+
+    print(f"\n{C_BOLD}Summary:{C_RESET}")
+    print(f"  Matches:    {C_GREEN if matches == total else C_RESET}{matches}/{total}{C_RESET}")
+    if mismatches: print(f"  Mismatches: {C_RED}{mismatches}{C_RESET}")
+    if missing:    print(f"  Missing:    {C_RED}{missing}{C_RESET}")
+    print(f"{C_BOLD}{'=' * 27}{C_RESET}\n")
+
+    return {
+        'matches': matches,
+        'mismatches': mismatches,
+        'missing': missing,
+        'total': total
+    }
 
 
 def extract_files(sources, output_folder, dry_run=False, source_name="combined file", config=None, list_files=False, tree_view=False, limit=0, estimate_tokens=False, sort_by='name', sort_reverse=False, keep_line_numbers=False, show_diff=False):

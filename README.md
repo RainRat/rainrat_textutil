@@ -24,9 +24,10 @@ A versatile command-line utility for discovering, filtering, processing, and com
 *   `--init`: Create a basic `sourcecombine.yml` configuration file in your current folder to get started.
 *   `--list-languages`: Show a list of all supported language identifiers and then stop.
 *   `--extract`: Rebuild your original files and folders from combined files (like JSON, XML, JSONL, CSV, or Markdown). You can read from one or more files, folders, your terminal (`-`), or the system clipboard. If no input is provided, the tool automatically searches for standard defaults (`combined_files.txt`, `.md`, `.json`, `.xml`, or `.jsonl`). For example: `python sourcecombine.py --extract outputs/`. Filtering, sorting, and preview options are supported. Line numbers are removed automatically unless you use `--keep-line-numbers`.
+*   `--verify`: Verify that files on disk match the content or hashes in combined files or manifests. For example: `python sourcecombine.py --verify combined_files.json`.
 *   `--keep-line-numbers`: Keep line numbers when extracting files. By default, the tool removes them automatically if detected.
-*   `--preview`: See what files would be extracted without actually writing them to disk.
-*   `--clean`: Remove all `.bak` backup files from the current directory and its subfolders.
+*   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without actually writing them to disk.
+*   `--clean`: (Alias for `--delete-backups`) Remove all `.bak` backup files from the current directory and its subfolders.
 *   `--version`: Show the application version and exit.
 
 ## Getting Started
