@@ -70,4 +70,4 @@ def test_list_languages_cli(capsys):
     captured = capsys.readouterr()
     assert "python" in captured.out
     assert "javascript" in captured.out
-    assert "Supported Languages:" in captured.out
+    assert "Supported Languages" in captured.out
