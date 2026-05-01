@@ -24,12 +24,15 @@ A versatile command-line utility for discovering, filtering, processing, and com
 
 ### Utility Commands
 *   `--init`: Create a basic `sourcecombine.yml` configuration file to get started.
-*   `--extract`: Rebuild original files and folders from combined outputs (JSON, XML, JSONL, CSV, or Markdown). If no input is provided, it searches for `combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, or `combined_files.jsonl`.
+*   `--extract`: Rebuild original files and folders from combined outputs (JSON, XML, JSONL, CSV, or Markdown). You can read from files, folders, terminal, or clipboard. If no input is provided, it searches for `combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, or `combined_files.jsonl`.
+*   `--verify`: Verify that files on disk match the content or hashes in combined files or manifests. For example: `python sourcecombine.py --verify combined_files.json`.
 *   `--restore`: Undo changes made by `--apply-in-place` using `.bak` backup files.
 *   `--delete-backups`: Remove all `.bak` files from your folders.
 *   `--list-languages`: Show all supported language identifiers.
 *   `--show-config`: Display the final configuration being used.
 *   `--system-info`: Show environment details (Python version, OS, etc.).
+*   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without actually writing them to disk.
+*   `--clean`: (Alias for `--delete-backups`) Remove all `.bak` backup files from the current directory and its subfolders.
 *   `--version`: Show the application version and exit.
 
 ## Getting Started
