@@ -352,7 +352,7 @@ def test_cli_extract_no_input(caplog, monkeypatch, tmp_path):
         main()
 
     assert excinfo.value.code == 1
-    assert "No input specified for extraction" in caplog.text
+    assert "No input specified" in caplog.text
 
     # Now create the default file and it should succeed
     default_file = tmp_path / "combined_files.txt"
