@@ -3769,11 +3769,7 @@ def main():
             logging.error("Could not find the configuration file '%s'.", config_path)
             sys.exit(1)
         except utils.InvalidConfigError as e:
-            if args.verbose:
-                logging.error("The configuration is not valid: %s", e, exc_info=True)
-            else:
-                logging.error("The configuration is not valid: %s", e)
-            sys.exit(1)
+            _handle_invalid_config_error(e, args.verbose, f"The configuration is not valid: {e}")
 
     # Initialize with defaults if no config was loaded
     if config is None:
@@ -3802,11 +3798,7 @@ def main():
         try:
             validate_config(config, nested_required={'search': ['root_folders']})
         except utils.InvalidConfigError as e:
-            if args.verbose:
-                logging.error("The configuration is not valid: %s", e, exc_info=True)
-            else:
-                logging.error("The configuration is not valid: %s", e)
-            sys.exit(1)
+            _handle_invalid_config_error(e, args.verbose, f"The configuration is not valid: {e}")
 
     if args.restore:
         # Use the finalized root folders for restoration
@@ -3929,11 +3921,7 @@ def main():
         try:
             config['filters']['max_total_size_bytes'] = utils.parse_size_value(args.max_total_size)
         except utils.InvalidConfigError as e:
-            if args.verbose:
-                logging.error(e, exc_info=True)
-            else:
-                logging.error(e)
-            sys.exit(1)
+            _handle_invalid_config_error(e, args.verbose)
 
     if args.min_tokens is not None:
         config['filters']['min_tokens'] = args.min_tokens
@@ -3989,11 +3977,7 @@ def main():
             if args.until:
                 filters['modified_until'] = utils.parse_time_value(args.until)
         except utils.InvalidConfigError as e:
-            if args.verbose:
-                logging.error(e, exc_info=True)
-            else:
-                logging.error(e)
-            sys.exit(1)
+            _handle_invalid_config_error(e, args.verbose)
 
     if args.min_size or args.max_size:
         filters = config['filters']
@@ -4003,11 +3987,7 @@ def main():
             if args.max_size:
                 filters['max_size_bytes'] = utils.parse_size_value(args.max_size)
         except utils.InvalidConfigError as e:
-            if args.verbose:
-                logging.error(e, exc_info=True)
-            else:
-                logging.error(e)
-            sys.exit(1)
+            _handle_invalid_config_error(e, args.verbose)
 
     if args.toc:
         output_conf['table_of_contents'] = True
@@ -4449,6 +4429,15 @@ def _parse_combined_content(content, source_name="combined file"):
         last_pos = cb_match.end()
 
     return files_found
+
+
+def _handle_invalid_config_error(exc, verbose, message=None):
+    """Handle InvalidConfigError by logging it and exiting."""
+    if verbose:
+        logging.error(message or str(exc), exc_info=True)
+    else:
+        logging.error(message or str(exc))
+    sys.exit(1)
 
 
 def extract_files(sources, output_folder, dry_run=False, source_name="combined file", config=None, list_files=False, tree_view=False, limit=0, estimate_tokens=False, sort_by='name', sort_reverse=False, keep_line_numbers=False, show_diff=False):
