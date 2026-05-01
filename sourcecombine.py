@@ -3699,13 +3699,37 @@ def main():
         sys.exit(0)
 
     if args.list_languages:
-        print("\nSupported Languages:")
-        langs = utils.get_all_languages()
-        # Group into 4 columns for readability
-        for i in range(0, len(langs), 4):
-            chunk = langs[i:i + 4]
-            print("  " + "".join(f"{lang_tag:<18}" for lang_tag in chunk))
-        print(f"\nTotal: {len(langs)} languages supported.\n")
+        print(f"\n{C_BOLD}{C_CYAN}Supported Languages and Mappings:{C_RESET}")
+
+        # Group extensions and filenames by language tag
+        lang_groups = {}
+        for ext, lang in utils.EXTENSION_TO_LANG.items():
+            lang_groups.setdefault(lang, []).append(ext)
+        for name, lang in utils.FILENAME_TO_LANG.items():
+            lang_groups.setdefault(lang, []).append(name)
+
+        # Format the output as a table
+        lang_tags = sorted(lang_groups.keys())
+        tag_width = 15
+        desc_width = max(40, shutil.get_terminal_size((80, 20)).columns - tag_width - 6)
+
+        print(f"  {C_DIM}{'LANGUAGE TAG':<{tag_width}}  EXTENSION / FILENAME MAPPINGS{C_RESET}")
+        for tag in lang_tags:
+            items = sorted(lang_groups[tag])
+            items_str = ", ".join(items)
+
+            # Wrap long lists of extensions
+            wrapped = textwrap.wrap(items_str, width=desc_width)
+
+            # Print the first line with the tag
+            first_line = wrapped[0] if wrapped else ""
+            print(f"  {C_BOLD}{C_CYAN}{tag:<{tag_width}}{C_RESET}  {C_DIM}{first_line}{C_RESET}")
+
+            # Print subsequent lines indented
+            for line in wrapped[1:]:
+                print(f"  {' ':<{tag_width}}  {C_DIM}{line}{C_RESET}")
+
+        print(f"\n{C_BOLD}Total:{C_RESET} {len(lang_tags)} languages supported.\n")
         sys.exit(0)
 
     if args.init:
@@ -3780,11 +3804,7 @@ def main():
             logging.error("Could not find the configuration file '%s'.", config_path)
             sys.exit(1)
         except utils.InvalidConfigError as e:
-            if args.verbose:
-                logging.error("The configuration is not valid: %s", e, exc_info=True)
-            else:
-                logging.error("The configuration is not valid: %s", e)
-            sys.exit(1)
+            _handle_invalid_config_error(e, args.verbose, f"The configuration is not valid: {e}")
 
     # Initialize with defaults if no config was loaded
     if config is None:
@@ -3813,11 +3833,7 @@ def main():
         try:
             validate_config(config, nested_required={'search': ['root_folders']})
         except utils.InvalidConfigError as e:
-            if args.verbose:
-                logging.error("The configuration is not valid: %s", e, exc_info=True)
-            else:
-                logging.error("The configuration is not valid: %s", e)
-            sys.exit(1)
+            _handle_invalid_config_error(e, args.verbose, f"The configuration is not valid: {e}")
 
     if args.restore:
         # Use the finalized root folders for restoration
@@ -3940,11 +3956,7 @@ def main():
         try:
             config['filters']['max_total_size_bytes'] = utils.parse_size_value(args.max_total_size)
         except utils.InvalidConfigError as e:
-            if args.verbose:
-                logging.error(e, exc_info=True)
-            else:
-                logging.error(e)
-            sys.exit(1)
+            _handle_invalid_config_error(e, args.verbose)
 
     if args.min_tokens is not None:
         config['filters']['min_tokens'] = args.min_tokens
@@ -4000,11 +4012,7 @@ def main():
             if args.until:
                 filters['modified_until'] = utils.parse_time_value(args.until)
         except utils.InvalidConfigError as e:
-            if args.verbose:
-                logging.error(e, exc_info=True)
-            else:
-                logging.error(e)
-            sys.exit(1)
+            _handle_invalid_config_error(e, args.verbose)
 
     if args.min_size or args.max_size:
         filters = config['filters']
@@ -4014,11 +4022,7 @@ def main():
             if args.max_size:
                 filters['max_size_bytes'] = utils.parse_size_value(args.max_size)
         except utils.InvalidConfigError as e:
-            if args.verbose:
-                logging.error(e, exc_info=True)
-            else:
-                logging.error(e)
-            sys.exit(1)
+            _handle_invalid_config_error(e, args.verbose)
 
     if args.toc:
         output_conf['table_of_contents'] = True
@@ -4554,6 +4558,15 @@ def verify_files(sources, root_folder=".", config=None):
         'missing': missing,
         'total': total
     }
+
+
+def _handle_invalid_config_error(exc, verbose, message=None):
+    """Handle InvalidConfigError by logging it and exiting."""
+    if verbose:
+        logging.error(message or str(exc), exc_info=True)
+    else:
+        logging.error(message or str(exc))
+    sys.exit(1)
 
 
 def extract_files(sources, output_folder, dry_run=False, source_name="combined file", config=None, list_files=False, tree_view=False, limit=0, estimate_tokens=False, sort_by='name', sort_reverse=False, keep_line_numbers=False, show_diff=False):
