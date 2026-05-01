@@ -3605,10 +3605,11 @@ def main():
         "--extract",
         action="store_true",
         help=(
-            "Rebuild your original files and folders from combined files (like JSON, XML, JSONL, or Markdown). "
+            "Rebuild your original files and folders from combined files (like JSON, XML, JSONL, CSV, or Markdown). "
             "You can read from one or more files, folders, your terminal ('-'), or the system clipboard. "
-            "If no input is provided, the tool automatically searches for combined_files.txt, .md, .json, .xml, or .jsonl. "
-            "Filtering, sorting, processing (like --compact or --replace), and preview options "
+            "If no input is provided, the tool automatically searches for combined_files.txt, combined_files.md, "
+            "combined_files.json, combined_files.xml, or combined_files.jsonl. "
+            "Filtering, sorting, processing (like --compact or --replace), and dry-run options "
             "(like --diff) are supported. Line numbers are removed automatically unless you use "
             "--keep-line-numbers."
         ),
