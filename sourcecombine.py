@@ -5075,13 +5075,35 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     highlighted_dest = f"{C_CYAN}{destination_desc}{title_color}" if destination_desc else ""
 
     file_word = "file" if total_included == 1 else "files"
-    status_suffix = ""
-    if total_included == 0:
-        status_suffix = " (NO FILES FOUND)"
-    elif limit_reached:
-        status_suffix = " (TRUNCATED)"
 
+    # Build project context (Name + Git info)
     project_name = stats.get('project_name', 'Project')
+    git_branch = stats.get('git_branch')
+    git_commit = stats.get('git_commit_short')
+
+    project_ctx = project_name
+    if git_branch and git_branch != 'N/A':
+        if git_commit and git_commit != 'N/A':
+            project_ctx = f"{project_name} ({git_branch}:{git_commit})"
+        else:
+            project_ctx = f"{project_name} ({git_branch})"
+
+    if total_included == 0:
+        status_prefix = "NO FILES FOUND"
+    elif getattr(args, 'dry_run', False) is True:
+        status_prefix = "DRY RUN COMPLETE"
+    elif getattr(args, 'estimate_tokens', False) is True:
+        status_prefix = "TOKEN ESTIMATION COMPLETE"
+    elif getattr(args, 'list_files', False) is True:
+        status_prefix = "FILE LISTING COMPLETE"
+    elif getattr(args, 'tree', False) is True:
+        status_prefix = "TREE VIEW COMPLETE"
+    else:
+        status_prefix = "SUCCESS"
+
+    if limit_reached:
+        status_prefix = f"{status_prefix} (TRUNCATED)"
+
     if getattr(args, 'dry_run', False) is True:
         if getattr(args, 'extract', False) is True:
             verb = "extract"
@@ -5091,13 +5113,13 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             verb = "pair"
         else:
             verb = "combine"
-        summary_title = f"DRY RUN COMPLETE{status_suffix}: [{project_name}] Would {verb} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
+        summary_title = f"{status_prefix}: [{project_ctx}] Would {verb} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
     elif getattr(args, 'estimate_tokens', False) is True:
-        summary_title = f"TOKEN ESTIMATION COMPLETE{status_suffix}: [{project_name}] {total_included:,} {file_word} {source_desc or ''}".strip()
+        summary_title = f"{status_prefix}: [{project_ctx}] {total_included:,} {file_word} {source_desc or ''}".strip()
     elif getattr(args, 'list_files', False) is True:
-        summary_title = f"FILE LISTING COMPLETE{status_suffix}: [{project_name}] {total_included:,} {file_word} {source_desc or ''}".strip()
+        summary_title = f"{status_prefix}: [{project_ctx}] {total_included:,} {file_word} {source_desc or ''}".strip()
     elif getattr(args, 'tree', False) is True:
-        summary_title = f"TREE VIEW COMPLETE{status_suffix}: [{project_name}] {total_included:,} {file_word} {source_desc or ''}".strip()
+        summary_title = f"{status_prefix}: [{project_ctx}] {total_included:,} {file_word} {source_desc or ''}".strip()
     else:
         if getattr(args, 'extract', False) is True:
             action = "Extracted"
@@ -5107,7 +5129,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             action = "Paired"
         else:
             action = "Combined"
-        summary_title = f"SUCCESS{status_suffix}: [{project_name}] {action} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
+        summary_title = f"{status_prefix}: [{project_ctx}] {action} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
 
     # Collapse any accidental double spaces caused by empty optional fields
     summary_title = re.sub(r'\s+', ' ', summary_title)
@@ -5131,7 +5153,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
     found_label_style = C_DIM if not has_any_skips else C_BOLD
     found_value_style = C_DIM if not has_any_skips else f"{C_BOLD}{C_CYAN}"
-    print(f"    {found_label_style}{'Total Found:':<{label_width}}{C_RESET}{found_value_style}{total_discovered:12,}{C_RESET}{C_DIM} files{C_RESET}", file=sys.stderr)
+    print(f"    {found_label_style}{'Total Found:':<{label_width}}{C_RESET}{found_value_style}{total_discovered:12,}{C_RESET} {C_DIM}files{C_RESET}", file=sys.stderr)
 
     if has_any_skips:
         included_percent = (total_included / total_discovered * 100) if total_discovered > 0 else 0
@@ -5155,10 +5177,10 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                     connector = "└── " if is_last else "├── "
                     display_reason = reason.replace('_', ' ')
                     reason_percent = (count / total_filtered * 100) if total_filtered > 0 else 0
-                    print(f"    {C_DIM}{outer_skipped_indent}{connector}{C_RESET}{C_DIM}{display_reason:<{label_width - 10}}{count:12,}{C_RESET} {C_DIM}({reason_percent:>5.1f}%){C_RESET}", file=sys.stderr)
+                    print(f"    {C_DIM}{outer_skipped_indent}{connector}{C_RESET}{C_BOLD}{C_CYAN}{count:12,}{C_RESET} {C_DIM}({reason_percent:>5.1f}%) {display_reason}{C_RESET}", file=sys.stderr)
 
         if has_skipped_folders:
-            print(f"    {C_DIM}└── {C_RESET}{C_BOLD}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_CYAN}{excluded_folders:12,}{C_RESET}{C_DIM} folders{C_RESET}", file=sys.stderr)
+            print(f"    {C_DIM}└── {C_RESET}{C_BOLD}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_CYAN}{excluded_folders:12,}{C_RESET} {C_DIM}folders{C_RESET}", file=sys.stderr)
 
     # Details Section
     total_lines = stats.get('total_lines', 0)
@@ -5173,14 +5195,14 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{val:>12}{C_RESET}{C_DIM}{unit}{C_RESET}", file=sys.stderr)
 
     if total_lines > 0:
-        print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET}{C_DIM} lines{C_RESET}", file=sys.stderr)
+        print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET} {C_DIM}lines{C_RESET}", file=sys.stderr)
 
     # Token Counts
     # Show token counts if tokens were estimated
     if token_count > 0:
         token_str = f"{'~' if is_approx else ''}{token_count:,}"
         print(
-            f"    {C_BOLD}{'Total Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET}{C_DIM} tokens{C_RESET}",
+            f"    {C_BOLD}{'Total Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET} {C_DIM}tokens{C_RESET}",
             file=sys.stderr,
         )
         if is_approx:
@@ -5256,11 +5278,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
         for tokens, f_size, path in top:
             val_num = tokens if has_tokens else f_size
-            percent_str = "  0.0%"
             percent = 0.0
             if total_for_percent > 0:
                 percent = (val_num / total_for_percent) * 100
-                percent_str = f"{percent:>5.1f}%"
 
             # 10-character ASCII distribution bar
             bar = _make_ascii_bar(percent, colored=True)
@@ -5277,10 +5297,16 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
             # Align values while keeping units dimmed
             size_padding = " " * max(0, 12 - len(s_val) - len(s_unit))
+
+            row_metrics = ""
             if has_tokens:
-                print(f"    {C_BOLD}{C_CYAN}{token_str:>11}{C_RESET}  {size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}  {C_BOLD}{C_CYAN}{percent_str}{C_RESET}  {C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
-            else:
-                print(f"    {size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}  {C_BOLD}{C_CYAN}{percent_str}{C_RESET}  {C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}  {C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
+                row_metrics = f"{C_BOLD}{C_CYAN}{token_str:>11}{C_RESET}  "
+
+            row_metrics += f"{size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}  "
+            row_metrics += f"{C_BOLD}{C_CYAN}{percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}  "
+            row_metrics += f"{C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}  "
+
+            print(f"    {row_metrics}{C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
 
     # Extensions List
     if stats['files_by_extension']:
@@ -5339,7 +5365,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             s_val, s_unit = _split_unit(size_str)
             size_padding = " " * max(0, 12 - len(s_val) - len(s_unit))
 
-            row_start = f"    {C_BOLD}{C_CYAN}{count:7,}{C_RESET}  {C_BOLD}{C_CYAN}{f_percent:>6.1f}%{C_RESET}  "
+            row_start = f"    {C_BOLD}{C_CYAN}{count:7,}{C_RESET}  {C_BOLD}{C_CYAN}{f_percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}   "
 
             if has_ext_tokens:
                 token_str = f"{'~' if is_approx else ''}{d['tokens']:,}"
@@ -5347,7 +5373,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             else:
                 row_metrics = f"{size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}  "
 
-            print(f"{row_start}{row_metrics}{C_BOLD}{C_CYAN}{w_percent:>5.1f}%{C_RESET}  {C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}  {C_BOLD}{d['ext']}{C_RESET}", file=sys.stderr)
+            print(f"{row_start}{row_metrics}{C_BOLD}{C_CYAN}{w_percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}  {C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}  {C_BOLD}{d['ext']}{C_RESET}", file=sys.stderr)
 
     # Footer
     print(f"\n{title_color}{'=' * len(raw_title)}{C_RESET}", file=sys.stderr)
