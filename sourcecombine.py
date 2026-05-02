@@ -3542,7 +3542,7 @@ def main():
     display_group.add_argument(
         "--diff",
         action="store_true",
-        help="Show a colored diff of changes (when using --output, --apply-in-place, or --extract).",
+        help="Show a colored diff of changes (when using --output, --apply-in-place, --extract, or --verify).",
     )
 
     # Processing Group
@@ -4255,7 +4255,12 @@ def main():
                 sys.exit(1)
 
         if args.verify:
-            verify_files(sources, root_folder=".", config=config)
+            verify_files(
+                sources,
+                root_folder=".",
+                config=config,
+                show_diff=config.get('output', {}).get('show_diff', False)
+            )
             sys.exit(0)
 
         output_folder = args.output or "."
@@ -4476,7 +4481,7 @@ def _parse_combined_content(content, source_name="combined file"):
     return files_found
 
 
-def verify_files(sources, root_folder=".", config=None):
+def verify_files(sources, root_folder=".", config=None, show_diff=False):
     """Verify that files on disk match the manifest or combined file."""
     root_folder = Path(root_folder)
     if config is None:
@@ -4528,6 +4533,9 @@ def verify_files(sources, root_folder=".", config=None):
                 else:
                     print(f"  {C_RED}[MISMATCH]{C_RESET} {rel_path_str} {C_DIM}(hash mismatch){C_RESET}")
                     mismatches += 1
+                    if show_diff and expected_content is not None:
+                        actual_content, _ = read_file_best_effort(target_path)
+                        _print_diff(actual_content, expected_content, rel_path_str)
             except OSError as e:
                 print(f"  {C_RED}[ERROR]{C_RESET}    {rel_path_str} {C_DIM}({e}){C_RESET}")
                 mismatches += 1
@@ -4543,6 +4551,8 @@ def verify_files(sources, root_folder=".", config=None):
             else:
                 print(f"  {C_RED}[MISMATCH]{C_RESET} {rel_path_str} {C_DIM}(content mismatch){C_RESET}")
                 mismatches += 1
+                if show_diff:
+                    _print_diff(actual_content, expected_content, rel_path_str)
             continue
 
         print(f"  {C_YELLOW}[SKIPPED]{C_RESET}  {rel_path_str} {C_DIM}(no hash or content to verify against){C_RESET}")
