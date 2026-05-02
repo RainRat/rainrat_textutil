@@ -42,3 +42,49 @@ A versatile command-line utility for discovering, filtering, processing, and com
 4.  **Configure (Optional):** Run `python sourcecombine.py --init` to create a configuration file.
 
 For more details, use `python sourcecombine.py --help` or check `config.template.yml`.
+
+## Template Customization
+You can customize the output by using templates in your configuration file. Templates support placeholders that are replaced with actual data when the tool runs.
+
+### File-Level Placeholders
+Used in `header_template` and `footer_template`:
+*   `{{FILENAME}}`: Full relative path to the file.
+*   `{{EXT}}`: File extension (e.g., `py`).
+*   `{{STEM}}`: Filename without extension (e.g., `main`).
+*   `{{DIR}}`: Folder path containing the file.
+*   `{{DIR_SLUG}}`: A filesystem-safe version of the folder path.
+*   `{{LANG}}`: Detected language tag (e.g., `python`, `cpp`).
+*   `{{SIZE}}`: Human-readable file size.
+*   `{{TOKENS}}`: Number of tokens in the file.
+*   `{{LINE_COUNT}}`: Number of lines in the file.
+*   `{{HASH}}`: SHA-256 hash of the file content.
+*   `{{INDEX}}`: The current file's position in the list (1, 2, 3...).
+*   `{{TOTAL}}`: The total number of files being processed.
+*   `{{MODIFIED}}`: Last modified date and time.
+*   `{{SIZE_PERCENT}}`, `{{TOKEN_PERCENT}}`, `{{LINE_PERCENT}}`: Percentage of the total project.
+
+### Project-Level Placeholders
+Used in `global_header_template`, `global_footer_template`, and other project-wide settings:
+*   `{{PROJECT_NAME}}`: Name of the project (detected from `package.json`, `pyproject.toml`, or folder name).
+*   `{{FILE_COUNT}}`: Total number of files included.
+*   `{{TOTAL_SIZE}}`: Total size of all files.
+*   `{{TOTAL_TOKENS}}`: Total number of tokens.
+*   `{{TOTAL_LINES}}`: Total number of lines.
+*   `{{DATE}}`, `{{TIME}}`, `{{DATETIME}}`: Current date and time.
+
+### Git Placeholders
+These require a Git repository to function:
+*   `{{GIT_BRANCH}}`: Current branch name.
+*   `{{GIT_COMMIT}}`, `{{GIT_COMMIT_SHORT}}`: Full or short commit hash.
+*   `{{GIT_STATUS}}`: Summary of working tree changes (e.g., "2 modified, 1 added").
+*   `{{GIT_LOG}}`: Recent commit messages (requires `--git-log` flag).
+*   `{{GIT_DIFF}}`: Project-wide changes (requires `--include-diff` flag).
+*   `{{FILE_DIFF}}`: Changes specific to the current file (requires `--include-diff` flag).
+*   `{{FILE_STATUS}}`: Git status of the current file (e.g., `M`, `A`, `??`).
+
+### Pairing Placeholders
+Used in `paired_filename_template`:
+*   `{{STEM}}`: Base filename shared by the pair.
+*   `{{SOURCE_EXT}}`: Extension of the source file (e.g., `.cpp`).
+*   `{{HEADER_EXT}}`: Extension of the header file (e.g., `.h`).
+*   `{{DIR}}`, `{{DIR_SLUG}}`: Relative folder path.
