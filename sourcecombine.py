@@ -4241,7 +4241,7 @@ def main():
             input_path = Path(output_path)
             if not input_path.is_file():
                 # Try common format-specific defaults if the standard one doesn't exist
-                for alt in ['combined_files.md', 'combined_files.json', 'combined_files.xml', 'combined_files.jsonl']:
+                for alt in ['combined_files.md', 'combined_files.json', 'combined_files.xml', 'combined_files.jsonl', 'combined_files.csv']:
                     if Path(alt).is_file():
                         input_path = Path(alt)
                         break
