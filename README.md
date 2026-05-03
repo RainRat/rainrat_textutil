@@ -1,6 +1,6 @@
-# rainrat_textutil
+# SourceCombine
 
-A versatile command-line utility for discovering, filtering, processing, and combining text files into various formats (JSON, XML, JSONL, CSV, or Markdown). Designed for developers and data processing, it simplifies complex file management tasks and streamlines the preparation of datasets for LLMs and other tools.
+SourceCombine is a tool for your terminal that helps you find, filter, and combine text files into a single file or folder. It supports many formats like JSON, XML, Markdown, and CSV. It is helpful for preparing code context for AI assistants (LLMs) or managing large groups of files.
 
 ## Key Features
 *   **Find files in many folders:** Scan many folders at once. Use Git to find files and follow your `.gitignore` rules automatically.
@@ -35,10 +35,26 @@ A versatile command-line utility for discovering, filtering, processing, and com
 *   `--clean`: (Alias for `--delete-backups`) Remove all `.bak` backup files from the current directory and its subfolders.
 *   `--version`: Show the application version and exit.
 
+## Prerequisites
+- **Python 3.10 or newer:** This tool uses modern Python features.
+
 ## Getting Started
-1.  **Clone the Repository:** `git clone https://github.com/RainRat/rainrat_textutil.git`
-2.  **Install Dependencies:** `pip install -r requirements.txt`
-3.  **Run the Utility:** `python sourcecombine.py [flags]`
-4.  **Configure (Optional):** Run `python sourcecombine.py --init` to create a configuration file.
+1.  **Clone the Repository:**
+    ```bash
+    git clone https://github.com/RainRat/rainrat_textutil.git
+    cd rainrat_textutil
+    ```
+2.  **Install Dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+3.  **Run the Tool:**
+    ```bash
+    python sourcecombine.py --help
+    ```
+4.  **Create a Config (Optional):**
+    ```bash
+    python sourcecombine.py --init
+    ```
 
 For more details, use `python sourcecombine.py --help` or check `config.template.yml`.
