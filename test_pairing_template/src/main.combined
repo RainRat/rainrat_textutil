@@ -1,6 +1,0 @@
---- src/main.cpp ---
-some content
---- end src/main.cpp ---
---- src/main.h ---
-some header
---- end src/main.h ---
