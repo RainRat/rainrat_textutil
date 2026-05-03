@@ -4653,11 +4653,6 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
             if reason:
                 stats['filter_reasons'][reason] = stats['filter_reasons'].get(reason, 0) + 1
 
-    if limit > 0 and len(filtered_files) > limit:
-        stats['filter_reasons']['file_limit'] = len(filtered_files) - limit
-        filtered_files = filtered_files[:limit]
-        stats['limit_reached'] = True
-
     # Content-based deduplication for extraction
     if filter_opts.get('unique'):
         processor = FileProcessor(config, {}, dry_run=True)
@@ -4722,6 +4717,11 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
             return (val, path_str)
 
         filtered_files.sort(key=get_extract_sort_key, reverse=sort_reverse)
+
+    if limit > 0 and len(filtered_files) > limit:
+        stats['filter_reasons']['file_limit'] = len(filtered_files) - limit
+        filtered_files = filtered_files[:limit]
+        stats['limit_reached'] = True
 
     # Apply global limits (tokens, size, lines)
     max_total_tokens = stats['max_total_tokens']
