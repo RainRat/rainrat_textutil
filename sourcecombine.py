@@ -5165,8 +5165,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
     found_label_style = C_DIM if not has_any_skips else C_BOLD
     found_value_style = C_DIM if not has_any_skips else f"{C_BOLD}{C_CYAN}"
- 
-    print(f"    {found_label_style}{'Total Found:':<{label_width}}{C_RESET}{found_value_style}{total_discovered:12,}{C_RESET} {C_DIM}files{C_RESET}", file=sys.stderr)
+
+    discovered_word = "file" if total_discovered == 1 else "files"
+    print(f"    {found_label_style}{'Total Found:':<{label_width}}{C_RESET}{found_value_style}{total_discovered:12,}{C_RESET} {C_DIM}{discovered_word}{C_RESET}", file=sys.stderr)
 
     if has_any_skips:
         included_percent = (total_included / total_discovered * 100) if total_discovered > 0 else 0
@@ -5193,8 +5194,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                     print(f"    {C_DIM}{outer_skipped_indent}{connector}{C_RESET}{C_BOLD}{C_CYAN}{count:12,}{C_RESET} {C_DIM}({reason_percent:>5.1f}%) {display_reason}{C_RESET}", file=sys.stderr)
 
         if has_skipped_folders:
- 
-            print(f"    {C_DIM}└── {C_RESET}{C_BOLD}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_CYAN}{excluded_folders:12,}{C_RESET} {C_DIM}folders{C_RESET}", file=sys.stderr)
+            folder_word = "folder" if excluded_folders == 1 else "folders"
+            print(f"    {C_DIM}└── {C_RESET}{C_BOLD}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_CYAN}{excluded_folders:12,}{C_RESET} {C_DIM}{folder_word}{C_RESET}", file=sys.stderr)
 
     # Details Section
     total_lines = stats.get('total_lines', 0)
@@ -5209,8 +5210,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{val:>12}{C_RESET}{C_DIM}{unit}{C_RESET}", file=sys.stderr)
 
     if total_lines > 0:
- 
-        print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET} {C_DIM}lines{C_RESET}", file=sys.stderr)
+        line_word = "line" if total_lines == 1 else "lines"
+        print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET} {C_DIM}{line_word}{C_RESET}", file=sys.stderr)
 
     # Token Counts
     # Show token counts if tokens were estimated
@@ -5218,8 +5219,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         token_str = f"{'~' if is_approx else ''}{token_count:,}"
         token_word = "token" if token_count == 1 else "tokens"
         print(
- 
-            f"    {C_BOLD}{'Total Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET} {C_DIM}tokens{C_RESET}",
+            f"    {C_BOLD}{'Total Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET} {C_DIM}{token_word}{C_RESET}",
             file=sys.stderr,
         )
         if is_approx:
@@ -5334,11 +5334,11 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         if has_ext_tokens:
             total_weight = stats.get('total_tokens', 0)
             weight_by_ext = tokens_by_ext
-            header = f"    {C_DIM}{'TOKENS':>11}  {'SIZE':>12}  {'%':>6}  {'DISTRIBUTION':<12}  {'COUNT':>7}  {'% FILES':>7}  EXTENSION{C_RESET}"
+            header = f"    {C_DIM}{'TOKENS':>11}  {'SIZE':>12}  {'%':>6}  {'DISTRIBUTION':<12}  {'COUNT':>7}  {'% FILES':>9}  EXTENSION{C_RESET}"
         else:
             total_weight = stats.get('total_size_bytes', 0)
             weight_by_ext = size_by_ext
-            header = f"    {C_DIM}{'SIZE':>12}  {'%':>6}  {'DISTRIBUTION':<12}  {'COUNT':>7}  {'% FILES':>7}  EXTENSION{C_RESET}"
+            header = f"    {C_DIM}{'SIZE':>12}  {'%':>6}  {'DISTRIBUTION':<12}  {'COUNT':>7}  {'% FILES':>9}  EXTENSION{C_RESET}"
 
         # Sort by weight desc, then count desc, then alpha
         sorted_exts = sorted(
@@ -5382,17 +5382,16 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             s_val, s_unit = _split_unit(size_str)
             size_padding = " " * max(0, 12 - len(s_val) - len(s_unit))
 
- 
-            row_start = f"    {C_BOLD}{C_CYAN}{count:7,}{C_RESET}  {C_BOLD}{C_CYAN}{f_percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}   "
-
             if has_ext_tokens:
                 token_str = f"{'~' if is_approx else ''}{d['tokens']:,}"
                 row_metrics = f"{C_BOLD}{C_CYAN}{token_str:>11}{C_RESET}  {size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}  "
             else:
                 row_metrics = f"{size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}  "
 
- 
-            print(f"{row_start}{row_metrics}{C_BOLD}{C_CYAN}{w_percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}  {C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}  {C_BOLD}{d['ext']}{C_RESET}", file=sys.stderr)
+            row_distribution = f"{C_BOLD}{C_CYAN}{w_percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}  {C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}  "
+            row_counts = f"{C_BOLD}{C_CYAN}{count:7,}{C_RESET}  {C_BOLD}{C_CYAN}{f_percent:>7.1f}{C_RESET}{C_DIM}%{C_RESET}  "
+
+            print(f"    {row_metrics}{row_distribution}{row_counts}{C_BOLD}{d['ext']}{C_RESET}", file=sys.stderr)
 
     # Footer
     print(f"\n{title_color}{'=' * len(raw_title)}{C_RESET}", file=sys.stderr)
