@@ -3140,36 +3140,32 @@ def main():
     """Main function to parse arguments and run the tool."""
     start_time = time.perf_counter()
     parser = argparse.ArgumentParser(
-        description=(
-            "A versatile tool for your terminal to find, filter, and combine source code files "
-            "from a project into one file (or folder). Use it to give better context to AI "
-            "assistants, generate documentation, or save your work."
-        ),
+        description="Find, filter, and combine source files into one file or folder. Useful for AI context, documentation, or backups.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=textwrap.dedent("""
             Examples:
-              # Combine files in the current folder into 'combined_files.txt'
+              # Combine files in the current folder
               python sourcecombine.py
 
               # Combine files from a specific folder
               python sourcecombine.py src/
 
-              # Use a configuration file
+              # Use a custom config file
               python sourcecombine.py my_config.yml
 
-              # Use a configuration but override the folders to search
+              # Use config but scan specific folders
               python sourcecombine.py my_config.yml project_a/ project_b/
 
-              # Copy the result to your clipboard
+              # Copy results to your clipboard
               python sourcecombine.py src/ -c
 
-              # Estimate how many tokens the output will use
+              # Estimate token usage
               python sourcecombine.py -e
 
-              # Skip the 'tests' folder and all '.json' files
+              # Skip 'tests' folder and '.json' files
               python sourcecombine.py -X tests -x "*.json"
 
-              # Rebuild files from a combined file
+              # Rebuild original files from a combined file
               python sourcecombine.py --extract combined_files.txt
         """),
     )
@@ -3180,26 +3176,26 @@ def main():
         "targets",
         nargs="*",
         metavar="TARGET",
-        help="Folders or files to search. If you do not provide any, the tool searches the current folder. If the first target is a '.yml' or '.yaml' file, the tool uses it as its configuration.",
+        help="Folders or files to scan. Defaults to the current folder. A leading YAML file is used as the configuration.",
     )
     core_group.add_argument(
         "--config",
         "-k",
         metavar="PATH",
-        help="Use a specific configuration file. This stops the tool from trying to find one automatically in your target list.",
+        help="Path to a custom configuration file.",
     )
     core_group.add_argument(
         "--output",
         "-o",
         metavar="PATH",
-        help="Save the result to a specific file or folder. This takes priority over the path in your settings.",
+        help="Save results to a specific file or folder.",
     )
     core_group.add_argument(
         "--dry-run",
         "--preview",
         "-d",
         action="store_true",
-        help="Show what would happen without making any changes.",
+        help="Show what would happen without making changes.",
     )
     core_group.add_argument(
         "-v",
@@ -3218,7 +3214,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Skip files that match this search pattern (for example, '*.log'). Use this option again to skip more.",
+        help="Skip files matching this pattern (e.g., '*.log'). Repeat to skip more.",
     )
     filtering_group.add_argument(
         "--exclude-folder",
@@ -3228,7 +3224,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Skip folders that match this search pattern (for example, 'build'). Use this option again to skip more.",
+        help="Skip folders matching this pattern (e.g., 'build'). Repeat to skip more.",
     )
     filtering_group.add_argument(
         "--include",
@@ -3237,7 +3233,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Include only files that match this search pattern (for example, '*.py'). Use this option again to include more.",
+        help="Only include files matching this pattern (e.g., '*.py'). Repeat to include more.",
     )
     filtering_group.add_argument(
         "--language",
@@ -3335,7 +3331,7 @@ def main():
         "--git-files",
         "-G",
         action="store_true",
-        help="Use 'git ls-files' to find files. This follows your .gitignore rules.",
+        help="Find files using Git. This respects your .gitignore rules.",
     )
     filtering_group.add_argument(
         "--git-diff",
@@ -3358,7 +3354,7 @@ def main():
         "--unique",
         "-u",
         action="store_true",
-        help="Skip duplicate files by absolute path or content.",
+        help="Skip duplicate files by path or content.",
     )
     filtering_group.add_argument(
         "--map-lang",
@@ -3387,14 +3383,14 @@ def main():
         "-L",
         type=int,
         metavar="N",
-        help="Stop adding files once you reach this file limit.",
+        help="Stop after this many files.",
     )
     sorting_group.add_argument(
         "--max-tokens",
         "-M",
         type=int,
         metavar="N",
-        help="Stop adding files once you reach the total tokens limit (only when combining many files or extracting).",
+        help="Stop after this many total tokens.",
     )
     sorting_group.add_argument(
         "--max-total-size",
@@ -3414,7 +3410,7 @@ def main():
         "--ai",
         "-a",
         action="store_true",
-        help="Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, folder tree, project overview, and skipping binary files. This also copies to your system clipboard if you do not specify an output.",
+        help="AI preset: Markdown, line numbers, TOC, folder tree, and overview. Copies to clipboard if no output is set.",
     )
     output_group.add_argument(
         "--clipboard",
@@ -3542,7 +3538,7 @@ def main():
     display_group.add_argument(
         "--diff",
         action="store_true",
-        help="Show a colored diff of changes (when using --output, --apply-in-place, --extract, or --verify).",
+        help="Show a colored diff of changes.",
     )
 
     # Processing Group
@@ -3605,15 +3601,7 @@ def main():
     utility_group.add_argument(
         "--extract",
         action="store_true",
-        help=(
-            "Rebuild your original files and folders from combined files (like JSON, XML, JSONL, CSV, or Markdown). "
-            "You can read from one or more files, folders, your terminal ('-'), or the system clipboard. "
-            "If no input is provided, the tool automatically searches for combined_files.txt, combined_files.md, "
-            "combined_files.json, combined_files.xml, or combined_files.jsonl. "
-            "Filtering, sorting, processing (like --compact or --replace), and dry-run options "
-            "(like --diff) are supported. Line numbers are removed automatically unless you use "
-            "--keep-line-numbers."
-        ),
+        help="Rebuild original files from combined formats (JSON, XML, CSV, etc.).",
     )
     utility_group.add_argument(
         "--keep-line-numbers",
@@ -3628,11 +3616,7 @@ def main():
     utility_group.add_argument(
         "--verify",
         action="store_true",
-        help=(
-            "Verify that files on disk match the content or hashes in combined files or manifests. "
-            "You can read from one or more files, folders, your terminal ('-'), or the system clipboard. "
-            "If no input is provided, the tool automatically searches for combined_files.txt, .md, .json, .xml, or .jsonl."
-        ),
+        help="Check that files on disk match a combined file or manifest.",
     )
     utility_group.add_argument(
         "--delete-backups",
