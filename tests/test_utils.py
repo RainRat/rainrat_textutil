@@ -402,6 +402,8 @@ def test_compact_whitespace_collapses_long_space_runs():
 def test_compact_whitespace_handles_mixed_indent_tabs_and_spaces():
     assert compact_whitespace("  \t  code") == "\tcode"
     assert compact_whitespace("\t    code") == "\t\tcode"
+    assert compact_whitespace("\t\t  code") == "\t\tcode"
+    assert compact_whitespace("word\t\tword") == "word word"
 
 
 def test_compact_whitespace_groups_can_disable_transformations():

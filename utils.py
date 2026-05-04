@@ -347,10 +347,10 @@ def compact_whitespace(text, *, groups=None):
     if _should_apply('trim_spaces_around_tabs'):
         text = re.sub(r' +\t', '\t', text)
         text = re.sub(r'(?<=[^\n\t])\t +', '\t', text)
-        text = re.sub(r'^\t +(?=\S)', '\t', text, flags=re.MULTILINE)
+        text = re.sub(r'^(\t+) +(?=\S)', r'\1', text, flags=re.MULTILINE)
         text = re.sub(r'\t {2,}(?=\s|$)', '\t ', text)
     if _should_apply('replace_mid_line_tabs'):
-        text = re.sub(r'(?<=[^\n\t])\t', ' ', text)
+        text = re.sub(r'(?<=[^\n\t])\t+', ' ', text)
     if _should_apply('trim_trailing_whitespace'):
         text = re.sub(r'[ \t]+$', '', text, flags=re.MULTILINE)
     if _should_apply('compact_blank_lines'):
