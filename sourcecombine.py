@@ -5165,19 +5165,22 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
     found_label_style = C_DIM if not has_any_skips else C_BOLD
     found_value_style = C_DIM if not has_any_skips else f"{C_BOLD}{C_CYAN}"
- 
-    print(f"    {found_label_style}{'Total Found:':<{label_width}}{C_RESET}{found_value_style}{total_discovered:12,}{C_RESET} {C_DIM}files{C_RESET}", file=sys.stderr)
+
+    found_word = "file" if total_discovered == 1 else "files"
+    print(f"    {found_label_style}{'Total Found:':<{label_width}}{C_RESET}{found_value_style}{total_discovered:12,}{C_RESET} {C_DIM}{found_word}{C_RESET}", file=sys.stderr)
 
     if has_any_skips:
         included_percent = (total_included / total_discovered * 100) if total_discovered > 0 else 0
         skipped_percent = (total_filtered / total_discovered * 100) if total_discovered > 0 else 0
 
         # Files tree branches
-        print(f"    {C_DIM}├── {C_RESET}{C_BOLD}{'Included:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_GREEN}{total_included:12,}{C_RESET} {C_DIM}({included_percent:>5.1f}%){C_RESET}", file=sys.stderr)
+        included_word = "file" if total_included == 1 else "files"
+        print(f"    {C_DIM}├── {C_RESET}{C_BOLD}{'Included:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_GREEN}{total_included:12,}{C_RESET} {C_DIM}({included_percent:>5.1f}%){C_RESET} {C_DIM}{included_word}{C_RESET}", file=sys.stderr)
 
         if has_skipped_files:
             skipped_connector = "├── " if has_skipped_folders else "└── "
-            print(f"    {C_DIM}{skipped_connector}{C_RESET}{C_BOLD}{'Skipped:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_YELLOW}{total_filtered:12,}{C_RESET} {C_DIM}({skipped_percent:>5.1f}%){C_RESET}", file=sys.stderr)
+            skipped_word = "file" if total_filtered == 1 else "files"
+            print(f"    {C_DIM}{skipped_connector}{C_RESET}{C_BOLD}{'Skipped:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_YELLOW}{total_filtered:12,}{C_RESET} {C_DIM}({skipped_percent:>5.1f}%){C_RESET} {C_DIM}{skipped_word}{C_RESET}", file=sys.stderr)
 
             # Detailed breakdown of filtering reasons
             relevant_reasons = [(r, c) for r, c in stats.get('filter_reasons', {}).items() if r != 'excluded_folder' and c > 0]
@@ -5193,8 +5196,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                     print(f"    {C_DIM}{outer_skipped_indent}{connector}{C_RESET}{C_BOLD}{C_CYAN}{count:12,}{C_RESET} {C_DIM}({reason_percent:>5.1f}%) {display_reason}{C_RESET}", file=sys.stderr)
 
         if has_skipped_folders:
- 
-            print(f"    {C_DIM}└── {C_RESET}{C_BOLD}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_CYAN}{excluded_folders:12,}{C_RESET} {C_DIM}folders{C_RESET}", file=sys.stderr)
+            folder_word = "folder" if excluded_folders == 1 else "folders"
+            print(f"    {C_DIM}└── {C_RESET}{C_BOLD}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_CYAN}{excluded_folders:12,}{C_RESET} {C_DIM}{folder_word}{C_RESET}", file=sys.stderr)
 
     # Details Section
     total_lines = stats.get('total_lines', 0)
@@ -5209,8 +5212,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{val:>12}{C_RESET}{C_DIM}{unit}{C_RESET}", file=sys.stderr)
 
     if total_lines > 0:
- 
-        print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET} {C_DIM}lines{C_RESET}", file=sys.stderr)
+        line_word = "line" if total_lines == 1 else "lines"
+        print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET} {C_DIM}{line_word}{C_RESET}", file=sys.stderr)
 
     # Token Counts
     # Show token counts if tokens were estimated
@@ -5218,8 +5221,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         token_str = f"{'~' if is_approx else ''}{token_count:,}"
         token_word = "token" if token_count == 1 else "tokens"
         print(
- 
-            f"    {C_BOLD}{'Total Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET} {C_DIM}tokens{C_RESET}",
+            f"    {C_BOLD}{'Total Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET} {C_DIM}{token_word}{C_RESET}",
             file=sys.stderr,
         )
         if is_approx:
