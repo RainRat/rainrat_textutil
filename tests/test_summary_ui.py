@@ -135,7 +135,7 @@ def test_summary_printing_dry_run(monkeypatch, capsys):
     captured = capsys.readouterr()
     stderr = captured.err
 
-    assert "DRY RUN COMPLETE (NO FILES FOUND): [Project] Would combine 0 files" in stderr
+    assert "NO FILES FOUND: [Project] Would combine 0 files" in stderr
     assert "Total Found:" in stderr
     assert "0 files" in stderr
     assert "├── Included:" not in stderr
@@ -344,4 +344,39 @@ def test_skip_reasons_alignment(monkeypatch, capsys):
     stderr = captured.err
 
     # Check indentation of skip reason
-    assert "└── excluded" in stderr
+    assert "└──            5 (100.0%) excluded" in stderr
+
+
+def test_summary_git_info(monkeypatch, capsys):
+    # Mock stats with Git info
+    stats = {
+        'total_files': 1,
+        'total_discovered': 1,
+        'total_size_bytes': 100,
+        'files_by_extension': {'.py': 1},
+        'total_tokens': 10,
+        'token_count_is_approx': False,
+        'git_branch': 'main',
+        'git_commit_short': 'a1b2c3d',
+        'project_name': 'MyProj',
+        'top_files': []
+    }
+
+    # Mock args
+    args = MagicMock()
+    args.dry_run = False
+    args.estimate_tokens = False
+    args.list_files = False
+    args.tree = False
+    args.extract = False
+
+    # Force NO_COLOR to avoid ANSI codes in test check
+    monkeypatch.setenv("NO_COLOR", "1")
+
+    sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
+
+    captured = capsys.readouterr()
+    stderr = captured.err
+
+    # Check for Git info in header
+    assert "SUCCESS: [MyProj (main:a1b2c3d)] Combined 1 file" in stderr
