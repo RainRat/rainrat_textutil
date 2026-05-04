@@ -457,6 +457,16 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
     replacements["{{DATE}}"] = (git_info or {}).get('date', '')
     replacements["{{TIME}}"] = (git_info or {}).get('time', '')
     replacements["{{DATETIME}}"] = (git_info or {}).get('datetime', '')
+    replacements["{{OS}}"] = (git_info or {}).get('os', '')
+    replacements["{{PYTHON_VERSION}}"] = (git_info or {}).get('python_version', '')
+    replacements["{{PLATFORM}}"] = (git_info or {}).get('platform', '')
+    replacements["{{ARCH}}"] = (git_info or {}).get('arch', '')
+
+    # Environment variables
+    for match in re.finditer(r"{{ENV:([A-Za-z0-9_]+)}}", template):
+        placeholder = match.group(0)
+        var_name = match.group(1)
+        replacements[placeholder] = os.environ.get(var_name, '')
 
     replacements["{{SIZE}}"] = utils.format_size(size) if size is not None else ""
     replacements["{{TOKENS}}"] = f"{tokens:,}" if tokens is not None else ""
@@ -484,6 +494,7 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
         replacements["{{GIT_DIFF}}"] = git_info.get('git_diff', '')
         replacements["{{FILE_DIFF}}"] = git_info.get('file_diffs', {}).get(filename, '')
         replacements["{{GIT_LOG}}"] = git_info.get('git_log', '')
+        replacements["{{GIT_STATUS}}"] = git_info.get('git_status', '')
         replacements["{{FILE_STATUS}}"] = git_info.get('file_statuses', {}).get(filename, '')
 
     return _render_single_pass(template, replacements)
@@ -523,7 +534,17 @@ def _render_global_template(template, stats):
         "{{DATE}}": stats.get('date', ''),
         "{{TIME}}": stats.get('time', ''),
         "{{DATETIME}}": stats.get('datetime', ''),
+        "{{OS}}": stats.get('os', ''),
+        "{{PYTHON_VERSION}}": stats.get('python_version', ''),
+        "{{PLATFORM}}": stats.get('platform', ''),
+        "{{ARCH}}": stats.get('arch', ''),
     }
+
+    # Environment variables
+    for match in re.finditer(r"{{ENV:([A-Za-z0-9_]+)}}", template):
+        placeholder = match.group(0)
+        var_name = match.group(1)
+        replacements[placeholder] = os.environ.get(var_name, '')
 
     return _render_single_pass(template, replacements)
 
@@ -1964,6 +1985,10 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
             lines.append(f"- **Git Commit:** {stats['git_commit_short']}")
         if stats.get('git_status'):
             lines.append(f"- **Git Status:** {stats['git_status']}")
+        if stats.get('os'):
+            lines.append(f"- **OS:** {stats['os']}")
+        if stats.get('python_version'):
+            lines.append(f"- **Python:** {stats['python_version']}")
 
         git_log = stats.get('git_log')
         if git_log:
@@ -1992,6 +2017,10 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
             lines.append(f"  Git Commit:   {stats['git_commit_short']}")
         if stats.get('git_status'):
             lines.append(f"  Git Status:   {stats['git_status']}")
+        if stats.get('os'):
+            lines.append(f"  OS:           {stats['os']}")
+        if stats.get('python_version'):
+            lines.append(f"  Python:       {stats['python_version']}")
 
         git_log = stats.get('git_log')
         if git_log:
@@ -2213,6 +2242,7 @@ def find_and_combine_files(
 
     stats['project_name'] = utils.get_project_name(first_root)
     stats.update(utils.get_datetime_placeholders())
+    stats.update(utils.get_system_info())
 
     search_opts = config.get('search', {})
     filter_opts = config.get('filters', {})
@@ -4604,6 +4634,8 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         'max_total_lines': config.get('filters', {}).get('max_total_lines', 0),
         'filter_reasons': {},
     }
+    stats.update(utils.get_datetime_placeholders())
+    stats.update(utils.get_system_info())
 
     # Handle backward compatibility for single source string/bytes
     if isinstance(sources, (str, bytes)):

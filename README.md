@@ -87,6 +87,8 @@ Used in `global_header_template`, `global_footer_template`, and other project-wi
 *   `{{TOTAL_TOKENS}}`: Total number of tokens.
 *   `{{TOTAL_LINES}}`: Total number of lines.
 *   `{{DATE}}`, `{{TIME}}`, `{{DATETIME}}`: Current date and time.
+*   `{{OS}}`, `{{PYTHON_VERSION}}`, `{{PLATFORM}}`, `{{ARCH}}`: System and environment information.
+*   `{{ENV:VAR_NAME}}`: Value of an environment variable (e.g., `{{ENV:USER}}`).
 
 ### Git Placeholders
 These require a Git repository to function:

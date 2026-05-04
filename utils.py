@@ -1347,3 +1347,13 @@ def get_datetime_placeholders() -> dict:
         "time": now.strftime("%H:%M:%S"),
         "datetime": now.strftime("%Y-%m-%d %H:%M:%S"),
     }
+
+def get_system_info() -> dict:
+    """Return a dictionary of system information."""
+    import platform
+    return {
+        "os": platform.system(),
+        "python_version": platform.python_version(),
+        "platform": platform.platform(),
+        "arch": platform.machine(),
+    }
