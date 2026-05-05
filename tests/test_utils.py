@@ -250,7 +250,7 @@ def test_load_and_validate_config_reports_regex_context(tmp_path):
         load_and_validate_config(config_path)
 
     message = str(excinfo.value)
-    assert "Invalid regular expression in processing.regex_replacements[0]" in message
+    assert "Invalid search pattern in processing.regex_replacements[0]" in message
     assert str(config_path) in message
 
 
@@ -271,7 +271,7 @@ def test_load_and_validate_config_reports_line_regex_context(tmp_path):
         load_and_validate_config(config_path)
 
     message = str(excinfo.value)
-    assert "Invalid regular expression in processing.line_regex_replacements[0]" in message
+    assert "Invalid search pattern in processing.line_regex_replacements[0]" in message
     assert str(config_path) in message
 
 
@@ -477,7 +477,7 @@ def test_validate_glob_pattern_warns_on_regex_like_syntax(caplog, tmp_path):
             },
         )
     )
-    assert "regular expression syntax" in caplog.text
+    assert "advanced search syntax" in caplog.text
 
 
 def test_validate_glob_pattern_raises_on_non_string_pattern(tmp_path):
@@ -732,7 +732,7 @@ def test_validate_regex_replacements_invalid_regex(tmp_path):
             }
         }
     )
-    with pytest.raises(utils.InvalidConfigError, match="Invalid regular expression in processing.regex_replacements\\[0\\]"):
+    with pytest.raises(utils.InvalidConfigError, match="Invalid search pattern in processing.regex_replacements\\[0\\]"):
         load_and_validate_config(config_path)
 
 def test_validate_line_regex_replacements_invalid_regex(tmp_path):
@@ -748,7 +748,7 @@ def test_validate_line_regex_replacements_invalid_regex(tmp_path):
             }
         }
     )
-    with pytest.raises(utils.InvalidConfigError, match="Invalid regular expression in processing.line_regex_replacements\\[0\\]"):
+    with pytest.raises(utils.InvalidConfigError, match="Invalid search pattern in processing.line_regex_replacements\\[0\\]"):
         load_and_validate_config(config_path)
 
 def test_validate_output_format_invalid(tmp_path):

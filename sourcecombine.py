@@ -3178,6 +3178,9 @@ def main():
 
               # Rebuild files from a combined file
               python sourcecombine.py --extract combined_files.txt
+
+              # Verify files against a combined manifest
+              python sourcecombine.py --verify combined_files.json
         """),
     )
 
@@ -3316,14 +3319,14 @@ def main():
     filtering_group.add_argument(
         "--grep",
         "-g",
-        metavar="REGEX",
-        help="Include only files whose content matches this regular expression.",
+        metavar="PATTERN",
+        help="Include only files whose content matches this search pattern.",
     )
     filtering_group.add_argument(
         "--exclude-grep",
         "-E",
-        metavar="REGEX",
-        help="Skip files whose content matches this regular expression.",
+        metavar="PATTERN",
+        help="Skip files whose content matches this search pattern.",
     )
     filtering_group.add_argument(
         "--skip-binary",
@@ -3354,12 +3357,12 @@ def main():
     filtering_group.add_argument(
         "--staged",
         action="store_true",
-        help="Include only staged changes in Git (requires --git-diff).",
+        help="Include only staged changes in Git. This automatically enables Git diff functionality.",
     )
     filtering_group.add_argument(
         "--unstaged",
         action="store_true",
-        help="Include only unstaged and untracked changes in Git (requires --git-diff).",
+        help="Include only unstaged and untracked changes in Git. This automatically enables Git diff functionality.",
     )
     filtering_group.add_argument(
         "--unique",
@@ -3587,14 +3590,14 @@ def main():
         nargs=2,
         action="append",
         metavar=("PATTERN", "REPLACEMENT"),
-        help="Add a global search-and-replace rule using regular expressions. Use this option again to add more.",
+        help="Add a global search-and-replace rule using search patterns. Use this option again to add more.",
     )
     processing_group.add_argument(
         "--replace-line",
         nargs=2,
         action="append",
         metavar=("PATTERN", "REPLACEMENT"),
-        help="Add a line-based regular expression rule to find and replace content. Matching lines that follow each other collapse into a single replacement. Use this option again to add more.",
+        help="Add a line-based search pattern rule to find and replace content. Matching lines that follow each other collapse into a single replacement. Use this option again to add more.",
     )
 
     # Utility Commands Group
@@ -3613,11 +3616,11 @@ def main():
         "--extract",
         action="store_true",
         help=(
-            "Rebuild your original files and folders from combined files (like JSON, XML, JSONL, CSV, or Markdown). "
-            "You can read from one or more files, folders, your terminal ('-'), or the system clipboard. "
-            "If no input is provided, the tool automatically searches for combined_files.txt, combined_files.md, "
-            "combined_files.json, combined_files.xml, or combined_files.jsonl. "
-            "Filtering, sorting, processing (like --compact or --replace), and dry-run options "
+            "Rebuild original files and folders from combined files (JSON, XML, JSONL, CSV, or Markdown). "
+            "Read from files, folders, your terminal ('-'), or the system clipboard. "
+            "If no input is provided, the tool searches for combined_files.txt, combined_files.md, "
+            "combined_files.json, combined_files.xml, combined_files.jsonl, or combined_files.csv. "
+            "Filtering, sorting, processing (like --compact or --replace), and preview options "
             "(like --diff) are supported. Line numbers are removed automatically unless you use "
             "--keep-line-numbers."
         ),
@@ -3637,8 +3640,9 @@ def main():
         action="store_true",
         help=(
             "Verify that files on disk match the content or hashes in combined files or manifests. "
-            "You can read from one or more files, folders, your terminal ('-'), or the system clipboard. "
-            "If no input is provided, the tool automatically searches for combined_files.txt, .md, .json, .xml, or .jsonl."
+            "Read from files, folders, your terminal ('-'), or the system clipboard. "
+            "If no input is provided, the tool searches for combined_files.txt, combined_files.md, "
+            "combined_files.json, combined_files.xml, combined_files.jsonl, or combined_files.csv."
         ),
     )
     utility_group.add_argument(
