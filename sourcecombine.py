@@ -468,6 +468,18 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
     replacements["{{INDEX}}"] = str(index) if index is not None else ""
     replacements["{{TOTAL}}"] = str(total) if total is not None else ""
 
+    # System-level replacements
+    replacements["{{OS}}"] = (git_info or {}).get('os', '')
+    replacements["{{PYTHON_VERSION}}"] = (git_info or {}).get('python_version', '')
+    replacements["{{PLATFORM}}"] = (git_info or {}).get('platform', '')
+    replacements["{{ARCH}}"] = (git_info or {}).get('arch', '')
+
+    # Environment variable resolution
+    if template and '{{ENV:' in template:
+        env_matches = re.findall(r'{{ENV:([A-Za-z0-9_]+)}}', template)
+        for var_name in env_matches:
+            replacements[f"{{{{ENV:{var_name}}}}}"] = os.environ.get(var_name, '')
+
     def _calc_percent(val, total_val):
         if val is not None and total_val and total_val > 0:
             return f"{(val / total_val * 100):.1f}%"
@@ -523,7 +535,17 @@ def _render_global_template(template, stats):
         "{{DATE}}": stats.get('date', ''),
         "{{TIME}}": stats.get('time', ''),
         "{{DATETIME}}": stats.get('datetime', ''),
+        "{{OS}}": stats.get('os', ''),
+        "{{PYTHON_VERSION}}": stats.get('python_version', ''),
+        "{{PLATFORM}}": stats.get('platform', ''),
+        "{{ARCH}}": stats.get('arch', ''),
     }
+
+    # Environment variable resolution
+    if template and '{{ENV:' in template:
+        env_matches = re.findall(r'{{ENV:([A-Za-z0-9_]+)}}', template)
+        for var_name in env_matches:
+            replacements[f"{{{{ENV:{var_name}}}}}"] = os.environ.get(var_name, '')
 
     return _render_single_pass(template, replacements)
 
@@ -1958,6 +1980,10 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
     if output_format == 'markdown':
         lines.append(f"- **Project:** {project_name}")
         lines.append(f"- **Generated at:** {timestamp}")
+        if stats.get('os'):
+            lines.append(f"- **OS:** {stats['os']}")
+        if stats.get('python_version'):
+            lines.append(f"- **Python:** {stats['python_version']}")
         if stats.get('git_branch') and stats.get('git_branch') != 'N/A':
             lines.append(f"- **Git Branch:** {stats['git_branch']}")
         if stats.get('git_commit_short') and stats.get('git_commit_short') != 'N/A':
@@ -1986,6 +2012,10 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
     else:
         lines.append(f"  Project:      {project_name}")
         lines.append(f"  Generated at: {timestamp}")
+        if stats.get('os'):
+            lines.append(f"  OS:           {stats['os']}")
+        if stats.get('python_version'):
+            lines.append(f"  Python:       {stats['python_version']}")
         if stats.get('git_branch') and stats.get('git_branch') != 'N/A':
             lines.append(f"  Git Branch:   {stats['git_branch']}")
         if stats.get('git_commit_short') and stats.get('git_commit_short') != 'N/A':
@@ -2213,6 +2243,7 @@ def find_and_combine_files(
 
     stats['project_name'] = utils.get_project_name(first_root)
     stats.update(utils.get_datetime_placeholders())
+    stats.update(utils.get_system_info())
 
     search_opts = config.get('search', {})
     filter_opts = config.get('filters', {})
@@ -4623,6 +4654,11 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
     if not files_to_create:
         logging.error("Could not find any files to extract in any of the sources.")
         sys.exit(1)
+
+    # Gather project metadata for templates
+    stats['project_name'] = utils.get_project_name(output_folder)
+    stats.update(utils.get_datetime_placeholders())
+    stats.update(utils.get_system_info())
 
     stats['total_discovered'] = len(files_to_create)
     filter_opts = config.get('filters', {})

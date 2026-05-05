@@ -77,6 +77,8 @@ Used in `header_template` and `footer_template`:
 *   `{{INDEX}}`: The current file's position in the list (1, 2, 3...).
 *   `{{TOTAL}}`: The total number of files being processed.
 *   `{{MODIFIED}}`: Last modified date and time.
+*   `{{OS}}`, `{{PYTHON_VERSION}}`, `{{PLATFORM}}`, `{{ARCH}}`: System and environment metadata.
+*   `{{ENV:VAR_NAME}}`: Value of an environment variable.
 *   `{{SIZE_PERCENT}}`, `{{TOKEN_PERCENT}}`, `{{LINE_PERCENT}}`: Percentage of the total project.
 
 ### Project-Level Placeholders
@@ -87,6 +89,8 @@ Used in `global_header_template`, `global_footer_template`, and other project-wi
 *   `{{TOTAL_TOKENS}}`: Total number of tokens.
 *   `{{TOTAL_LINES}}`: Total number of lines.
 *   `{{DATE}}`, `{{TIME}}`, `{{DATETIME}}`: Current date and time.
+*   `{{OS}}`, `{{PYTHON_VERSION}}`, `{{PLATFORM}}`, `{{ARCH}}`: System and environment metadata.
+*   `{{ENV:VAR_NAME}}`: Value of an environment variable.
 
 ### Git Placeholders
 These require a Git repository to function:
