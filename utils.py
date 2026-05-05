@@ -329,7 +329,7 @@ def compact_whitespace(text, *, groups=None):
     - Collapse many blank lines into at most two newlines that follow each other.
     - Reduce any remaining long runs of spaces to at most two characters.
 
-    Note: keep the regular expressions compatible with Python 3.8 for the sake
+    Note: keep the search patterns compatible with Python 3.8 for the sake
     of the packaging targets this project supports.
     """
     def _should_apply(key):
@@ -405,7 +405,7 @@ def _validate_regex_list(rules, context_prefix, source):
 def _replace_line_block(text, regex, replacement=None):
     """Collapse blocks of lines matching ``regex`` into ``replacement``.
 
-    ``regex`` should be a compiled regular expression that matches an entire
+    ``regex`` should be a compiled search pattern that matches an entire
     line. Lines that follow each other and match are treated as a single block.
     If ``replacement`` is ``None`` the block is simply removed; otherwise
     ``replacement`` is inserted once for each block.
@@ -1092,7 +1092,7 @@ def remove_line_numbers(text):
     return text
 
 
-def validate_glob_pattern(pattern, *, context="search pattern"):
+def validate_glob_pattern(pattern, *, context="file pattern"):
     """Warn about potentially problematic search patterns."""
     if not isinstance(pattern, str):
         raise InvalidConfigError(
@@ -1119,8 +1119,8 @@ def validate_glob_pattern(pattern, *, context="search pattern"):
 
     if '(' in normalized or ')' in normalized or '+' in normalized:
         logging.warning(
-            "Search pattern in %s ('%s') contains characters that may be "
-            "interpreted as regular expression syntax, but this tool uses search patterns. "
+            "File pattern in %s ('%s') contains characters that may be "
+            "interpreted as advanced search syntax, but this tool uses simple search patterns. "
             "Special characters are *, ?, [].",
             context,
             pattern,
@@ -1137,8 +1137,8 @@ def validate_glob_pattern(pattern, *, context="search pattern"):
     return normalized
 
 
-def validate_regex_pattern(pattern, *, context="regular expression", source=None):
-    """Return a compiled regex after validating ``pattern``.
+def validate_regex_pattern(pattern, *, context="search pattern", source=None):
+    """Return a compiled search pattern after validating ``pattern``.
 
     Raises ``InvalidConfigError`` with a helpful message when ``pattern`` is
     invalid. ``context`` describes where the pattern originated so the error
@@ -1148,7 +1148,7 @@ def validate_regex_pattern(pattern, *, context="regular expression", source=None
     try:
         return re.compile(pattern)
     except re.error as exc:
-        location = f"Invalid regular expression in {context}"
+        location = f"Invalid search pattern in {context}"
         if source:
             location += f" (from '{source}')"
         raise InvalidConfigError(
