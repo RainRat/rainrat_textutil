@@ -5345,11 +5345,11 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         if has_ext_tokens:
             total_weight = stats.get('total_tokens', 0)
             weight_by_ext = tokens_by_ext
-            header = f"    {C_DIM}{'TOKENS':>11}  {'SIZE':>12}  {'%':>6}  {'DISTRIBUTION':<12}  {'COUNT':>7}  {'% FILES':>7}  EXTENSION{C_RESET}"
+            header = f"    {C_DIM}{'COUNT':>7}  {'% FILES':>7}  {'TOKENS':>11}  {'SIZE':>12}  {'%':>6}  {'DISTRIBUTION':<12}  EXTENSION{C_RESET}"
         else:
             total_weight = stats.get('total_size_bytes', 0)
             weight_by_ext = size_by_ext
-            header = f"    {C_DIM}{'SIZE':>12}  {'%':>6}  {'DISTRIBUTION':<12}  {'COUNT':>7}  {'% FILES':>7}  EXTENSION{C_RESET}"
+            header = f"    {C_DIM}{'COUNT':>7}  {'% FILES':>7}  {'SIZE':>12}  {'%':>6}  {'DISTRIBUTION':<12}  EXTENSION{C_RESET}"
 
         # Sort by weight desc, then count desc, then alpha
         sorted_exts = sorted(
@@ -5393,8 +5393,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             s_val, s_unit = _split_unit(size_str)
             size_padding = " " * max(0, 12 - len(s_val) - len(s_unit))
 
- 
-            row_start = f"    {C_BOLD}{C_CYAN}{count:7,}{C_RESET}  {C_BOLD}{C_CYAN}{f_percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}   "
+            # Indent(4) + Count(7) + Space(3) + Percent(6) + Space(2) = 22 (Matches header COUNT(7)+2 + % FILES(7)+2 + 2)
+            row_count_info = f"    {C_BOLD}{C_CYAN}{count:7,}{C_RESET}   {C_BOLD}{C_CYAN}{f_percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}  "
 
             if has_ext_tokens:
                 token_str = f"{'~' if is_approx else ''}{d['tokens']:,}"
@@ -5402,8 +5402,10 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             else:
                 row_metrics = f"{size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}  "
 
- 
-            print(f"{row_start}{row_metrics}{C_BOLD}{C_CYAN}{w_percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}  {C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}  {C_BOLD}{d['ext']}{C_RESET}", file=sys.stderr)
+            # Percent(6) + Space(2) + Bar(12) + Space(2) = 22
+            row_weight_info = f"{C_BOLD}{C_CYAN}{w_percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}  {C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}  "
+
+            print(f"{row_count_info}{row_metrics}{row_weight_info}{C_BOLD}{d['ext']}{C_RESET}", file=sys.stderr)
 
     # Footer
     print(f"\n{title_color}{'=' * len(raw_title)}{C_RESET}", file=sys.stderr)
