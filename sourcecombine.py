@@ -93,6 +93,13 @@ def _to_int_or_none(val: Any) -> int | None:
         return None
 
 
+def _plural(count: int, singular: str, plural_form: str | None = None) -> str:
+    """Return the singular or plural form of a word based on the count."""
+    if count == 1:
+        return singular
+    return plural_form if plural_form is not None else (singular + "s")
+
+
 def _print_diff(old_text, new_text, filename):
     """Print a colored unified diff between old_text and new_text."""
     if old_text == new_text:
@@ -383,14 +390,14 @@ def _format_metadata_summary(meta: Mapping[str, Any]) -> str:
 
     if 'files' in meta:
         count = meta['files']
-        parts.append(f"{count} {'file' if count == 1 else 'files'}")
+        parts.append(f"{count} {_plural(count, 'file')}")
     if 'size' in meta:
         parts.append(utils.format_size(meta['size']))
     if 'lines' in meta and meta['lines'] > 0:
-        parts.append(f"{meta['lines']:,} {'line' if meta['lines'] == 1 else 'lines'}")
+        parts.append(f"{meta['lines']:,} {_plural(meta['lines'], 'line')}")
     if 'tokens' in meta and meta['tokens'] is not None and meta['tokens'] > 0:
         count = meta['tokens']
-        parts.append(f"{count:,} {'token' if count == 1 else 'tokens'}")
+        parts.append(f"{count:,} {_plural(count, 'token')}")
 
     summary = f"({' • '.join(parts)})" if parts else ""
     if status_label and summary:
@@ -5059,10 +5066,10 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
     parts = []
     if token_count > 0:
-        token_word = "token" if token_count == 1 else "tokens"
+        token_word = _plural(token_count, "token")
         parts.append(f"{C_BOLD}{C_CYAN}{'~' if is_approx else ''}{token_count:,}{C_RESET} {C_DIM}{token_word}{C_RESET}")
     if stats.get('total_lines', 0) > 0:
-        line_word = "line" if stats['total_lines'] == 1 else "lines"
+        line_word = _plural(stats['total_lines'], "line")
         parts.append(f"{C_BOLD}{C_CYAN}{stats['total_lines']:,}{C_RESET} {C_DIM}{line_word}{C_RESET}")
     val, unit = _split_unit(total_size_str)
     parts.append(f"{C_BOLD}{C_CYAN}{val}{C_RESET}{C_DIM}{unit}{C_RESET}")
@@ -5086,7 +5093,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     # Highlight destination in the summary title
     highlighted_dest = f"{C_CYAN}{destination_desc}{title_color}" if destination_desc else ""
 
-    file_word = "file" if total_included == 1 else "files"
+    file_word = _plural(total_included, "file")
 
     # Build project context (Name + Git info)
     project_name = stats.get('project_name', 'Project')
@@ -5166,7 +5173,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     found_label_style = C_DIM if not has_any_skips else C_BOLD
     found_value_style = C_DIM if not has_any_skips else f"{C_BOLD}{C_CYAN}"
  
-    print(f"    {found_label_style}{'Total Found:':<{label_width}}{C_RESET}{found_value_style}{total_discovered:12,}{C_RESET} {C_DIM}files{C_RESET}", file=sys.stderr)
+    print(f"    {found_label_style}{'Total Found:':<{label_width}}{C_RESET}{found_value_style}{total_discovered:12,}{C_RESET} {C_DIM}{_plural(total_discovered, 'file')}{C_RESET}", file=sys.stderr)
 
     if has_any_skips:
         included_percent = (total_included / total_discovered * 100) if total_discovered > 0 else 0
@@ -5194,7 +5201,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
         if has_skipped_folders:
  
-            print(f"    {C_DIM}└── {C_RESET}{C_BOLD}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_CYAN}{excluded_folders:12,}{C_RESET} {C_DIM}folders{C_RESET}", file=sys.stderr)
+            print(f"    {C_DIM}└── {C_RESET}{C_BOLD}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_CYAN}{excluded_folders:12,}{C_RESET} {C_DIM}{_plural(excluded_folders, 'folder')}{C_RESET}", file=sys.stderr)
 
     # Details Section
     total_lines = stats.get('total_lines', 0)
@@ -5210,16 +5217,16 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
     if total_lines > 0:
  
-        print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET} {C_DIM}lines{C_RESET}", file=sys.stderr)
+        print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET} {C_DIM}{line_word}{C_RESET}", file=sys.stderr)
 
     # Token Counts
     # Show token counts if tokens were estimated
     if token_count > 0:
         token_str = f"{'~' if is_approx else ''}{token_count:,}"
-        token_word = "token" if token_count == 1 else "tokens"
+        token_word = _plural(token_count, "token")
         print(
  
-            f"    {C_BOLD}{'Total Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET} {C_DIM}tokens{C_RESET}",
+            f"    {C_BOLD}{'Total Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET} {C_DIM}{token_word}{C_RESET}",
             file=sys.stderr,
         )
         if is_approx:
