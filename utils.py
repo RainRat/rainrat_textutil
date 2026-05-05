@@ -1,7 +1,9 @@
 import copy
 import json
 import logging
+import platform
 import re
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -1346,4 +1348,14 @@ def get_datetime_placeholders() -> dict:
         "date": now.strftime("%Y-%m-%d"),
         "time": now.strftime("%H:%M:%S"),
         "datetime": now.strftime("%Y-%m-%d %H:%M:%S"),
+    }
+
+
+def get_system_info() -> dict:
+    """Return environment details including OS, Python version, and architecture."""
+    return {
+        "os": platform.system(),
+        "python_version": sys.version.split()[0],
+        "platform": platform.platform(),
+        "arch": platform.machine(),
     }
