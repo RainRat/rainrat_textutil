@@ -5130,15 +5130,27 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     else:
         title_color = C_GREEN
 
-    # Highlight destination in the summary title
-    highlighted_dest = f"{C_CYAN}{destination_desc}{title_color}" if destination_desc else ""
-
-    file_word = _plural(total_included, "file")
-
     # Build project context (Name + Git info)
     project_name = stats.get('project_name', 'Project')
     git_branch = stats.get('git_branch')
     git_commit = stats.get('git_commit_short')
+
+    # Truncate components if they are extremely long to prevent wrapping
+    # We use more aggressive limits for narrow terminals
+    if term_width <= 100:
+        proj_limit = 15
+        branch_limit = 10
+        desc_limit = 15
+    else:
+        proj_limit = max(20, term_width // 4)
+        branch_limit = max(15, term_width // 6)
+        desc_limit = max(20, term_width // 4)
+
+    if len(project_name) > proj_limit:
+        project_name = project_name[:proj_limit-3] + "..."
+    
+    if git_branch and len(git_branch) > branch_limit:
+        git_branch = git_branch[:branch_limit-3] + "..."
 
     project_ctx = project_name
     if git_branch and git_branch != 'N/A':
@@ -5146,6 +5158,24 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             project_ctx = f"{project_name} ({git_branch}:{git_commit})"
         else:
             project_ctx = f"{project_name} ({git_branch})"
+
+    # Truncate descriptions if they are too long
+    if source_desc and len(source_desc) > desc_limit:
+        if source_desc.startswith("from '") and source_desc.endswith("'"):
+            source_desc = f"from '{_truncate_path(source_desc[6:-1], desc_limit - 7)}'"
+        else:
+            source_desc = _truncate_path(source_desc, desc_limit)
+
+    if destination_desc and len(destination_desc) > desc_limit:
+        if destination_desc.startswith("to '") and destination_desc.endswith("'"):
+            destination_desc = f"to '{_truncate_path(destination_desc[4:-1], desc_limit - 5)}'"
+        else:
+            destination_desc = _truncate_path(destination_desc, desc_limit)
+
+    # Highlight destination in the summary title
+    highlighted_dest = f"{C_CYAN}{destination_desc}{title_color}" if destination_desc else ""
+
+    file_word = _plural(total_included, "file")
 
     if total_included == 0:
         status_prefix = "NO FILES FOUND"
@@ -5195,8 +5225,23 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
     # Header
     # We use _ANSI_ESCAPE to correctly calculate the visible length of the title for the border
-    raw_title = _ANSI_ESCAPE.sub('', f"=== {summary_title} [{data_hint}] ===")
-    print(f"\n{title_color}{C_BOLD}=== {summary_title} {C_RESET}{C_DIM}[{C_RESET}{data_hint}{C_DIM}]{C_RESET}{title_color}{C_BOLD} ==={C_RESET}", file=sys.stderr)
+    raw_summary = _ANSI_ESCAPE.sub('', summary_title)
+    raw_data_hint = _ANSI_ESCAPE.sub('', data_hint)
+
+    # 4 (=== ) + 2 ( [) + 1 (]) + 4 ( ===) = 11 overhead
+    if len(raw_summary) + len(raw_data_hint) + 11 <= term_width:
+        raw_title = f"=== {raw_summary} [{raw_data_hint}] ==="
+        print(f"\n{title_color}{C_BOLD}=== {summary_title} {C_RESET}{C_DIM}[{C_RESET}{data_hint}{C_DIM}]{C_RESET}{title_color}{C_BOLD} ==={C_RESET}", file=sys.stderr)
+    elif len(raw_summary) + 8 <= term_width:
+        # Fits without data_hint
+        raw_title = f"=== {raw_summary} ==="
+        print(f"\n{title_color}{C_BOLD}=== {summary_title} ==={C_RESET}", file=sys.stderr)
+    else:
+        # Even summary_title is too long, truncate it to fit
+        # We use the raw version for truncation to avoid breaking ANSI codes
+        raw_trunc = raw_summary[:term_width - 11] + "..."
+        raw_title = f"=== {raw_trunc} ==="
+        print(f"\n{title_color}{C_BOLD}=== {raw_trunc} ==={C_RESET}", file=sys.stderr)
 
     for key, label in truncation_checks:
         if stats.get(key):
@@ -5444,7 +5489,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             print(f"{row_count_info}{row_metrics}{row_weight_info}{C_BOLD}{d['ext']}{C_RESET}", file=sys.stderr)
 
     # Footer
-    print(f"\n{title_color}{'=' * len(raw_title)}{C_RESET}", file=sys.stderr)
+    footer_len = min(len(raw_title), term_width)
+    print(f"\n{title_color}{'=' * footer_len}{C_RESET}", file=sys.stderr)
 
 
 if __name__ == "__main__":
