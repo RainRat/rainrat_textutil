@@ -5136,15 +5136,15 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     git_commit = stats.get('git_commit_short')
 
     # Truncate components if they are extremely long to prevent wrapping
-    # We use more aggressive limits for narrow terminals
-    if term_width <= 100:
-        proj_limit = 15
-        branch_limit = 10
-        desc_limit = 15
+    # We use more generous limits now as we will fall back to multi-line layout
+    if term_width <= 80:
+        proj_limit = 40
+        branch_limit = 30
+        desc_limit = 60
     else:
-        proj_limit = max(20, term_width // 4)
-        branch_limit = max(15, term_width // 6)
-        desc_limit = max(20, term_width // 4)
+        proj_limit = 80
+        branch_limit = 60
+        desc_limit = 120
 
     if len(project_name) > proj_limit:
         project_name = project_name[:proj_limit-3] + "..."
@@ -5202,13 +5202,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             verb = "pair"
         else:
             verb = "combine"
-        summary_title = f"{status_prefix}: [{project_ctx}] Would {verb} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
-    elif getattr(args, 'estimate_tokens', False) is True:
-        summary_title = f"{status_prefix}: [{project_ctx}] {total_included:,} {file_word} {source_desc or ''}".strip()
-    elif getattr(args, 'list_files', False) is True:
-        summary_title = f"{status_prefix}: [{project_ctx}] {total_included:,} {file_word} {source_desc or ''}".strip()
-    elif getattr(args, 'tree', False) is True:
-        summary_title = f"{status_prefix}: [{project_ctx}] {total_included:,} {file_word} {source_desc or ''}".strip()
     else:
         if getattr(args, 'extract', False) is True:
             action = "Extracted"
@@ -5218,30 +5211,54 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             action = "Paired"
         else:
             action = "Combined"
-        summary_title = f"{status_prefix}: [{project_ctx}] {action} {total_included:,} {file_word} {source_desc or ''} {highlighted_dest}".strip()
 
-    # Collapse any accidental double spaces caused by empty optional fields
+    # Header part
+    header_main = f"{status_prefix}: [{project_ctx}]"
+    
+    # Details part
+    if getattr(args, 'dry_run', False) is True:
+        verb_phrase = f"Would {verb} {total_included:,} {file_word}"
+    elif getattr(args, 'estimate_tokens', False) is True or getattr(args, 'list_files', False) is True or getattr(args, 'tree', False) is True:
+        verb_phrase = f"{total_included:,} {file_word}"
+    else:
+        verb_phrase = f"{action} {total_included:,} {file_word}"
+
+    # Build legacy summary_title for test compatibility if anything checks it
+    summary_title = f"{header_main} {verb_phrase} {source_desc or ''} {highlighted_dest}".strip()
     summary_title = re.sub(r'\s+', ' ', summary_title)
 
-    # Header
-    # We use _ANSI_ESCAPE to correctly calculate the visible length of the title for the border
-    raw_summary = _ANSI_ESCAPE.sub('', summary_title)
+    # We use _ANSI_ESCAPE to correctly calculate the visible length for the border
+    raw_header_main = _ANSI_ESCAPE.sub('', header_main)
     raw_data_hint = _ANSI_ESCAPE.sub('', data_hint)
 
     # 4 (=== ) + 2 ( [) + 1 (]) + 4 ( ===) = 11 overhead
-    if len(raw_summary) + len(raw_data_hint) + 11 <= term_width:
-        raw_title = f"=== {raw_summary} [{raw_data_hint}] ==="
-        print(f"\n{title_color}{C_BOLD}=== {summary_title} {C_RESET}{C_DIM}[{C_RESET}{data_hint}{C_DIM}]{C_RESET}{title_color}{C_BOLD} ==={C_RESET}", file=sys.stderr)
-    elif len(raw_summary) + 8 <= term_width:
-        # Fits without data_hint
-        raw_title = f"=== {raw_summary} ==="
-        print(f"\n{title_color}{C_BOLD}=== {summary_title} ==={C_RESET}", file=sys.stderr)
+    if len(raw_header_main) + len(raw_data_hint) + 11 <= term_width:
+        # Fits in one line
+        header_text = f"{header_main} {C_RESET}{C_DIM}[{C_RESET}{data_hint}{C_DIM}]{C_RESET}"
+        raw_title_len = len(raw_header_main) + len(raw_data_hint) + 11
+        print(f"\n{title_color}{C_BOLD}=== {header_text}{title_color}{C_BOLD} ==={C_RESET}", file=sys.stderr)
     else:
-        # Even summary_title is too long, truncate it to fit
-        # We use the raw version for truncation to avoid breaking ANSI codes
-        raw_trunc = raw_summary[:term_width - 11] + "..."
-        raw_title = f"=== {raw_trunc} ==="
-        print(f"\n{title_color}{C_BOLD}=== {raw_trunc} ==={C_RESET}", file=sys.stderr)
+        # Top border with status and project
+        border_len = min(term_width, len(raw_header_main) + 8)
+        border_len = max(border_len, 40)
+        
+        main_part = f"=== {header_main} "
+        filler_len = max(0, border_len - len(_ANSI_ESCAPE.sub('', main_part)))
+        print(f"\n{title_color}{C_BOLD}{main_part}{'=' * filler_len}{C_RESET}", file=sys.stderr)
+        
+        # Show data hint on its own line if it didn't fit in header
+        print(f"  {C_DIM}[{C_RESET}{data_hint}{C_DIM}]{C_RESET}", file=sys.stderr)
+        raw_title_len = border_len
+
+    # Detail lines
+    print(f"  {C_BOLD}{verb_phrase}{C_RESET}", file=sys.stderr)
+    if source_desc:
+        print(f"  {C_DIM}{source_desc}{C_RESET}", file=sys.stderr)
+    if highlighted_dest:
+        print(f"  {C_DIM}{highlighted_dest}{C_RESET}", file=sys.stderr)
+    
+    # Set raw_title for the footer
+    raw_title = "x" * raw_title_len
 
     for key, label in truncation_checks:
         if stats.get(key):
