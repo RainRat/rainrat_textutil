@@ -5223,10 +5223,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     else:
         verb_phrase = f"{action} {total_included:,} {file_word}"
 
-    # Build legacy summary_title for test compatibility if anything checks it
-    summary_title = f"{header_main} {verb_phrase} {source_desc or ''} {highlighted_dest}".strip()
-    summary_title = re.sub(r'\s+', ' ', summary_title)
-
     # We use _ANSI_ESCAPE to correctly calculate the visible length for the border
     raw_header_main = _ANSI_ESCAPE.sub('', header_main)
     raw_data_hint = _ANSI_ESCAPE.sub('', data_hint)
