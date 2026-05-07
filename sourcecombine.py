@@ -409,6 +409,35 @@ def _format_metadata_summary(meta: Mapping[str, Any]) -> str:
     return ""
 
 
+def _construct_git_web_url(remote_url, commit_or_branch, relative_path=None):
+    """Convert a Git remote URL into an HTTPS web link for projects or files."""
+    if not remote_url:
+        return None
+
+    # Normalize remote_url to HTTPS
+    # ssh: git@github.com:User/Repo.git -> https://github.com/User/Repo
+    # https: https://github.com/User/Repo.git -> https://github.com/User/Repo
+    url = remote_url
+    if url.startswith('git@'):
+        url = url.replace(':', '/', 1).replace('git@', 'https://', 1)
+
+    if url.endswith('.git'):
+        url = url[:-4]
+
+    if not relative_path:
+        return url
+
+    # Add path and commit/branch based on known providers
+    if 'github.com' in url:
+        return f"{url}/blob/{commit_or_branch}/{relative_path}"
+    if 'gitlab.com' in url:
+        return f"{url}/-/blob/{commit_or_branch}/{relative_path}"
+    if 'bitbucket.org' in url:
+        return f"{url}/src/{commit_or_branch}/{relative_path}"
+
+    return None
+
+
 def _render_single_pass(template, replacements):
     """Replace many placeholders in a template in a single pass.
 
@@ -425,7 +454,7 @@ def _render_single_pass(template, replacements):
     return pattern.sub(lambda m: str(replacements[m.group(0)]), template)
 
 
-def _render_template(template, relative_path, size=None, tokens=None, lines=None, escape_func=None, modified=None, content=None, custom_languages=None, index=None, total=None, global_size=None, global_tokens=None, global_lines=None, git_info=None):
+def _render_template(template, relative_path, size=None, tokens=None, lines=None, escape_func=None, modified=None, content=None, custom_languages=None, index=None, total=None, global_size=None, global_tokens=None, global_lines=None, git_info=None, file_path=None):
     """Replace placeholders in a template with file information.
 
     The placeholders include FILENAME, EXT, STEM, DIR, DIR_SLUG, SIZE,
@@ -501,9 +530,25 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
         replacements["{{GIT_COMMIT}}"] = git_info.get('git_commit', '')
         replacements["{{GIT_COMMIT_SHORT}}"] = git_info.get('git_commit_short', '')
         replacements["{{GIT_DIFF}}"] = git_info.get('git_diff', '')
+        replacements["{{GIT_REMOTE_URL}}"] = git_info.get('git_remote_url', '')
         replacements["{{FILE_DIFF}}"] = git_info.get('file_diffs', {}).get(filename, '')
         replacements["{{GIT_LOG}}"] = git_info.get('git_log', '')
         replacements["{{FILE_STATUS}}"] = git_info.get('file_statuses', {}).get(filename, '')
+
+        # Construct FILE_URL
+        remote_url = git_info.get('git_remote_url')
+        if remote_url:
+            commit = git_info.get('git_commit')
+            repo_root = git_info.get('git_repo_root')
+            if commit and repo_root:
+                # Use provided file_path or try to resolve it from relative_path
+                try:
+                    target_file = Path(file_path) if file_path else (Path(repo_root) / filename)
+                    abs_file = target_file.resolve()
+                    rel_to_repo = abs_file.relative_to(Path(repo_root).resolve()).as_posix()
+                    replacements["{{FILE_URL}}"] = _construct_git_web_url(remote_url, commit, rel_to_repo) or ""
+                except (ValueError, OSError):
+                    replacements["{{FILE_URL}}"] = ""
 
     return _render_single_pass(template, replacements)
 
@@ -537,7 +582,9 @@ def _render_global_template(template, stats):
         "{{GIT_COMMIT_SHORT}}": stats.get('git_commit_short', ''),
         "{{GIT_DIFF}}": stats.get('git_diff', ''),
         "{{GIT_LOG}}": stats.get('git_log', ''),
+        "{{GIT_REMOTE_URL}}": stats.get('git_remote_url', ''),
         "{{GIT_STATUS}}": stats.get('git_status', ''),
+        "{{PROJECT_URL}}": _construct_git_web_url(stats.get('git_remote_url'), stats.get('git_commit')) or "",
         "{{PROJECT_NAME}}": stats.get('project_name', 'Project'),
         "{{DATE}}": stats.get('date', ''),
         "{{TIME}}": stats.get('time', ''),
@@ -825,6 +872,8 @@ def _get_git_info(root_folder, log_count=0, include_diff=False, diff_ref=None, s
         'git_log': None,
         'git_status': None,
         'git_diff': None,
+        'git_remote_url': None,
+        'git_repo_root': None,
         'file_statuses': {},
         'file_diffs': {}
     }
@@ -832,6 +881,13 @@ def _get_git_info(root_folder, log_count=0, include_diff=False, diff_ref=None, s
     root_path = Path(root_folder)
     git_cwd = root_path.parent if root_path.is_file() else root_path
     try:
+        # Get repo root
+        result = subprocess.run(
+            ['git', 'rev-parse', '--show-toplevel'],
+            cwd=git_cwd, capture_output=True, text=True, check=True
+        )
+        info['git_repo_root'] = Path(result.stdout.strip()).as_posix()
+
         # Get branch name
         result = subprocess.run(
             ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
@@ -846,6 +902,16 @@ def _get_git_info(root_folder, log_count=0, include_diff=False, diff_ref=None, s
         )
         info['git_commit'] = result.stdout.strip()
         info['git_commit_short'] = info['git_commit'][:7]
+
+        # Get remote URL
+        try:
+            result = subprocess.run(
+                ['git', 'remote', 'get-url', 'origin'],
+                cwd=git_cwd, capture_output=True, text=True, check=True
+            )
+            info['git_remote_url'] = result.stdout.strip()
+        except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+            pass
 
         # Get porcelain status for WIP overview and tree labels
         result = subprocess.run(
@@ -1609,7 +1675,7 @@ class FileProcessor:
     def _make_bar(self, **kwargs):
         return _progress_bar(enabled=_progress_enabled(self.dry_run), **kwargs)
 
-    def _write_with_templates(self, outfile, content, relative_path, size=None, tokens=None, lines=None, modified=None, index=None, total=None, global_size=None, global_tokens=None, global_lines=None):
+    def _write_with_templates(self, outfile, content, relative_path, size=None, tokens=None, lines=None, modified=None, index=None, total=None, global_size=None, global_tokens=None, global_lines=None, file_path=None):
         """Write ``content`` with configured header/footer templates."""
 
         header_template = self.output_opts.get(
@@ -1626,7 +1692,7 @@ class FileProcessor:
             escape_func=escape_func, modified=modified, content=content,
             custom_languages=self.custom_languages, index=index, total=total,
             global_size=global_size, global_tokens=global_tokens, global_lines=global_lines,
-            git_info=self.git_info
+            git_info=self.git_info, file_path=file_path
         ))
         outfile.write(content)
         outfile.write(_render_template(
@@ -1634,7 +1700,7 @@ class FileProcessor:
             escape_func=escape_func, modified=modified, content=content,
             custom_languages=self.custom_languages, index=index, total=total,
             global_size=global_size, global_tokens=global_tokens, global_lines=global_lines,
-            git_info=self.git_info
+            git_info=self.git_info, file_path=file_path
         ))
 
     def get_content_hash(self, content):
@@ -1695,6 +1761,7 @@ class FileProcessor:
         global_size=None,
         global_tokens=None,
         global_lines=None,
+        file_path=None,
     ):
         """Format and write a single file entry to the output stream."""
         if self.estimate_tokens:
@@ -1754,6 +1821,7 @@ class FileProcessor:
                 global_size=global_size,
                 global_tokens=global_tokens,
                 global_lines=global_lines,
+                file_path=file_path,
             )
 
     def process_and_write(self, file_path, root_path, outfile, cached_content=None, index=None, total=None, global_size=None, global_tokens=None, global_lines=None):
@@ -1801,6 +1869,7 @@ class FileProcessor:
                 global_size=global_size,
                 global_tokens=global_tokens,
                 global_lines=global_lines,
+                file_path=file_path,
             )
 
         return token_count, is_approx, line_count
@@ -1835,7 +1904,7 @@ class FileProcessor:
             content=None, custom_languages=self.custom_languages,
             index=index, total=total, global_size=global_size,
             global_tokens=global_tokens, global_lines=global_lines,
-            git_info=self.git_info
+            git_info=self.git_info, file_path=file_path
         )
 
         token_count, is_approx = utils.estimate_tokens(rendered)
@@ -1856,6 +1925,7 @@ class FileProcessor:
             global_size=global_size,
             global_tokens=global_tokens,
             global_lines=global_lines,
+            file_path=file_path,
         )
 
         return token_count, is_approx, line_count
@@ -2762,7 +2832,7 @@ def find_and_combine_files(
                             placeholder, rel_p,
                             size=file_path.stat().st_size if file_path.exists() else 0,
                             custom_languages=search_opts.get('custom_languages'),
-                            git_info=stats
+                            git_info=stats, file_path=file_path
                         )
                         if sort_by == 'tokens':
                             val, _ = utils.estimate_tokens(rendered)
@@ -2820,7 +2890,7 @@ def find_and_combine_files(
                         rendered = _render_template(
                             placeholder, rel_p, size=file_size,
                             custom_languages=search_opts.get('custom_languages'),
-                            git_info=stats
+                            git_info=stats, file_path=file_path
                         )
                         content_tokens, is_approx = utils.estimate_tokens(rendered)
                         content_lines = utils.count_lines(rendered)
@@ -2866,12 +2936,12 @@ def find_and_combine_files(
                 rendered_h = _render_template(
                     h_template, rel_p, size=file_size, tokens=content_tokens,
                     lines=content_lines, custom_languages=search_opts.get('custom_languages'),
-                    git_info=stats
+                        git_info=stats, file_path=file_path
                 )
                 rendered_f = _render_template(
                     f_template, rel_p, size=file_size, tokens=content_tokens,
                     lines=content_lines, custom_languages=search_opts.get('custom_languages'),
-                    git_info=stats
+                        git_info=stats, file_path=file_path
                 )
 
                 header_tokens = utils.estimate_tokens(rendered_h)[0]
@@ -3113,8 +3183,8 @@ def find_and_combine_files(
                     rel_p = _get_rel_path(file_path, root_path)
                     f_size = file_path.stat().st_size if file_path.exists() else 0
 
-                    rendered_h = _render_template(h_template, rel_p, size=f_size, tokens=token_count, lines=line_count, custom_languages=search_opts.get('custom_languages'), index=item_index, total=total_items, global_size=stats.get('total_size_bytes'), global_tokens=stats.get('total_tokens'), global_lines=stats.get('total_lines'))
-                    rendered_f = _render_template(f_template, rel_p, size=f_size, tokens=token_count, lines=line_count, custom_languages=search_opts.get('custom_languages'), index=item_index, total=total_items, global_size=stats.get('total_size_bytes'), global_tokens=stats.get('total_tokens'), global_lines=stats.get('total_lines'))
+                    rendered_h = _render_template(h_template, rel_p, size=f_size, tokens=token_count, lines=line_count, custom_languages=search_opts.get('custom_languages'), index=item_index, total=total_items, global_size=stats.get('total_size_bytes'), global_tokens=stats.get('total_tokens'), global_lines=stats.get('total_lines'), file_path=file_path)
+                    rendered_f = _render_template(f_template, rel_p, size=f_size, tokens=token_count, lines=line_count, custom_languages=search_opts.get('custom_languages'), index=item_index, total=total_items, global_size=stats.get('total_size_bytes'), global_tokens=stats.get('total_tokens'), global_lines=stats.get('total_lines'), file_path=file_path)
 
                     header_tokens = utils.estimate_tokens(rendered_h)[0]
                     footer_tokens = utils.estimate_tokens(rendered_f)[0]
@@ -3532,7 +3602,7 @@ def main():
     output_group.add_argument(
         "--include-diff",
         action="store_true",
-        help="Include the Git diff in the project overview and templates ({{GIT_DIFF}} and {{FILE_DIFF}}).",
+        help="Include the Git diff in the project overview and templates ({{GIT_DIFF}}, {{FILE_DIFF}}, {{PROJECT_URL}}, and {{FILE_URL}}).",
     )
     output_group.add_argument(
         "--json-summary",

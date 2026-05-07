@@ -82,17 +82,23 @@ def test_get_git_info_success(tmp_path):
     """Test _get_git_info when git commands succeed."""
     root = tmp_path
 
+    mock_root = MagicMock()
+    mock_root.stdout = str(tmp_path) + "\n"
+
     mock_branch = MagicMock()
     mock_branch.stdout = "main\n"
 
     mock_commit = MagicMock()
     mock_commit.stdout = "1234567890abcdef1234567890abcdef12345678\n"
 
+    mock_remote = MagicMock()
+    mock_remote.stdout = "https://github.com/User/Repo.git\n"
+
     mock_status = MagicMock()
     mock_status.stdout = " M file1.txt\n?? file2.txt\n"
 
     with patch("subprocess.run") as mock_run:
-        mock_run.side_effect = [mock_branch, mock_commit, mock_status]
+        mock_run.side_effect = [mock_root, mock_branch, mock_commit, mock_remote, mock_status]
 
         info = sourcecombine._get_git_info(root)
 
