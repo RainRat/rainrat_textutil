@@ -5223,10 +5223,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     else:
         verb_phrase = f"{action} {total_included:,} {file_word}"
 
-    # Build legacy summary_title for test compatibility if anything checks it
-    summary_title = f"{header_main} {verb_phrase} {source_desc or ''} {highlighted_dest}".strip()
-    summary_title = re.sub(r'\s+', ' ', summary_title)
-
     # We use _ANSI_ESCAPE to correctly calculate the visible length for the border
     raw_header_main = _ANSI_ESCAPE.sub('', header_main)
     raw_data_hint = _ANSI_ESCAPE.sub('', data_hint)
@@ -5257,9 +5253,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     if highlighted_dest:
         print(f"  {C_DIM}{highlighted_dest}{C_RESET}", file=sys.stderr)
     
-    # Set raw_title for the footer
-    raw_title = "x" * raw_title_len
-
     for key, label in truncation_checks:
         if stats.get(key):
             print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to {label}.{C_RESET}", file=sys.stderr)
@@ -5506,7 +5499,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             print(f"{row_count_info}{row_metrics}{row_weight_info}{C_BOLD}{d['ext']}{C_RESET}", file=sys.stderr)
 
     # Footer
-    footer_len = min(len(raw_title), term_width)
+    footer_len = min(raw_title_len, term_width)
     print(f"\n{title_color}{'=' * footer_len}{C_RESET}", file=sys.stderr)
 
 
