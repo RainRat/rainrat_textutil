@@ -99,6 +99,9 @@ These require a Git repository to function:
 *   `{{GIT_STATUS}}`: Summary of working tree changes (e.g., "2 modified, 1 added").
 *   `{{GIT_LOG}}`: Recent commit messages (requires `--git-log` flag).
 *   `{{GIT_DIFF}}`: Project-wide changes (requires `--include-diff` flag).
+*   `{{GIT_REMOTE_URL}}`: The repository's origin remote URL.
+*   `{{PROJECT_URL}}`: Web URL to the repository home (supports GitHub, GitLab, Bitbucket).
+*   `{{FILE_URL}}`: Direct web link to the specific file and commit.
 *   `{{FILE_DIFF}}`: Changes specific to the current file (requires `--include-diff` flag).
 *   `{{FILE_STATUS}}`: Git status of the current file (e.g., `M`, `A`, `??`).
 
