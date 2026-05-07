@@ -50,7 +50,7 @@ def test_find_and_combine_files_oserror_fallback_none(tmp_path):
         with patch('pathlib.Path.absolute', side_effect=OSError):
             # We need to pass an output_path that is not '-'
             config = {'output': {}, 'processing': {}, 'search': {'root_folders': [str(tmp_path)]}}
-            stats = sourcecombine.find_and_combine_files(config, output_path="some/path")
+            stats = sourcecombine.find_and_combine_files(config, output_path=str(tmp_path / "some/path"))
             # Should not crash and reach end
             assert stats is not None
 
