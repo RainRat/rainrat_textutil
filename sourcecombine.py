@@ -485,8 +485,14 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
         "{{DIR}}": parent_dir,
         "{{DIR_SLUG}}": dir_slug,
         "{{LANG}}": lang,
-        "{{HASH}}": hashlib.sha256(content.encode('utf-8', errors='replace')).hexdigest() if content is not None else "",
     }
+
+    if "{{HASH}}" in template:
+        replacements["{{HASH}}"] = (
+            hashlib.sha256(content.encode('utf-8', errors='replace')).hexdigest()
+            if content is not None
+            else ""
+        )
 
     # Project-level replacements
     replacements["{{PROJECT_NAME}}"] = (git_info or {}).get('project_name', 'Project')
