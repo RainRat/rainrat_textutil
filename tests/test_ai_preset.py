@@ -85,6 +85,11 @@ class TestAIPreset(unittest.TestCase):
             verify=False,
             clean=False,
             preview=False,
+            header=None,
+            footer=None,
+            global_header=None,
+            global_footer=None,
+            max_size_placeholder=None,
         )
 
     @patch('argparse.ArgumentParser.parse_args')
