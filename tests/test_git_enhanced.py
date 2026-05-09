@@ -89,7 +89,7 @@ def test_get_git_info_success(tmp_path):
     mock_branch.stdout = "main\n"
 
     mock_commit = MagicMock()
-    mock_commit.stdout = "1234567890abcdef1234567890abcdef12345678\n"
+    mock_commit.stdout = "1234567890abcdef1234567890abcdef12345678\nTest Author\n2023-01-01 12:00:00 +0000\n"
 
     mock_remote = MagicMock()
     mock_remote.stdout = "https://github.com/User/Repo.git\n"

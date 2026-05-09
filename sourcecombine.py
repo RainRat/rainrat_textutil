@@ -541,6 +541,15 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
         replacements["{{GIT_LOG}}"] = git_info.get('git_log', '')
         replacements["{{FILE_STATUS}}"] = git_info.get('file_statuses', {}).get(filename, '')
 
+        # Fetch file-specific Git info only if placeholders are present
+        file_git_placeholders = ["{{FILE_AUTHOR}}", "{{FILE_AUTHOR_DATE}}", "{{FILE_LOG}}"]
+        if any(p in template for p in file_git_placeholders):
+            repo_root = git_info.get('git_repo_root')
+            file_git_data = _get_file_git_info(filename, repo_root)
+            replacements["{{FILE_AUTHOR}}"] = file_git_data.get('file_author', '')
+            replacements["{{FILE_AUTHOR_DATE}}"] = file_git_data.get('file_author_date', '')
+            replacements["{{FILE_LOG}}"] = file_git_data.get('file_log', '')
+
         # Construct FILE_URL
         remote_url = git_info.get('git_remote_url')
         if remote_url:
@@ -586,6 +595,8 @@ def _render_global_template(template, stats):
         "{{GIT_BRANCH}}": stats.get('git_branch', ''),
         "{{GIT_COMMIT}}": stats.get('git_commit', ''),
         "{{GIT_COMMIT_SHORT}}": stats.get('git_commit_short', ''),
+        "{{GIT_AUTHOR}}": stats.get('git_author', ''),
+        "{{GIT_AUTHOR_DATE}}": stats.get('git_author_date', ''),
         "{{GIT_DIFF}}": stats.get('git_diff', ''),
         "{{GIT_LOG}}": stats.get('git_log', ''),
         "{{GIT_REMOTE_URL}}": stats.get('git_remote_url', ''),
@@ -865,6 +876,30 @@ def _parse_git_diff_by_file(diff_text):
     return file_diffs
 
 
+@lru_cache(maxsize=1024)
+def _get_file_git_info(file_path, repo_root):
+    """Retrieve the last author, date, and commit message for a specific file."""
+    if not repo_root or not file_path:
+        return {}
+
+    try:
+        # %an: author name, %ai: author date (ISO 8601-like), %s: subject
+        result = subprocess.run(
+            ['git', 'log', '-1', '--format=%an%n%ai%n%s', '--', file_path],
+            cwd=repo_root, capture_output=True, text=True, check=True
+        )
+        lines = result.stdout.splitlines()
+        if len(lines) >= 3:
+            return {
+                'file_author': lines[0],
+                'file_author_date': lines[1],
+                'file_log': lines[2]
+            }
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+        pass
+    return {}
+
+
 def _get_git_info(root_folder, log_count=0, include_diff=False, diff_ref=None, staged=False, unstaged=False):
     """Retrieve Git branch, commit, and status information for the project.
 
@@ -875,6 +910,8 @@ def _get_git_info(root_folder, log_count=0, include_diff=False, diff_ref=None, s
         'git_branch': 'N/A',
         'git_commit': 'N/A',
         'git_commit_short': 'N/A',
+        'git_author': 'N/A',
+        'git_author_date': 'N/A',
         'git_log': None,
         'git_status': None,
         'git_diff': None,
@@ -901,13 +938,26 @@ def _get_git_info(root_folder, log_count=0, include_diff=False, diff_ref=None, s
         )
         info['git_branch'] = result.stdout.strip()
 
-        # Get full commit hash
-        result = subprocess.run(
-            ['git', 'rev-parse', 'HEAD'],
-            cwd=git_cwd, capture_output=True, text=True, check=True
-        )
-        info['git_commit'] = result.stdout.strip()
-        info['git_commit_short'] = info['git_commit'][:7]
+        # Get full commit hash, author and date
+        try:
+            result = subprocess.run(
+                ['git', 'log', '-1', '--format=%H%n%an%n%ai'],
+                cwd=git_cwd, capture_output=True, text=True, check=True
+            )
+            lines = result.stdout.splitlines()
+            if len(lines) >= 3:
+                info['git_commit'] = lines[0]
+                info['git_commit_short'] = info['git_commit'][:7]
+                info['git_author'] = lines[1]
+                info['git_author_date'] = lines[2]
+        except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+            # Fallback to rev-parse if git log fails (e.g. empty repo or shallow clone issues)
+            result = subprocess.run(
+                ['git', 'rev-parse', 'HEAD'],
+                cwd=git_cwd, capture_output=True, text=True, check=True
+            )
+            info['git_commit'] = result.stdout.strip()
+            info['git_commit_short'] = info['git_commit'][:7]
 
         # Get remote URL
         try:
