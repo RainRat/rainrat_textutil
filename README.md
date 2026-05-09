@@ -36,7 +36,7 @@ SourceCombine is a tool for your terminal that helps you find, filter, and combi
 *   `--version`: Show the application version and exit.
 
 ## Prerequisites
-- **Python 3.10 or newer:** This tool uses modern Python features.
+*   **Python 3.10 or newer:** This tool uses modern Python features.
 
 ## Getting Started
 1.  **Clone the Repository:**
@@ -50,12 +50,13 @@ SourceCombine is a tool for your terminal that helps you find, filter, and combi
     ```
 3.  **Run the Tool:**
     ```bash
-    python sourcecombine.py --help
+    python sourcecombine.py src/ --output combined.txt
     ```
 4.  **Create a Config (Optional):**
     ```bash
     python sourcecombine.py --init
     ```
+    This command creates a `sourcecombine.yml` file with default settings to help you get started.
 
 For more details, use `python sourcecombine.py --help` or check `config.template.yml`.
 
