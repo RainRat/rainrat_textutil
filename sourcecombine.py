@@ -3611,6 +3611,31 @@ def main():
         help="Include the Git diff in the project overview and templates ({{GIT_DIFF}}, {{FILE_DIFF}}, {{PROJECT_URL}}, and {{FILE_URL}}).",
     )
     output_group.add_argument(
+        "--header",
+        metavar="TEMPLATE",
+        help="Override the template written before each file's content.",
+    )
+    output_group.add_argument(
+        "--footer",
+        metavar="TEMPLATE",
+        help="Override the template written after each file's content.",
+    )
+    output_group.add_argument(
+        "--global-header",
+        metavar="TEMPLATE",
+        help="Override the template written at the very beginning of the output.",
+    )
+    output_group.add_argument(
+        "--global-footer",
+        metavar="TEMPLATE",
+        help="Override the template written at the very end of the output.",
+    )
+    output_group.add_argument(
+        "--max-size-placeholder",
+        metavar="TEMPLATE",
+        help="Override the placeholder written when a file exceeds the size limit.",
+    )
+    output_group.add_argument(
         "--json-summary",
         metavar="PATH",
         help="Save an execution summary (file counts, tokens, time taken) in JSON format. Use '-' to print it to your terminal.",
@@ -4205,6 +4230,17 @@ def main():
 
     if getattr(args, 'include_diff', False):
         output_conf['include_diff'] = True
+
+    if args.header is not None:
+        output_conf['header_template'] = args.header
+    if args.footer is not None:
+        output_conf['footer_template'] = args.footer
+    if args.global_header is not None:
+        output_conf['global_header_template'] = args.global_header
+    if args.global_footer is not None:
+        output_conf['global_footer_template'] = args.global_footer
+    if args.max_size_placeholder is not None:
+        output_conf['max_size_placeholder'] = args.max_size_placeholder
 
     if args.markdown:
         args.format = "markdown"
