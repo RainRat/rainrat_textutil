@@ -517,7 +517,7 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
     replacements["{{ARCH}}"] = (git_info or {}).get('arch', '')
 
     # Environment variable resolution
-    if template and '{{ENV:' in template:
+    if '{{ENV:' in template:
         env_matches = re.findall(r'{{ENV:([A-Za-z0-9_]+)}}', template)
         for var_name in env_matches:
             replacements[f"{{{{ENV:{var_name}}}}}"] = os.environ.get(var_name, '')
@@ -602,7 +602,7 @@ def _render_global_template(template, stats):
     }
 
     # Environment variable resolution
-    if template and '{{ENV:' in template:
+    if '{{ENV:' in template:
         env_matches = re.findall(r'{{ENV:([A-Za-z0-9_]+)}}', template)
         for var_name in env_matches:
             replacements[f"{{{{ENV:{var_name}}}}}"] = os.environ.get(var_name, '')
