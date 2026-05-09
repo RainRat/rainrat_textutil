@@ -5361,7 +5361,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             relevant_reasons = [(r, c) for r, c in stats.get('filter_reasons', {}).items() if r != 'excluded_folder' and c > 0]
             if relevant_reasons:
                 sorted_reasons = sorted(relevant_reasons, key=lambda x: (-x[1], x[0]))
-                outer_skipped_indent = "│         " if has_skipped_folders else "          "
+                outer_skipped_indent = ("│" + " " * (label_width - 5)) if has_skipped_folders else (" " * (label_width - 4))
 
                 for i, (reason, count) in enumerate(sorted_reasons):
                     is_last = i == len(sorted_reasons) - 1
@@ -5573,7 +5573,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             row_metrics += f"{C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}  "
 
             # Row Count Info (COUNT, % FILES)
-            row_count_info = f"{C_BOLD}{C_CYAN}{count:7,}{C_RESET}   {C_BOLD}{C_CYAN}{f_percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}  "
+            row_count_info = f"{C_BOLD}{C_CYAN}{count:7,}{C_RESET}  {C_BOLD}{C_CYAN}{f_percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}   "
 
             print(f"    {row_metrics}{row_count_info}{C_BOLD}{d['ext']}{C_RESET}", file=sys.stderr)
 
