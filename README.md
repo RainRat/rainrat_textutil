@@ -17,7 +17,7 @@ SourceCombine is a tool for your terminal that helps you find, filter, and combi
 *   `--config`: Use a custom configuration file (YAML). The tool automatically searches for `sourcecombine.yml`, `sourcecombine.yaml`, `config.yml`, or `config.yaml` in your current folder.
 *   `--output` (`-o`): Save results to a file or folder instead of the terminal.
 *   `--clipboard` (`-c`): Copy the combined output to your system clipboard.
-*   `--ai` (`-a`): Preset for AI assistants (Markdown, line numbers, TOC, and project overview).
+*   `--ai` (`-a`): Preset for AI assistants (Markdown format, line numbers, TOC, folder tree, project overview, and skipping binary files). This also copies to your system clipboard if you do not specify an output.
 *   `--dry-run` (`-d`): Show what would happen without making any changes.
 *   `--apply-in-place`: Save processed changes back to the original source files.
 *   `--create-backups`: Create `.bak` copies of original files when using `--apply-in-place`.
