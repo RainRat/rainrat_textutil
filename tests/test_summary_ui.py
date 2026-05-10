@@ -28,6 +28,7 @@ def test_summary_redesign_largest_files(monkeypatch, capsys):
     args.estimate_tokens = True
     args.list_files = False
     args.tree = False
+    args.format = 'text'
 
     # Force NO_COLOR to avoid ANSI codes in test check
     monkeypatch.setenv("NO_COLOR", "1")
@@ -40,7 +41,7 @@ def test_summary_redesign_largest_files(monkeypatch, capsys):
     stderr = captured.err
 
     # Check for the new sections
-    assert "TOKEN ESTIMATION COMPLETE: [Project]" in stderr
+    assert "COMBINE ESTIMATION: [Project]" in stderr
     assert "10 files" in stderr
     assert "Largest Files" in stderr
     assert "TOKENS" in stderr
@@ -138,7 +139,7 @@ def test_summary_printing_dry_run(monkeypatch, capsys):
     captured = capsys.readouterr()
     stderr = captured.err
 
-    assert "NO FILES FOUND: [Project]" in stderr
+    assert "NO FILES FOUND (COMBINE): [Project]" in stderr
     assert "Would combine 0 files" in stderr
     assert "Total Found:" in stderr
     assert "0 files" in stderr
@@ -275,6 +276,7 @@ def test_file_types_redesign_sorting_and_others(monkeypatch, capsys):
     args.list_files = False
     args.tree = False
     args.extract = False
+    args.format = 'text'
 
     monkeypatch.setenv("NO_COLOR", "1")
 
@@ -285,7 +287,9 @@ def test_file_types_redesign_sorting_and_others(monkeypatch, capsys):
 
     # Check sorting: .py should be first despite having fewer files than .txt
     # Redesign uses a tabular format without colons
-    ext_lines = [line for line in stderr.splitlines() if " [" in line and "]" in line and ("." in line or "(others)" in line) and "EXTENSION" not in line and "===" not in line]
+    # We filter out the data hint line which starts with "  [" but doesn't have "EXTENSION" or "==="
+    # The data hint line now also has the format "TEXT" which doesn't necessarily have a dot if we mock it correctly.
+    ext_lines = [line for line in stderr.splitlines() if " [" in line and "]" in line and ("." in line or "(others)" in line) and "EXTENSION" not in line and "===" not in line and "tokens" not in line]
 
     assert ".py" in ext_lines[0]
     assert ".txt" in ext_lines[1]
