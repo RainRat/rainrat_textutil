@@ -37,6 +37,7 @@ SourceCombine is a tool for your terminal that helps you find, filter, and combi
 
 ## Prerequisites
 *   **Python 3.10 or newer:** This tool uses modern Python features.
+*   **tiktoken (optional):** Install this for accurate token counting.
 
 ## Getting Started
 1.  **Clone the Repository:**
@@ -47,6 +48,10 @@ SourceCombine is a tool for your terminal that helps you find, filter, and combi
 2.  **Install Dependencies:**
     ```bash
     pip install -r requirements.txt
+    ```
+    *(Optional)* Install `tiktoken` for accurate token counting:
+    ```bash
+    pip install tiktoken
     ```
 3.  **Run the Tool:**
     ```bash
