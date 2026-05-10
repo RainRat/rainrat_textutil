@@ -99,7 +99,8 @@ def test_summary_printing(monkeypatch, capsys):
     assert "Combined 123 files" in stderr
     assert "Total Found:" in stderr
     assert "123 files" in stderr
-    assert "Skipped Folders:           2 folders" in stderr
+    assert "Skipped Folders:" in stderr
+    assert "2 folders" in stderr
     assert "├── Included:" in stderr
     assert "Total Size:" in stderr
     assert "1.50 MB" in stderr
@@ -346,8 +347,10 @@ def test_skip_reasons_alignment(monkeypatch, capsys):
     captured = capsys.readouterr()
     stderr = captured.err
 
-    # Check indentation of skip reason
-    assert "└──            5 (100.0%) excluded" in stderr
+    # Check indentation and format of skip reason
+    # "Excluded:" (9 chars) padded to label_width-8 (16) = 7 spaces
+    # 5 is right-aligned in 12. Total 18 spaces between ':' and '5'.
+    assert "└── Excluded:                  5 (100.0%)" in stderr
 
 
 def test_summary_git_info(monkeypatch, capsys):

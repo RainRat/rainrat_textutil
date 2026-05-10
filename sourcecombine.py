@@ -5370,7 +5370,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to {label}.{C_RESET}", file=sys.stderr)
 
     # Files Section
-    label_width = 20
+    label_width = 24
     print(f"  {C_BOLD}{C_CYAN}Files{C_RESET}", file=sys.stderr)
 
     has_skipped_files = total_filtered > 0
@@ -5397,14 +5397,14 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             relevant_reasons = [(r, c) for r, c in stats.get('filter_reasons', {}).items() if r != 'excluded_folder' and c > 0]
             if relevant_reasons:
                 sorted_reasons = sorted(relevant_reasons, key=lambda x: (-x[1], x[0]))
-                outer_skipped_indent = ("│" + " " * (label_width - 5)) if has_skipped_folders else (" " * (label_width - 4))
+                outer_skipped_indent = "│   " if has_skipped_folders else "    "
 
                 for i, (reason, count) in enumerate(sorted_reasons):
                     is_last = i == len(sorted_reasons) - 1
                     connector = "└── " if is_last else "├── "
-                    display_reason = reason.replace('_', ' ')
+                    display_reason = (reason.replace('_', ' ').capitalize() + ":")
                     reason_percent = (count / total_filtered * 100) if total_filtered > 0 else 0
-                    print(f"    {C_DIM}{outer_skipped_indent}{connector}{C_RESET}{C_BOLD}{C_CYAN}{count:12,}{C_RESET} {C_DIM}({reason_percent:>5.1f}%) {display_reason}{C_RESET}", file=sys.stderr)
+                    print(f"    {C_DIM}{outer_skipped_indent}{connector}{C_RESET}{C_BOLD}{display_reason:<{label_width - 8}}{C_RESET}{C_BOLD}{C_CYAN}{count:12,}{C_RESET} {C_DIM}({reason_percent:>5.1f}%){C_RESET}", file=sys.stderr)
 
         if has_skipped_folders:
  
