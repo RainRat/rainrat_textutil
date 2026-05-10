@@ -83,6 +83,9 @@ Used in `header_template` and `footer_template`:
 *   `{{INDEX}}`: The current file's position in the list (1, 2, 3...).
 *   `{{TOTAL}}`: The total number of files being processed.
 *   `{{MODIFIED}}`: Last modified date and time.
+*   `{{FILE_AUTHOR}}`: Last author of the file according to Git.
+*   `{{FILE_AUTHOR_DATE}}`: Last commit date of the file according to Git.
+*   `{{FILE_LOG}}`: Subject of the last commit for the file according to Git.
 *   `{{OS}}`, `{{PYTHON_VERSION}}`, `{{PLATFORM}}`, `{{ARCH}}`: System and environment metadata.
 *   `{{ENV:VAR_NAME}}`: Value of an environment variable.
 *   `{{SIZE_PERCENT}}`, `{{TOKEN_PERCENT}}`, `{{LINE_PERCENT}}`: Percentage of the total project.
@@ -102,6 +105,8 @@ Used in `global_header_template`, `global_footer_template`, and other project-wi
 These require a Git repository to function:
 *   `{{GIT_BRANCH}}`: Current branch name.
 *   `{{GIT_COMMIT}}`, `{{GIT_COMMIT_SHORT}}`: Full or short commit hash.
+*   `{{GIT_AUTHOR}}`: Author of the latest commit in the project.
+*   `{{GIT_AUTHOR_DATE}}`: Date of the latest commit in the project.
 *   `{{GIT_STATUS}}`: Summary of working tree changes (e.g., "2 modified, 1 added").
 *   `{{GIT_LOG}}`: Recent commit messages (requires `--git-log` flag).
 *   `{{GIT_DIFF}}`: Project-wide changes (requires `--include-diff` flag).

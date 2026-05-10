@@ -35,6 +35,8 @@ def test_get_git_info_with_remote(tmp_path):
             mock.stdout = str(tmp_path)
         elif "--abbrev-ref" in args:
             mock.stdout = "main"
+        elif "git" in args and "log" in args and "-1" in args:
+            mock.stdout = "abc1234567890\nTest Author\n2023-01-01 12:00:00 +0000"
         elif "rev-parse" in args and "HEAD" in args:
             mock.stdout = "abc1234567890"
         elif "remote" in args and "get-url" in args:
