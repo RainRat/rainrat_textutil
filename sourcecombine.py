@@ -454,6 +454,14 @@ def _render_single_pass(template, replacements):
     return pattern.sub(lambda m: str(replacements[m.group(0)]), template)
 
 
+def _resolve_env_placeholders(template, replacements):
+    """Resolve {{ENV:VAR_NAME}} placeholders from the environment."""
+    if '{{ENV:' in template:
+        env_matches = re.findall(r'{{ENV:([A-Za-z0-9_]+)}}', template)
+        for var_name in env_matches:
+            replacements[f"{{{{ENV:{var_name}}}}}"] = os.environ.get(var_name, '')
+
+
 def _render_template(template, relative_path, size=None, tokens=None, lines=None, escape_func=None, modified=None, content=None, custom_languages=None, index=None, total=None, global_size=None, global_tokens=None, global_lines=None, git_info=None, file_path=None):
     """Replace placeholders in a template with file information.
 
@@ -517,10 +525,7 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
     replacements["{{ARCH}}"] = (git_info or {}).get('arch', '')
 
     # Environment variable resolution
-    if '{{ENV:' in template:
-        env_matches = re.findall(r'{{ENV:([A-Za-z0-9_]+)}}', template)
-        for var_name in env_matches:
-            replacements[f"{{{{ENV:{var_name}}}}}"] = os.environ.get(var_name, '')
+    _resolve_env_placeholders(template, replacements)
 
     def _calc_percent(val, total_val):
         if val is not None and total_val and total_val > 0:
@@ -613,10 +618,7 @@ def _render_global_template(template, stats):
     }
 
     # Environment variable resolution
-    if '{{ENV:' in template:
-        env_matches = re.findall(r'{{ENV:([A-Za-z0-9_]+)}}', template)
-        for var_name in env_matches:
-            replacements[f"{{{{ENV:{var_name}}}}}"] = os.environ.get(var_name, '')
+    _resolve_env_placeholders(template, replacements)
 
     return _render_single_pass(template, replacements)
 
