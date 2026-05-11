@@ -472,7 +472,8 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
     if not template:
         return ""
 
-    filename = relative_path.as_posix()
+    raw_filename = relative_path.as_posix()
+    filename = raw_filename
     ext = relative_path.suffix.lstrip(".") or ""
     stem = relative_path.stem
     parent_dir = relative_path.parent.as_posix()
@@ -542,15 +543,15 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
         replacements["{{GIT_COMMIT_SHORT}}"] = git_info.get('git_commit_short', '')
         replacements["{{GIT_DIFF}}"] = git_info.get('git_diff', '')
         replacements["{{GIT_REMOTE_URL}}"] = git_info.get('git_remote_url', '')
-        replacements["{{FILE_DIFF}}"] = git_info.get('file_diffs', {}).get(filename, '')
+        replacements["{{FILE_DIFF}}"] = git_info.get('file_diffs', {}).get(raw_filename, '')
         replacements["{{GIT_LOG}}"] = git_info.get('git_log', '')
-        replacements["{{FILE_STATUS}}"] = git_info.get('file_statuses', {}).get(filename, '')
+        replacements["{{FILE_STATUS}}"] = git_info.get('file_statuses', {}).get(raw_filename, '')
 
         # Fetch file-specific Git info only if placeholders are present
         file_git_placeholders = ["{{FILE_AUTHOR}}", "{{FILE_AUTHOR_DATE}}", "{{FILE_LOG}}"]
         if any(p in template for p in file_git_placeholders):
             repo_root = git_info.get('git_repo_root')
-            file_git_data = _get_file_git_info(filename, repo_root)
+            file_git_data = _get_file_git_info(raw_filename, repo_root)
             replacements["{{FILE_AUTHOR}}"] = file_git_data.get('file_author', '')
             replacements["{{FILE_AUTHOR_DATE}}"] = file_git_data.get('file_author_date', '')
             replacements["{{FILE_LOG}}"] = file_git_data.get('file_log', '')
@@ -563,7 +564,7 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
             if commit and repo_root:
                 # Use provided file_path or try to resolve it from relative_path
                 try:
-                    target_file = Path(file_path) if file_path else (Path(repo_root) / filename)
+                    target_file = Path(file_path) if file_path else (Path(repo_root) / raw_filename)
                     abs_file = target_file.resolve()
                     rel_to_repo = abs_file.relative_to(Path(repo_root).resolve()).as_posix()
                     replacements["{{FILE_URL}}"] = _construct_git_web_url(remote_url, commit, rel_to_repo) or ""
