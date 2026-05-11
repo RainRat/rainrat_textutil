@@ -5519,9 +5519,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         print(f"\n  {C_BOLD}{C_CYAN}{section_name}{C_RESET}", file=sys.stderr)
 
         if duration is not None:
-            print(f"    {C_BOLD}{'Time taken:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{duration:12.2f}{C_RESET}{C_DIM} s{C_RESET}", file=sys.stderr)
+            fps = total_discovered / duration if duration > 0 else 0
+            print(f"    {C_BOLD}{'Duration:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{duration:12.2f}{C_RESET}{C_DIM} s{C_RESET} {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{fps:,.1f}{C_RESET} {C_DIM}files/s){C_RESET}", file=sys.stderr)
             if duration > 0 and total_discovered > 1:
-                fps = total_discovered / duration
                 bps = total_size_bytes / duration
                 tps = token_count / duration if token_count > 0 else 0
                 lps = total_lines / duration if total_lines > 0 else 0
@@ -5533,8 +5533,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 if lps > 0:
                     throughput_details.append(f"{C_BOLD}{C_CYAN}{lps:,.0f}{C_RESET}{C_DIM} lines/s{C_RESET}")
 
-                details_str = f"{C_DIM}({C_RESET}{f'{C_DIM} • {C_RESET}'.join(throughput_details)}{C_DIM}){C_RESET}"
-                print(f"    {C_BOLD}{'Throughput:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{fps:12,.1f}{C_RESET} {C_DIM}files/s{C_RESET} {details_str}", file=sys.stderr)
+                print(f"    {C_BOLD}{'Throughput:':<{label_width}}{C_RESET}{f' {C_DIM}• {C_RESET}'.join(throughput_details)}", file=sys.stderr)
 
         _print_limit_usage_bar('File Limit Usage:', total_included, stats.get('max_files', 0), label_width)
         _print_limit_usage_bar('Token Limit Usage:', token_count, stats.get('max_total_tokens', 0), label_width)
@@ -5549,16 +5548,16 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             print(f"\n  {C_BOLD}{C_CYAN}Largest Files (by tokens){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[0], x[2]))[:5]
             total_for_percent = stats.get('total_tokens', 0)
-            # Indent(4) + TokenCount(11) + Space(2) + Size(12) + Space(2) + Percent(6) + Space(2) + Bar(12) + Space(2) = 53
-            path_width = max(20, term_width - 53)
-            print(f"    {C_DIM}{'TOKENS':>11}  {'SIZE':>12}  {'%':>6}  {'DISTRIBUTION':<12}  PATH{C_RESET}", file=sys.stderr)
+            # Indent(4) + TokenCount(11) + Space(1) + Size(12) + Space(1) + Percent(6) + Space(1) + Bar(12) + Space(1) = 49
+            path_width = max(20, term_width - 49)
+            print(f"    {C_DIM}{'TOKENS':>11} {'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} PATH{C_RESET}", file=sys.stderr)
         else:
             print(f"\n  {C_BOLD}{C_CYAN}Largest Files (by size){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[1], x[2]))[:5]
             total_for_percent = stats.get('total_size_bytes', 0)
-            # Indent(4) + Size(12) + Space(2) + Percent(6) + Space(2) + Bar(12) + Space(2) = 40
-            path_width = max(20, term_width - 40)
-            print(f"    {C_DIM}{'SIZE':>12}  {'%':>6}  {'DISTRIBUTION':<12}  PATH{C_RESET}", file=sys.stderr)
+            # Indent(4) + Size(12) + Space(1) + Percent(6) + Space(1) + Bar(12) + Space(1) = 37
+            path_width = max(20, term_width - 37)
+            print(f"    {C_DIM}{'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} PATH{C_RESET}", file=sys.stderr)
 
         for tokens, f_size, path in top:
             val_num = tokens if has_tokens else f_size
@@ -5584,11 +5583,11 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
             row_metrics = ""
             if has_tokens:
-                row_metrics = f"{C_BOLD}{C_CYAN}{token_str:>11}{C_RESET}  "
+                row_metrics = f"{C_BOLD}{C_CYAN}{token_str:>11}{C_RESET} "
 
-            row_metrics += f"{size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}  "
-            row_metrics += f"{C_BOLD}{C_CYAN}{percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}  "
-            row_metrics += f"{C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}  "
+            row_metrics += f"{size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET} "
+            row_metrics += f"{C_BOLD}{C_CYAN}{percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET} "
+            row_metrics += f"{C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET} "
 
             print(f"    {row_metrics}{C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
 
@@ -5602,12 +5601,12 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             total_weight = stats.get('total_tokens', 0)
             weight_by_ext = tokens_by_ext
             title = "File Types (by tokens)"
-            header = f"    {C_DIM}{'TOKENS':>11}  {'SIZE':>12}  {'%':>6}  {'DISTRIBUTION':<12}  {'COUNT':>7}  {'% FILES':>7}  EXTENSION{C_RESET}"
+            header = f"    {C_DIM}{'TOKENS':>11} {'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} {'EXTENSION':<12} {'COUNT':>7} {'% FILES':>7}{C_RESET}"
         else:
             total_weight = stats.get('total_size_bytes', 0)
             weight_by_ext = size_by_ext
             title = "File Types (by size)"
-            header = f"    {C_DIM}{'SIZE':>12}  {'%':>6}  {'DISTRIBUTION':<12}  {'COUNT':>7}  {'% FILES':>7}  EXTENSION{C_RESET}"
+            header = f"    {C_DIM}{'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} {'EXTENSION':<12} {'COUNT':>7} {'% FILES':>7}{C_RESET}"
 
         # Sort by weight desc, then count desc, then alpha
         sorted_exts = sorted(
@@ -5655,16 +5654,22 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             row_metrics = ""
             if has_ext_tokens:
                 token_str = f"{'~' if is_approx else ''}{d['tokens']:,}"
-                row_metrics += f"{C_BOLD}{C_CYAN}{token_str:>11}{C_RESET}  "
+                row_metrics += f"{C_BOLD}{C_CYAN}{token_str:>11}{C_RESET} "
 
-            row_metrics += f"{size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}  "
-            row_metrics += f"{C_BOLD}{C_CYAN}{w_percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}  "
-            row_metrics += f"{C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}  "
+            row_metrics += f"{size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET} "
+            row_metrics += f"{C_BOLD}{C_CYAN}{w_percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET} "
+            row_metrics += f"{C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET} "
 
-            # Row Count Info (COUNT, % FILES)
-            row_count_info = f"{C_BOLD}{C_CYAN}{count:7,}{C_RESET}  {C_BOLD}{C_CYAN}{f_percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}   "
+            # Row Ext Info (EXTENSION, COUNT, % FILES)
+            ext_label = d['ext']
+            if len(ext_label) > 12:
+                ext_label = ext_label[:9] + "..."
 
-            print(f"    {row_metrics}{row_count_info}{C_BOLD}{d['ext']}{C_RESET}", file=sys.stderr)
+            row_ext_info = f"{C_BOLD}{ext_label:<12}{C_RESET} "
+            row_ext_info += f"{C_BOLD}{C_CYAN}{count:>7,}{C_RESET} "
+            row_ext_info += f"{C_BOLD}{C_CYAN}{f_percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}"
+
+            print(f"    {row_metrics}{row_ext_info}", file=sys.stderr)
 
     # Footer
     footer_len = min(raw_title_len, term_width)

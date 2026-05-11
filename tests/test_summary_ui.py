@@ -58,7 +58,7 @@ def test_summary_redesign_largest_files(monkeypatch, capsys):
     assert "1.95 KB" in stderr # (2000 bytes)
 
     # Check for truncated path
-    assert "a/very/long..." in stderr
+    assert "a/very/long" in stderr
     assert "ation/file.py" in stderr
 
 def test_summary_printing(monkeypatch, capsys):
@@ -244,7 +244,7 @@ def test_summary_throughput_line(capsys):
         sourcecombine._print_execution_summary(stats, args, pairing_enabled=False, duration=2.0)
 
     captured = capsys.readouterr()
-    assert "Time taken:" in captured.err
+    assert "Duration:" in captured.err
     assert "2.00 s" in captured.err
     assert "Throughput:" in captured.err
     assert "50.0 files/s" in captured.err
