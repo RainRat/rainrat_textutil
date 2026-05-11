@@ -24,7 +24,7 @@ def test_dry_run_output(capsys, caplog, tmp_path):
     # caplog catches logging
 
     # We expect the summary to be in stderr
-    assert "DRY RUN COMPLETE" in captured.err
+    assert "COMBINE PREVIEW" in captured.err
 
     # We expect the filename to be logged at INFO level
     # Since pytest intercepts logging, we check caplog
@@ -51,7 +51,7 @@ def test_list_files_proposal(capsys, tmp_path):
     assert "src/other.py" in captured.out
 
     # stderr should contain the summary
-    assert "FILE LISTING COMPLETE" in captured.err
+    assert "COMBINE LISTING" in captured.err
 
     # stdout should NOT contain log info
     assert "SourceCombine starting" not in captured.out
@@ -127,7 +127,7 @@ def test_list_files_with_pairing(capsys, tmp_path):
     assert "src/bar.c" in captured.out
 
     # Verify summary title
-    assert "FILE LISTING COMPLETE" in captured.err
+    assert "PAIRING LISTING" in captured.err
 
 def test_list_files_with_pairing_mismatched_disabled(capsys, tmp_path):
     """Verify --list-files respects include_mismatched=False."""
@@ -179,7 +179,7 @@ def test_list_files_tree_estimate_tokens(capsys, tmp_path):
     assert "test.py" in captured.out
     assert "tokens" in captured.out
     # When estimate_tokens is set, it takes precedence in summary title
-    assert "TOKEN ESTIMATION COMPLETE" in captured.err
+    assert "COMBINE ESTIMATION" in captured.err
 
 def test_list_files_with_token_estimation_approx(tmp_path, capsys):
     """Cover sourcecombine.py line 1213: stats['token_count_is_approx'] = True in list_files mode."""
