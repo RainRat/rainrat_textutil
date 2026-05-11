@@ -5277,6 +5277,12 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         parts.append(f"{C_BOLD}{C_CYAN}{stats['total_lines']:,}{C_RESET} {C_DIM}{line_word}{C_RESET}")
     val, unit = _split_unit(total_size_str)
     parts.append(f"{C_BOLD}{C_CYAN}{val}{C_RESET}{C_DIM}{unit}{C_RESET}")
+
+    # Add format to data hint if applicable
+    if getattr(args, 'extract', False) is not True and not (getattr(args, 'list_files', False) is True or getattr(args, 'tree', False) is True):
+        fmt_name = (getattr(args, 'format', None) or stats.get('output_format', 'text')).upper()
+        parts.append(f"{C_BOLD}{C_CYAN}{fmt_name}{C_RESET}")
+
     data_hint = f"{C_DIM} • {C_RESET}".join(parts)
 
     truncation_checks = [
@@ -5341,40 +5347,40 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
     file_word = _plural(total_included, "file")
 
-    if total_included == 0:
-        status_prefix = "NO FILES FOUND"
-    elif getattr(args, 'dry_run', False) is True:
-        status_prefix = "DRY RUN COMPLETE"
-    elif getattr(args, 'estimate_tokens', False) is True:
-        status_prefix = "TOKEN ESTIMATION COMPLETE"
-    elif getattr(args, 'list_files', False) is True:
-        status_prefix = "FILE LISTING COMPLETE"
-    elif getattr(args, 'tree', False) is True:
-        status_prefix = "TREE VIEW COMPLETE"
+    # Determine base action for status title
+    if getattr(args, 'extract', False) is True:
+        base_action = "EXTRACTION"
+        verb = "extract"
+        action = "Extracted"
+    elif getattr(args, 'apply_in_place', False) is True:
+        base_action = "UPDATE"
+        verb = "update in-place"
+        action = "Updated in-place"
+    elif pairing_enabled:
+        base_action = "PAIRING"
+        verb = "pair"
+        action = "Paired"
     else:
-        status_prefix = "SUCCESS"
+        base_action = "COMBINE"
+        verb = "combine"
+        action = "Combined"
+
+    # Refine status prefix with base action
+    if total_included == 0:
+        status_prefix = f"NO FILES FOUND ({base_action})"
+    elif getattr(args, 'dry_run', False) is True:
+        status_prefix = f"{base_action} PREVIEW"
+    elif getattr(args, 'estimate_tokens', False) is True:
+        status_prefix = f"{base_action} ESTIMATION"
+    elif getattr(args, 'list_files', False) is True:
+        status_prefix = f"{base_action} LISTING"
+    elif getattr(args, 'tree', False) is True:
+        status_prefix = f"{base_action} TREE VIEW"
+    else:
+        status_prefix = f"{base_action} SUCCESS"
 
     if limit_reached:
         status_prefix = f"{status_prefix} (TRUNCATED)"
-
-    if getattr(args, 'dry_run', False) is True:
-        if getattr(args, 'extract', False) is True:
-            verb = "extract"
-        elif getattr(args, 'apply_in_place', False) is True:
-            verb = "update in-place"
-        elif pairing_enabled:
-            verb = "pair"
-        else:
-            verb = "combine"
-    else:
-        if getattr(args, 'extract', False) is True:
-            action = "Extracted"
-        elif getattr(args, 'apply_in_place', False) is True:
-            action = "Updated in-place"
-        elif pairing_enabled:
-            action = "Paired"
-        else:
-            action = "Combined"
 
     # Header part
     header_main = f"{status_prefix}: [{project_ctx}]"
@@ -5465,11 +5471,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     # Details Section
     total_lines = stats.get('total_lines', 0)
     print(f"\n  {C_BOLD}{C_CYAN}Details{C_RESET}", file=sys.stderr)
-
-    # Show output format if not extracting or listing
-    if getattr(args, 'extract', False) is not True and not (getattr(args, 'list_files', False) is True or getattr(args, 'tree', False) is True):
-        fmt_name = (getattr(args, 'format', None) or stats.get('output_format', 'text')).upper()
-        print(f"    {C_BOLD}{'Format:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{str(fmt_name):>12}{C_RESET}", file=sys.stderr)
 
     val, unit = _split_unit(total_size_str)
     print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{val:>12}{C_RESET}{C_DIM}{unit}{C_RESET}", file=sys.stderr)
