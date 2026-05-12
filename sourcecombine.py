@@ -5267,15 +5267,16 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     total_size_bytes = stats.get('total_size_bytes', 0)
     total_size_str = utils.format_size(total_size_bytes)
     token_count = stats.get('total_tokens', 0)
+    total_lines = stats.get('total_lines', 0)
     is_approx = stats.get('token_count_is_approx', False)
 
     parts = []
     if token_count > 0:
         token_word = _plural(token_count, "token")
         parts.append(f"{C_BOLD}{C_CYAN}{'~' if is_approx else ''}{token_count:,}{C_RESET} {C_DIM}{token_word}{C_RESET}")
-    if stats.get('total_lines', 0) > 0:
-        line_word = _plural(stats['total_lines'], "line")
-        parts.append(f"{C_BOLD}{C_CYAN}{stats['total_lines']:,}{C_RESET} {C_DIM}{line_word}{C_RESET}")
+    if total_lines > 0:
+        line_word = _plural(total_lines, "line")
+        parts.append(f"{C_BOLD}{C_CYAN}{total_lines:,}{C_RESET} {C_DIM}{line_word}{C_RESET}")
     val, unit = _split_unit(total_size_str)
     parts.append(f"{C_BOLD}{C_CYAN}{val}{C_RESET}{C_DIM}{unit}{C_RESET}")
 
@@ -5470,7 +5471,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             print(f"    {C_DIM}└── {C_RESET}{C_BOLD}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_CYAN}{excluded_folders:12,}{C_RESET} {C_DIM}{_plural(excluded_folders, 'folder')}{C_RESET}", file=sys.stderr)
 
     # Details Section
-    total_lines = stats.get('total_lines', 0)
     print(f"\n  {C_BOLD}{C_CYAN}Details{C_RESET}", file=sys.stderr)
 
     val, unit = _split_unit(total_size_str)
@@ -5593,7 +5593,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             print(f"    {row_metrics}{C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
 
     # Extensions List
-    if stats['files_by_extension']:
+    files_by_ext = stats.get('files_by_extension')
+    if files_by_ext:
         tokens_by_ext = stats.get('tokens_by_extension', {})
         size_by_ext = stats.get('size_by_extension', {})
         has_ext_tokens = any(v > 0 for v in tokens_by_ext.values())
@@ -5611,7 +5612,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
         # Sort by weight desc, then count desc, then alpha
         sorted_exts = sorted(
-            stats['files_by_extension'].items(),
+            files_by_ext.items(),
             key=lambda item: (-weight_by_ext.get(item[0], 0), -item[1], item[0])
         )
 
