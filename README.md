@@ -37,7 +37,11 @@ SourceCombine is a tool for your terminal that helps you find, filter, and combi
 
 ## Prerequisites
 *   **Python 3.10 or newer:** This tool uses modern Python features.
+*   **PyYAML:** Required for loading configuration files.
+*   **charset-normalizer:** Required for detecting file encodings.
 *   **tiktoken (optional):** Install this for accurate token counting. If not installed, the tool uses a character-based estimate (1 token ≈ 4 characters).
+*   **tqdm (optional):** Install this to see progress bars while the tool scans and processes files.
+*   **pyperclip (optional):** Install this to enable copying output directly to your system clipboard.
 
 ## Getting Started
 1.  **Clone the Repository:**
