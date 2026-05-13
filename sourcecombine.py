@@ -5528,7 +5528,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 lps = total_lines / duration if total_lines > 0 else 0
 
                 val, unit = _split_unit(utils.format_size(bps))
-                throughput_details = [f"{C_BOLD}{C_CYAN}{val}{C_RESET}{C_DIM}{unit}/s{C_RESET}"]
+                throughput_details = [f"{C_BOLD}{C_CYAN}{val:>12}{C_RESET}{C_DIM}{unit}/s{C_RESET}"]
                 if tps > 0:
                     throughput_details.append(f"{C_BOLD}{C_CYAN}{tps:,.0f}{C_RESET}{C_DIM} tokens/s{C_RESET}")
                 if lps > 0:
@@ -5549,9 +5549,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             print(f"\n  {C_BOLD}{C_CYAN}Largest Files (by tokens){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[0], x[2]))[:5]
             total_for_percent = stats.get('total_tokens', 0)
-            # Indent(4) + TokenCount(11) + Space(1) + Size(12) + Space(1) + Percent(6) + Space(1) + Bar(12) + Space(1) = 49
-            path_width = max(20, term_width - 49)
-            print(f"    {C_DIM}{'TOKENS':>11} {'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} PATH{C_RESET}", file=sys.stderr)
+            # Indent(4) + TokenCount(12) + Space(1) + Size(12) + Space(1) + Percent(6) + Space(1) + Bar(12) + Space(1) = 50
+            path_width = max(20, term_width - 50)
+            print(f"    {C_DIM}{'TOKENS':>12} {'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} PATH{C_RESET}", file=sys.stderr)
         else:
             print(f"\n  {C_BOLD}{C_CYAN}Largest Files (by size){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[1], x[2]))[:5]
@@ -5584,7 +5584,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
             row_metrics = ""
             if has_tokens:
-                row_metrics = f"{C_BOLD}{C_CYAN}{token_str:>11}{C_RESET} "
+                row_metrics = f"{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET} "
 
             row_metrics += f"{size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET} "
             row_metrics += f"{C_BOLD}{C_CYAN}{percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET} "
@@ -5603,7 +5603,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             total_weight = stats.get('total_tokens', 0)
             weight_by_ext = tokens_by_ext
             title = "File Types (by tokens)"
-            header = f"    {C_DIM}{'TOKENS':>11} {'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} {'EXTENSION':<12} {'COUNT':>7} {'% FILES':>7}{C_RESET}"
+            header = f"    {C_DIM}{'TOKENS':>12} {'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} {'EXTENSION':<12} {'COUNT':>7} {'% FILES':>7}{C_RESET}"
         else:
             total_weight = stats.get('total_size_bytes', 0)
             weight_by_ext = size_by_ext
@@ -5656,7 +5656,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             row_metrics = ""
             if has_ext_tokens:
                 token_str = f"{'~' if is_approx else ''}{d['tokens']:,}"
-                row_metrics += f"{C_BOLD}{C_CYAN}{token_str:>11}{C_RESET} "
+                row_metrics += f"{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET} "
 
             row_metrics += f"{size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET} "
             row_metrics += f"{C_BOLD}{C_CYAN}{w_percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET} "
