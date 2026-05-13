@@ -383,7 +383,7 @@ def _format_metadata_summary(meta: Mapping[str, Any]) -> str:
     """Return file or folder details in an easy-to-read format."""
     parts = []
 
-    # Prepend status indicator if present (e.g., [M], [A], [??])
+    # Prepend status indicator if present (for example, [M], [A], [??])
     status_label = ""
     if 'status' in meta and meta['status']:
         status_label = f"[{meta['status']}] "
@@ -646,7 +646,7 @@ def _matches_folder_glob_cached(relative_path_str, parts, patterns):
     parts_cf = tuple(p.casefold() for p in parts)
 
     for pattern in patterns:
-        # Check individual parts (e.g., 'node_modules')
+        # Check individual parts (for example, 'node_modules')
         if any(fnmatch.fnmatchcase(p_cf, pattern) for p_cf in parts_cf):
             return True
 
@@ -954,7 +954,7 @@ def _get_git_info(root_folder, log_count=0, include_diff=False, diff_ref=None, s
                 info['git_author'] = lines[1]
                 info['git_author_date'] = lines[2]
         except (subprocess.CalledProcessError, FileNotFoundError, OSError):
-            # Fallback to rev-parse if git log fails (e.g. empty repo or shallow clone issues)
+            # Fallback to rev-parse if git log fails (for example, empty repo or shallow clone issues)
             result = subprocess.run(
                 ['git', 'rev-parse', 'HEAD'],
                 cwd=git_cwd, capture_output=True, text=True, check=True
@@ -2452,7 +2452,7 @@ def find_and_combine_files(
         try:
             abs_output_path = Path(output_path).resolve()
         except OSError:
-            # Fallback to absolute path if resolve fails (e.g. file doesn't exist yet and parent is weird)
+            # Fallback to absolute path if resolve fails (for example, file doesn't exist yet and parent is weird)
             try:
                 abs_output_path = Path(output_path).absolute()
             except OSError:
@@ -3557,25 +3557,25 @@ def main():
         "-L",
         type=int,
         metavar="N",
-        help="Stop adding files once you reach this file limit.",
+        help="Stop processing once you reach this file limit.",
     )
     sorting_group.add_argument(
         "--max-tokens",
         "-M",
         type=int,
         metavar="N",
-        help="Stop adding files once you reach the total tokens limit (only when combining many files or extracting).",
+        help="Stop processing once you reach the total tokens limit (only when combining many files or extracting).",
     )
     sorting_group.add_argument(
         "--max-total-size",
         metavar="SIZE",
-        help="Stop adding files once you reach the total size limit (for example, '5MB') (only when combining many files or extracting).",
+        help="Stop processing once you reach the total size limit (for example, '5MB') (only when combining many files or extracting).",
     )
     sorting_group.add_argument(
         "--max-total-lines",
         type=int,
         metavar="N",
-        help="Stop adding files once you reach the total lines limit (only when combining many files or extracting).",
+        help="Stop processing once you reach the total lines limit (only when combining many files or extracting).",
     )
 
     # Output Options Group
@@ -3661,7 +3661,7 @@ def main():
     output_group.add_argument(
         "--include-diff",
         action="store_true",
-        help="Include the Git diff in the project overview and templates ({{GIT_DIFF}}, {{FILE_DIFF}}, {{PROJECT_URL}}, and {{FILE_URL}}).",
+        help="Include the Git diff in the project overview and templates ({{GIT_DIFF}} and {{FILE_DIFF}}).",
     )
     output_group.add_argument(
         "--header",
