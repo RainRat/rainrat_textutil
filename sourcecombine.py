@@ -379,14 +379,26 @@ def _make_ascii_bar(
     return hashes + dashes
 
 
-def _format_metadata_summary(meta: Mapping[str, Any]) -> str:
+def _format_metadata_summary(meta: Mapping[str, Any], colored: bool = False) -> str:
     """Return file or folder details in an easy-to-read format."""
     parts = []
 
     # Prepend status indicator if present (for example, [M], [A], [??])
     status_label = ""
     if 'status' in meta and meta['status']:
-        status_label = f"[{meta['status']}] "
+        status = meta['status']
+        label = f"[{status}]"
+        if colored:
+            if status in ('A', '??'):
+                status_label = f"{C_GREEN}{label}{C_RESET} "
+            elif status in ('M', 'R'):
+                status_label = f"{C_YELLOW}{label}{C_RESET} "
+            elif status == 'D':
+                status_label = f"{C_RED}{label}{C_RESET} "
+            else:
+                status_label = f"{label} "
+        else:
+            status_label = f"{label} "
 
     if 'files' in meta:
         count = meta['files']
@@ -1570,7 +1582,9 @@ def _process_paired_files(
             if not estimate_tokens and getattr(processor, 'show_diff', False) is not True:
                 if stats is not None:
                     for path in paths:
-                        stats['top_files'].append((0, path.stat().st_size if path.exists() else 0, _get_rel_path(path, root_path).as_posix()))
+                        rel_p_str = _get_rel_path(path, root_path).as_posix()
+                        status = stats.get('file_statuses', {}).get(rel_p_str)
+                        stats['top_files'].append((0, path.stat().st_size if path.exists() else 0, rel_p_str, status))
                 continue
 
         pair_buffer = None
@@ -1608,7 +1622,9 @@ def _process_paired_files(
                 if stats is not None:
                     _update_stats_metrics(stats, token_count, line_count, is_approx)
                     _update_token_stats(stats, primary_path, token_count)
-                    stats['top_files'].append((token_count, f_size, _get_rel_path(primary_path, root_path).as_posix()))
+                    rel_p_str = _get_rel_path(primary_path, root_path).as_posix()
+                    status = stats.get('file_statuses', {}).get(rel_p_str)
+                    stats['top_files'].append((token_count, f_size, rel_p_str, status))
 
                 running_tokens += token_count
                 running_size += f_size
@@ -1649,7 +1665,9 @@ def _process_paired_files(
                     if stats is not None:
                         _update_stats_metrics(stats, token_count, line_count, is_approx)
                         _update_token_stats(stats, file_path, token_count)
-                        stats['top_files'].append((token_count, f_size, _get_rel_path(file_path, root_path).as_posix()))
+                        rel_p_str = _get_rel_path(file_path, root_path).as_posix()
+                        status = stats.get('file_statuses', {}).get(rel_p_str)
+                        stats['top_files'].append((token_count, f_size, rel_p_str, status))
 
                     running_tokens += token_count
                     running_size += f_size
@@ -2053,16 +2071,17 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
 
             meta_str = ""
             if metadata:
+                is_text = (output_format == 'text')
                 if children:
                     # It's a folder - show totals
                     if current_rel_path in folder_metadata:
-                        meta_str = f"{dim}{_format_metadata_summary(folder_metadata[current_rel_path])}{reset}"
+                        meta_str = f"{dim}{_format_metadata_summary(folder_metadata[current_rel_path], colored=is_text)}{reset}"
                 elif current_rel_path in rel_to_orig:
                     # It's a file - show individual stats
                     orig_path = rel_to_orig[current_rel_path]
                     file_meta = metadata.get(orig_path)
                     if file_meta:
-                        meta_str = f"{dim}{_format_metadata_summary(file_meta)}{reset}"
+                        meta_str = f"{dim}{_format_metadata_summary(file_meta, colored=is_text)}{reset}"
 
             style = folder_style if children else file_style
             suffix = f"{dim}/{reset}" if children else ""
@@ -2076,7 +2095,8 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
     # Add the root folder name first
     root_meta_str = ""
     if metadata and Path('.') in folder_metadata:
-        root_meta_str = f"{dim}{_format_metadata_summary(folder_metadata[Path('.')])}{reset}"
+        is_text = (output_format == 'text')
+        root_meta_str = f"{dim}{_format_metadata_summary(folder_metadata[Path('.')], colored=is_text)}{reset}"
 
     lines.append(f"{folder_style}{root_path.name or str(root_path)}{dim}/{reset}{root_meta_str}")
     _add_node(tree)
@@ -2232,7 +2252,8 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
             lines.append(f"\n## {title}")
             lines.append("| File | Tokens | Size | % |")
             lines.append("| :--- | :--- | :--- | :--- |")
-            for tokens, size, path in sorted_top:
+            for item in sorted_top:
+                tokens, size, path = item[:3]
                 weight = tokens if has_tokens else size
                 total_weight = total_tokens if has_tokens else total_size_bytes
                 percent = (weight / total_weight * 100) if total_weight > 0 else 0
@@ -2240,7 +2261,8 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
                 lines.append(f"| `{path}` | {t_str} | {utils.format_size(size)} | {percent:.1f}% |")
         else:
             lines.append(f"\n  {title}:")
-            for tokens, size, path in sorted_top:
+            for item in sorted_top:
+                tokens, size, path = item[:3]
                 weight = tokens if has_tokens else size
                 total_weight = total_tokens if has_tokens else total_size_bytes
                 percent = (weight / total_weight * 100) if total_weight > 0 else 0
@@ -2313,7 +2335,7 @@ def _generate_table_of_contents(files, output_format='text', metadata=None):
 
             meta_str = ""
             if metadata and file_path in metadata:
-                meta_str = _format_metadata_summary(metadata[file_path])
+                meta_str = _format_metadata_summary(metadata[file_path], colored=(output_format == 'text'))
 
             # Create a basic anchor link.
             slug = re.sub(r'[^a-z0-9 _-]', '', posix_rel_path.lower()).replace(' ', '-')
@@ -2331,7 +2353,7 @@ def _generate_table_of_contents(files, output_format='text', metadata=None):
 
             meta_str = ""
             if metadata and file_path in metadata:
-                meta_str = f"{dim}{_format_metadata_summary(metadata[file_path])}{reset}"
+                meta_str = f"{dim}{_format_metadata_summary(metadata[file_path], colored=True)}{reset}"
 
             toc_lines.append(f"{dim}- {reset}{rel_path.as_posix()}{meta_str}")
         toc_lines.append("\n" + "-" * 20 + "\n")
@@ -2660,7 +2682,7 @@ def find_and_combine_files(
                     rel_p_str = _get_rel_path(p, root_path).as_posix()
                     status = stats.get('file_statuses', {}).get(rel_p_str)
                     view_metadata[p] = {'size': f_size, 'tokens': tokens, 'lines': lines, 'status': status}
-                    stats['top_files'].append((tokens, f_size, rel_p_str))
+                    stats['top_files'].append((tokens, f_size, rel_p_str, status))
 
                 if tree_view:
                     print(_generate_tree_string(paths_to_list, root_path, include_header=False, metadata=view_metadata))
@@ -3254,7 +3276,9 @@ def find_and_combine_files(
                     _update_token_stats(stats, file_path, token_count)
 
                 f_size = file_path.stat().st_size if file_path.exists() else 0
-                stats['top_files'].append((token_count, f_size, _get_rel_path(file_path, root_path).as_posix()))
+                rel_p_str = _get_rel_path(file_path, root_path).as_posix()
+                status = stats.get('file_statuses', {}).get(rel_p_str)
+                stats['top_files'].append((token_count, f_size, rel_p_str, status))
 
                 running_tokens += token_count
                 running_size += f_size
@@ -4999,7 +5023,7 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         if tokens:
             stats['tokens_by_extension'][ext] = stats['tokens_by_extension'].get(ext, 0) + tokens
 
-        stats['top_files'].append((meta.get('tokens') or 0, meta['size'], path_str))
+        stats['top_files'].append((meta.get('tokens') or 0, meta['size'], path_str, meta.get('status')))
 
     files_to_create = filtered_files
 
@@ -5549,18 +5573,20 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             print(f"\n  {C_BOLD}{C_CYAN}Largest Files (by tokens){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[0], x[2]))[:5]
             total_for_percent = stats.get('total_tokens', 0)
-            # Indent(4) + TokenCount(12) + Space(1) + Size(12) + Space(1) + Percent(6) + Space(1) + Bar(12) + Space(1) = 50
-            path_width = max(20, term_width - 50)
-            print(f"    {C_DIM}{'TOKENS':>12} {'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} PATH{C_RESET}", file=sys.stderr)
+            # Indent(4) + Tokens(12+1) + Size(12+1) + %(6+1) + Dist(12+1) + Status(5+1) = 56
+            path_width = max(20, term_width - 56)
+            print(f"    {C_DIM}{'TOKENS':>12} {'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} {'STATUS':<5} PATH{C_RESET}", file=sys.stderr)
         else:
             print(f"\n  {C_BOLD}{C_CYAN}Largest Files (by size){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[1], x[2]))[:5]
             total_for_percent = stats.get('total_size_bytes', 0)
-            # Indent(4) + Size(12) + Space(1) + Percent(6) + Space(1) + Bar(12) + Space(1) = 37
-            path_width = max(20, term_width - 37)
-            print(f"    {C_DIM}{'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} PATH{C_RESET}", file=sys.stderr)
+            # Indent(4) + Size(12+1) + %(6+1) + Dist(12+1) + Status(5+1) = 43
+            path_width = max(20, term_width - 43)
+            print(f"    {C_DIM}{'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} {'STATUS':<5} PATH{C_RESET}", file=sys.stderr)
 
-        for tokens, f_size, path in top:
+        for item in top:
+            tokens, f_size, path = item[:3]
+            status = item[3] if len(item) > 3 else None
             val_num = tokens if has_tokens else f_size
             percent = 0.0
             if total_for_percent > 0:
@@ -5590,7 +5616,14 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             row_metrics += f"{C_BOLD}{C_CYAN}{percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET} "
             row_metrics += f"{C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET} "
 
-            print(f"    {row_metrics}{C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
+            status_indicator = " " * 6
+            if status:
+                # _format_metadata_summary returns " [M]" or " [??]" (with colors)
+                status_text = _format_metadata_summary({'status': status}, colored=True).strip()
+                visible_len = len(status) + 2  # [M] -> 3, [??] -> 4
+                status_indicator = f" {status_text}{' ' * (5 - visible_len)}"
+
+            print(f"    {row_metrics}{status_indicator}{C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
 
     # Extensions List
     files_by_ext = stats.get('files_by_extension')
@@ -5603,12 +5636,12 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             total_weight = stats.get('total_tokens', 0)
             weight_by_ext = tokens_by_ext
             title = "File Types (by tokens)"
-            header = f"    {C_DIM}{'TOKENS':>12} {'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} {'EXTENSION':<12} {'COUNT':>7} {'% FILES':>7}{C_RESET}"
+            header = f"    {C_DIM}{'TOKENS':>12} {'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} {' ': <6} {'EXTENSION':<12} {'COUNT':>7} {'% FILES':>7}{C_RESET}"
         else:
             total_weight = stats.get('total_size_bytes', 0)
             weight_by_ext = size_by_ext
             title = "File Types (by size)"
-            header = f"    {C_DIM}{'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} {'EXTENSION':<12} {'COUNT':>7} {'% FILES':>7}{C_RESET}"
+            header = f"    {C_DIM}{'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} {' ': <6} {'EXTENSION':<12} {'COUNT':>7} {'% FILES':>7}{C_RESET}"
 
         # Sort by weight desc, then count desc, then alpha
         sorted_exts = sorted(
@@ -5667,7 +5700,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             if len(ext_label) > 12:
                 ext_label = ext_label[:9] + "..."
 
-            row_ext_info = f"{C_BOLD}{ext_label:<12}{C_RESET} "
+            row_ext_info = " " * 6
+            row_ext_info += f"{C_BOLD}{ext_label:<12}{C_RESET} "
             row_ext_info += f"{C_BOLD}{C_CYAN}{count:>7,}{C_RESET} "
             row_ext_info += f"{C_BOLD}{C_CYAN}{f_percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}"
 
