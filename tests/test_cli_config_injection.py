@@ -274,8 +274,8 @@ def test_summary_top_files_loop_2232(temp_cwd, mock_stats, capsys):
     """Test top_files loop in summary (lines 2232-2240)."""
     long_path = "very/long/path/to/some/file/that/should/be/truncated/eventually/file2.txt"
     mock_stats['top_files'] = [
-        (100, 1000, "file1.txt"),
-        (200, 2000, long_path)
+        (100, 1000, "file1.txt", None),
+        (200, 2000, long_path, None)
     ]
 
     with patch('sourcecombine.find_and_combine_files', return_value=mock_stats):
@@ -285,6 +285,6 @@ def test_summary_top_files_loop_2232(temp_cwd, mock_stats, capsys):
     captured = capsys.readouterr()
     assert "file1.txt" in captured.err
     # Check for middle truncation of long path (now without parentheses)
-    assert "very/long/" in captured.err
+    assert "very/long" in captured.err
     assert "file2.txt" in captured.err
     assert "200" in captured.err

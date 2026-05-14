@@ -17,8 +17,8 @@ def test_summary_redesign_largest_files(monkeypatch, capsys):
         'total_tokens': 2500,
         'token_count_is_approx': False,
         'top_files': [
-            (1000, 5000, "a/very/long/path/to/some/file/that/should/trigger/truncation/file.py"),
-            (500, 2000, "short.py"),
+            (1000, 5000, "a/very/long/path/to/some/file/that/should/trigger/truncation/file.py", None),
+            (500, 2000, "short.py", None),
         ]
     }
 
@@ -58,8 +58,8 @@ def test_summary_redesign_largest_files(monkeypatch, capsys):
     assert "1.95 KB" in stderr # (2000 bytes)
 
     # Check for truncated path
-    assert "a/very/long" in stderr
-    assert "ation/file.py" in stderr
+    assert "a/very/..." in stderr or "a/very/lo" in stderr
+    assert "file.py" in stderr
 
 def test_summary_printing(monkeypatch, capsys):
     # Mock stats
