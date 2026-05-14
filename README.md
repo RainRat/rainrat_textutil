@@ -10,6 +10,7 @@ SourceCombine is a tool for your terminal that helps you find, filter, and combi
 *   **Pairing:** Combine related files (like source and header pairs) into their own individual output files.
 *   **File Extraction:** Rebuild your original files and folders from combined files (like JSON, XML, JSONL, CSV, or Markdown). Filtering, sorting, and processing rules are supported. Batch process multiple files or entire folders. If no input is provided, the tool automatically searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`).
 *   **Sorting:** Sort files by `name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`.
+*   **Limiting:** Stop processing once you reach a file, token, size, or line limit.
 *   **Flexible Outputs:** Save results to your terminal, a file (JSON, XML, JSONL, CSV, or Markdown), or copy them to your system clipboard.
 *   **AI Context Integration:** Automatically include environment metadata (Python version, OS, Git status) and presets for LLMs.
 
@@ -17,6 +18,8 @@ SourceCombine is a tool for your terminal that helps you find, filter, and combi
 *   `--config`: Use a custom configuration file (YAML). The tool automatically searches for `sourcecombine.yml`, `sourcecombine.yaml`, `config.yml`, or `config.yaml` in your current folder.
 *   `--output` (`-o`): Save results to a file or folder instead of the terminal.
 *   `--clipboard` (`-c`): Copy the combined output to your system clipboard.
+*   `--git-files` (`-G`): Use Git to find files and follow your `.gitignore` rules automatically.
+*   `--limit` (`-L`): Stop processing once you reach this file limit.
 *   `--ai` (`-a`): Preset for AI assistants (Markdown format, line numbers, TOC, folder tree, project overview, and skipping binary files). This also copies to your system clipboard if you do not specify an output.
 *   `--dry-run` (`-d`): Show what would happen without making any changes.
 *   `--apply-in-place`: Save processed changes back to the original source files.
@@ -75,11 +78,11 @@ You can customize the output by using templates in your configuration file. Temp
 ### File-Level Placeholders
 Used in `header_template` and `footer_template`:
 *   `{{FILENAME}}`: Full relative path to the file.
-*   `{{EXT}}`: File extension (e.g., `py`).
-*   `{{STEM}}`: Filename without extension (e.g., `main`).
+*   `{{EXT}}`: File extension (for example, `py`).
+*   `{{STEM}}`: Filename without extension (for example, `main`).
 *   `{{DIR}}`: Folder path containing the file.
 *   `{{DIR_SLUG}}`: A filesystem-safe version of the folder path.
-*   `{{LANG}}`: Detected language tag (e.g., `python`, `cpp`).
+*   `{{LANG}}`: Detected language tag (for example, `python`, `cpp`).
 *   `{{SIZE}}`: Human-readable file size.
 *   `{{TOKENS}}`: Number of tokens in the file.
 *   `{{LINE_COUNT}}`: Number of lines in the file.
@@ -93,6 +96,9 @@ Used in `header_template` and `footer_template`:
 *   `{{OS}}`, `{{PYTHON_VERSION}}`, `{{PLATFORM}}`, `{{ARCH}}`: System and environment metadata.
 *   `{{ENV:VAR_NAME}}`: Value of an environment variable.
 *   `{{SIZE_PERCENT}}`, `{{TOKEN_PERCENT}}`, `{{LINE_PERCENT}}`: Percentage of the total project.
+*   `{{FILE_URL}}`: Direct web link to the specific file and commit.
+*   `{{FILE_DIFF}}`: Changes specific to the current file (requires `--include-diff` flag).
+*   `{{FILE_STATUS}}`: Git status of the current file (for example, `M`, `A`, `??`).
 
 ### Project-Level Placeholders
 Used in `global_header_template`, `global_footer_template`, and other project-wide settings:
@@ -104,6 +110,8 @@ Used in `global_header_template`, `global_footer_template`, and other project-wi
 *   `{{DATE}}`, `{{TIME}}`, `{{DATETIME}}`: Current date and time.
 *   `{{OS}}`, `{{PYTHON_VERSION}}`, `{{PLATFORM}}`, `{{ARCH}}`: System and environment metadata.
 *   `{{ENV:VAR_NAME}}`: Value of an environment variable.
+*   `{{GIT_REMOTE_URL}}`: The repository's origin remote URL.
+*   `{{PROJECT_URL}}`: Web URL to the repository home (supports GitHub, GitLab, Bitbucket).
 
 ### Git Placeholders
 These require a Git repository to function:
@@ -111,18 +119,13 @@ These require a Git repository to function:
 *   `{{GIT_COMMIT}}`, `{{GIT_COMMIT_SHORT}}`: Full or short commit hash.
 *   `{{GIT_AUTHOR}}`: Author of the latest commit in the project.
 *   `{{GIT_AUTHOR_DATE}}`: Date of the latest commit in the project.
-*   `{{GIT_STATUS}}`: Summary of working tree changes (e.g., "2 modified, 1 added").
+*   `{{GIT_STATUS}}`: Summary of working tree changes (for example, "2 modified, 1 added").
 *   `{{GIT_LOG}}`: Recent commit messages (requires `--git-log` flag).
 *   `{{GIT_DIFF}}`: Project-wide changes (requires `--include-diff` flag).
-*   `{{GIT_REMOTE_URL}}`: The repository's origin remote URL.
-*   `{{PROJECT_URL}}`: Web URL to the repository home (supports GitHub, GitLab, Bitbucket).
-*   `{{FILE_URL}}`: Direct web link to the specific file and commit.
-*   `{{FILE_DIFF}}`: Changes specific to the current file (requires `--include-diff` flag).
-*   `{{FILE_STATUS}}`: Git status of the current file (e.g., `M`, `A`, `??`).
 
 ### Pairing Placeholders
 Used in `paired_filename_template`:
 *   `{{STEM}}`: Base filename shared by the pair.
-*   `{{SOURCE_EXT}}`: Extension of the source file (e.g., `.cpp`).
-*   `{{HEADER_EXT}}`: Extension of the header file (e.g., `.h`).
+*   `{{SOURCE_EXT}}`: Extension of the source file (for example, `.cpp`).
+*   `{{HEADER_EXT}}`: Extension of the header file (for example, `.h`).
 *   `{{DIR}}`, `{{DIR_SLUG}}`: Relative folder path.

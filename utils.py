@@ -975,7 +975,7 @@ def process_content(buffer: str, options: Mapping[str, Any]) -> str:
 
 
 def detect_language_from_shebang(content: str) -> str | None:
-    """Identify the language from the shebang line (e.g., #!/usr/bin/env python3)."""
+    """Identify the language from the shebang line (for example, #!/usr/bin/env python3)."""
     if not content or not content.startswith("#!"):
         return None
 
