@@ -63,6 +63,7 @@ def test_cli_custom_languages_injection_none(caplog):
     args.files_from = None
     args.init = False
     args.system_info = False
+    args.list_placeholders = False
     args.list_languages = False
     args.verbose = False
     args.exclude_file = []

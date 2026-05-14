@@ -32,6 +32,7 @@ SourceCombine is a tool for your terminal that helps you find, filter, and combi
 *   `--restore`: Undo changes made by `--apply-in-place` using `.bak` backup files.
 *   `--delete-backups`: Remove all `.bak` files from your folders.
 *   `--list-languages`: Show all supported language identifiers.
+*   `--list-placeholders`: Show all supported template placeholders and then stop.
 *   `--show-config`: Display the final configuration being used.
 *   `--system-info`: Show environment details (Python version, OS, etc.).
 *   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without actually writing them to disk.
