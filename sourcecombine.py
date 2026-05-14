@@ -54,15 +54,6 @@ def _get_tqdm():
         return None
 
 
-def _get_yaml():
-    """Lazy-load yaml for configuration support."""
-    try:
-        import yaml
-        return yaml
-    except ImportError:
-        return None
-
-
 def _get_pyperclip():
     """Lazy-load pyperclip for clipboard support."""
     try:
@@ -3977,9 +3968,8 @@ def main():
             try:
                 with open(target_config, 'w', encoding='utf-8') as f:
                     f.write("# Default SourceCombine Configuration\n")
-                    yaml = _get_yaml()
-                    if yaml:
-                        yaml.dump(utils.DEFAULT_CONFIG, f, sort_keys=False)
+                    if utils.yaml:
+                        utils.yaml.dump(utils.DEFAULT_CONFIG, f, sort_keys=False)
                     else:
                         logging.warning("PyYAML not found; creating an empty configuration.")
                 logging.info("Created a simple configuration at %s", target_config.resolve())
@@ -4381,9 +4371,8 @@ def main():
 
     if args.show_config:
         logging.info("Final merged configuration:")
-        yaml = _get_yaml()
-        if yaml:
-            yaml.dump(_convert_to_json_friendly(config), sys.stdout, sort_keys=False)
+        if utils.yaml:
+            utils.yaml.dump(_convert_to_json_friendly(config), sys.stdout, sort_keys=False)
         else:
             json.dump(_convert_to_json_friendly(config), sys.stdout, indent=2)
         sys.exit(0)
