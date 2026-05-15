@@ -465,6 +465,47 @@ def _resolve_env_placeholders(template, replacements):
             replacements[f"{{{{ENV:{var_name}}}}}"] = os.environ.get(var_name, '')
 
 
+def _resolve_metadata_placeholders(template, replacements, data):
+    """Resolve project, system, datetime, and environment placeholders.
+
+    This consolidates common metadata logic used in both file-level and
+    global templates.
+    """
+    if not template:
+        return
+
+    data = data or {}
+
+    # Project-level replacements
+    replacements["{{PROJECT_NAME}}"] = data.get('project_name', 'Project')
+    replacements["{{DATE}}"] = data.get('date', '')
+    replacements["{{TIME}}"] = data.get('time', '')
+    replacements["{{DATETIME}}"] = data.get('datetime', '')
+
+    # System-level replacements
+    replacements["{{OS}}"] = data.get('os', '')
+    replacements["{{PYTHON_VERSION}}"] = data.get('python_version', '')
+    replacements["{{PLATFORM}}"] = data.get('platform', '')
+    replacements["{{ARCH}}"] = data.get('arch', '')
+
+    # Project-level Git info
+    for key in (
+        'git_branch', 'git_commit', 'git_commit_short', 'git_author',
+        'git_author_date', 'git_status', 'git_diff', 'git_log', 'git_remote_url'
+    ):
+        placeholder = f"{{{{{key.upper()}}}}}"
+        if placeholder not in replacements:
+            replacements[placeholder] = data.get(key, '')
+
+    if "{{PROJECT_URL}}" not in replacements:
+        replacements["{{PROJECT_URL}}"] = _construct_git_web_url(
+            data.get('git_remote_url'), data.get('git_commit')
+        ) or ""
+
+    # Environment variable resolution
+    _resolve_env_placeholders(template, replacements)
+
+
 def _render_template(template, relative_path, size=None, tokens=None, lines=None, escape_func=None, modified=None, content=None, custom_languages=None, index=None, total=None, global_size=None, global_tokens=None, global_lines=None, git_info=None, file_path=None):
     """Replace placeholders in a template with file information.
 
@@ -506,12 +547,6 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
             else ""
         )
 
-    # Project-level replacements
-    replacements["{{PROJECT_NAME}}"] = (git_info or {}).get('project_name', 'Project')
-    replacements["{{DATE}}"] = (git_info or {}).get('date', '')
-    replacements["{{TIME}}"] = (git_info or {}).get('time', '')
-    replacements["{{DATETIME}}"] = (git_info or {}).get('datetime', '')
-
     replacements["{{SIZE}}"] = utils.format_size(size) if size is not None else ""
     replacements["{{TOKENS}}"] = f"{tokens:,}" if tokens is not None else ""
     replacements["{{LINE_COUNT}}"] = f"{lines:,}" if lines is not None else ""
@@ -522,15 +557,6 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
     replacements["{{INDEX}}"] = str(index) if index is not None else ""
     replacements["{{TOTAL}}"] = str(total) if total is not None else ""
 
-    # System-level replacements
-    replacements["{{OS}}"] = (git_info or {}).get('os', '')
-    replacements["{{PYTHON_VERSION}}"] = (git_info or {}).get('python_version', '')
-    replacements["{{PLATFORM}}"] = (git_info or {}).get('platform', '')
-    replacements["{{ARCH}}"] = (git_info or {}).get('arch', '')
-
-    # Environment variable resolution
-    _resolve_env_placeholders(template, replacements)
-
     def _calc_percent(val, total_val):
         if val is not None and total_val and total_val > 0:
             return f"{(val / total_val * 100):.1f}%"
@@ -540,14 +566,11 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
     replacements["{{TOKEN_PERCENT}}"] = _calc_percent(tokens, global_tokens)
     replacements["{{LINE_PERCENT}}"] = _calc_percent(lines, global_lines)
 
+    # Project, System, Datetime, and Git replacements
+    _resolve_metadata_placeholders(template, replacements, git_info)
+
     if git_info:
-        replacements["{{GIT_BRANCH}}"] = git_info.get('git_branch', '')
-        replacements["{{GIT_COMMIT}}"] = git_info.get('git_commit', '')
-        replacements["{{GIT_COMMIT_SHORT}}"] = git_info.get('git_commit_short', '')
-        replacements["{{GIT_DIFF}}"] = git_info.get('git_diff', '')
-        replacements["{{GIT_REMOTE_URL}}"] = git_info.get('git_remote_url', '')
         replacements["{{FILE_DIFF}}"] = git_info.get('file_diffs', {}).get(raw_filename, '')
-        replacements["{{GIT_LOG}}"] = git_info.get('git_log', '')
         replacements["{{FILE_STATUS}}"] = git_info.get('file_statuses', {}).get(raw_filename, '')
 
         # Fetch file-specific Git info only if placeholders are present
@@ -601,28 +624,10 @@ def _render_global_template(template, stats):
         "{{TOTAL_SIZE}}": total_size,
         "{{TOTAL_TOKENS}}": token_str,
         "{{TOTAL_LINES}}": f"{total_lines:,}",
-        "{{GIT_BRANCH}}": stats.get('git_branch', ''),
-        "{{GIT_COMMIT}}": stats.get('git_commit', ''),
-        "{{GIT_COMMIT_SHORT}}": stats.get('git_commit_short', ''),
-        "{{GIT_AUTHOR}}": stats.get('git_author', ''),
-        "{{GIT_AUTHOR_DATE}}": stats.get('git_author_date', ''),
-        "{{GIT_DIFF}}": stats.get('git_diff', ''),
-        "{{GIT_LOG}}": stats.get('git_log', ''),
-        "{{GIT_REMOTE_URL}}": stats.get('git_remote_url', ''),
-        "{{GIT_STATUS}}": stats.get('git_status', ''),
-        "{{PROJECT_URL}}": _construct_git_web_url(stats.get('git_remote_url'), stats.get('git_commit')) or "",
-        "{{PROJECT_NAME}}": stats.get('project_name', 'Project'),
-        "{{DATE}}": stats.get('date', ''),
-        "{{TIME}}": stats.get('time', ''),
-        "{{DATETIME}}": stats.get('datetime', ''),
-        "{{OS}}": stats.get('os', ''),
-        "{{PYTHON_VERSION}}": stats.get('python_version', ''),
-        "{{PLATFORM}}": stats.get('platform', ''),
-        "{{ARCH}}": stats.get('arch', ''),
     }
 
-    # Environment variable resolution
-    _resolve_env_placeholders(template, replacements)
+    # Project, System, Datetime, and Git replacements
+    _resolve_metadata_placeholders(template, replacements, stats)
 
     return _render_single_pass(template, replacements)
 
@@ -2407,6 +2412,20 @@ def find_and_combine_files(
         staged=search_opts.get('git_staged', False),
         unstaged=search_opts.get('git_unstaged', False)
     ))
+
+    # Ensure project metadata is also in git_info for FileProcessor when Git is not present
+    git_info = config.get('git_info', {})
+    git_info.update({
+        'project_name': stats.get('project_name', 'Project'),
+        'date': stats.get('date', ''),
+        'time': stats.get('time', ''),
+        'datetime': stats.get('datetime', ''),
+        'os': stats.get('os', ''),
+        'python_version': stats.get('python_version', ''),
+        'platform': stats.get('platform', ''),
+        'arch': stats.get('arch', ''),
+    })
+    config['git_info'] = git_info
     pair_opts = config.get('pairing', {})
 
     exclude_folders = filter_opts.get('exclusions', {}).get('folders') or []
