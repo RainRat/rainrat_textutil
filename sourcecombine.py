@@ -3706,7 +3706,7 @@ def main():
     output_group.add_argument(
         "--json-summary",
         metavar="PATH",
-        help="Save an execution summary (file counts, tokens, time taken) in JSON format. Use '-' to print it to your terminal.",
+        help="Save an execution summary (file counts, tokens, duration) in JSON format. Use '-' to print it to your terminal.",
     )
 
     # Pairing Options Group
