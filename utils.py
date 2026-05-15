@@ -9,7 +9,11 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from charset_normalizer import from_bytes
-import yaml
+
+try:  # Mandatory dependency for YAML support, but handled gracefully
+    import yaml
+except ImportError:
+    yaml = None
 
 try:  # Optional tool for accurate token counting
     import tiktoken
@@ -200,6 +204,12 @@ class InvalidConfigError(Exception):
 
 def load_yaml_config(config_file_path):
     """Load a YAML configuration file."""
+    if yaml is None:
+        raise InvalidConfigError(
+            "The 'PyYAML' library is required to load YAML configurations. "
+            "Install it with: pip install pyyaml"
+        )
+
     logging.info("Loading configuration from: %s", config_file_path)
     try:
         with open(config_file_path, 'r', encoding='utf-8') as f:
@@ -211,7 +221,7 @@ def load_yaml_config(config_file_path):
         raise ConfigNotFoundError(
             f"Configuration file not found at '{config_file_path}'."
         ) from e
-    except yaml.YAMLError as e:
+    except (AttributeError, yaml.YAMLError) as e:
         mark = getattr(e, 'problem_mark', None)
         location = ""
         if mark:
