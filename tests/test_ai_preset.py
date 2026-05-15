@@ -73,6 +73,7 @@ class TestAIPreset(unittest.TestCase):
             exclude_language=[],
             git_diff=False,
             list_languages=False,
+            list_placeholders=False,
             diff=False,
             replace=[],
             replace_line=[],

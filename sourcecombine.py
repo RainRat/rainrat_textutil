@@ -3813,6 +3813,11 @@ def main():
         help="Show a list of all supported language identifiers and then stop.",
     )
     utility_group.add_argument(
+        "--list-placeholders",
+        action="store_true",
+        help="Show all supported template placeholders and then stop.",
+    )
+    utility_group.add_argument(
         "--extract",
         action="store_true",
         help=(
@@ -3913,6 +3918,10 @@ def main():
 
     if args.system_info:
         print_system_info()
+        sys.exit(0)
+
+    if args.list_placeholders:
+        print_placeholders()
         sys.exit(0)
 
     if args.list_languages:
@@ -5290,6 +5299,83 @@ def print_system_info():
         spec = importlib.util.find_spec(dep_name)
         status = f"{C_GREEN}Installed{C_RESET}" if spec else f"{C_YELLOW}Not found{C_RESET}"
         print(f"    {C_BOLD}{dep_name:<20}{C_RESET} {status:<20} {C_DIM}({purpose}){C_RESET}")
+
+    print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
+
+
+def print_placeholders():
+    """Print all supported template placeholders and their descriptions."""
+    print(f"\n{C_BOLD}{C_CYAN}Supported Template Placeholders:{C_RESET}")
+
+    categories = {
+        "File-Level Placeholders": [
+            ("{{FILENAME}}", "Full relative path to the file."),
+            ("{{EXT}}", "File extension (for example, 'py')."),
+            ("{{STEM}}", "Filename without extension (for example, 'main')."),
+            ("{{DIR}}", "Folder path containing the file."),
+            ("{{DIR_SLUG}}", "A filesystem-safe version of the folder path."),
+            ("{{LANG}}", "Detected language tag (for example, 'python', 'cpp')."),
+            ("{{SIZE}}", "Human-readable file size."),
+            ("{{TOKENS}}", "Number of tokens in the file."),
+            ("{{LINE_COUNT}}", "Number of lines in the file."),
+            ("{{MODIFIED}}", "Last modified date and time."),
+            ("{{HASH}}", "SHA-256 hash of the file content."),
+            ("{{INDEX}}", "The current file's position in the list (1, 2, 3...)."),
+            ("{{TOTAL}}", "The total number of files being processed."),
+            ("{{SIZE_PERCENT}}", "Percentage of the total project size."),
+            ("{{TOKEN_PERCENT}}", "Percentage of the total project tokens."),
+            ("{{LINE_PERCENT}}", "Percentage of the total project lines."),
+        ],
+        "Project-Level (Global) Placeholders": [
+            ("{{PROJECT_NAME}}", "Name of the project."),
+            ("{{FILE_COUNT}}", "Total number of files included."),
+            ("{{TOTAL_SIZE}}", "Total size of all files."),
+            ("{{TOTAL_TOKENS}}", "Total number of tokens."),
+            ("{{TOTAL_LINES}}", "Total number of lines."),
+            ("{{DATE}}", "Current date (YYYY-MM-DD)."),
+            ("{{TIME}}", "Current time (HH:MM:SS)."),
+            ("{{DATETIME}}", "Current date and time."),
+        ],
+        "Git Placeholders": [
+            ("{{GIT_BRANCH}}", "Current branch name."),
+            ("{{GIT_COMMIT}}", "Full commit hash."),
+            ("{{GIT_COMMIT_SHORT}}", "Short commit hash (7 characters)."),
+            ("{{GIT_AUTHOR}}", "Author of the latest commit (Global only)."),
+            ("{{GIT_AUTHOR_DATE}}", "Date of the latest commit (Global only)."),
+            ("{{GIT_STATUS}}", "Summary of working tree changes (Global only)."),
+            ("{{GIT_LOG}}", "Recent commit messages."),
+            ("{{GIT_DIFF}}", "Project-wide changes."),
+            ("{{FILE_DIFF}}", "Changes specific to the current file (File-level only)."),
+            ("{{GIT_REMOTE_URL}}", "The repository's origin remote URL."),
+            ("{{PROJECT_URL}}", "Web URL to the repository home (Global only)."),
+            ("{{FILE_URL}}", "Direct web link to the specific file and commit (File-level only)."),
+            ("{{FILE_AUTHOR}}", "Last author of the file (File-level only)."),
+            ("{{FILE_AUTHOR_DATE}}", "Last commit date of the file (File-level only)."),
+            ("{{FILE_LOG}}", "Subject of the last commit for the file (File-level only)."),
+            ("{{FILE_STATUS}}", "Git status of the file (for example, 'M', 'A', '??') (File-level only)."),
+        ],
+        "System & Environment Placeholders": [
+            ("{{OS}}", "Operating system name."),
+            ("{{PYTHON_VERSION}}", "Python version."),
+            ("{{PLATFORM}}", "Detailed platform information."),
+            ("{{ARCH}}", "CPU architecture."),
+            ("{{ENV:VAR_NAME}}", "Value of an environment variable."),
+        ],
+        "Pairing-Specific Placeholders": [
+            ("{{STEM}}", "Base filename shared by the pair."),
+            ("{{SOURCE_EXT}}", "Extension of the source file (for example, '.cpp')."),
+            ("{{HEADER_EXT}}", "Extension of the header file (for example, '.h')."),
+            ("{{DIR}}", "Folder path containing the pair."),
+            ("{{DIR_SLUG}}", "A filesystem-safe version of the folder path."),
+        ]
+    }
+
+    placeholder_width = 25
+
+    for category, placeholders in categories.items():
+        print(f"\n  {C_BOLD}{category}{C_RESET}")
+        for placeholder, description in placeholders:
+            print(f"    {C_BOLD}{C_CYAN}{placeholder:<{placeholder_width}}{C_RESET} {C_DIM}{description}{C_RESET}")
 
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
