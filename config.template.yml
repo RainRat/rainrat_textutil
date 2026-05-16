@@ -135,7 +135,7 @@ output:
   # If true, sort in descending order.
   sort_reverse: false
 
-  # Save a machine-readable execution summary (file counts, tokens, time taken)
+  # Save a machine-readable execution summary (file counts, tokens, duration)
   # in JSON format. Use '-' to print it to your terminal.
   summary_json: null
 
