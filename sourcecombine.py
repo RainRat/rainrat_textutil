@@ -5720,23 +5720,27 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         _print_limit_usage_bar('Line Limit Usage:', total_lines, stats.get('max_total_lines', 0), label_width)
 
     # Largest Files
+    has_status = any(len(f) > 3 and f[3] for f in stats.get('top_files', []))
+
     if stats.get('top_files'):
         # Fallback to sorting by size if no token counts are available
         has_tokens = any(f[0] > 0 for f in stats['top_files'])
+        status_header = f"{'STATUS':<5} " if has_status else ""
+
         if has_tokens:
             print(f"\n  {C_BOLD}{C_CYAN}Largest Files (by tokens){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[0], x[2]))[:5]
             total_for_percent = stats.get('total_tokens', 0)
             # Indent(4) + Tokens(12+1) + Size(12+1) + %(6+1) + Dist(12+1) + Status(5+1) = 56
-            path_width = max(20, term_width - 56)
-            print(f"    {C_DIM}{'TOKENS':>12} {'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} {'STATUS':<5} PATH{C_RESET}", file=sys.stderr)
+            path_width = max(20, term_width - (56 if has_status else 50))
+            print(f"    {C_DIM}{'TOKENS':>12} {'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} {status_header}PATH{C_RESET}", file=sys.stderr)
         else:
             print(f"\n  {C_BOLD}{C_CYAN}Largest Files (by size){C_RESET}", file=sys.stderr)
             top = sorted(stats['top_files'], key=lambda x: (-x[1], x[2]))[:5]
             total_for_percent = stats.get('total_size_bytes', 0)
             # Indent(4) + Size(12+1) + %(6+1) + Dist(12+1) + Status(5+1) = 43
-            path_width = max(20, term_width - 43)
-            print(f"    {C_DIM}{'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} {'STATUS':<5} PATH{C_RESET}", file=sys.stderr)
+            path_width = max(20, term_width - (43 if has_status else 37))
+            print(f"    {C_DIM}{'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} {status_header}PATH{C_RESET}", file=sys.stderr)
 
         for item in top:
             tokens, f_size, path = item[:3]
@@ -5770,12 +5774,14 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             row_metrics += f"{C_BOLD}{C_CYAN}{percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET} "
             row_metrics += f"{C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET} "
 
-            status_indicator = " " * 6
-            if status:
-                # _format_metadata_summary returns " [M]" or " [??]" (with colors)
-                status_text = _format_metadata_summary({'status': status}, colored=True).strip()
-                visible_len = len(status) + 2  # [M] -> 3, [??] -> 4
-                status_indicator = f" {status_text}{' ' * (5 - visible_len)}"
+            status_indicator = ""
+            if has_status:
+                status_indicator = " " * 6
+                if status:
+                    # _format_metadata_summary returns " [M]" or " [??]" (with colors)
+                    status_text = _format_metadata_summary({'status': status}, colored=True).strip()
+                    visible_len = len(status) + 2  # [M] -> 3, [??] -> 4
+                    status_indicator = f" {status_text}{' ' * (5 - visible_len)}"
 
             print(f"    {row_metrics}{status_indicator}{C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
 
@@ -5786,16 +5792,19 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         size_by_ext = stats.get('size_by_extension', {})
         has_ext_tokens = any(v > 0 for v in tokens_by_ext.values())
 
+        # Use the same status presence check for alignment as Largest Files
+        status_gap = " " * 6 if has_status else ""
+
         if has_ext_tokens:
             total_weight = stats.get('total_tokens', 0)
             weight_by_ext = tokens_by_ext
             title = "File Types (by tokens)"
-            header = f"    {C_DIM}{'TOKENS':>12} {'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} {' ': <6} {'EXTENSION':<12} {'COUNT':>7} {'% FILES':>7}{C_RESET}"
+            header = f"    {C_DIM}{'TOKENS':>12} {'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} {status_gap}{'EXTENSION':<12} {'COUNT':>7} {'% FILES':>7}{C_RESET}"
         else:
             total_weight = stats.get('total_size_bytes', 0)
             weight_by_ext = size_by_ext
             title = "File Types (by size)"
-            header = f"    {C_DIM}{'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} {' ': <6} {'EXTENSION':<12} {'COUNT':>7} {'% FILES':>7}{C_RESET}"
+            header = f"    {C_DIM}{'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} {status_gap}{'EXTENSION':<12} {'COUNT':>7} {'% FILES':>7}{C_RESET}"
 
         # Sort by weight desc, then count desc, then alpha
         sorted_exts = sorted(
@@ -5854,7 +5863,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             if len(ext_label) > 12:
                 ext_label = ext_label[:9] + "..."
 
-            row_ext_info = " " * 6
+            row_ext_info = status_gap
             row_ext_info += f"{C_BOLD}{ext_label:<12}{C_RESET} "
             row_ext_info += f"{C_BOLD}{C_CYAN}{count:>7,}{C_RESET} "
             row_ext_info += f"{C_BOLD}{C_CYAN}{f_percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}"
