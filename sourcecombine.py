@@ -2525,7 +2525,7 @@ def find_and_combine_files(
 
     total_excluded_folders = 0
 
-    # Store all items to process for when combining many files into one to enable global TOC
+    # Store all items to process for when combining many files into one to enable global Table of Contents
     # List of (file_path, root_path, is_size_excluded)
     all_combined_items = []
     # Store all pairs across all roots
@@ -2535,7 +2535,7 @@ def find_and_combine_files(
     all_size_excluded = set()
     # For path-based deduplication
     seen_paths = set()
-    # Metadata for TOC and Tree: {Path: {'size': int, 'tokens': int, 'mtime': float, 'depth': int}}
+    # Metadata for Table of Contents and Tree: {Path: {'size': int, 'tokens': int, 'mtime': float, 'depth': int}}
     file_metadata = {}
 
     with outfile_ctx as outfile:
@@ -2778,7 +2778,7 @@ def find_and_combine_files(
             or has_new_placeholders
         )
 
-        # We need metadata for sorting (except name), token limit, size limit, TOC/Tree, or global placeholders
+        # We need metadata for sorting (except name), token limit, size limit, Table of Contents/Tree, or global placeholders
         global_placeholders = ["{{FILE_COUNT}}", "{{TOTAL_SIZE}}", "{{TOTAL_TOKENS}}", "{{TOTAL_LINES}}"]
         has_global_placeholders = (global_header and any(p in global_header for p in global_placeholders)) or \
                                   (global_footer and any(p in global_footer for p in global_placeholders))
@@ -2890,7 +2890,7 @@ def find_and_combine_files(
                 overhead_lines += utils.count_lines(global_footer)
                 overhead_size += len(global_footer.encode('utf-8'))
 
-            # Estimate TOC and Tree overhead if enabled
+            # Estimate Table of Contents and Tree overhead if enabled
             if output_format in ('text', 'markdown'):
                 if output_opts.get('project_overview'):
                     overhead_tokens += 100 + (len(stats.get('files_by_extension', {})) * 10)
@@ -3010,7 +3010,7 @@ def find_and_combine_files(
 
                 _update_token_stats(stats, file_path, content_tokens)
 
-                # Store content details for TOC/Tree
+                # Store content details for Table of Contents/Tree
                 rel_p_str = rel_p.as_posix()
                 status = stats.get('file_statuses', {}).get(rel_p_str)
                 file_metadata[file_path] = {
@@ -3139,7 +3139,7 @@ def find_and_combine_files(
                 )
             processing_bar.close()
 
-        # Process items (including Global Header, TOC, Tree, and Footer) when combining many files into one
+        # Process items (including Global Header, Table of Contents, Tree, and Footer) when combining many files into one
         if not pairing_enabled and not list_files and not tree_view:
             # Update global header tokens if they will be included in the output or estimation
             if (not dry_run or estimate_tokens) and output_format in ('text', 'markdown', 'xml'):
