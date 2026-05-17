@@ -91,6 +91,9 @@ def test_get_git_info_success(tmp_path):
     mock_commit = MagicMock()
     mock_commit.stdout = "1234567890abcdef1234567890abcdef12345678\nTest Author\n2023-01-01 12:00:00 +0000\n"
 
+    mock_tag = MagicMock()
+    mock_tag.stdout = "v1.2.3\n"
+
     mock_remote = MagicMock()
     mock_remote.stdout = "https://github.com/User/Repo.git\n"
 
@@ -98,7 +101,7 @@ def test_get_git_info_success(tmp_path):
     mock_status.stdout = " M file1.txt\n?? file2.txt\n"
 
     with patch("subprocess.run") as mock_run:
-        mock_run.side_effect = [mock_root, mock_branch, mock_commit, mock_remote, mock_status]
+        mock_run.side_effect = [mock_root, mock_branch, mock_commit, mock_tag, mock_remote, mock_status]
 
         info = sourcecombine._get_git_info(root)
 

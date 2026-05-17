@@ -491,7 +491,7 @@ def _resolve_metadata_placeholders(template, replacements, data):
     # Project-level Git info
     for key in (
         'git_branch', 'git_commit', 'git_commit_short', 'git_author',
-        'git_author_date', 'git_status', 'git_diff', 'git_log', 'git_remote_url'
+        'git_author_date', 'git_tag', 'git_status', 'git_diff', 'git_log', 'git_remote_url'
     ):
         placeholder = f"{{{{{key.upper()}}}}}"
         if placeholder not in replacements:
@@ -923,6 +923,7 @@ def _get_git_info(root_folder, log_count=0, include_diff=False, diff_ref=None, s
         'git_commit_short': 'N/A',
         'git_author': 'N/A',
         'git_author_date': 'N/A',
+        'git_tag': None,
         'git_log': None,
         'git_status': None,
         'git_diff': None,
@@ -969,6 +970,16 @@ def _get_git_info(root_folder, log_count=0, include_diff=False, diff_ref=None, s
             )
             info['git_commit'] = result.stdout.strip()
             info['git_commit_short'] = info['git_commit'][:7]
+
+        # Get latest tag
+        try:
+            result = subprocess.run(
+                ['git', 'describe', '--tags', '--abbrev=0'],
+                cwd=git_cwd, capture_output=True, text=True, check=True
+            )
+            info['git_tag'] = result.stdout.strip()
+        except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+            pass
 
         # Get remote URL
         try:
@@ -2413,6 +2424,12 @@ def find_and_combine_files(
         unstaged=search_opts.get('git_unstaged', False)
     ))
 
+    # Resolve dynamic output path if it contains placeholders
+    if isinstance(output_path, str) and output_path != '-' and '{{' in output_path:
+        output_path = _render_global_template(output_path, stats)
+
+    stats['resolved_output_path'] = output_path
+
     # Ensure project metadata is also in git_info for FileProcessor when Git is not present
     git_info = config.get('git_info', {})
     git_info.update({
@@ -3396,7 +3413,7 @@ def main():
         "--output",
         "-o",
         metavar="PATH",
-        help="Save the result to a specific file or folder. This takes priority over the path in your settings.",
+        help="Save the result to a specific file or folder. This takes priority over the path in your settings. Supports template placeholders (for example, '{{PROJECT_NAME}}_{{DATE}}.txt').",
     )
     core_group.add_argument(
         "--dry-run",
@@ -3725,7 +3742,7 @@ def main():
     output_group.add_argument(
         "--json-summary",
         metavar="PATH",
-        help="Save an execution summary (file counts, tokens, duration) in JSON format. Use '-' to print it to your terminal.",
+        help="Save an execution summary (file counts, tokens, duration) in JSON format. Use '-' to print it to your terminal. Supports template placeholders.",
     )
 
     # Pairing Options Group
@@ -4541,7 +4558,12 @@ def main():
 
         duration = time.perf_counter() - start_time
         _print_execution_summary(stats, args, pairing_enabled=False, destination_desc=dest, duration=duration, source_desc=source_desc)
-        _write_json_summary(stats, output_conf.get('summary_json'), duration=duration, source_desc=source_desc, destination_desc=dest)
+
+        summary_path = output_conf.get('summary_json')
+        if summary_path and summary_path != '-' and '{{' in summary_path:
+            summary_path = _render_global_template(summary_path, stats)
+
+        _write_json_summary(stats, summary_path, duration=duration, source_desc=source_desc, destination_desc=dest)
         sys.exit(0)
 
     action_desc = "Pair" if pairing_enabled else "Combine"
@@ -4589,8 +4611,19 @@ def main():
             source_desc = ""
 
         duration = time.perf_counter() - start_time
+
+        # Update destination description if output path was resolved
+        resolved_path = stats.get('resolved_output_path')
+        if resolved_path and resolved_path != '-' and not pairing_enabled:
+            destination_desc = f"to '{resolved_path}'"
+
         _print_execution_summary(stats, args, pairing_enabled, destination_desc, duration=duration, source_desc=source_desc)
-        _write_json_summary(stats, output_conf.get('summary_json'), duration=duration, source_desc=source_desc, destination_desc=destination_desc)
+
+        summary_path = output_conf.get('summary_json')
+        if summary_path and summary_path != '-' and '{{' in summary_path:
+            summary_path = _render_global_template(summary_path, stats)
+
+        _write_json_summary(stats, summary_path, duration=duration, source_desc=source_desc, destination_desc=destination_desc)
 
 
 def _parse_combined_content(content, source_name="combined file"):
@@ -5361,6 +5394,7 @@ def print_placeholders():
             ("{{GIT_COMMIT_SHORT}}", "Short commit hash (7 characters)."),
             ("{{GIT_AUTHOR}}", "Author of the latest commit (Global only)."),
             ("{{GIT_AUTHOR_DATE}}", "Date of the latest commit (Global only)."),
+            ("{{GIT_TAG}}", "Latest Git tag (Global only)."),
             ("{{GIT_STATUS}}", "Summary of working tree changes (Global only)."),
             ("{{GIT_LOG}}", "Recent commit messages."),
             ("{{GIT_DIFF}}", "Project-wide changes."),

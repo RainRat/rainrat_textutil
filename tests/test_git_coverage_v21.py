@@ -65,6 +65,7 @@ def test_get_git_info_fallback():
     mock_root = MagicMock(stdout="/tmp/repo\n")
     mock_branch = MagicMock(stdout="main\n")
     mock_rev_parse = MagicMock(stdout="abcdef1234567890\n")
+    mock_tag = MagicMock(stdout="v1.0.0\n")
     mock_remote = MagicMock(stdout="https://github.com/user/repo\n")
     mock_status = MagicMock(stdout="")
 
@@ -74,6 +75,7 @@ def test_get_git_info_fallback():
             mock_branch,
             subprocess.CalledProcessError(1, 'git log'),
             mock_rev_parse,
+            mock_tag,
             mock_remote,
             mock_status
         ]

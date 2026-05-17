@@ -16,7 +16,7 @@ SourceCombine is a tool for your terminal that helps you find, filter, and combi
 
 ## Common Flags
 *   `--config`: Use a custom configuration file (YAML). The tool automatically searches for `sourcecombine.yml`, `sourcecombine.yaml`, `config.yml`, or `config.yaml` in your current folder.
-*   `--output` (`-o`): Save results to a file or folder instead of the terminal.
+*   `--output` (`-o`): Save results to a file or folder instead of the terminal. Supports template placeholders (for example, `{{PROJECT_NAME}}_{{DATE}}.txt`).
 *   `--clipboard` (`-c`): Copy the combined output to your system clipboard.
 *   `--git-files` (`-G`): Use Git to find files and follow your `.gitignore` rules automatically.
 *   `--limit` (`-L`): Stop processing once you reach this file limit.
@@ -119,6 +119,7 @@ These require a Git repository to function:
 *   `{{GIT_BRANCH}}`: Current branch name.
 *   `{{GIT_COMMIT}}`, `{{GIT_COMMIT_SHORT}}`: Full or short commit hash.
 *   `{{GIT_AUTHOR}}`: Author of the latest commit in the project.
+*   `{{GIT_TAG}}`: Latest Git tag in the project.
 *   `{{GIT_AUTHOR_DATE}}`: Date of the latest commit in the project.
 *   `{{GIT_STATUS}}`: Summary of working tree changes (for example, "2 modified, 1 added").
 *   `{{GIT_LOG}}`: Recent commit messages (requires `--git-log` flag).
