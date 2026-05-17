@@ -5664,7 +5664,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         token_str = f"{'~' if is_approx else ''}{token_count:,}"
         token_word = _plural(token_count, "token")
         print(
- 
             f"    {C_BOLD}{'Total Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET} {C_DIM}{token_word}{C_RESET}",
             file=sys.stderr,
         )
@@ -5675,23 +5674,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             )
 
     # Time and Limits Section
-    # Check both internal stats and CLI arguments to determine if any limits were active
+    # Check if any limits were active
     has_limits = any(stats.get(k, 0) > 0 for k in ('max_total_tokens', 'max_total_size_bytes', 'max_total_lines', 'max_files'))
-    if not has_limits:
-        # Check CLI args explicitly in case finding failed or limits were set but not reached
-        limit_args = ['limit', 'max_tokens', 'max_total_size', 'max_total_lines']
-        for arg_name in limit_args:
-            val = getattr(args, arg_name, 0)
-            try:
-                # Handle both numerical values and potential MagicMocks in tests
-                if val and int(float(str(val).replace(',', ''))) != 0:
-                    has_limits = True
-                    break
-            except (ValueError, TypeError):
-                # If it's something else truthy (like a Mock), count it as having limits for test coverage
-                if val:
-                    has_limits = True
-                    break
 
     if duration is not None or has_limits:
         section_name = "Time and Limits" if has_limits else "Execution"

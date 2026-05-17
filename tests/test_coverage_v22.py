@@ -145,47 +145,34 @@ def test_cli_custom_languages_injection_none(caplog):
 
     assert config['search']['custom_languages'] == {"*.myext": "python"}
 
-def test_print_execution_summary_has_limits_mock_fallback(capsys):
-    """Cover _print_execution_summary lines 5512-5516: except block in limit detection."""
+def test_print_execution_summary_has_limits_stats(capsys):
+    """Cover _print_execution_summary: verify that limits in stats trigger the Time and Limits section."""
     from sourcecombine import _print_execution_summary
 
     stats = {
         'total_discovered': 10,
         'total_included': 5,
         'total_size_bytes': 1000,
-        'token_count': 500,
+        'total_tokens': 500,
         'total_lines': 200,
         'duration': 1.0,
         'top_files': [],
         'files_by_extension': {},
-        'filter_reasons': {}
+        'filter_reasons': {},
+        'max_files': 100  # Trigger has_limits
     }
 
     args = MagicMock()
-    # Mock val that raises ValueError when passed to float()
-    # str(args.limit) will be something like "<MagicMock name='mock.limit' id='...'>"
-    args.limit = MagicMock()
+    # These are no longer used for limit detection in the UI
+    args.limit = 0
     args.max_tokens = 0
     args.max_total_size = 0
     args.max_total_lines = 0
 
-    # We need to suppress the actual printing or just let it happen to stderr
-    with patch("sys.stderr", MagicMock()):
-        _print_execution_summary(stats, args, pairing_enabled=False)
+    _print_execution_summary(stats, args, pairing_enabled=False)
 
-    # Let's try again without patching sys.stderr but capturing it
-    import sys
-    original_stderr = sys.stderr
-    from io import StringIO
-    mock_stderr = StringIO()
-    try:
-        sys.stderr = mock_stderr
-        _print_execution_summary(stats, args, pairing_enabled=False)
-    finally:
-        sys.stderr = original_stderr
-
-    output = mock_stderr.getvalue()
-    assert "Time and Limits" in output
+    captured = capsys.readouterr()
+    assert "Time and Limits" in captured.err
 
 def test_main_custom_languages_none_injection():
     """Directly test the logic in main for custom_languages injection when it is None."""
