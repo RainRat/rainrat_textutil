@@ -223,12 +223,14 @@ def test_summary_terminal_size_fallback(capsys):
     assert "EXTENSION" in stderr
     assert ".txt" in stderr
 
-def test_summary_throughput_line(capsys):
-    """Test that throughput is shown on its own line."""
+def test_summary_throughput_details(capsys):
+    """Test that throughput is integrated into the Details section."""
     stats = {
         'total_files': 10,
         'total_discovered': 100,
         'total_size_bytes': 1000,
+        'total_lines': 500,
+        'total_tokens': 200,
         'files_by_extension': {'.txt': 10},
         'top_files': []
     }
@@ -244,10 +246,19 @@ def test_summary_throughput_line(capsys):
         sourcecombine._print_execution_summary(stats, args, pairing_enabled=False, duration=2.0)
 
     captured = capsys.readouterr()
-    assert "Duration:" in captured.err
-    assert "2.00 s" in captured.err
-    assert "Throughput:" in captured.err
-    assert "50.0 files/s" in captured.err
+    stderr = captured.err
+    assert "Duration:" in stderr
+    assert "2.00 s" in stderr
+    assert "Throughput:" not in stderr
+    assert "50.0 files/s" in stderr
+
+    # Check integrated rates
+    assert "Total Size:" in stderr
+    assert "500.00 B/s" in stderr
+    assert "Total Lines:" in stderr
+    assert "250 lines/s" in stderr
+    assert "Total Tokens:" in stderr
+    assert "100 tokens/s" in stderr
 
 def test_file_types_redesign_sorting_and_others(monkeypatch, capsys):
     # Mock stats with 12 extensions.

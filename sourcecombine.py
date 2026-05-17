@@ -5648,24 +5648,36 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
  
             print(f"    {C_DIM}└── {C_RESET}{C_BOLD}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_CYAN}{excluded_folders:12,}{C_RESET} {C_DIM}{_plural(excluded_folders, 'folder')}{C_RESET}", file=sys.stderr)
 
+    # Calculate throughput rates
+    bps = tps = lps = 0
+    if duration and duration > 0:
+        bps = total_size_bytes / duration
+        tps = token_count / duration
+        lps = total_lines / duration
+
     # Details Section
     print(f"\n  {C_BOLD}{C_CYAN}Details{C_RESET}", file=sys.stderr)
 
     val, unit = _split_unit(total_size_str)
-    print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{val:>12}{C_RESET}{C_DIM}{unit}{C_RESET}", file=sys.stderr)
+    bps_str = ""
+    if bps > 0:
+        b_val, b_unit = _split_unit(utils.format_size(bps))
+        bps_str = f" {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{b_val}{C_RESET}{C_DIM}{b_unit}/s){C_RESET}"
+
+    print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{val:>12}{C_RESET}{C_DIM}{unit}{C_RESET}{bps_str}", file=sys.stderr)
 
     if total_lines > 0:
- 
-        print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET} {C_DIM}{line_word}{C_RESET}", file=sys.stderr)
+        lps_str = f" {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{lps:,.0f}{C_RESET} {C_DIM}lines/s){C_RESET}" if lps > 0 else ""
+        print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET} {C_DIM}{line_word}{C_RESET}{lps_str}", file=sys.stderr)
 
     # Token Counts
     # Show token counts if tokens were estimated
     if token_count > 0:
         token_str = f"{'~' if is_approx else ''}{token_count:,}"
         token_word = _plural(token_count, "token")
+        tps_str = f" {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{tps:,.0f}{C_RESET} {C_DIM}tokens/s){C_RESET}" if tps > 0 else ""
         print(
- 
-            f"    {C_BOLD}{'Total Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET} {C_DIM}{token_word}{C_RESET}",
+            f"    {C_BOLD}{'Total Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET} {C_DIM}{token_word}{C_RESET}{tps_str}",
             file=sys.stderr,
         )
         if is_approx:
@@ -5700,19 +5712,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         if duration is not None:
             fps = total_discovered / duration if duration > 0 else 0
             print(f"    {C_BOLD}{'Duration:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{duration:12.2f}{C_RESET}{C_DIM} s{C_RESET} {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{fps:,.1f}{C_RESET} {C_DIM}files/s){C_RESET}", file=sys.stderr)
-            if duration > 0 and total_discovered > 1:
-                bps = total_size_bytes / duration
-                tps = token_count / duration if token_count > 0 else 0
-                lps = total_lines / duration if total_lines > 0 else 0
-
-                val, unit = _split_unit(utils.format_size(bps))
-                throughput_details = [f"{C_BOLD}{C_CYAN}{val:>12}{C_RESET}{C_DIM}{unit}/s{C_RESET}"]
-                if tps > 0:
-                    throughput_details.append(f"{C_BOLD}{C_CYAN}{tps:,.0f}{C_RESET}{C_DIM} tokens/s{C_RESET}")
-                if lps > 0:
-                    throughput_details.append(f"{C_BOLD}{C_CYAN}{lps:,.0f}{C_RESET}{C_DIM} lines/s{C_RESET}")
-
-                print(f"    {C_BOLD}{'Throughput:':<{label_width}}{C_RESET}{f' {C_DIM}• {C_RESET}'.join(throughput_details)}", file=sys.stderr)
 
         _print_limit_usage_bar('File Limit Usage:', total_included, stats.get('max_files', 0), label_width)
         _print_limit_usage_bar('Token Limit Usage:', token_count, stats.get('max_total_tokens', 0), label_width)
