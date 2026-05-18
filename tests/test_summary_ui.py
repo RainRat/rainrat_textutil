@@ -223,8 +223,8 @@ def test_summary_terminal_size_fallback(capsys):
     assert "EXTENSION" in stderr
     assert ".txt" in stderr
 
-def test_summary_throughput_line(capsys):
-    """Test that throughput is shown on its own line."""
+def test_summary_throughput_integration(capsys):
+    """Test that throughput is integrated into Details section."""
     stats = {
         'total_files': 10,
         'total_discovered': 100,
@@ -246,8 +246,10 @@ def test_summary_throughput_line(capsys):
     captured = capsys.readouterr()
     assert "Duration:" in captured.err
     assert "2.00 s" in captured.err
-    assert "Throughput:" in captured.err
-    assert "50.0 files/s" in captured.err
+    assert "Throughput:" not in captured.err
+    assert "Total Size:" in captured.err
+    assert "1,000.00 B" in captured.err
+    assert "(500.00 B/s)" in captured.err
 
 def test_file_types_redesign_sorting_and_others(monkeypatch, capsys):
     # Mock stats with 12 extensions.
@@ -391,3 +393,54 @@ def test_summary_git_info(monkeypatch, capsys):
     # Check for Git info in header
     assert "SUCCESS: [MyProj (main:a1b2c3d)]" in stderr
     assert "Combined 1 file" in stderr
+
+def test_summary_git_status_column_hiding(capsys):
+    """Test that STATUS column is hidden when no status is present."""
+    stats = {
+        'total_files': 2,
+        'total_size_bytes': 1000,
+        'files_by_extension': {'.py': 2},
+        'total_tokens': 100,
+        'top_files': [
+            (50, 500, "file1.py", None),
+            (50, 500, "file2.py", None),
+        ]
+    }
+    args = MagicMock()
+    args.list_files = False
+    args.tree = False
+    args.extract = False
+    args.dry_run = False
+    args.estimate_tokens = False
+
+    with patch.dict(os.environ, {"NO_COLOR": "1"}):
+        sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
+
+    captured = capsys.readouterr()
+    assert "STATUS" not in captured.err
+
+def test_summary_git_status_column_showing(capsys):
+    """Test that STATUS column is shown when status is present."""
+    stats = {
+        'total_files': 2,
+        'total_size_bytes': 1000,
+        'files_by_extension': {'.py': 2},
+        'total_tokens': 100,
+        'top_files': [
+            (50, 500, "file1.py", "M"),
+            (50, 500, "file2.py", None),
+        ]
+    }
+    args = MagicMock()
+    args.list_files = False
+    args.tree = False
+    args.extract = False
+    args.dry_run = False
+    args.estimate_tokens = False
+
+    with patch.dict(os.environ, {"NO_COLOR": "1"}):
+        sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
+
+    captured = capsys.readouterr()
+    assert "STATUS" in captured.err
+    assert "[M]" in captured.err
