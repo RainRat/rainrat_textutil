@@ -1,6 +1,6 @@
 # SourceCombine
 
-SourceCombine is a tool for your terminal that helps you find, filter, and combine text files into a single file or folder. It supports many formats like JSON, XML, Markdown, and CSV. It is helpful for preparing code context for AI assistants (LLMs) or managing large groups of files.
+SourceCombine is a tool for your terminal that helps you find, filter, and combine text files into a single file or folder. It supports many formats like JSON, XML, Markdown, and CSV. Use it to prepare code context for AI assistants (AI models) or to manage large groups of files.
 
 ## Key Features
 *   **Find files in many folders:** Scan many folders at once. Use Git to find files and follow your `.gitignore` rules automatically.
@@ -8,11 +8,11 @@ SourceCombine is a tool for your terminal that helps you find, filter, and combi
 *   **Deduplication:** Skip duplicate files by absolute path or content.
 *   **Include Groups:** Group specific files to always include, even if you skip others.
 *   **Pairing:** Combine related files (like source and header pairs) into their own individual output files.
-*   **File Extraction:** Rebuild your original files and folders from combined files (like JSON, XML, JSONL, CSV, or Markdown). Filtering, sorting, and processing rules are supported. Batch process multiple files or entire folders. If no input is provided, the tool automatically searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`).
+*   **File Extraction:** Rebuild your original files and folders from combined files (like JSON, XML, JSONL, CSV, or Markdown). Use filtering, sorting, and processing rules to control the output. Batch process multiple files or entire folders. If you do not provide an input, the tool automatically searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`).
 *   **Sorting:** Sort files by `name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`.
 *   **Limiting:** Stop processing once you reach a file, token, size, or line limit.
 *   **Flexible Outputs:** Save results to your terminal, a file (JSON, XML, JSONL, CSV, or Markdown), or copy them to your system clipboard.
-*   **AI Context Integration:** Automatically include environment metadata (Python version, OS, Git status) and presets for LLMs.
+*   **AI Context Integration:** Automatically include environment metadata (Python version, OS, Git status) and presets for AI models.
 
 ## Common Flags
 *   `--config`: Use a custom configuration file (YAML). The tool automatically searches for `sourcecombine.yml`, `sourcecombine.yaml`, `config.yml`, or `config.yaml` in your current folder.
@@ -20,7 +20,7 @@ SourceCombine is a tool for your terminal that helps you find, filter, and combi
 *   `--clipboard` (`-c`): Copy the combined output to your system clipboard.
 *   `--git-files` (`-G`): Use Git to find files and follow your `.gitignore` rules automatically.
 *   `--limit` (`-L`): Stop processing once you reach this file limit.
-*   `--ai` (`-a`): Preset for AI assistants (Markdown format, line numbers, TOC, folder tree, project overview, and skipping binary files). This also copies to your system clipboard if you do not specify an output.
+*   `--ai` (`-a`): Preset for AI assistants (Markdown format, line numbers, Table of Contents, folder tree, project overview, and skipping binary files). This also copies to your system clipboard if you do not specify an output.
 *   `--dry-run` (`-d`): Show what would happen without making any changes.
 *   `--apply-in-place`: Save processed changes back to the original source files.
 *   `--create-backups`: Create `.bak` copies of original files when using `--apply-in-place`.
@@ -77,7 +77,7 @@ For more details, use `python sourcecombine.py --help` or check `config.template
 You can customize the output by using templates in your configuration file. Templates support placeholders that are replaced with actual data when the tool runs.
 
 ### File-Level Placeholders
-Used in `header_template` and `footer_template`:
+Use these in `header_template` and `footer_template`:
 *   `{{FILENAME}}`: Full relative path to the file.
 *   `{{EXT}}`: File extension (for example, `py`).
 *   `{{STEM}}`: Filename without extension (for example, `main`).
@@ -102,7 +102,7 @@ Used in `header_template` and `footer_template`:
 *   `{{FILE_STATUS}}`: Git status of the current file (for example, `M`, `A`, `??`).
 
 ### Project-Level Placeholders
-Used in `global_header_template`, `global_footer_template`, and other project-wide settings:
+Use these in `global_header_template`, `global_footer_template`, and other project-wide settings:
 *   `{{PROJECT_NAME}}`: Name of the project (detected from `package.json`, `pyproject.toml`, or folder name).
 *   `{{FILE_COUNT}}`: Total number of files included.
 *   `{{TOTAL_SIZE}}`: Total size of all files.
@@ -125,7 +125,7 @@ These require a Git repository to function:
 *   `{{GIT_DIFF}}`: Project-wide changes (requires `--include-diff` flag).
 
 ### Pairing Placeholders
-Used in `paired_filename_template`:
+Use these in `paired_filename_template`:
 *   `{{STEM}}`: Base filename shared by the pair.
 *   `{{SOURCE_EXT}}`: Extension of the source file (for example, `.cpp`).
 *   `{{HEADER_EXT}}`: Extension of the header file (for example, `.h`).
