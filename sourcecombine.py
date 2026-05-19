@@ -650,7 +650,7 @@ def _matches_file_glob_cached(file_name, relative_path_str, patterns):
 
 
 @lru_cache(maxsize=4096)
-def _matches_folder_glob_cached(relative_path_str, parts, patterns):
+def _matches_folder_glob_cached(parts, patterns):
     parts_cf = tuple(p.casefold() for p in parts)
 
     for pattern in patterns:
@@ -706,7 +706,7 @@ def should_include(
 
     exclusion_folders = _normalize_patterns(exclusions.get('folders'))
     if exclusion_folders and _matches_folder_glob_cached(
-        relative_path.parent.as_posix(), relative_path.parent.parts, exclusion_folders
+        relative_path.parent.parts, exclusion_folders
     ):
         return (False, 'excluded') if return_reason else False
 
@@ -1201,7 +1201,7 @@ def collect_file_paths(root_folder, recursive, exclude_folders, progress=None, m
                 def _is_excluded(p):
                     rel_p = p.relative_to(root)
                     return _matches_folder_glob_cached(
-                        rel_p.parent.as_posix(), rel_p.parent.parts, exclude_patterns
+                        rel_p.parent.parts, exclude_patterns
                     )
 
                 file_paths = [p for p in file_paths if not _is_excluded(p)]
@@ -1227,11 +1227,10 @@ def collect_file_paths(root_folder, recursive, exclude_folders, progress=None, m
     def _folder_is_excluded(relative_path):
         if not exclude_patterns:
             return False
-        rel_str = relative_path.as_posix()
         parts = relative_path.parts
-        excluded = _matches_folder_glob_cached(rel_str, parts, exclude_patterns)
+        excluded = _matches_folder_glob_cached(parts, exclude_patterns)
         if excluded:
-            logging.debug("Skipping folder: %s", rel_str)
+            logging.debug("Skipping folder: %s", relative_path.as_posix())
         return excluded
 
     if recursive:
