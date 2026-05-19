@@ -1,6 +1,6 @@
 # SourceCombine
 
-SourceCombine is a tool for your terminal that helps you find, filter, and combine text files into a single file or folder. It supports many formats like JSON, XML, Markdown, and CSV. It is helpful for preparing code context for AI assistants (LLMs) or managing large groups of files.
+SourceCombine is a tool for your terminal that helps you find, filter, and combine text files into a single file or folder. It supports many formats like JSON, XML, Markdown, and CSV. It is helpful for preparing code context for AI models or managing large groups of files.
 
 ## Key Features
 *   **Find files in many folders:** Scan many folders at once. Use Git to find files and follow your `.gitignore` rules automatically.
@@ -12,7 +12,7 @@ SourceCombine is a tool for your terminal that helps you find, filter, and combi
 *   **Sorting:** Sort files by `name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`.
 *   **Limiting:** Stop processing once you reach a file, token, size, or line limit.
 *   **Flexible Outputs:** Save results to your terminal, a file (JSON, XML, JSONL, CSV, or Markdown), or copy them to your system clipboard.
-*   **AI Context Integration:** Automatically include environment metadata (Python version, OS, Git status) and presets for LLMs.
+*   **AI Context Integration:** Automatically include environment metadata (Python version, OS, Git status) and presets for AI models.
 
 ## Common Flags
 *   `--config`: Use a custom configuration file (YAML). The tool automatically searches for `sourcecombine.yml`, `sourcecombine.yaml`, `config.yml`, or `config.yaml` in your current folder.
@@ -20,7 +20,7 @@ SourceCombine is a tool for your terminal that helps you find, filter, and combi
 *   `--clipboard` (`-c`): Copy the combined output to your system clipboard.
 *   `--git-files` (`-G`): Use Git to find files and follow your `.gitignore` rules automatically.
 *   `--limit` (`-L`): Stop processing once you reach this file limit.
-*   `--ai` (`-a`): Preset for AI assistants (Markdown format, line numbers, TOC, folder tree, project overview, and skipping binary files). This also copies to your system clipboard if you do not specify an output.
+*   `--ai` (`-a`): Preset for AI assistants (Markdown format, line numbers, Table of Contents, folder tree, project overview, and skipping binary files). This also copies to your system clipboard if you do not specify an output.
 *   `--dry-run` (`-d`): Show what would happen without making any changes.
 *   `--apply-in-place`: Save processed changes back to the original source files.
 *   `--create-backups`: Create `.bak` copies of original files when using `--apply-in-place`.
