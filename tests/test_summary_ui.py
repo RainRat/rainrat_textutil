@@ -47,6 +47,7 @@ def test_summary_redesign_largest_files(monkeypatch, capsys):
     assert "TOKENS" in stderr
     assert "%" in stderr
     assert "SIZE" in stderr
+    assert "STATUS" not in stderr
     assert "PATH" in stderr
 
     # Check for values
@@ -224,7 +225,7 @@ def test_summary_terminal_size_fallback(capsys):
     assert ".txt" in stderr
 
 def test_summary_throughput_line(capsys):
-    """Test that throughput is shown on its own line."""
+    """Test that throughput is integrated into details."""
     stats = {
         'total_files': 10,
         'total_discovered': 100,
@@ -246,8 +247,9 @@ def test_summary_throughput_line(capsys):
     captured = capsys.readouterr()
     assert "Duration:" in captured.err
     assert "2.00 s" in captured.err
-    assert "Throughput:" in captured.err
+    assert "Throughput:" not in captured.err
     assert "50.0 files/s" in captured.err
+    assert "500.00 B/s" in captured.err
 
 def test_file_types_redesign_sorting_and_others(monkeypatch, capsys):
     # Mock stats with 12 extensions.
