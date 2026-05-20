@@ -582,20 +582,21 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
             replacements["{{FILE_AUTHOR_DATE}}"] = file_git_data.get('file_author_date', '')
             replacements["{{FILE_LOG}}"] = file_git_data.get('file_log', '')
 
-        # Construct FILE_URL
-        remote_url = git_info.get('git_remote_url')
-        if remote_url:
-            commit = git_info.get('git_commit')
-            repo_root = git_info.get('git_repo_root')
-            if commit and repo_root:
-                # Use provided file_path or try to resolve it from relative_path
-                try:
-                    target_file = Path(file_path) if file_path else (Path(repo_root) / raw_filename)
-                    abs_file = target_file.resolve()
-                    rel_to_repo = abs_file.relative_to(Path(repo_root).resolve()).as_posix()
-                    replacements["{{FILE_URL}}"] = _construct_git_web_url(remote_url, commit, rel_to_repo) or ""
-                except (ValueError, OSError):
-                    replacements["{{FILE_URL}}"] = ""
+        # Construct FILE_URL only if the placeholder is present
+        if "{{FILE_URL}}" in template:
+            remote_url = git_info.get('git_remote_url')
+            if remote_url:
+                commit = git_info.get('git_commit')
+                repo_root = git_info.get('git_repo_root')
+                if commit and repo_root:
+                    # Use provided file_path or try to resolve it from relative_path
+                    try:
+                        target_file = Path(file_path) if file_path else (Path(repo_root) / raw_filename)
+                        abs_file = target_file.resolve()
+                        rel_to_repo = abs_file.relative_to(Path(repo_root).resolve()).as_posix()
+                        replacements["{{FILE_URL}}"] = _construct_git_web_url(remote_url, commit, rel_to_repo) or ""
+                    except (ValueError, OSError):
+                        replacements["{{FILE_URL}}"] = ""
 
     return _render_single_pass(template, replacements)
 
