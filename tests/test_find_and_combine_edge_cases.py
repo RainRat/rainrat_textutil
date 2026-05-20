@@ -73,4 +73,4 @@ def test_dev_null_implementation():
 def test_matches_glob_cached_defensive_guards():
     # Test internal functions directly to cover defensive guards for empty patterns
     assert _matches_file_glob_cached("file.txt", "file.txt", ()) is False
-    assert _matches_folder_glob_cached("folder", ("folder",), ()) is False
+    assert _matches_folder_glob_cached(("folder",), ()) is False
