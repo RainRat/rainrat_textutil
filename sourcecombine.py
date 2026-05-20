@@ -1090,7 +1090,7 @@ def collect_git_files(root_folder, progress=None):
         for line in result.stdout.splitlines():
             if line:
                 file_paths.append(git_cwd / line)
-                if progress:
+                if progress is not None:
                     progress.update(1)
 
         # Sort for deterministic output
@@ -1150,7 +1150,7 @@ def collect_git_diff_files(root_folder, diff_ref=None, progress=None, staged_onl
             # Filter out deleted files
             if p.is_file():
                 file_paths.append(p)
-                if progress:
+                if progress is not None:
                     progress.update(1)
 
         return file_paths, git_cwd, 0
