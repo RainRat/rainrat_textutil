@@ -454,7 +454,10 @@ def _render_single_pass(template, replacements):
     # Sort keys by length descending to prevent partial prefix matching
     sorted_keys = tuple(sorted(replacements.keys(), key=len, reverse=True))
     pattern = re.compile("|".join(re.escape(k) for k in sorted_keys))
-    return pattern.sub(lambda m: str(replacements[m.group(0)]), template)
+    return pattern.sub(
+        lambda m: str(replacements[m.group(0)]) if replacements[m.group(0)] is not None else "",
+        template
+    )
 
 
 def _resolve_env_placeholders(template, replacements):
@@ -495,7 +498,7 @@ def _resolve_metadata_placeholders(template, replacements, data):
     ):
         placeholder = f"{{{{{key.upper()}}}}}"
         if placeholder not in replacements:
-            replacements[placeholder] = data.get(key, '')
+            replacements[placeholder] = data.get(key) or ''
 
     if "{{PROJECT_URL}}" not in replacements:
         replacements["{{PROJECT_URL}}"] = _construct_git_web_url(
