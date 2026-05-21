@@ -1113,13 +1113,14 @@ def validate_glob_pattern(pattern, *, context="file pattern"):
 
     normalized = pattern
     if '\\' in pattern:
-        normalized = pattern.replace('\\', '/')
-        normalized = re.sub(r'/+', '/', normalized)
         logging.warning(
             "Search pattern in %s ('%s') uses backslashes; treating them as '/' for cross-platform matching.",
             context,
             pattern,
         )
+        normalized = pattern.replace('\\', '/')
+
+    normalized = re.sub(r'/+', '/', normalized)
 
     if Path(normalized).is_absolute():
         logging.warning(
