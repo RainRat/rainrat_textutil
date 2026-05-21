@@ -74,7 +74,7 @@ SourceCombine is a tool for your terminal that helps you find, filter, and combi
 For more details, use `python sourcecombine.py --help` or check `config.template.yml`.
 
 ## Template Customization
-You can customize the output by using templates in your configuration file. Templates support placeholders that are replaced with actual data when the tool runs.
+You can customize the output by using templates in your configuration file. Templates support placeholders that are replaced with actual data when the tool runs. All project-level and Git placeholders are available in both file-level and global templates.
 
 ### File-Level Placeholders
 Used in `header_template` and `footer_template`:
@@ -94,6 +94,7 @@ Used in `header_template` and `footer_template`:
 *   `{{FILE_AUTHOR}}`: Last author of the file according to Git.
 *   `{{FILE_AUTHOR_DATE}}`: Last commit date of the file according to Git.
 *   `{{FILE_LOG}}`: Subject of the last commit for the file according to Git.
+*   `{{GIT_STATUS}}`: Summary of working tree changes (for example, "2 modified, 1 added").
 *   `{{OS}}`, `{{PYTHON_VERSION}}`, `{{PLATFORM}}`, `{{ARCH}}`: System and environment metadata.
 *   `{{ENV:VAR_NAME}}`: Value of an environment variable.
 *   `{{SIZE_PERCENT}}`, `{{TOKEN_PERCENT}}`, `{{LINE_PERCENT}}`: Percentage of the total project.
@@ -111,6 +112,7 @@ Used in `global_header_template`, `global_footer_template`, and other project-wi
 *   `{{DATE}}`, `{{TIME}}`, `{{DATETIME}}`: Current date and time.
 *   `{{OS}}`, `{{PYTHON_VERSION}}`, `{{PLATFORM}}`, `{{ARCH}}`: System and environment metadata.
 *   `{{ENV:VAR_NAME}}`: Value of an environment variable.
+*   `{{GIT_STATUS}}`: Summary of working tree changes (for example, "2 modified, 1 added").
 *   `{{GIT_REMOTE_URL}}`: The repository's origin remote URL.
 *   `{{PROJECT_URL}}`: Web URL to the repository home (supports GitHub, GitLab, Bitbucket).
 
