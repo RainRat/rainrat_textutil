@@ -5801,7 +5801,22 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
             status_indicator = ""
             if has_status:
-                    status_indicator = f" {status_text}{' ' * (5 - visible_len)}"
+                if status:
+                    label = f"[{status}]"
+                    visible_len = len(label)
+                    if status in ('A', '??'):
+                        status_text = f"{C_GREEN}{label}{C_RESET}"
+                    elif status in ('M', 'R'):
+                        status_text = f"{C_YELLOW}{label}{C_RESET}"
+                    elif status == 'D':
+                        status_text = f"{C_RED}{label}{C_RESET}"
+                    else:
+                        status_text = label
+                else:
+                    status_text = ""
+                    visible_len = 0
+
+                status_indicator = f" {status_text}{' ' * (5 - visible_len)}"
 
             print(f"    {row_metrics}{status_indicator}{C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
     else:
