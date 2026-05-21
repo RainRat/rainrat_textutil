@@ -5395,15 +5395,15 @@ def print_placeholders():
             ("{{GIT_BRANCH}}", "Current branch name."),
             ("{{GIT_COMMIT}}", "Full commit hash."),
             ("{{GIT_COMMIT_SHORT}}", "Short commit hash (7 characters)."),
-            ("{{GIT_AUTHOR}}", "Author of the latest commit (Global only)."),
-            ("{{GIT_AUTHOR_DATE}}", "Date of the latest commit (Global only)."),
-            ("{{GIT_TAG}}", "Latest Git tag (Global only)."),
-            ("{{GIT_STATUS}}", "Summary of working tree changes (Global only)."),
+            ("{{GIT_AUTHOR}}", "Author of the latest commit."),
+            ("{{GIT_AUTHOR_DATE}}", "Date of the latest commit."),
+            ("{{GIT_TAG}}", "Latest Git tag."),
+            ("{{GIT_STATUS}}", "Summary of working tree changes."),
             ("{{GIT_LOG}}", "Recent commit messages."),
             ("{{GIT_DIFF}}", "Project-wide changes."),
             ("{{FILE_DIFF}}", "Changes specific to the current file (File-level only)."),
             ("{{GIT_REMOTE_URL}}", "The repository's origin remote URL."),
-            ("{{PROJECT_URL}}", "Web URL to the repository home (Global only)."),
+            ("{{PROJECT_URL}}", "Web URL to the repository home."),
             ("{{FILE_URL}}", "Direct web link to the specific file and commit (File-level only)."),
             ("{{FILE_AUTHOR}}", "Last author of the file (File-level only)."),
             ("{{FILE_AUTHOR_DATE}}", "Last commit date of the file (File-level only)."),
@@ -5801,7 +5801,17 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
             status_indicator = ""
             if has_status:
-                    status_indicator = f" {status_text}{' ' * (5 - visible_len)}"
+                label = f"[{status}]" if status else ""
+                visible_len = len(label)
+                if status in ('A', '??'):
+                    status_text = f"{C_GREEN}{label}{C_RESET}"
+                elif status in ('M', 'R'):
+                    status_text = f"{C_YELLOW}{label}{C_RESET}"
+                elif status == 'D':
+                    status_text = f"{C_RED}{label}{C_RESET}"
+                else:
+                    status_text = label
+                status_indicator = f" {status_text}{' ' * (5 - visible_len)} "
 
             print(f"    {row_metrics}{status_indicator}{C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
     else:
