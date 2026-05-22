@@ -5743,9 +5743,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     # Largest Files
     has_status = any(len(f) > 3 and f[3] for f in stats.get('top_files', []))
     if stats.get('top_files'):
-        # Check if any file has Git status info to determine if we show the column
-        has_status = any(len(f) > 3 and f[3] for f in stats['top_files'])
-
         # Fallback to sorting by size if no token counts are available
         has_tokens = any(f[0] > 0 for f in stats['top_files'])
         status_header = f"  {'STATUS':<7}" if has_status else ""
@@ -5819,9 +5816,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 status_indicator = f" {status_text}{' ' * (5 - visible_len)}"
 
             print(f"    {row_metrics}{status_indicator}{C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
-    else:
-        # Default if top_files is missing/empty
-        has_status = False
 
     # Extensions List
     files_by_ext = stats.get('files_by_extension')
