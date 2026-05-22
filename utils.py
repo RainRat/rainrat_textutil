@@ -1316,40 +1316,179 @@ def parse_size_value(value: str) -> int:
     return int(number * units[unit])
 
 
-def get_project_name(root_folder: str | Path) -> str:
-    """Detect the project name from the folder name or manifest files."""
+def get_project_identity(root_folder: str | Path) -> dict:
+    """Detect project metadata (name, version, description, license) from manifest files."""
+    identity = {
+        "project_name": "Project",
+        "project_version": "",
+        "project_description": "",
+        "project_license": ""
+    }
+
     try:
         root_path = Path(root_folder).resolve()
+        identity["project_name"] = root_path.name or "Project"
 
-        # Try package.json
+        # 1. Node.js (package.json)
         pkg_json = root_path / "package.json"
         if pkg_json.is_file():
             try:
                 data = json.loads(pkg_json.read_text(encoding='utf-8'))
-                if isinstance(data, dict) and data.get('name'):
-                    return str(data['name'])
+                if isinstance(data, dict):
+                    if data.get('name'):
+                        identity["project_name"] = str(data['name'])
+                    if data.get('version'):
+                        identity["project_version"] = str(data['version'])
+                    if data.get('description'):
+                        identity["project_description"] = str(data['description'])
+                    if data.get('license'):
+                        identity["project_license"] = str(data['license'])
+                    return identity
             except Exception:
                 pass
 
-        # Try pyproject.toml
+        # 2. Python (pyproject.toml)
         pyproject = root_path / "pyproject.toml"
         if pyproject.is_file():
             try:
                 content = pyproject.read_text(encoding='utf-8')
-                # Simple regex to avoid needing a TOML parser
-                # Look for name = "..." in the [project] section or at top level
+                # Name
                 match = re.search(r'^name\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
+                if not match:
+                    match = re.search(
+                        r'\[project\][^\[]*name\s*=\s*["\']([^"\']+)["\']', content, re.DOTALL
+                    )
                 if match:
-                    return match.group(1)
-                match = re.search(r'\[project\][^\[]*name\s*=\s*["\']([^"\']+)["\']', content, re.DOTALL)
+                    identity["project_name"] = match.group(1)
+
+                # Version
+                match = re.search(r'^version\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
+                if not match:
+                    match = re.search(
+                        r'\[project\][^\[]*version\s*=\s*["\']([^"\']+)["\']', content, re.DOTALL
+                    )
                 if match:
-                    return match.group(1)
+                    identity["project_version"] = match.group(1)
+
+                # Description
+                match = re.search(r'^description\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
+                if not match:
+                    match = re.search(
+                        r'\[project\][^\[]*description\s*=\s*["\']([^"\']+)["\']',
+                        content,
+                        re.DOTALL,
+                    )
+                if match:
+                    identity["project_description"] = match.group(1)
+
+                # License
+                match = re.search(r'^license\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
+                if not match:
+                    # Support license = { text = "MIT" }
+                    match = re.search(r'license\s*=\s*\{[^}]*text\s*=\s*["\']([^"\']+)["\']', content)
+                if not match:
+                    # Support [project.license] text = "MIT"
+                    match = re.search(
+                        r'\[project\.license\][^\[]*text\s*=\s*["\']([^"\']+)["\']',
+                        content,
+                        re.DOTALL,
+                    )
+                if match:
+                    identity["project_license"] = match.group(1)
+
+                return identity
             except Exception:
                 pass
 
-        return root_path.name or "Project"
+        # 3. Rust (Cargo.toml)
+        cargo = root_path / "Cargo.toml"
+        if cargo.is_file():
+            try:
+                content = cargo.read_text(encoding='utf-8')
+                # [package] section
+                package_match = re.search(r'\[package\]([\s\S]*?)(?:\n\[|$)', content)
+                if package_match:
+                    pkg_content = package_match.group(1)
+                    m = re.search(r'^name\s*=\s*["\']([^"\']+)["\']', pkg_content, re.MULTILINE)
+                    if m:
+                        identity["project_name"] = m.group(1)
+                    m = re.search(r'^version\s*=\s*["\']([^"\']+)["\']', pkg_content, re.MULTILINE)
+                    if m:
+                        identity["project_version"] = m.group(1)
+                    m = re.search(
+                        r'^description\s*=\s*["\']([^"\']+)["\']', pkg_content, re.MULTILINE
+                    )
+                    if m:
+                        identity["project_description"] = m.group(1)
+                    m = re.search(r'^license\s*=\s*["\']([^"\']+)["\']', pkg_content, re.MULTILINE)
+                    if m:
+                        identity["project_license"] = m.group(1)
+                return identity
+            except Exception:
+                pass
+
+        # 4. PHP (composer.json)
+        composer = root_path / "composer.json"
+        if composer.is_file():
+            try:
+                data = json.loads(composer.read_text(encoding='utf-8'))
+                if isinstance(data, dict):
+                    if data.get('name'):
+                        identity["project_name"] = str(data['name'])
+                    if data.get('version'):
+                        identity["project_version"] = str(data['version'])
+                    if data.get('description'):
+                        identity["project_description"] = str(data['description'])
+                    if data.get('license'):
+                        identity["project_license"] = str(data['license'])
+                    return identity
+            except Exception:
+                pass
+
+        # 5. Java (pom.xml)
+        pom = root_path / "pom.xml"
+        if pom.is_file():
+            try:
+                content = pom.read_text(encoding='utf-8')
+                # Simplified XML parsing with regex
+                m = re.search(r'<artifactId>(.*?)</artifactId>', content)
+                if m:
+                    identity["project_name"] = m.group(1)
+                m = re.search(r'<version>(.*?)</version>', content)
+                if m:
+                    identity["project_version"] = m.group(1)
+                m = re.search(r'<description>(.*?)</description>', content)
+                if m:
+                    identity["project_description"] = m.group(1)
+                # License is often in <licenses><license><name>...
+                m = re.search(r'<license>.*?<name>(.*?)</name>', content, re.DOTALL)
+                if m:
+                    identity["project_license"] = m.group(1)
+                return identity
+            except Exception:
+                pass
+
+        # 6. Go (go.mod)
+        gomod = root_path / "go.mod"
+        if gomod.is_file():
+            try:
+                content = gomod.read_text(encoding='utf-8')
+                match = re.search(r'^module\s+(.+)$', content, re.MULTILINE)
+                if match:
+                    identity["project_name"] = match.group(1).strip()
+                return identity
+            except Exception:
+                pass
+
     except Exception:
-        return "Project"
+        pass
+
+    return identity
+
+
+def get_project_name(root_folder: str | Path) -> str:
+    """Detect the project name from the folder name or manifest files."""
+    return get_project_identity(root_folder)["project_name"]
 
 
 def get_datetime_placeholders() -> dict:
