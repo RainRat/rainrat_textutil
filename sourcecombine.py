@@ -3404,7 +3404,7 @@ def main():
         "targets",
         nargs="*",
         metavar="TARGET",
-        help="Folders or files to search. If you do not provide any, the tool searches the current folder. If the first target is a '.yml' or '.yaml' file, the tool uses it as its configuration.",
+        help="Folders or files to search. If empty, the tool searches the current folder. If the first target is a YAML file (.yml or .yaml), it is used as the configuration.",
     )
     core_group.add_argument(
         "--config",
@@ -3816,13 +3816,13 @@ def main():
         "--max-lines",
         type=int,
         metavar="N",
-        help="Truncate each file to this many lines before combining.",
+        help="Shorten each file to this many lines before combining.",
     )
     processing_group.add_argument(
         "--truncate-tokens",
         type=int,
         metavar="N",
-        help="Truncate each file to this many tokens before combining.",
+        help="Shorten each file to this many tokens before combining.",
     )
     processing_group.add_argument(
         "--replace",
@@ -3836,7 +3836,7 @@ def main():
         nargs=2,
         action="append",
         metavar=("PATTERN", "REPLACEMENT"),
-        help="Add a line-based search pattern rule to find and replace content. Matching lines that follow each other collapse into a single replacement. Use this option again to add more.",
+        help="Add a line-based search pattern rule to find and replace content. Matching lines that follow each other are replaced by a single entry. Use this option again to add more.",
     )
 
     # Utility Commands Group
@@ -3860,13 +3860,11 @@ def main():
         "--extract",
         action="store_true",
         help=(
-            "Rebuild original files and folders from combined files (JSON, XML, JSONL, CSV, or Markdown). "
-            "Read from files, folders, your terminal ('-'), or the system clipboard. "
-            "If no input is provided, the tool searches for combined_files.txt, combined_files.md, "
-            "combined_files.json, combined_files.xml, combined_files.jsonl, or combined_files.csv. "
-            "Filtering, sorting, processing (like --compact or --replace), and preview options "
-            "(like --diff) are supported. Line numbers are removed automatically unless you use "
-            "--keep-line-numbers."
+            "Restore original files and folders from combined files (JSON, XML, Markdown, etc.). "
+            "Read from files, folders, your terminal ('-'), or the clipboard. "
+            "If no input is provided, the tool searches for standard defaults (like combined_files.txt). "
+            "Supports filtering, sorting, and processing rules. "
+            "Line numbers are removed automatically unless you use --keep-line-numbers."
         ),
     )
     utility_group.add_argument(
