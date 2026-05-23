@@ -54,6 +54,6 @@ def test_summary_status_column_visibility(monkeypatch, capsys):
     stderr_with_status = capsys.readouterr().err
 
     assert "STATUS" in stderr_with_status
-    # Verify alignment - File Types header SHOULD have the spacer (1 + 6 = 7 spaces between DISTRIBUTION and EXTENSION)
-    assert "DISTRIBUTION       EXTENSION" in stderr_with_status
+    # Verify alignment - File Types header SHOULD have the spacer (1 + 7 = 8 spaces between DISTRIBUTION and EXTENSION)
+    assert "DISTRIBUTION        EXTENSION" in stderr_with_status
     assert "[M]" in stderr_with_status
