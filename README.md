@@ -34,6 +34,7 @@ SourceCombine is a tool for your terminal that helps you find, filter, and combi
 *   `--list-languages`: Show all supported language identifiers.
 *   `--list-placeholders`: Show all supported template placeholders and then stop.
 *   `--show-config`: Display the final configuration being used.
+*   `--export-config`: Save the final combined configuration to a YAML file.
 *   `--system-info`: Show environment details (Python version, OS, etc.).
 *   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without actually writing them to disk.
 *   `--clean`: (Alias for `--delete-backups`) Remove all `.bak` backup files from the current directory and its subfolders.

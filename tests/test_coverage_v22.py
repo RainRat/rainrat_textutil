@@ -73,6 +73,7 @@ def test_cli_custom_languages_injection_none(caplog):
     args.extract = False
     args.ai = False
     args.show_config = False
+    args.export_config = None
 
     # Fill defaults for MagicMock to avoid AttributeErrors
     args.exclude_language = []
