@@ -3906,6 +3906,13 @@ def main():
         help="Show the final combined configuration (including defaults, files, and options) and exit.",
     )
     utility_group.add_argument(
+        "--export-config",
+        nargs="?",
+        const="sourcecombine.yml",
+        metavar="FILENAME",
+        help="Save the final configuration to a YAML file (defaults to 'sourcecombine.yml') and then stop.",
+    )
+    utility_group.add_argument(
         "--system-info",
         action="store_true",
         help="Show details about your computer and environment.",
@@ -4423,6 +4430,15 @@ def main():
             utils.yaml.dump(_convert_to_json_friendly(config), sys.stdout, sort_keys=False)
         else:
             json.dump(_convert_to_json_friendly(config), sys.stdout, indent=2)
+        sys.exit(0)
+
+    if args.export_config:
+        try:
+            utils.save_yaml_config(args.export_config, _convert_to_json_friendly(config))
+            logging.info("Configuration exported to %s", Path(args.export_config).resolve())
+        except (OSError, utils.InvalidConfigError) as exc:
+            logging.error("Could not export configuration: %s", exc)
+            sys.exit(1)
         sys.exit(0)
 
     if pairing_enabled:

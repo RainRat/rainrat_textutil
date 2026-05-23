@@ -243,6 +243,23 @@ def load_yaml_config(config_file_path):
         raise InvalidConfigError(message) from e
 
 
+def save_yaml_config(config_file_path, config):
+    """Save a dictionary to a YAML configuration file."""
+    if yaml is None:
+        raise InvalidConfigError(
+            "The 'PyYAML' library is required to save YAML configurations. "
+            "Install it with: pip install pyyaml"
+        )
+
+    logging.info("Saving configuration to: %s", config_file_path)
+    try:
+        with open(config_file_path, 'w', encoding='utf-8') as f:
+            f.write("# SourceCombine Configuration\n")
+            yaml.dump(config, f, sort_keys=False)
+    except OSError as e:
+        raise InvalidConfigError(f"Could not write configuration file: {e}") from e
+
+
 def read_file_best_effort(file_path):
     """Try to read a file using different ways.
 
