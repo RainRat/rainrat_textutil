@@ -3442,7 +3442,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Skip files that match this search pattern (for example, '*.log'). Use this option again to skip more.",
+        help="Skip files that match this glob pattern (for example, '*.log'). Use this option again to skip more.",
     )
     filtering_group.add_argument(
         "--exclude-folder",
@@ -3452,7 +3452,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Skip folders that match this search pattern (for example, 'build'). Use this option again to skip more.",
+        help="Skip folders that match this glob pattern (for example, 'build'). Use this option again to skip more.",
     )
     filtering_group.add_argument(
         "--include",
@@ -3461,7 +3461,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Include only files that match this search pattern (for example, '*.py'). Use this option again to include more.",
+        help="Include only files that match this glob pattern (for example, '*.py'). Use this option again to include more.",
     )
     filtering_group.add_argument(
         "--language",
@@ -3533,14 +3533,14 @@ def main():
     filtering_group.add_argument(
         "--grep",
         "-g",
-        metavar="PATTERN",
-        help="Include only files whose content matches this search pattern.",
+        metavar="REGEX",
+        help="Include only files whose content matches this regular expression.",
     )
     filtering_group.add_argument(
         "--exclude-grep",
         "-E",
-        metavar="PATTERN",
-        help="Skip files whose content matches this search pattern.",
+        metavar="REGEX",
+        help="Skip files whose content matches this regular expression.",
     )
     filtering_group.add_argument(
         "--skip-binary",
@@ -3828,15 +3828,15 @@ def main():
         "--replace",
         nargs=2,
         action="append",
-        metavar=("PATTERN", "REPLACEMENT"),
-        help="Add a global search-and-replace rule using search patterns. Use this option again to add more.",
+        metavar=("REGEX", "REPLACEMENT"),
+        help="Add a global search-and-replace rule using regular expressions. Use this option again to add more.",
     )
     processing_group.add_argument(
         "--replace-line",
         nargs=2,
         action="append",
-        metavar=("PATTERN", "REPLACEMENT"),
-        help="Add a line-based search pattern rule to find and replace content. Matching lines that follow each other collapse into a single replacement. Use this option again to add more.",
+        metavar=("REGEX", "REPLACEMENT"),
+        help="Add a line-based regular expression rule to find and replace content. Contiguous matching lines are replaced by a single entry. Use this option again to add more.",
     )
 
     # Utility Commands Group
