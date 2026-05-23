@@ -481,6 +481,9 @@ def _resolve_metadata_placeholders(template, replacements, data):
 
     # Project-level replacements
     replacements["{{PROJECT_NAME}}"] = data.get('project_name', 'Project')
+    replacements["{{PROJECT_VERSION}}"] = data.get('project_version', '')
+    replacements["{{PROJECT_DESCRIPTION}}"] = data.get('project_description', '')
+    replacements["{{PROJECT_LICENSE}}"] = data.get('project_license', '')
     replacements["{{DATE}}"] = data.get('date', '')
     replacements["{{TIME}}"] = data.get('time', '')
     replacements["{{DATETIME}}"] = data.get('datetime', '')
@@ -2409,7 +2412,7 @@ def find_and_combine_files(
     if config.get('search', {}).get('root_folders'):
         first_root = config['search']['root_folders'][0]
 
-    stats['project_name'] = utils.get_project_name(first_root)
+    stats.update(utils.get_project_identity(first_root))
     stats.update(utils.get_datetime_placeholders())
     stats.update(utils.get_system_info())
 
@@ -4967,7 +4970,7 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         sys.exit(1)
 
     # Gather project metadata for templates
-    stats['project_name'] = utils.get_project_name(output_folder)
+    stats.update(utils.get_project_identity(output_folder))
     stats.update(utils.get_datetime_placeholders())
     stats.update(utils.get_system_info())
 
@@ -5381,6 +5384,9 @@ def print_placeholders():
         ],
         "Project-Level (Global) Placeholders": [
             ("{{PROJECT_NAME}}", "Name of the project."),
+            ("{{PROJECT_VERSION}}", "Version of the project."),
+            ("{{PROJECT_DESCRIPTION}}", "Short description of the project."),
+            ("{{PROJECT_LICENSE}}", "License identifier of the project."),
             ("{{FILE_COUNT}}", "Total number of files included."),
             ("{{TOTAL_SIZE}}", "Total size of all files."),
             ("{{TOTAL_TOKENS}}", "Total number of tokens."),
