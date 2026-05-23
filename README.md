@@ -4,7 +4,7 @@ SourceCombine is a tool for your terminal that helps you find, filter, and combi
 
 ## Key Features
 *   **Find files in many folders:** Scan many folders at once. Use Git to find files and follow your `.gitignore` rules automatically.
-*   **Filtering:** Skip folders, files, or specific names using search patterns. You can also filter by language, file content, or Git changes.
+*   **Filtering:** Skip folders, files, or specific names using glob patterns. You can also filter by language, file content (using regular expressions), or Git changes.
 *   **Deduplication:** Skip duplicate files by absolute path or content.
 *   **Include Groups:** Group specific files to always include, even if you skip others.
 *   **Pairing:** Combine related files (like source and header pairs) into their own individual output files.
