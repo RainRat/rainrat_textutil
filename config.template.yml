@@ -77,6 +77,10 @@ output:
   #   {{HEADER_EXT}} - The extension of the header file (for example, '.h')
   #   {{DIR}}        - The relative folder path using forward slashes (or '.' for the root folder)
   #   {{DIR_SLUG}}   - A simplified name for {{DIR}} ('root' when DIR is '.')
+  #   {{LANG}}       - Detected language of the pair
+  #   {{INDEX}}      - The current pair's position in the list (1, 2, 3...)
+  #   {{TOTAL}}      - The total number of pairs being processed
+  #   Supports all project-level, system, and Git placeholders (e.g., {{PROJECT_NAME}}, {{DATE}}).
   paired_filename_template: '{{STEM}}.combined'
 
   # Example preserving folder structure in the output folder:
