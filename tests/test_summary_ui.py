@@ -247,6 +247,7 @@ def test_summary_throughput_line(capsys):
     captured = capsys.readouterr()
     assert "Duration:" in captured.err
     assert "2.00 s" in captured.err
+    assert "Performance" in captured.err
     assert "Throughput:" not in captured.err
     assert "50.0 files/s" in captured.err
     assert "500.00 B/s" in captured.err

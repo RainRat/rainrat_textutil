@@ -5717,13 +5717,13 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     if bps > 0:
         s_val, s_unit = _split_unit(utils.format_size(bps))
         size_throughput = f" {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}/s){C_RESET}"
-    print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{val:>12}{C_RESET}{C_DIM}{unit}{C_RESET}{size_throughput}", file=sys.stderr)
+    print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{val:>12}{C_RESET}{C_DIM}{unit:<8}{C_RESET}{size_throughput}", file=sys.stderr)
 
     if total_lines > 0:
         lines_throughput = ""
         if lps > 0:
             lines_throughput = f" {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{lps:,.0f}{C_RESET} {C_DIM}lines/s){C_RESET}"
-        print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET} {C_DIM}{line_word}{C_RESET}{lines_throughput}", file=sys.stderr)
+        print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET} {C_DIM}{line_word:<8}{C_RESET}{lines_throughput}", file=sys.stderr)
 
     # Token Counts
     # Show token counts if tokens were estimated
@@ -5734,7 +5734,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         if tps > 0:
             tokens_throughput = f" {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{tps:,.0f}{C_RESET} {C_DIM}tokens/s){C_RESET}"
         print(
-            f"    {C_BOLD}{'Total Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET} {C_DIM}{token_word}{C_RESET}{tokens_throughput}",
+            f"    {C_BOLD}{'Total Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET} {C_DIM}{token_word:<8}{C_RESET}{tokens_throughput}",
             file=sys.stderr,
         )
         if is_approx:
@@ -5743,17 +5743,17 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 file=sys.stderr,
             )
 
-    # Time and Limits Section
+    # Performance & Limits Section
     # Check if any limits were active
     has_limits = any(stats.get(k, 0) > 0 for k in ('max_total_tokens', 'max_total_size_bytes', 'max_total_lines', 'max_files'))
 
     if duration is not None or has_limits:
-        section_name = "Time and Limits" if has_limits else "Execution"
+        section_name = "Performance & Limits" if has_limits else "Performance"
         print(f"\n  {C_BOLD}{C_CYAN}{section_name}{C_RESET}", file=sys.stderr)
 
         if duration is not None:
             fps = total_discovered / duration if duration > 0 else 0
-            print(f"    {C_BOLD}{'Duration:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{duration:12.2f}{C_RESET}{C_DIM} s{C_RESET} {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{fps:,.1f}{C_RESET} {C_DIM}files/s){C_RESET}", file=sys.stderr)
+            print(f"    {C_BOLD}{'Duration:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{duration:12.2f}{C_RESET}{C_DIM}{' s':<8}{C_RESET} {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{fps:,.1f}{C_RESET} {C_DIM}files/s){C_RESET}", file=sys.stderr)
 
         _print_limit_usage_bar('File Limit Usage:', total_included, stats.get('max_files', 0), label_width)
         _print_limit_usage_bar('Token Limit Usage:', token_count, stats.get('max_total_tokens', 0), label_width)
@@ -5782,10 +5782,10 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
         if has_tokens:
             print(f"\n  {C_BOLD}{C_CYAN}Largest Files (by tokens){C_RESET}", file=sys.stderr)
-            print(f"    {C_DIM}{'TOKENS':>12} {'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12}{status_col} PATH{C_RESET}", file=sys.stderr)
+            print(f"    {C_DIM}{'TOKENS':>12} {'SIZE':>12} {'%':>6} {'DISTRIBUTION':<13}{status_col} PATH{C_RESET}", file=sys.stderr)
         else:
             print(f"\n  {C_BOLD}{C_CYAN}Largest Files (by size){C_RESET}", file=sys.stderr)
-            print(f"    {C_DIM}{'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12}{status_col} PATH{C_RESET}", file=sys.stderr)
+            print(f"    {C_DIM}{'SIZE':>12} {'%':>6} {'DISTRIBUTION':<13}{status_col} PATH{C_RESET}", file=sys.stderr)
 
         for item in top:
             tokens, f_size, path = item[:3]
@@ -5855,12 +5855,12 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             total_weight = stats.get('total_tokens', 0)
             weight_by_ext = tokens_by_ext
             title = "File Types (by tokens)"
-            header = f"    {C_DIM}{'TOKENS':>12} {'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} {spacer}{'EXTENSION':<12} {'COUNT':>7} {'% FILES':>7}{C_RESET}"
+            header = f"    {C_DIM}{'TOKENS':>12} {'SIZE':>12} {'%':>6} {'DISTRIBUTION':<13}{spacer}{'EXTENSION':<12} {'COUNT':>7} {'% FILES':>7}{C_RESET}"
         else:
             total_weight = stats.get('total_size_bytes', 0)
             weight_by_ext = size_by_ext
             title = "File Types (by size)"
-            header = f"    {C_DIM}{'SIZE':>12} {'%':>6} {'DISTRIBUTION':<12} {spacer}{'EXTENSION':<12} {'COUNT':>7} {'% FILES':>7}{C_RESET}"
+            header = f"    {C_DIM}{'SIZE':>12} {'%':>6} {'DISTRIBUTION':<13}{spacer}{'EXTENSION':<12} {'COUNT':>7} {'% FILES':>7}{C_RESET}"
 
         # Sort by weight desc, then count desc, then alpha
         sorted_exts = sorted(
