@@ -3,8 +3,8 @@
 SourceCombine is a tool for your terminal that helps you find, filter, and combine text files into a single file or folder. It supports many formats like JSON, XML, Markdown, and CSV. It is helpful for preparing code context for AI models or managing large groups of files.
 
 ## Key Features
-*   **Find files in many folders:** Scan many folders at once. Use Git to find files and follow your `.gitignore` rules automatically.
-*   **Filtering:** Skip folders, files, or specific names using glob patterns. You can also filter by language, file content (using regular expressions), or Git changes.
+*   **Scan multiple folders:** Search across many folders at once. Use Git to find files and follow your `.gitignore` rules automatically.
+*   **Filtering:** Skip folders, files, or specific names using glob patterns. You can also filter by language, file content, or Git status.
 *   **Deduplication:** Skip duplicate files by absolute path or content.
 *   **Include Groups:** Group specific files to always include, even if you skip others.
 *   **Pairing:** Combine related files (like source and header pairs) into their own individual output files.
@@ -20,7 +20,7 @@ SourceCombine is a tool for your terminal that helps you find, filter, and combi
 *   `--clipboard` (`-c`): Copy the combined output to your system clipboard.
 *   `--git-files` (`-G`): Use Git to find files and follow your `.gitignore` rules automatically.
 *   `--limit` (`-L`): Stop processing once you reach this file limit.
-*   `--ai` (`-a`): Preset for AI assistants (Markdown format, line numbers, Table of Contents, folder tree, project overview, and skipping binary files). This also copies to your system clipboard if you do not specify an output.
+*   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, and skipping binary files). This also copies to your system clipboard if you do not specify an output.
 *   `--dry-run` (`-d`): Show what would happen without making any changes.
 *   `--apply-in-place`: Save processed changes back to the original source files.
 *   `--create-backups`: Create `.bak` copies of original files when using `--apply-in-place`.
@@ -35,7 +35,7 @@ SourceCombine is a tool for your terminal that helps you find, filter, and combi
 *   `--list-placeholders`: Show all supported template placeholders and then stop.
 *   `--show-config`: Display the final configuration being used.
 *   `--export-config`: Save the final combined configuration to a YAML file.
-*   `--system-info`: Show environment details (Python version, OS, etc.).
+*   `--system-info`: Show environment details (Python version, OS, and other environment details).
 *   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without actually writing them to disk.
 *   `--clean`: (Alias for `--delete-backups`) Remove all `.bak` backup files from the current directory and its subfolders.
 *   `--version`: Show the application version and exit.

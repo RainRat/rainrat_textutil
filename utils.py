@@ -1303,13 +1303,13 @@ def parse_size_value(value: str) -> int:
     value = value.strip().upper().replace(',', '').lstrip('~').strip()
     match = re.match(r'^([\d.]+)\s*([A-Z]*)$', value)
     if not match:
-        raise InvalidConfigError(f"Invalid size value: '{value}'. Use '10KB', '1.5MB', etc.")
+        raise InvalidConfigError(f"Invalid size value: '{value}'. Use '10KB', '1.5MB', and other units.")
 
     try:
         number = float(match.group(1))
     except ValueError as e:
         raise InvalidConfigError(
-            f"Invalid size value: '{value}'. Use '10KB', '1.5MB', etc."
+            f"Invalid size value: '{value}'. Use '10KB', '1.5MB', and other units."
         ) from e
     unit = match.group(2)
 

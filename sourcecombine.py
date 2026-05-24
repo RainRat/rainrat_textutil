@@ -3641,7 +3641,7 @@ def main():
         "--ai",
         "-a",
         action="store_true",
-        help="Enable a preset for AI assistants: Markdown format, line numbers, Table of Contents, folder tree, project overview, and skipping binary files. This also copies to your system clipboard if you do not specify an output.",
+        help="Enable a preset for AI models: Markdown format, line numbers, Table of Contents, folder tree, project overview, and skipping binary files. This also copies to your system clipboard if you do not specify an output.",
     )
     output_group.add_argument(
         "--clipboard",
@@ -3863,7 +3863,7 @@ def main():
         "--extract",
         action="store_true",
         help=(
-            "Restore original files and folders from combined files (JSON, XML, Markdown, etc.). "
+            "Restore original files and folders from combined files (JSON, XML, Markdown, and other formats). "
             "Read from files, folders, your terminal ('-'), or the clipboard. "
             "If no input is provided, the tool searches for standard defaults (like combined_files.txt). "
             "Supports filtering, sorting, and processing rules. "
