@@ -476,30 +476,44 @@ def _validate_glob_list(filenames, context_prefix):
             filenames[i] = sanitized
 
 
+def _validate_bool(container: Mapping[str, Any], key: str, context: str) -> None:
+    """Ensure the value at ``key`` in ``container`` is a boolean if present."""
+    val = container.get(key)
+    if val is not None and not isinstance(val, bool):
+        if context in ('search', 'filters'):
+            message = f"{context}.{key} must be true or false"
+        elif context == 'processing':
+            message = f"'{context}.{key}' must be true or false"
+        else:  # output
+            message = f"'{context}.{key}' must be true or false."
+        raise InvalidConfigError(message)
+
+
+def _validate_positive_number(
+    container: Mapping[str, Any], key: str, context: str, types: Any = int
+) -> None:
+    """Ensure the value at ``key`` in ``container`` is a non-negative number if present."""
+    val = container.get(key)
+    if val is not None:
+        if not isinstance(val, types) or val < 0:
+            if context in ('search', 'filters'):
+                message = f"{context}.{key} must be 0 or more"
+            elif context == 'processing':
+                message = f"'{context}.{key}' must be 0 or more"
+            else:  # output
+                message = f"'{context}.{key}' must be 0 or more."
+            raise InvalidConfigError(message)
+
+
 def _validate_search_section(config):
     """Validate the 'search' section of the configuration."""
     search = config.get('search')
     if not isinstance(search, dict):
         raise InvalidConfigError("'search' section must be a dictionary.")
 
-    max_depth = search.get('max_depth')
-    if max_depth is not None:
-        if not isinstance(max_depth, int) or max_depth < 0:
-            raise InvalidConfigError(
-                "search.max_depth must be 0 or more"
-            )
-
-    use_git = search.get('use_git')
-    if use_git is not None and not isinstance(use_git, bool):
-        raise InvalidConfigError(
-            "search.use_git must be true or false"
-        )
-
-    use_git_diff = search.get('use_git_diff')
-    if use_git_diff is not None and not isinstance(use_git_diff, bool):
-        raise InvalidConfigError(
-            "search.use_git_diff must be true or false"
-        )
+    _validate_positive_number(search, 'max_depth', 'search')
+    _validate_bool(search, 'use_git', 'search')
+    _validate_bool(search, 'use_git_diff', 'search')
 
     git_diff_ref = search.get('git_diff_ref')
     if git_diff_ref is not None and not isinstance(git_diff_ref, str):
@@ -507,17 +521,8 @@ def _validate_search_section(config):
             "search.git_diff_ref must be text or nothing"
         )
 
-    git_staged = search.get('git_staged')
-    if git_staged is not None and not isinstance(git_staged, bool):
-        raise InvalidConfigError(
-            "search.git_staged must be true or false"
-        )
-
-    git_unstaged = search.get('git_unstaged')
-    if git_unstaged is not None and not isinstance(git_unstaged, bool):
-        raise InvalidConfigError(
-            "search.git_unstaged must be true or false"
-        )
+    _validate_bool(search, 'git_staged', 'search')
+    _validate_bool(search, 'git_unstaged', 'search')
 
     root_folders = search.get('root_folders')
     if root_folders is not None and not isinstance(root_folders, list):
@@ -576,26 +581,13 @@ def _validate_filters_section(config):
         'max_files',
     )
     for key in integer_filters:
-        val = filters.get(key)
-        if val is not None:
-            if not isinstance(val, int) or val < 0:
-                raise InvalidConfigError(f"filters.{key} must be 0 or more")
+        _validate_positive_number(filters, key, 'filters')
 
     for key in ('modified_since', 'modified_until'):
-        val = filters.get(key)
-        if val is not None:
-            if not isinstance(val, (int, float)) or val < 0:
-                raise InvalidConfigError(
-                    f"filters.{key} must be 0 or more"
-                )
+        _validate_positive_number(filters, key, 'filters', types=(int, float))
 
-    unique = filters.get('unique')
-    if unique is not None and not isinstance(unique, bool):
-        raise InvalidConfigError("filters.unique must be true or false")
-
-    skip_binary = filters.get('skip_binary')
-    if skip_binary is not None and not isinstance(skip_binary, bool):
-        raise InvalidConfigError("filters.skip_binary must be true or false")
+    _validate_bool(filters, 'unique', 'filters')
+    _validate_bool(filters, 'skip_binary', 'filters')
 
     grep_pattern = filters.get('grep')
     if grep_pattern:
@@ -648,23 +640,9 @@ def _validate_processing_section(config, *, source=None):
     if not isinstance(processing_conf, dict):
         raise InvalidConfigError("'processing' section must be a dictionary.")
 
-    apply_in_place = processing_conf.get('apply_in_place')
-    if apply_in_place is not None and not isinstance(apply_in_place, bool):
-        raise InvalidConfigError(
-            "'processing.apply_in_place' must be true or false"
-        )
-
-    compact_whitespace_val = processing_conf.get('compact_whitespace')
-    if compact_whitespace_val is not None and not isinstance(compact_whitespace_val, bool):
-        raise InvalidConfigError(
-            "'processing.compact_whitespace' must be true or false"
-        )
-
-    create_backups = processing_conf.get('create_backups')
-    if create_backups is not None and not isinstance(create_backups, bool):
-        raise InvalidConfigError(
-            "'processing.create_backups' must be true or false"
-        )
+    _validate_bool(processing_conf, 'apply_in_place', 'processing')
+    _validate_bool(processing_conf, 'compact_whitespace', 'processing')
+    _validate_bool(processing_conf, 'create_backups', 'processing')
 
     _validate_compact_whitespace_groups(
         processing_conf.get('compact_whitespace_groups'),
@@ -685,19 +663,8 @@ def _validate_processing_section(config, *, source=None):
         source,
     )
 
-    max_lines = processing_conf.get('max_lines')
-    if max_lines is not None:
-        if not isinstance(max_lines, int) or max_lines < 0:
-            raise InvalidConfigError(
-                "'processing.max_lines' must be 0 or more"
-            )
-
-    max_tokens = processing_conf.get('max_tokens')
-    if max_tokens is not None:
-        if not isinstance(max_tokens, int) or max_tokens < 0:
-            raise InvalidConfigError(
-                "'processing.max_tokens' must be 0 or more"
-            )
+    _validate_positive_number(processing_conf, 'max_lines', 'processing')
+    _validate_positive_number(processing_conf, 'max_tokens', 'processing')
 
     if 'in_place_groups' in processing_conf:
         raise InvalidConfigError(
@@ -767,18 +734,9 @@ def _validate_output_section(config):
         if value is not None and not isinstance(value, str):
             raise InvalidConfigError(f"'output.{field}' must be text or nothing.")
 
-    toc = output_conf.get('table_of_contents')
-    if toc is not None and not isinstance(toc, bool):
-        raise InvalidConfigError("'output.table_of_contents' must be true or false.")
-
-    overview = output_conf.get('project_overview')
-    if overview is not None and not isinstance(overview, bool):
-        raise InvalidConfigError("'output.project_overview' must be true or false.")
-
-    git_log_count = output_conf.get('git_log_count')
-    if git_log_count is not None:
-        if not isinstance(git_log_count, int) or git_log_count < 0:
-            raise InvalidConfigError("'output.git_log_count' must be 0 or more.")
+    _validate_bool(output_conf, 'table_of_contents', 'output')
+    _validate_bool(output_conf, 'project_overview', 'output')
+    _validate_positive_number(output_conf, 'git_log_count', 'output')
 
     placeholder = output_conf.get('max_size_placeholder')
 
@@ -798,17 +756,9 @@ def _validate_output_section(config):
             "'output.sort_by' must be one of: name, size, modified, tokens, lines, depth, language"
         )
 
-    sort_reverse = output_conf.get('sort_reverse')
-    if sort_reverse is not None and not isinstance(sort_reverse, bool):
-        raise InvalidConfigError("'output.sort_reverse' must be true or false.")
-
-    show_diff = output_conf.get('show_diff')
-    if show_diff is not None and not isinstance(show_diff, bool):
-        raise InvalidConfigError("'output.show_diff' must be true or false.")
-
-    include_diff = output_conf.get('include_diff')
-    if include_diff is not None and not isinstance(include_diff, bool):
-        raise InvalidConfigError("'output.include_diff' must be true or false.")
+    _validate_bool(output_conf, 'sort_reverse', 'output')
+    _validate_bool(output_conf, 'show_diff', 'output')
+    _validate_bool(output_conf, 'include_diff', 'output')
 
 
 def apply_line_regex_replacements(text, rules):
