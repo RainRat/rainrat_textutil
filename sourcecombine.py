@@ -5750,7 +5750,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         lines_throughput = ""
         if lps > 0:
             lines_throughput = f" {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{lps:,.0f}{C_RESET} {C_DIM}lines/s){C_RESET}"
-        print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET} {C_DIM}{line_word:<8}{C_RESET}{lines_throughput}", file=sys.stderr)
+        unit_label = f" {line_word}"
+        print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET}{C_DIM}{unit_label:<8}{C_RESET}{lines_throughput}", file=sys.stderr)
 
     # Token Counts
     # Show token counts if tokens were estimated
@@ -5760,8 +5761,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         tokens_throughput = ""
         if tps > 0:
             tokens_throughput = f" {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{tps:,.0f}{C_RESET} {C_DIM}tokens/s){C_RESET}"
+        unit_label = f" {token_word}"
         print(
-            f"    {C_BOLD}{'Total Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET} {C_DIM}{token_word:<8}{C_RESET}{tokens_throughput}",
+            f"    {C_BOLD}{'Total Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET}{C_DIM}{unit_label:<8}{C_RESET}{tokens_throughput}",
             file=sys.stderr,
         )
         if is_approx:
