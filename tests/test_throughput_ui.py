@@ -38,6 +38,7 @@ def test_throughput_with_tokens(monkeypatch, capsys):
     # Check for Duration and Throughput
     assert "Duration:" in stderr
     assert "5.0 files/s" in stderr
+    assert "Performance" in stderr
     assert "Throughput:" not in stderr
     assert "5.00 KB/s" in stderr
     assert "2,500 tokens/s" in stderr

@@ -147,7 +147,7 @@ def test_cli_custom_languages_injection_none(caplog):
     assert config['search']['custom_languages'] == {"*.myext": "python"}
 
 def test_print_execution_summary_has_limits_stats(capsys):
-    """Cover _print_execution_summary: verify that limits in stats trigger the Time and Limits section."""
+    """Cover _print_execution_summary: verify that limits in stats trigger the Performance & Limits section."""
     from sourcecombine import _print_execution_summary
 
     stats = {
@@ -173,7 +173,7 @@ def test_print_execution_summary_has_limits_stats(capsys):
     _print_execution_summary(stats, args, pairing_enabled=False)
 
     captured = capsys.readouterr()
-    assert "Time and Limits" in captured.err
+    assert "Performance & Limits" in captured.err
 
 def test_main_custom_languages_none_injection():
     """Directly test the logic in main for custom_languages injection when it is None."""
