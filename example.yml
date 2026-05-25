@@ -68,7 +68,7 @@ filters:
 # All of these processes could be lossy.
 processing:
   # If true, attempts to clean up and compact whitespace.
-  # Not recommended for languages where whitespace matters (ie. Python)
+  # Not recommended for languages where whitespace matters (for example, Python)
   compact_whitespace: false
   # Optional overrides to selectively enable or disable whitespace transforms.
   compact_whitespace_groups: {}

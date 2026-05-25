@@ -227,7 +227,7 @@ filters:
 
     # Exclude folders if any folder name in the path matches one of these
     # glob patterns. Case-insensitive.
-    # Defaults include: .git, __pycache__, node_modules, .venv, dist, build, etc.
+    # Defaults include: .git, __pycache__, node_modules, .venv, dist, build, and other common build folders.
     folders:
       - '.git'
       - '.svn'
