@@ -6,9 +6,9 @@ import sourcecombine
 import utils
 import copy
 
-def test_export_config_flag_logic(tmp_path):
+def test_export_config_flag_logic(tmp_path, monkeypatch):
     """Test the --export-config logic in main()."""
-    os.chdir(tmp_path)
+    monkeypatch.chdir(tmp_path)
 
     # Mocking arguments for main()
     args = MagicMock()

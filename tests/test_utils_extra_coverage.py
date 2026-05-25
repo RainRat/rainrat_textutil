@@ -99,3 +99,23 @@ def test_get_project_identity_outer_exception(tmp_path):
     with patch.object(Path, "is_file", side_effect=Exception("Outer error")):
         identity = utils.get_project_identity(tmp_path)
         assert identity["project_name"] == tmp_path.name
+
+def test_get_project_identity_composer_invalid_json(tmp_path):
+    composer_json = tmp_path / "composer.json"
+    composer_json.write_text("invalid json", encoding='utf-8')
+    identity = utils.get_project_identity(tmp_path)
+    # Should fall back to directory name or default
+    assert identity["project_name"] == tmp_path.name
+
+def test_get_project_identity_pom_invalid_xml(tmp_path):
+    pom_xml = tmp_path / "pom.xml"
+    pom_xml.write_text("invalid xml", encoding='utf-8')
+    identity = utils.get_project_identity(tmp_path)
+    assert identity["project_name"] == tmp_path.name
+
+def test_get_project_identity_go_mod_no_module(tmp_path):
+    go_mod = tmp_path / "go.mod"
+    go_mod.write_text("not a module line", encoding='utf-8')
+    identity = utils.get_project_identity(tmp_path)
+    assert identity["project_name"] == tmp_path.name
+
