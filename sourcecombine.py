@@ -1385,6 +1385,10 @@ def _render_paired_filename(
     source_path: Path | None,
     header_path: Path | None,
     relative_dir: PurePath,
+    stats: Mapping[str, Any] = None,
+    index: int = None,
+    total: int = None,
+    custom_languages: Mapping[str, str] = None,
 ) -> str:
     """Render the paired filename template with placeholders."""
 
@@ -1393,16 +1397,31 @@ def _render_paired_filename(
     dir_value = relative_dir.as_posix()
     dir_slug = _slugify_relative_dir(dir_value)
 
+    # Detect language from primary file if available
+    primary_path = source_path or header_path
+    lang = ""
+    if primary_path:
+        lang = utils.get_language_tag(primary_path, overrides=custom_languages)
+
     replacements = {
         '{{STEM}}': stem,
         '{{SOURCE_EXT}}': source_ext,
         '{{HEADER_EXT}}': header_ext,
         '{{DIR}}': dir_value,
         '{{DIR_SLUG}}': dir_slug,
+        '{{LANG}}': lang,
+        '{{INDEX}}': str(index) if index is not None else "",
+        '{{TOTAL}}': str(total) if total is not None else "",
     }
 
+    # Project, System, Datetime, and Git replacements
+    _resolve_metadata_placeholders(template, replacements, stats)
+
+    # Environment variable resolution
+    _resolve_env_placeholders(template, replacements)
+
     # Validate that all {{...}} placeholders in the template are known
-    for match in re.finditer(r"{{(\w+)}}", template):
+    for match in re.finditer(r"{{([A-Za-z0-9_:]+)}}", template):
         placeholder = match.group(0)
         if placeholder not in replacements:
             raise ValueError(
@@ -1559,6 +1578,10 @@ def _process_paired_files(
                 source_path,
                 header_path,
                 relative_dir=relative_dir,
+                stats=stats,
+                index=item_index,
+                total=total_items,
+                custom_languages=processor.custom_languages,
             )
         out_path = Path(out_filename)
         if out_path.is_absolute():
@@ -5443,6 +5466,10 @@ def print_placeholders():
             ("{{HEADER_EXT}}", "Extension of the header file (for example, '.h')."),
             ("{{DIR}}", "Folder path containing the pair."),
             ("{{DIR_SLUG}}", "A filesystem-safe version of the folder path."),
+            ("{{LANG}}", "Detected language of the pair."),
+            ("{{INDEX}}", "The current pair's position in the list."),
+            ("{{TOTAL}}", "The total number of pairs being processed."),
+            ("Note:", "All project, system, and Git placeholders are also supported."),
         ]
     }
 
