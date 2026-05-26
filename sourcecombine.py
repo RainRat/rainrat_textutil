@@ -5586,12 +5586,20 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     if git_branch and len(git_branch) > branch_limit:
         git_branch = git_branch[:branch_limit-3] + "..."
 
+    project_version = stats.get('project_version')
+    project_license = stats.get('project_license')
+
     project_ctx = project_name
+    if project_version:
+        project_ctx += f" v{project_version}"
+    if project_license:
+        project_ctx += f" [{project_license}]"
+
     if git_branch and git_branch != 'N/A':
         if git_commit and git_commit != 'N/A':
-            project_ctx = f"{project_name} ({git_branch}:{git_commit})"
+            project_ctx = f"{project_ctx} ({git_branch}:{git_commit})"
         else:
-            project_ctx = f"{project_name} ({git_branch})"
+            project_ctx = f"{project_ctx} ({git_branch})"
 
     # Truncate descriptions if they are too long
     if source_desc and len(source_desc) > desc_limit:
@@ -5743,13 +5751,13 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     size_throughput = ""
     if bps > 0:
         s_val, s_unit = _split_unit(utils.format_size(bps))
-        size_throughput = f" {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}/s){C_RESET}"
+        size_throughput = f" {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{s_val:>12}{C_RESET} {C_DIM}{s_unit.strip() + '/s':<8}){C_RESET}"
     print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{val:>12}{C_RESET}{C_DIM}{unit:<8}{C_RESET}{size_throughput}", file=sys.stderr)
 
     if total_lines > 0:
         lines_throughput = ""
         if lps > 0:
-            lines_throughput = f" {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{lps:,.0f}{C_RESET} {C_DIM}lines/s){C_RESET}"
+            lines_throughput = f" {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{lps:>12,.0f}{C_RESET} {C_DIM}{'lines/s':<8}){C_RESET}"
         unit_label = f" {line_word}"
         print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET}{C_DIM}{unit_label:<8}{C_RESET}{lines_throughput}", file=sys.stderr)
 
@@ -5760,7 +5768,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         token_word = _plural(token_count, "token")
         tokens_throughput = ""
         if tps > 0:
-            tokens_throughput = f" {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{tps:,.0f}{C_RESET} {C_DIM}tokens/s){C_RESET}"
+            tokens_throughput = f" {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{tps:>12,.0f}{C_RESET} {C_DIM}{'tokens/s':<8}){C_RESET}"
         unit_label = f" {token_word}"
         print(
             f"    {C_BOLD}{'Total Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET}{C_DIM}{unit_label:<8}{C_RESET}{tokens_throughput}",
@@ -5782,7 +5790,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
         if duration is not None:
             fps = total_discovered / duration if duration > 0 else 0
-            print(f"    {C_BOLD}{'Duration:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{duration:12.2f}{C_RESET}{C_DIM}{' s':<8}{C_RESET} {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{fps:,.1f}{C_RESET} {C_DIM}files/s){C_RESET}", file=sys.stderr)
+            print(f"    {C_BOLD}{'Duration:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{duration:12.2f}{C_RESET}{C_DIM}{' s':<8}{C_RESET} {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{fps:>12,.1f}{C_RESET} {C_DIM}{'files/s':<8}){C_RESET}", file=sys.stderr)
 
         _print_limit_usage_bar('File Limit Usage:', total_included, stats.get('max_files', 0), label_width)
         _print_limit_usage_bar('Token Limit Usage:', token_count, stats.get('max_total_tokens', 0), label_width)
