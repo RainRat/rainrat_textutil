@@ -476,17 +476,22 @@ def _validate_glob_list(filenames, context_prefix):
             filenames[i] = sanitized
 
 
+def _raise_validation_error(key: str, context: str, requirement: str) -> None:
+    """Raise InvalidConfigError with context-dependent formatting."""
+    if context in ('search', 'filters'):
+        message = f"{context}.{key} {requirement}"
+    elif context == 'processing':
+        message = f"'{context}.{key}' {requirement}"
+    else:  # output
+        message = f"'{context}.{key}' {requirement}."
+    raise InvalidConfigError(message)
+
+
 def _validate_bool(container: Mapping[str, Any], key: str, context: str) -> None:
     """Ensure the value at ``key`` in ``container`` is a boolean if present."""
     val = container.get(key)
     if val is not None and not isinstance(val, bool):
-        if context in ('search', 'filters'):
-            message = f"{context}.{key} must be true or false"
-        elif context == 'processing':
-            message = f"'{context}.{key}' must be true or false"
-        else:  # output
-            message = f"'{context}.{key}' must be true or false."
-        raise InvalidConfigError(message)
+        _raise_validation_error(key, context, "must be true or false")
 
 
 def _validate_positive_number(
@@ -496,13 +501,7 @@ def _validate_positive_number(
     val = container.get(key)
     if val is not None:
         if not isinstance(val, types) or val < 0:
-            if context in ('search', 'filters'):
-                message = f"{context}.{key} must be 0 or more"
-            elif context == 'processing':
-                message = f"'{context}.{key}' must be 0 or more"
-            else:  # output
-                message = f"'{context}.{key}' must be 0 or more."
-            raise InvalidConfigError(message)
+            _raise_validation_error(key, context, "must be 0 or more")
 
 
 def _validate_search_section(config):
