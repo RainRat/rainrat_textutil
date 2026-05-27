@@ -5586,12 +5586,20 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     if git_branch and len(git_branch) > branch_limit:
         git_branch = git_branch[:branch_limit-3] + "..."
 
+    project_version = stats.get('project_version')
+    project_license = stats.get('project_license')
+
     project_ctx = project_name
+    if project_version:
+        project_ctx += f" v{project_version}"
+    if project_license:
+        project_ctx += f" [{project_license}]"
+
     if git_branch and git_branch != 'N/A':
         if git_commit and git_commit != 'N/A':
-            project_ctx = f"{project_name} ({git_branch}:{git_commit})"
+            project_ctx = f"{project_ctx} ({git_branch}:{git_commit})"
         else:
-            project_ctx = f"{project_name} ({git_branch})"
+            project_ctx = f"{project_ctx} ({git_branch})"
 
     # Truncate descriptions if they are too long
     if source_desc and len(source_desc) > desc_limit:
