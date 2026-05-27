@@ -120,7 +120,7 @@ def test_files_from_no_config_fallback(temp_cwd, mock_argv, caplog):
     assert 'search' in config_passed
 
 def test_files_from_outside_root(temp_cwd, mock_argv, capsys):
-    """Test handling of files outside root path (CWD) in tree view and TOC."""
+    """Test handling of files outside root path (CWD) in tree view and Table of Contents."""
     # Create a file outside temp_cwd
     outside_dir = temp_cwd.parent / "outside_dir"
     outside_dir.mkdir(exist_ok=True)
@@ -140,13 +140,13 @@ def test_files_from_outside_root(temp_cwd, mock_argv, capsys):
     assert "outside.txt" in captured.out
     assert "outside_dir" in captured.out
 
-    # Test TOC (Table of Contents)
+    # Test Table of Contents
     with mock_argv(['--files-from', str(list_file), '--toc', '-o', '-']):
         main()
 
     captured = capsys.readouterr()
-    # TOC should also fallback to absolute path if relative_to fails
-    # In TOC it's just str(path)
+    # Table of Contents should also fallback to absolute path if relative_to fails
+    # In Table of Contents it's just str(path)
     assert str(f_outside.resolve()) in captured.out
 
     # Test normal processing (triggers FileProcessor)

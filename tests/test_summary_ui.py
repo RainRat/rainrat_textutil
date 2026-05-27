@@ -58,7 +58,7 @@ def test_summary_redesign_largest_files(monkeypatch, capsys):
     assert "20.0%" in stderr # (500/2500)
     assert "1.95 KB" in stderr # (2000 bytes)
 
-    # Check for truncated path
+    # Check for shortened path
     assert "a/very/..." in stderr or "a/very/lo" in stderr
     assert "file.py" in stderr
 
@@ -147,7 +147,7 @@ def test_summary_printing_dry_run(monkeypatch, capsys):
     assert "├── Included:" not in stderr
     assert "Token Count" not in stderr
 
-def test_output_truncated_warning(capsys):
+def test_output_shortened_warning(capsys):
     """Test summary shows truncation warning."""
     stats = {
         'total_files': 1,
@@ -170,7 +170,7 @@ def test_output_truncated_warning(capsys):
         sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
 
     captured = capsys.readouterr()
-    assert "WARNING: Output truncated due to token limit." in captured.err
+    assert "WARNING: Output shortened due to token limit." in captured.err
 
 def test_limit_bar_no_color(capsys):
     """Test limit bar with NO_COLOR=1."""

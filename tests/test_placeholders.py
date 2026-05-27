@@ -188,7 +188,7 @@ def test_placeholder_prefix_matching(tmp_path):
     find_and_combine_files(config, str(output_file))
     result = output_file.read_text()
 
-    # If DIR was matched first, SLUG would be corrupted (e.g., sub_SLUG}})
+    # If DIR was matched first, SLUG would be corrupted (for example, sub_SLUG}})
     assert "DIR:sub SLUG:sub" in result
     assert "_SLUG}}" not in result
 import os

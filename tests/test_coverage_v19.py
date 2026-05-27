@@ -10,7 +10,7 @@ def test_construct_git_web_url_unknown_provider():
 
 def test_render_template_file_url_value_error():
     # Test ValueError in _render_template during {{FILE_URL}} generation
-    # This happens if Path.relative_to fails (e.g., file outside repo)
+    # This happens if Path.relative_to fails (for example, file outside repo)
     git_info = {
         "git_remote_url": "https://github.com/User/Repo.git",
         "git_commit": "abc1234",

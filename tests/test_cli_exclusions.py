@@ -76,7 +76,7 @@ def test_cli_exclusions_inject_into_config(temp_cwd, mock_argv):
         assert 'cli_folder' in exclusions['folders']
 
 def test_cli_exclusions_sanitize_patterns(temp_cwd, mock_argv, caplog):
-    """Test that CLI exclusions are sanitized (e.g. backslashes replaced)."""
+    """Test that CLI exclusions are sanitized (for example backslashes replaced)."""
     config_file = temp_cwd / "config.yml"
     with open(config_file, 'w') as f:
         yaml.dump({'search': {'root_folders': ['.']}}, f)

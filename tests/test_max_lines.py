@@ -8,7 +8,7 @@ from sourcecombine import FileProcessor
 
 
 def test_max_lines_truncation(tmp_path):
-    """Test that content is truncated to the specified number of lines."""
+    """Test that content is shortened to the specified number of lines."""
     file_path = tmp_path / "test.txt"
     content = "line1\nline2\nline3\nline4\nline5\n"
     file_path.write_text(content, encoding='utf-8')
@@ -19,7 +19,7 @@ def test_max_lines_truncation(tmp_path):
     buffer = io.StringIO()
     processor = FileProcessor(config, config['output'])
 
-    # Truncate to 2 lines
+    # Shorten to 2 lines
     tokens, approx, lines = processor.process_and_write(file_path, tmp_path, buffer)
     assert lines == 2
 
@@ -31,7 +31,7 @@ def test_max_lines_truncation(tmp_path):
     assert "line3" not in output
 
 def test_max_lines_no_truncation(tmp_path):
-    """Test that content is NOT truncated if max_lines is 0 or exceeds actual line count."""
+    """Test that content is NOT shortened if max_lines is 0 or exceeds actual line count."""
     file_path = tmp_path / "test.txt"
     content = "line1\nline2\n"
     file_path.write_text(content, encoding='utf-8')

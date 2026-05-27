@@ -90,7 +90,7 @@ def test_generate_project_overview_git_status_gaps():
     assert "  Git Commit:   abc1234" in overview_text
     assert "  Git Status:   Working tree clean" in overview_text
 
-    # Test branches where they are NOT present or 'N/A' (line 1924->1930 skip etc.)
+    # Test branches where they are NOT present or 'N/A' (line 1924->1930 skip and other items)
     stats_empty = {
         'total_files': 1,
         'total_size_bytes': 10,

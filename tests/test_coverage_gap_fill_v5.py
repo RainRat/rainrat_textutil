@@ -184,4 +184,4 @@ def test_line_limit_reached_warning_direct(capsys):
         sourcecombine._print_execution_summary(mock_stats, mock_args, False)
 
     captured = capsys.readouterr()
-    assert "WARNING: Output truncated due to total line limit." in captured.err
+    assert "WARNING: Output shortened due to total line limit." in captured.err
