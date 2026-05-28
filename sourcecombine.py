@@ -370,6 +370,32 @@ def _make_ascii_bar(
     return hashes + dashes
 
 
+def _get_folder_stats(top_files):
+    """Aggregate token and size statistics by parent folders."""
+    if not top_files:
+        return {}
+
+    folder_stats = {}
+    for item in top_files:
+        tokens, size, path = item[:3]
+        p = Path(path)
+        # Traverse up parent folders
+        for parent in p.parents:
+            # We skip the root '.' as it's already represented by project totals
+            if str(parent) == '.':
+                continue
+
+            folder_path = parent.as_posix()
+            if folder_path not in folder_stats:
+                folder_stats[folder_path] = {'tokens': 0, 'size': 0, 'files': 0}
+
+            folder_stats[folder_path]['tokens'] += (tokens or 0)
+            folder_stats[folder_path]['size'] += (size or 0)
+            folder_stats[folder_path]['files'] += 1
+
+    return folder_stats
+
+
 def _format_metadata_summary(meta: Mapping[str, Any], colored: bool = False) -> str:
     """Return file or folder details in an easy-to-read format."""
     parts = []
@@ -2304,6 +2330,42 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
                 percent = (weight / total_weight * 100) if total_weight > 0 else 0
                 t_str = f"{tokens:,}" if has_tokens else "-"
                 lines.append(f"    {path:<30} {t_str:>10} tokens • {utils.format_size(size):>10} ({percent:>5.1f}%)")
+
+    # Largest Folders
+    folder_stats = _get_folder_stats(top_files)
+    if folder_stats:
+        has_tokens = any(f['tokens'] > 0 for f in folder_stats.values())
+        if has_tokens:
+            sorted_folders = sorted(folder_stats.items(), key=lambda x: (-x[1]['tokens'], x[0]))[:5]
+            title = "Largest Folders (by tokens)"
+        else:
+            sorted_folders = sorted(folder_stats.items(), key=lambda x: (-x[1]['size'], x[0]))[:5]
+            title = "Largest Folders (by size)"
+
+        if output_format == 'markdown':
+            lines.append(f"\n## {title}")
+            lines.append("| Folder | Tokens | Size | Files | % |")
+            lines.append("| :--- | :--- | :--- | :--- | :--- |")
+            for path, data in sorted_folders:
+                tokens = data['tokens']
+                size = data['size']
+                files = data['files']
+                weight = tokens if has_tokens else size
+                total_weight = total_tokens if has_tokens else total_size_bytes
+                percent = (weight / total_weight * 100) if total_weight > 0 else 0
+                t_str = f"{tokens:,}" if has_tokens else "-"
+                lines.append(f"| `{path}` | {t_str} | {utils.format_size(size)} | {files:,} | {percent:.1f}% |")
+        else:
+            lines.append(f"\n  {title}:")
+            for path, data in sorted_folders:
+                tokens = data['tokens']
+                size = data['size']
+                files = data['files']
+                weight = tokens if has_tokens else size
+                total_weight = total_tokens if has_tokens else total_size_bytes
+                percent = (weight / total_weight * 100) if total_weight > 0 else 0
+                t_str = f"{tokens:,}" if has_tokens else "-"
+                lines.append(f"    {path:<30} {t_str:>10} tokens • {utils.format_size(size):>10} ({files:>4} files) ({percent:>5.1f}%)")
 
     # Language Breakdown
     ext_stats = stats.get('files_by_extension', {})
@@ -5876,6 +5938,51 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 status_indicator = f" {status_text}{' ' * (6 - visible_len)}"
 
             print(f"    {row_metrics}{status_indicator}{C_BOLD}{display_path}{C_RESET}", file=sys.stderr)
+
+    # Largest Folders
+    folder_stats = _get_folder_stats(stats.get('top_files'))
+    if folder_stats:
+        has_tokens = any(f['tokens'] > 0 for f in folder_stats.values())
+        if has_tokens:
+            top_f = sorted(folder_stats.items(), key=lambda x: (-x[1]['tokens'], x[0]))[:5]
+            total_for_percent = stats.get('total_tokens', 0)
+            overhead = 50
+        else:
+            top_f = sorted(folder_stats.items(), key=lambda x: (-x[1]['size'], x[0]))[:5]
+            total_for_percent = stats.get('total_size_bytes', 0)
+            overhead = 37
+
+        status_spacer = " " * 7 if has_status else ""
+        path_width = max(20, term_width - (overhead + (7 if has_status else 0)))
+
+        if has_tokens:
+            print(f"\n  {C_BOLD}{C_CYAN}Largest Folders (by tokens){C_RESET}", file=sys.stderr)
+            print(f"    {C_DIM}{'TOKENS':>12} {'SIZE':>12} {'%':>6} {'DISTRIBUTION':<13}{status_spacer} FOLDER{C_RESET}", file=sys.stderr)
+        else:
+            print(f"\n  {C_BOLD}{C_CYAN}Largest Folders (by size){C_RESET}", file=sys.stderr)
+            print(f"    {C_DIM}{'SIZE':>12} {'%':>6} {'DISTRIBUTION':<13}{status_spacer} FOLDER{C_RESET}", file=sys.stderr)
+
+        for path, data in top_f:
+            tokens = data['tokens']
+            f_size = data['size']
+            val_num = tokens if has_tokens else f_size
+            percent = (val_num / total_for_percent * 100) if total_for_percent > 0 else 0.0
+            bar = _make_ascii_bar(percent, colored=True)
+
+            token_str = f"{'~' if is_approx else ''}{tokens:,}" if has_tokens else f"{tokens:,}"
+            size_str = utils.format_size(f_size)
+            s_val, s_unit = _split_unit(size_str)
+            display_path = _truncate_path(path, path_width)
+            size_padding = " " * max(0, 12 - len(s_val) - len(s_unit))
+
+            row_metrics = ""
+            if has_tokens:
+                row_metrics = f"{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET} "
+            row_metrics += f"{size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET} "
+            row_metrics += f"{C_BOLD}{C_CYAN}{percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET} "
+            row_metrics += f"{C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET} "
+
+            print(f"    {row_metrics}{status_spacer}{C_BOLD}{display_path}{C_RESET}{C_DIM}/{C_RESET}", file=sys.stderr)
 
     # Extensions List
     files_by_ext = stats.get('files_by_extension')
