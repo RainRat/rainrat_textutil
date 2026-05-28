@@ -41,3 +41,14 @@ def test_validate_filters_inclusion_groups_defaults_applied():
     group = config['filters']['inclusion_groups']['test_group']
     assert group['enabled'] is False
     assert group['filenames'] == []
+
+def test_validate_positive_number_rejects_bool():
+    import pytest
+    config = {
+        'filters': {
+            'modified_since': True
+        },
+        'search': {'root_folders': ['.']}
+    }
+    with pytest.raises(utils.InvalidConfigError, match="filters.modified_since must be 0 or more"):
+        utils.validate_config(config)
