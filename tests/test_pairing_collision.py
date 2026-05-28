@@ -7,8 +7,8 @@ import copy
 
 def test_pairing_stem_collision_with_mismatched(tmp_path):
     """
-    Verify that a file with no extension (e.g. 'main') doesn't overwrite
-    a paired group with the same stem (e.g. 'main.cpp', 'main.h')
+    Verify that a file with no extension (for example 'main') doesn't overwrite
+    a paired group with the same stem (for example 'main.cpp', 'main.h')
     when include_mismatched is enabled.
     """
     src = tmp_path / "src"

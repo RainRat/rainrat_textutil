@@ -14,9 +14,9 @@ def test_truncate_tokens_no_tiktoken():
     with patch('utils.tiktoken', None):
         text = "word " * 100 # 500 characters
         # 10 tokens approx = 40 chars
-        truncated = truncate_tokens(text, 10)
-        assert len(truncated) == 40
-        assert truncated == text[:40]
+        shortened = truncate_tokens(text, 10)
+        assert len(shortened) == 40
+        assert shortened == text[:40]
 
 def test_truncate_tokens_with_tiktoken():
     """Test truncation using tiktoken when available."""
@@ -30,8 +30,8 @@ def test_truncate_tokens_with_tiktoken():
 
     with patch('utils.tiktoken', mock_tiktoken):
         text = "word " * 100
-        truncated = truncate_tokens(text, 10)
-        assert truncated == "word " * 10
+        shortened = truncate_tokens(text, 10)
+        assert shortened == "word " * 10
         mock_encoding.encode.assert_called_once()
         mock_encoding.decode.assert_called_once_with(list(range(10)))
 

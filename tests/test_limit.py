@@ -51,7 +51,7 @@ def test_limit_summary_warning(test_env, capsys):
             pass
 
     captured = capsys.readouterr()
-    assert "WARNING: Output truncated due to file limit." in captured.err
+    assert "WARNING: Output shortened due to file limit." in captured.err
 
 def test_limit_main_config_injection(test_env):
     """Cover main() where it injects max_files into config even if filters section is missing."""
@@ -80,7 +80,7 @@ def test_limit_main_config_injection(test_env):
     # If it didn't crash, it's probably fine. The coverage will confirm.
 
 def test_limit_main_filters_is_not_dict(test_env):
-    """Cover main() where it handles config['filters'] being a non-dict (e.g. from invalid yaml)."""
+    """Cover main() where it handles config['filters'] being a non-dict (for example from invalid yaml)."""
     from sourcecombine import main
     import sys
     from unittest.mock import patch

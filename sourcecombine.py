@@ -316,7 +316,7 @@ def _get_rel_path(path, root_path):
 
 
 def _truncate_path(path: str, max_width: int) -> str:
-    """Truncate a path by removing characters from the middle.
+    """Shorten a path by removing characters from the middle.
 
     This ensures that both the beginning of the path and the filename
     remain visible when space is limited.
@@ -328,7 +328,7 @@ def _truncate_path(path: str, max_width: int) -> str:
     if max_width < 4:
         return path[:max_width]
 
-    # If the width is small, just return it truncated from the end
+    # If the width is small, just return it shortened from the end
     if max_width <= 10:
         return path[:max_width-3] + "..."
 
@@ -1488,7 +1488,7 @@ def _pair_files(filtered_paths, source_exts, header_exts, include_mismatched, *,
             paired.append((stem, pair))
             used_files.update(pair)
 
-    # Pass 2: Convention matches (Truncated paths)
+    # Pass 2: Convention matches (Shortened paths)
     # This handles src/main.cpp and include/main.h.
     remaining_files = [p for p in filtered_paths if p not in used_files]
     if remaining_files:
@@ -1505,7 +1505,7 @@ def _pair_files(filtered_paths, source_exts, header_exts, include_mismatched, *,
                 truncated_map.setdefault(truncated_stem, {}).setdefault(p.suffix.lower(), []).append(p)
 
         for t_stem, ext_map in truncated_map.items():
-            # Only pair if the truncated stem is unambiguous
+            # Only pair if the shortened stem is unambiguous
             src = _select_preferred_path(ext_map, source_exts)
             hdr = _select_preferred_path(ext_map, header_exts)
 
@@ -2246,7 +2246,7 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
         truncations.append("File limit reached")
 
     if truncations:
-        notice = "WARNING: Output truncated due to: " + ", ".join(truncations)
+        notice = "WARNING: Output shortened due to: " + ", ".join(truncations)
         if output_format == 'markdown':
             lines.append(f"\n> [!CAUTION]\n> **{notice}**")
         else:
@@ -2260,7 +2260,7 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
         if processing_opts.get('remove_all_c_style_comments'):
             active_rules.append("C-style comment removal")
         if processing_opts.get('max_lines'):
-            active_rules.append(f"Truncated to {processing_opts['max_lines']} lines per file")
+            active_rules.append(f"Shortened to {processing_opts['max_lines']} lines per file")
 
         if active_rules:
             if output_format == 'markdown':
@@ -5569,7 +5569,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     git_branch = stats.get('git_branch')
     git_commit = stats.get('git_commit_short')
 
-    # Truncate components if they are extremely long to prevent wrapping
+    # Shorten components if they are extremely long to prevent wrapping
     # We use more generous limits now as we will fall back to multi-line layout
     if term_width <= 80:
         proj_limit = 40
@@ -5601,7 +5601,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         else:
             project_ctx = f"{project_ctx} ({git_branch})"
 
-    # Truncate descriptions if they are too long
+    # Shorten descriptions if they are too long
     if source_desc and len(source_desc) > desc_limit:
         if source_desc.startswith("from '") and source_desc.endswith("'"):
             source_desc = f"from '{_truncate_path(source_desc[6:-1], desc_limit - 7)}'"
@@ -5652,7 +5652,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         status_prefix = f"{base_action} SUCCESS"
 
     if limit_reached:
-        status_prefix = f"{status_prefix} (TRUNCATED)"
+        status_prefix = f"{status_prefix} (SHORTENED)"
 
     # Header part
     header_main = f"{status_prefix}: [{project_ctx}]"
@@ -5697,7 +5697,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     
     for key, label in truncation_checks:
         if stats.get(key):
-            print(f"  {C_YELLOW}{C_BOLD}WARNING: Output truncated due to {label}.{C_RESET}", file=sys.stderr)
+            print(f"  {C_YELLOW}{C_BOLD}WARNING: Output shortened due to {label}.{C_RESET}", file=sys.stderr)
 
     # Files Section
     label_width = 24

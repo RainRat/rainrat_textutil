@@ -23,7 +23,7 @@ def test_generate_project_overview_all_truncations_text():
         'limit_reached': True
     }
     overview = _generate_project_overview(stats, output_format='text')
-    assert "WARNING: Output truncated due to: Token limit reached, Total size limit reached, Total line limit reached, File limit reached" in overview
+    assert "WARNING: Output shortened due to: Token limit reached, Total size limit reached, Total line limit reached, File limit reached" in overview
 
 def test_generate_project_overview_all_truncations_markdown():
     stats = {
@@ -38,7 +38,7 @@ def test_generate_project_overview_all_truncations_markdown():
     }
     overview = _generate_project_overview(stats, output_format='markdown')
     assert "> [!CAUTION]" in overview
-    assert "**WARNING: Output truncated due to: Token limit reached, Total size limit reached, Total line limit reached, File limit reached**" in overview
+    assert "**WARNING: Output shortened due to: Token limit reached, Total size limit reached, Total line limit reached, File limit reached**" in overview
 
 def test_generate_project_overview_applied_processing_markdown():
     stats = {'total_files': 1}
@@ -51,7 +51,7 @@ def test_generate_project_overview_applied_processing_markdown():
     assert "## Applied Processing" in overview
     assert "- Whitespace compaction" in overview
     assert "- C-style comment removal" in overview
-    assert "- Truncated to 100 lines per file" in overview
+    assert "- Shortened to 100 lines per file" in overview
 
 def test_generate_project_overview_c_style_comment_removal_text():
     stats = {'total_files': 1}

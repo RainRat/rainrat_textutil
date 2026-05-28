@@ -4,7 +4,7 @@ from pathlib import Path, PurePath
 from sourcecombine import should_include
 
 def test_should_include_nested_folder_exclusion():
-    """Verify that a folder exclusion pattern (e.g., 'src/gen') excludes subfolders (e.g., 'src/gen/assets')."""
+    """Verify that a folder exclusion pattern (for example, 'src/gen') excludes subfolders (for example, 'src/gen/assets')."""
     filter_opts = {
         'exclusions': {
             'folders': ['src/generated']
@@ -57,7 +57,7 @@ def test_should_include_folder_pattern_with_wildcards():
     assert reason == 'excluded'
 
 def test_should_include_folder_part_match_remains_intact():
-    """Verify that the existing 'any part' folder matching still works (e.g., '.git')."""
+    """Verify that the existing 'any part' folder matching still works (for example, '.git')."""
     filter_opts = {
         'exclusions': {
             'folders': ['.git']

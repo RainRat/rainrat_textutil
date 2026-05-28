@@ -20,7 +20,7 @@ def test_line_count_calculation(tmp_path):
     tokens, approx, lines = processor.process_and_write(file_path, tmp_path, buffer)
     assert lines == 3
 
-    # With whitespace compaction (e.g. collapsing blank lines)
+    # With whitespace compaction (for example collapsing blank lines)
     content_with_blanks = "line1\n\n\nline2"
     file_path.write_text(content_with_blanks, encoding='utf-8')
     config['processing']['compact_whitespace'] = True

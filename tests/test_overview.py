@@ -40,7 +40,7 @@ def test_overview_truncation_notices():
         'size_limit_reached': True
     }
     overview = _generate_project_overview(stats, output_format='text')
-    assert "WARNING: Output truncated due to: Token limit reached, Total size limit reached" in overview
+    assert "WARNING: Output shortened due to: Token limit reached, Total size limit reached" in overview
 
 def test_overview_applied_processing():
     stats = {
@@ -56,7 +56,7 @@ def test_overview_applied_processing():
     overview = _generate_project_overview(stats, output_format='text', processing_opts=processing_opts)
     assert "Applied Processing:" in overview
     assert "Whitespace compaction" in overview
-    assert "Truncated to 10 lines per file" in overview
+    assert "Shortened to 10 lines per file" in overview
 
 def test_find_and_combine_with_overview(tmp_path):
     # Create dummy files

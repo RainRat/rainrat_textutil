@@ -31,7 +31,7 @@ def test_collect_git_files_success():
         assert 'ls-files' in args
 
 def test_collect_git_files_failure():
-    """Test fallback when git fails (e.g., not a git repo)."""
+    """Test fallback when git fails (for example, not a git repo)."""
     with patch('subprocess.run', side_effect=subprocess.CalledProcessError(1, 'git')):
         root = Path("/fake/root")
         result = sourcecombine.collect_git_files(root)

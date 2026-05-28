@@ -110,7 +110,7 @@ def test_restore_cli_integration(tmp_path):
     assert not bak1.exists()
 
 def test_restore_backups_error_handling(tmp_path):
-    """Test restoration error handling (e.g., permission error)."""
+    """Test restoration error handling (for example, permission error)."""
     file1 = tmp_path / "file1.txt"
     bak1 = tmp_path / "file1.txt.bak"
     file1.write_text("Modified 1")

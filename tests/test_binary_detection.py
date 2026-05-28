@@ -39,7 +39,7 @@ def test_looks_binary_false_on_text_file():
 
 def test_looks_binary_respects_allowed_control_chars():
     """Verify that tabs and newlines do not count as binary control characters."""
-    # 10 bytes: 4 bytes of allowed control (e.g. \t), 6 bytes of text.
+    # 10 bytes: 4 bytes of allowed control (for example \t), 6 bytes of text.
     # Should be 0% non-text control.
     data = b"\t\t\n\nabcdef"
     with patch("builtins.open", mock_open(read_data=data)):

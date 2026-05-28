@@ -272,7 +272,7 @@ def test_summary_high_limit_bar_2183(temp_cwd, mock_stats, capsys):
 
 def test_summary_top_files_loop_2232(temp_cwd, mock_stats, capsys):
     """Test top_files loop in summary (lines 2232-2240)."""
-    long_path = "very/long/path/to/some/file/that/should/be/truncated/eventually/file2.txt"
+    long_path = "very/long/path/to/some/file/that/should/be/shortened/eventually/file2.txt"
     mock_stats['top_files'] = [
         (100, 1000, "file1.txt", None),
         (200, 2000, long_path, None)

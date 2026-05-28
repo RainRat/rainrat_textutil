@@ -93,7 +93,7 @@ def test_toc_ignored_in_pairing_mode(tmp_path, toc_config):
     toc_config['pairing']['source_extensions'] = ['.c']
     toc_config['pairing']['header_extensions'] = ['.h']
 
-    # TOC should be ignored or raise error if strict, but current implementation ignores it
+    # Table of Contents should be ignored or raise error if strict, but current implementation ignores it
     # Just ensure it doesn't crash
 
     output_folder = tmp_path / "out_pair"
@@ -116,7 +116,7 @@ def test_toc_estimate_tokens(tmp_path, toc_config):
     toc_config['output']['table_of_contents'] = False
     stats_without_toc = find_and_combine_files(toc_config, None, estimate_tokens=True)
 
-    # TOC adds tokens
+    # Table of Contents adds tokens
     assert stats_with_toc['total_tokens'] > stats_without_toc['total_tokens']
 
 

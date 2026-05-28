@@ -14,7 +14,7 @@ from sourcecombine import FileProcessor
 
 def test_backup_failure_raises_invalid_config_error(tmp_path):
     """
-    Verify that if creating a backup fails (e.g., due to permission error),
+    Verify that if creating a backup fails (for example, due to permission error),
     FileProcessor raises utils.InvalidConfigError to prevent data loss.
     """
     file_path = tmp_path / "important_code.py"

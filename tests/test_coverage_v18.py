@@ -103,7 +103,7 @@ def test_main_csv_auto_suffix():
                     assert output_path.endswith('.csv')
 
 def test_parse_combined_content_csv_error_direct():
-    """Cover lines 4498-4499: csv.Error etc. handling"""
+    """Cover lines 4498-4499: csv.Error and other items handling"""
     content = "path,size_bytes,tokens,tokens_is_approx,lines,language,sha256,content,modified\nfile.txt,4,1,False,1,text,hash,data,invalid_float"
 
     # Passing 'invalid_float' for modified will trigger ValueError when calling float()

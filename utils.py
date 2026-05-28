@@ -879,8 +879,8 @@ def process_content(buffer: str, options: Mapping[str, Any]) -> str:
     - ``compact_whitespace_groups`` (dict): optional overrides that enable or disable
       specific whitespace transformations. Supported keys are defined in
       ``COMPACT_WHITESPACE_GROUPS``.
-    - ``max_lines`` (int): if greater than zero, truncate the output to this many lines.
-    - ``max_tokens`` (int): if greater than zero, truncate the output to this many tokens.
+    - ``max_lines`` (int): if greater than zero, shorten the output to this many lines.
+    - ``max_tokens`` (int): if greater than zero, shorten the output to this many tokens.
     """
     if not options:
         return buffer
@@ -1152,9 +1152,9 @@ def estimate_tokens(text: str, encoding_name: str = "cl100k_base") -> tuple[int,
 
 
 def truncate_tokens(text: str, max_tokens: int, encoding_name: str = "cl100k_base") -> str:
-    """Truncate the text to a maximum number of tokens.
+    """Shorten the text to a maximum number of tokens.
 
-    If tiktoken is available, it uses the specified encoding to truncate accurately.
+    If tiktoken is available, it uses the specified encoding to shorten accurately.
     Otherwise, it uses a character-based approximation (1 token ~= 4 characters).
     """
     if max_tokens <= 0:
