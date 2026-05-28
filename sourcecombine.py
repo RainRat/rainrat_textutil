@@ -3887,10 +3887,10 @@ def main():
         action="store_true",
         help=(
             "Restore original files and folders from combined files (JSON, XML, Markdown, and other formats). "
-            "Read from files, folders, your terminal ('-'), or the clipboard. "
-            "If no input is provided, the tool searches for standard defaults (like combined_files.txt). "
+            "Read from files, folders, the terminal ('-'), or the clipboard. "
+            "Without an input file, the tool searches for standard defaults (for example, combined_files.txt). "
             "Supports filtering, sorting, and processing rules. "
-            "Line numbers are removed automatically unless you use --keep-line-numbers."
+            "The tool removes line numbers automatically unless you use --keep-line-numbers."
         ),
     )
     utility_group.add_argument(
