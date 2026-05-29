@@ -962,3 +962,12 @@ def test_validate_search_git_diff_ref_invalid():
     config = {"search": {"git_diff_ref": 123}}
     with pytest.raises(utils.InvalidConfigError, match="search.git_diff_ref must be text or nothing"):
         utils._validate_search_section(config)
+
+def test_validate_positive_number_rejects_bool():
+    container = {'key': True}
+    with pytest.raises(utils.InvalidConfigError):
+        utils._validate_positive_number(container, 'key', 'filters')
+
+    container = {'key': False}
+    with pytest.raises(utils.InvalidConfigError):
+        utils._validate_positive_number(container, 'key', 'filters')
