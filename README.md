@@ -1,14 +1,14 @@
 # SourceCombine
 
-SourceCombine is a tool for your terminal that helps you find, filter, and combine text files into a single file or folder. It supports many formats like JSON, XML, Markdown, and CSV. It is helpful for preparing code context for AI models or managing large groups of files.
+SourceCombine is a tool for your terminal that helps you find, filter, and combine text files into a single file or folder. It supports many formats (for example, JSON, XML, Markdown, and CSV). It is helpful for preparing code context for AI models or managing large groups of files.
 
 ## Key Features
 *   **Find files in many folders:** Scan many folders at once. Use Git to find files and follow your `.gitignore` rules automatically.
 *   **Filtering:** Skip folders, files, or specific names using glob patterns. You can also filter by language, file content (using regular expressions), or Git changes.
 *   **Deduplication:** Skip duplicate files by absolute path or content.
 *   **Include Groups:** Group specific files to always include, even if you skip others.
-*   **Pairing:** Combine related files (like source and header pairs) into their own individual output files.
-*   **File Extraction:** Rebuild your original files and folders from combined files (like JSON, XML, JSONL, CSV, or Markdown). Filtering, sorting, and processing rules are supported. Batch process multiple files or entire folders. If no input is provided, the tool automatically searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`).
+*   **Pairing:** Combine related files (for example, source and header pairs) into their own individual output files.
+*   **File Extraction:** Rebuild your original files and folders from combined files (for example, JSON, XML, JSONL, CSV, or Markdown). Filtering, sorting, and processing rules are supported. Batch process multiple files or entire folders. Without an input file, the tool automatically searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`).
 *   **Sorting:** Sort files by `name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`.
 *   **Limiting:** Stop processing once you reach a file, token, size, or line limit.
 *   **Flexible Outputs:** Save results to your terminal, a file (JSON, XML, JSONL, CSV, or Markdown), or copy them to your system clipboard.
@@ -27,8 +27,8 @@ SourceCombine is a tool for your terminal that helps you find, filter, and combi
 
 ### Utility Commands
 *   `--init`: Create a basic `sourcecombine.yml` configuration file to get started.
-*   `--extract`: Rebuild original files and folders from combined outputs (JSON, XML, JSONL, CSV, or Markdown). You can read from files, folders, terminal, or clipboard. If no input is provided, it searches for `combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`.
-*   `--verify`: Verify that files on disk match the content or hashes in combined files or manifests. If no input is provided, the tool searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`). For example: `python sourcecombine.py --verify combined_files.json`.
+*   `--extract`: Rebuild original files and folders from combined outputs (for example, JSON, XML, JSONL, CSV, or Markdown). You can read from files, folders, terminal, or clipboard. Without an input file, it searches for `combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`.
+*   `--verify`: Verify that files on disk match the content or hashes in combined files or manifests. Without an input file, the tool searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`). For example: `python sourcecombine.py --verify combined_files.json`.
 *   `--restore`: Undo changes made by `--apply-in-place` using `.bak` backup files.
 *   `--delete-backups`: Remove all `.bak` files from your folders.
 *   `--list-languages`: Show all supported language identifiers.

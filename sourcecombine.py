@@ -3592,7 +3592,7 @@ def main():
         nargs="?",
         const=True,
         metavar="REF",
-        help="Include only files that have changed in Git. If a REF is provided (like 'main'), it finds changes since that commit. Otherwise, it finds unstaged, staged, and untracked changes.",
+        help="Include only files that have changed in Git. If a REF is provided (for example, 'main'), it finds changes since that commit. Otherwise, it finds unstaged, staged, and untracked changes.",
     )
     filtering_group.add_argument(
         "--staged",
@@ -3888,9 +3888,9 @@ def main():
         help=(
             "Restore original files and folders from combined files (JSON, XML, Markdown, and other formats). "
             "Read from files, folders, your terminal ('-'), or the clipboard. "
-            "If no input is provided, the tool searches for standard defaults (like combined_files.txt). "
+            "Without an input file, the tool searches for standard defaults (for example, combined_files.txt). "
             "Supports filtering, sorting, and processing rules. "
-            "Line numbers are removed automatically unless you use --keep-line-numbers."
+            "The tool removes line numbers automatically unless you use --keep-line-numbers."
         ),
     )
     utility_group.add_argument(
@@ -3909,7 +3909,7 @@ def main():
         help=(
             "Verify that files on disk match the content or hashes in combined files or manifests. "
             "Read from files, folders, your terminal ('-'), or the system clipboard. "
-            "If no input is provided, the tool searches for combined_files.txt, combined_files.md, "
+            "Without an input file, the tool searches for combined_files.txt, combined_files.md, "
             "combined_files.json, combined_files.xml, combined_files.jsonl, or combined_files.csv."
         ),
     )

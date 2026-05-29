@@ -129,7 +129,7 @@ output:
   global_footer_template: null
 
   # Optional placeholder to write when a file is skipped because it exceeds
-  # filters.max_size_bytes. The text may use placeholders like {{FILENAME}} and {{SIZE}}.
+  # filters.max_size_bytes. The text may use placeholders (for example, {{FILENAME}} and {{SIZE}}).
   max_size_placeholder: null
 
   # Global sorting options for both combining many files into one and pairing.
@@ -152,11 +152,11 @@ filters:
   unique: false
 
   # Include only files larger than this size.
-  # Supports human-readable text like '10KB', '1.5MB', or raw bytes as an integer.
+  # Supports human-readable text (for example, '10KB', '1.5MB') or raw bytes as an integer.
   min_size_bytes: 0
 
   # Include only files smaller than this size.
-  # Supports human-readable text like '10KB', '1.5MB', or raw bytes as an integer.
+  # Supports human-readable text (for example, '10KB', '1.5MB') or raw bytes as an integer.
   # Omit, set to null, or set to 0 for no limit (0 is treated as unlimited).
   max_size_bytes: 0
 
@@ -165,7 +165,7 @@ filters:
   max_total_tokens: 0
 
   # Stop processing once you reach the total size limit.
-  # Supports human-readable text like '10KB', '1.5MB', or raw bytes as an integer.
+  # Supports human-readable text (for example, '10KB', '1.5MB') or raw bytes as an integer.
   # (only when combining many files or extracting). Omit or set to 0 for no limit.
   max_total_size_bytes: 0
 
