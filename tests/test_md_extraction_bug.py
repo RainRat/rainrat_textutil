@@ -39,7 +39,7 @@ def some_util():
         source_name="test_content.md"
     )
 
-    extracted_paths = [path for _, _, path, _ in stats['top_files']]
+    extracted_paths = [path for item in stats['top_files'] for path in [item[2]]]
 
     print(f"Extracted paths: {extracted_paths}")
 

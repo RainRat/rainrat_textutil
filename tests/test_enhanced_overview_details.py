@@ -36,9 +36,9 @@ def test_enhanced_overview_text():
     # Check File Types section with bars
     assert "File Types:" in overview
     assert ".py" in overview
-    assert "1 files ( 50.0% •  80.0%) [########--]" in overview
+    assert "1 files •      0 lines ( 50.0% •  80.0%) [########--]" in overview
     assert ".md" in overview
-    assert "1 files ( 50.0% •  20.0%) [##--------]" in overview
+    assert "1 files •      0 lines ( 50.0% •  20.0%) [##--------]" in overview
 
 def test_enhanced_overview_markdown():
     stats = {
@@ -65,11 +65,11 @@ def test_enhanced_overview_markdown():
 
     # Check Largest Files table
     assert "## Largest Files (by tokens)" in overview
-    assert "| File | Tokens | Size | % |" in overview
-    assert "| `src/main.py` | 400 | 1.46 KB | 80.0% |" in overview
+    assert "| File | Tokens | Lines | Size | % |" in overview
+    assert "| `src/main.py` | 400 | - | 1.46 KB | 80.0% |" in overview
 
     # Check File Types table
     assert "## File Types" in overview
-    assert "| Extension | Count | % Files | % Tokens |" in overview
-    assert "| `.py` | 1 | 50.0% | 80.0% |" in overview
-    assert "| `.md` | 1 | 50.0% | 20.0% |" in overview
+    assert "| Extension | Count | % Files | Lines | % Tokens |" in overview
+    assert "| `.py` | 1 | 50.0% | - | 80.0% |" in overview
+    assert "| `.md` | 1 | 50.0% | - | 20.0% |" in overview

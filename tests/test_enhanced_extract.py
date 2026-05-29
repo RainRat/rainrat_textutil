@@ -23,7 +23,7 @@ def test_extract_metadata_json(tmp_path):
     assert stats['total_tokens'] == 5
     assert stats['total_size_bytes'] == 14
     assert stats['total_lines'] == 1
-    assert stats['top_files'][0] == (5, 14, "test.py", None)
+    assert stats['top_files'][0] == (5, 14, "test.py", None, 1)
 
 def test_extract_metadata_xml(tmp_path):
     """Test that extraction from XML preserves metadata."""
