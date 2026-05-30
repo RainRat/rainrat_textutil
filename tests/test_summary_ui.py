@@ -170,7 +170,7 @@ def test_output_shortened_warning(capsys):
         sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
 
     captured = capsys.readouterr()
-    assert "WARNING: Output shortened due to token limit." in captured.err
+    assert "WARNING: Output shortened due to: token limit" in captured.err
 
 def test_limit_bar_no_color(capsys):
     """Test limit bar with NO_COLOR=1."""

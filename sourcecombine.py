@@ -44,6 +44,13 @@ DEFAULT_CONFIG = utils.DEFAULT_CONFIG
 
 __version__ = "0.5.0"
 
+TRUNCATION_CHECKS = [
+    ('token_limit_reached', 'token limit'),
+    ('size_limit_reached', 'total size limit'),
+    ('line_limit_reached', 'total line limit'),
+    ('limit_reached', 'file limit'),
+]
+
 
 def _get_tqdm():
     """Lazy-load tqdm for progress bars."""
@@ -2235,15 +2242,7 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
         lines.append(f"  Total Tokens: {token_str}")
 
     # Truncation Notices
-    truncations = []
-    if stats.get('token_limit_reached'):
-        truncations.append("Token limit reached")
-    if stats.get('size_limit_reached'):
-        truncations.append("Total size limit reached")
-    if stats.get('line_limit_reached'):
-        truncations.append("Total line limit reached")
-    if stats.get('limit_reached'):
-        truncations.append("File limit reached")
+    truncations = [label for key, label in TRUNCATION_CHECKS if stats.get(key)]
 
     if truncations:
         notice = "WARNING: Output shortened due to: " + ", ".join(truncations)
@@ -5549,13 +5548,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
     data_hint = f"{C_DIM} • {C_RESET}".join(parts)
 
-    truncation_checks = [
-        ('token_limit_reached', 'token limit'),
-        ('size_limit_reached', 'total size limit'),
-        ('line_limit_reached', 'total line limit'),
-        ('limit_reached', 'file limit'),
-    ]
-    limit_reached = any(stats.get(k) for k, _ in truncation_checks)
+    limit_reached = any(stats.get(k) for k, _ in TRUNCATION_CHECKS)
 
     if args.dry_run or total_included == 0 or limit_reached:
         title_color = C_YELLOW
@@ -5695,9 +5688,10 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     if highlighted_dest:
         print(f"  {C_DIM}{highlighted_dest}{C_RESET}", file=sys.stderr)
     
-    for key, label in truncation_checks:
-        if stats.get(key):
-            print(f"  {C_YELLOW}{C_BOLD}WARNING: Output shortened due to {label}.{C_RESET}", file=sys.stderr)
+    truncations = [label for key, label in TRUNCATION_CHECKS if stats.get(key)]
+    if truncations:
+        notice = "WARNING: Output shortened due to: " + ", ".join(truncations)
+        print(f"  {C_YELLOW}{C_BOLD}{notice}{C_RESET}", file=sys.stderr)
 
     # Files Section
     label_width = 24
