@@ -23,7 +23,7 @@ def test_generate_project_overview_all_truncations_text():
         'limit_reached': True
     }
     overview = _generate_project_overview(stats, output_format='text')
-    assert "WARNING: Output shortened due to: Token limit reached, Total size limit reached, Total line limit reached, File limit reached" in overview
+    assert "WARNING: Output shortened due to: token limit, total size limit, total line limit, file limit" in overview
 
 def test_generate_project_overview_all_truncations_markdown():
     stats = {
@@ -38,7 +38,7 @@ def test_generate_project_overview_all_truncations_markdown():
     }
     overview = _generate_project_overview(stats, output_format='markdown')
     assert "> [!CAUTION]" in overview
-    assert "**WARNING: Output shortened due to: Token limit reached, Total size limit reached, Total line limit reached, File limit reached**" in overview
+    assert "**WARNING: Output shortened due to: token limit, total size limit, total line limit, file limit**" in overview
 
 def test_generate_project_overview_applied_processing_markdown():
     stats = {'total_files': 1}

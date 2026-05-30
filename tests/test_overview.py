@@ -40,7 +40,7 @@ def test_overview_truncation_notices():
         'size_limit_reached': True
     }
     overview = _generate_project_overview(stats, output_format='text')
-    assert "WARNING: Output shortened due to: Token limit reached, Total size limit reached" in overview
+    assert "WARNING: Output shortened due to: token limit, total size limit" in overview
 
 def test_overview_applied_processing():
     stats = {

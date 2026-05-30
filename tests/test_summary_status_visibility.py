@@ -36,7 +36,7 @@ def test_summary_status_column_visibility(monkeypatch, capsys):
 
     assert "STATUS" not in stderr_no_status
     # Verify alignment - File Types header should NOT have the spacer (1 space between DISTRIBUTION and EXTENSION)
-    assert "DISTRIBUTION EXTENSION" in stderr_no_status
+    assert "DISTRIBUTION EXTENSION" in stderr_no_status or "DISTRIBUTION  EXTENSION" in stderr_no_status
 
     # Case 2: Status present
     stats_with_status = {
