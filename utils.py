@@ -871,7 +871,7 @@ def process_content(buffer: str, options: Mapping[str, Any]) -> str:
     - ``regex_replacements`` (list of dicts): each rule must contain ``pattern`` (str)
       and ``replacement`` (str). Rules are applied sequentially. Capture groups
       can be referenced in the replacement string (for example, ``"\\1"``).
-    - ``line_regex_replacements`` (list of dicts): like ``regex_replacements`` but
+    - ``line_regex_replacements`` (list of dicts): such as ``regex_replacements`` but
       applied to whole lines. Blocks of matching lines that follow each other
       collapse into a single ``replacement`` entry (or are removed if
       ``replacement`` is omitted).
@@ -1179,7 +1179,7 @@ def truncate_tokens(text: str, max_tokens: int, encoding_name: str = "cl100k_bas
 
 
 def format_size(size_bytes: int) -> str:
-    """Return the file size in an easy-to-read format like KB or MB."""
+    """Return the file size in an easy-to-read format such as KB or MB."""
     if size_bytes < 0:
         return "0 B"
     for unit in ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB']:
@@ -1190,7 +1190,7 @@ def format_size(size_bytes: int) -> str:
 
 
 def parse_time_value(value: str) -> float:
-    """Convert a time like '1h' or '2023-01-01' into a number the computer can use.
+    """Convert a time such as '1h' or '2023-01-01' into a number the computer can use.
 
     Supports relative durations (for example, '1h', '2d', '4w') and absolute dates
     in 'YYYY-MM-DD' format.
@@ -1242,7 +1242,7 @@ def parse_time_value(value: str) -> float:
 
 
 def parse_size_value(value: str) -> int:
-    """Convert a human-readable size like '10KB' or '1.5MB' into bytes.
+    """Convert a human-readable size such as '10KB' or '1.5MB' into bytes.
 
     Supports units: B, K, KB, M, MB, G, GB, T, TB (case-insensitive).
     """

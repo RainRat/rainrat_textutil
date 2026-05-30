@@ -129,7 +129,7 @@ output:
   global_footer_template: null
 
   # Optional placeholder to write when a file is skipped because it exceeds
-  # filters.max_size_bytes. The text may use placeholders like {{FILENAME}} and {{SIZE}}.
+  # filters.max_size_bytes. The text may use placeholders such as {{FILENAME}} and {{SIZE}}.
   max_size_placeholder: null
 
   # Global sorting options for both combining many files into one and pairing.
@@ -140,7 +140,7 @@ output:
   sort_reverse: false
 
   # Save a machine-readable execution summary (file counts, tokens, duration)
-  # in JSON format. Use '-' to print it to your terminal.
+  # in JSON format. Use '-' to print it to the terminal.
   summary_json: null
 
   # Show a colored diff of changes (when using --output, --apply-in-place, or --extract).
@@ -152,11 +152,11 @@ filters:
   unique: false
 
   # Include only files larger than this size.
-  # Supports human-readable text like '10KB', '1.5MB', or raw bytes as an integer.
+  # Supports human-readable text such as '10KB', '1.5MB', or raw bytes as an integer.
   min_size_bytes: 0
 
   # Include only files smaller than this size.
-  # Supports human-readable text like '10KB', '1.5MB', or raw bytes as an integer.
+  # Supports human-readable text such as '10KB', '1.5MB', or raw bytes as an integer.
   # Omit, set to null, or set to 0 for no limit (0 is treated as unlimited).
   max_size_bytes: 0
 
@@ -165,7 +165,7 @@ filters:
   max_total_tokens: 0
 
   # Stop processing once you reach the total size limit.
-  # Supports human-readable text like '10KB', '1.5MB', or raw bytes as an integer.
+  # Supports human-readable text such as '10KB', '1.5MB', or raw bytes as an integer.
   # (only when combining many files or extracting). Omit or set to 0 for no limit.
   max_total_size_bytes: 0
 
@@ -271,8 +271,8 @@ processing:
   # regex_replacements:
   #   - pattern: '^\s*//\s*TODO:.*$'
   #     replacement: ''
-  max_lines: 0                     # Truncate each file to this many lines before combining
-  max_tokens: 0                    # Truncate each file to this many tokens before combining
+  max_lines: 0                     # Shorten each file to this many lines before combining
+  max_tokens: 0                    # Shorten each file to this many tokens before combining
   apply_in_place: false            # Apply these processing rules back to the source files
   create_backups: true             # Create .bak backups before rewriting when apply_in_place is true
 

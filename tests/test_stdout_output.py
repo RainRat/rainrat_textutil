@@ -43,7 +43,7 @@ def test_stdout_output_pairing_error(tmp_path):
         'output': {'folder': 'output_folder'}
     }
 
-    with pytest.raises(utils.InvalidConfigError, match="You cannot send output to your terminal when pairing files"):
+    with pytest.raises(utils.InvalidConfigError, match="You cannot send output to the terminal when pairing files"):
         find_and_combine_files(config, output_path='-')
 
 def test_stdout_output_dry_run(tmp_path, capsys):
