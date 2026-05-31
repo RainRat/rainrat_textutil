@@ -209,7 +209,7 @@ def test_main_exits_when_pairing_to_stdout(caplog):
                 sourcecombine.main()
             assert excinfo.value.code == 1
 
-    assert "cannot send output to your terminal when pairing files" in caplog.text
+    assert "cannot send output to the terminal when pairing files" in caplog.text
 
 def test_restore_backups_defaults_to_current_directory_when_targets_are_empty():
     with patch("sourcecombine.Path.exists") as mock_exists:

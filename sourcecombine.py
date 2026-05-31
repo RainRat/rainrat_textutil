@@ -205,7 +205,7 @@ _ANSI_ESCAPE = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
 
 
 class CLILogFormatter(logging.Formatter):
-    """A clean logging formatter for your terminal.
+    """A clean logging formatter for the terminal.
 
     Removes the 'INFO:' prefix for standard messages and adds semantic colors
     to WARNING and ERROR levels.
@@ -869,7 +869,7 @@ def _parse_git_diff_by_file(diff_text):
 
     for i, (start, header) in enumerate(diff_headers):
         # The header is typically 'a/path b/path' or '"a/path" "b/path"'
-        # Git quotes the path if it contains special characters like spaces.
+        # Git quotes the path if it contains special characters such as spaces.
         if header.endswith('"'):
             # Find the start of the second path part, which starts with ' "b/'
             # rfind ensures we get the last occurrence, as the first path could also be quoted.
@@ -1026,7 +1026,7 @@ def _get_git_info(root_folder, log_count=0, include_diff=False, diff_ref=None, s
                 elif x == 'R' or y == 'R':
                     status_code = 'R'
                     counts['R'] += 1
-                    # Handle renames like "old -> new"
+                    # Handle renames such as "old -> new"
                     if " -> " in path:
                         path = path.split(" -> ")[-1].strip().strip('"')
                 elif x == 'D' or y == 'D':
@@ -2484,7 +2484,7 @@ def find_and_combine_files(
         raise utils.InvalidConfigError("The clipboard can only be used when combining many files into one.")
 
     if output_path == '-' and pairing_enabled:
-        raise utils.InvalidConfigError("You cannot send output to your terminal when pairing files.")
+        raise utils.InvalidConfigError("You cannot send output to the terminal when pairing files.")
 
     if output_format in ('json', 'jsonl', 'manifest', 'csv') and pairing_enabled:
         raise utils.InvalidConfigError(f"You cannot use {output_format.upper()} format when pairing files.")
@@ -3388,7 +3388,7 @@ def main():
     start_time = time.perf_counter()
     parser = argparse.ArgumentParser(
         description=(
-            "A versatile tool for your terminal to find, filter, and combine source code files "
+            "A versatile tool for the terminal to find, filter, and combine source code files "
             "from a project into one file (or folder). Use it to give better context to AI "
             "models, generate documentation, or save your work."
         ),
@@ -3554,7 +3554,7 @@ def main():
     filtering_group.add_argument(
         "--files-from",
         metavar="PATH",
-        help="Read a list of files from a text file (use '-' for your terminal). This skips looking for files in folders.",
+        help="Read a list of files from a text file (use '-' for the terminal). This skips looking for files in folders.",
     )
     filtering_group.add_argument(
         "--grep",
@@ -3771,7 +3771,7 @@ def main():
     output_group.add_argument(
         "--json-summary",
         metavar="PATH",
-        help="Save an execution summary (file counts, tokens, duration) in JSON format. Use '-' to print it to your terminal. Supports template placeholders.",
+        help="Save an execution summary (file counts, tokens, duration) in JSON format. Use '-' to print it to the terminal. Supports template placeholders.",
     )
 
     # Pairing Options Group
@@ -3887,8 +3887,8 @@ def main():
         action="store_true",
         help=(
             "Restore original files and folders from combined files (JSON, XML, Markdown, and other formats). "
-            "Read from files, folders, your terminal ('-'), or the clipboard. "
-            "If no input is provided, the tool searches for standard defaults (like combined_files.txt). "
+            "Read from files, folders, the terminal ('-'), or the clipboard. "
+            "Without an input file, the tool searches for standard defaults (such as combined_files.txt). "
             "Supports filtering, sorting, and processing rules. "
             "Line numbers are removed automatically unless you use --keep-line-numbers."
         ),
@@ -3908,8 +3908,8 @@ def main():
         action="store_true",
         help=(
             "Verify that files on disk match the content or hashes in combined files or manifests. "
-            "Read from files, folders, your terminal ('-'), or the system clipboard. "
-            "If no input is provided, the tool searches for combined_files.txt, combined_files.md, "
+            "Read from files, folders, the terminal ('-'), or the system clipboard. "
+            "Without an input file, the tool searches for combined_files.txt, combined_files.md, "
             "combined_files.json, combined_files.xml, combined_files.jsonl, or combined_files.csv."
         ),
     )
@@ -4505,7 +4505,7 @@ def main():
     if args.clipboard:
         destination_desc = "to clipboard"
     elif output_path == '-':
-        destination_desc = "to your terminal"
+        destination_desc = "to the terminal"
     elif pairing_enabled:
         destination_desc = (
             "alongside their source files"
@@ -4564,7 +4564,7 @@ def main():
                 content, _ = read_file_best_effort(input_path)
                 sources.append((str(input_path), content))
             else:
-                logging.error("No input specified. Use a file path, folder, '-' for your terminal, or --clipboard.")
+                logging.error("No input specified. Use a file path, folder, '-' for the terminal, or --clipboard.")
                 sys.exit(1)
 
         if args.verify:
@@ -5213,7 +5213,7 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         # Security check: prevent path traversal and absolute paths across platforms.
         try:
             # We use joinpath and resolve to catch traversal and absolute path attempts.
-            # Malformed paths like 'C:../' or '/etc/passwd' are handled safely.
+            # Malformed paths such as 'C:../' or '/etc/passwd' are handled safely.
             requested_path = Path(rel_path_str)
             
             # Absolute paths are always unsafe.
@@ -5221,7 +5221,7 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
                 logging.warning("Skipping absolute path: %s", rel_path_str)
                 continue
 
-            # Check for '..' in parts across different path flavors to catch bypasses like 'C:../'
+            # Check for '..' in parts across different path flavors to catch bypasses such as 'C:../'
             # We also check the raw string for ':' which is unsafe in relative paths.
             if ('..' in requested_path.parts or 
                 '..' in PurePosixPath(rel_path_str.replace('\\', '/')).parts or
@@ -5506,10 +5506,10 @@ def _print_limit_usage_bar(label, current, maximum, label_width, is_size=False):
 
 
 def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None, duration=None, source_desc=None):
-    """Print a summary of the totals to your terminal."""
+    """Print a summary of the totals to the terminal."""
 
     def _split_unit(s):
-        """Split a string like '1.50 MB' or '1,000 tokens' into (value, unit)."""
+        """Split a string such as '1.50 MB' or '1,000 tokens' into (value, unit)."""
         parts = s.split(' ', 1)
         return (parts[0], f" {parts[1]}") if len(parts) == 2 else (s, "")
 
