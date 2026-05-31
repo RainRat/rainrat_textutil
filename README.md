@@ -22,6 +22,7 @@ SourceCombine is a tool for your terminal that helps you find, filter, and combi
 *   `--limit` (`-L`): Stop processing once you reach this file limit.
 *   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, and skipping binary files). This also copies to your system clipboard if you do not specify an output.
 *   `--dry-run` (`-d`): Show what would happen without making any changes.
+*   `--mirror`: Recreate the input directory structure in the output folder, applying all filtering and processing rules to each file individually.
 *   `--apply-in-place`: Save processed changes back to the original source files.
 *   `--create-backups`: Create `.bak` copies of original files when using `--apply-in-place`.
 
