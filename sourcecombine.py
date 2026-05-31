@@ -1417,9 +1417,6 @@ def _render_paired_filename(
     # Project, System, Datetime, and Git replacements
     _resolve_metadata_placeholders(template, replacements, stats)
 
-    # Environment variable resolution
-    _resolve_env_placeholders(template, replacements)
-
     # Validate that all {{...}} placeholders in the template are known
     for match in re.finditer(r"{{([A-Za-z0-9_:]+)}}", template):
         placeholder = match.group(0)
