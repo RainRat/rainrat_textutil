@@ -1282,6 +1282,27 @@ def parse_size_value(value: str) -> int:
     return int(number * units[unit])
 
 
+def _parse_json_manifest(manifest_path: Path, identity: dict) -> bool:
+    """Read a JSON manifest and update identity; return True if successful."""
+    if not manifest_path.is_file():
+        return False
+    try:
+        data = json.loads(manifest_path.read_text(encoding='utf-8'))
+        if isinstance(data, dict):
+            if data.get('name'):
+                identity["project_name"] = str(data['name'])
+            if data.get('version'):
+                identity["project_version"] = str(data['version'])
+            if data.get('description'):
+                identity["project_description"] = str(data['description'])
+            if data.get('license'):
+                identity["project_license"] = str(data['license'])
+            return True
+    except Exception:
+        pass
+    return False
+
+
 def get_project_identity(root_folder: str | Path) -> dict:
     """Detect project metadata (name, version, description, license) from manifest files."""
     identity = {
@@ -1296,22 +1317,8 @@ def get_project_identity(root_folder: str | Path) -> dict:
         identity["project_name"] = root_path.name or "Project"
 
         # 1. Node.js (package.json)
-        pkg_json = root_path / "package.json"
-        if pkg_json.is_file():
-            try:
-                data = json.loads(pkg_json.read_text(encoding='utf-8'))
-                if isinstance(data, dict):
-                    if data.get('name'):
-                        identity["project_name"] = str(data['name'])
-                    if data.get('version'):
-                        identity["project_version"] = str(data['version'])
-                    if data.get('description'):
-                        identity["project_description"] = str(data['description'])
-                    if data.get('license'):
-                        identity["project_license"] = str(data['license'])
-                    return identity
-            except Exception:
-                pass
+        if _parse_json_manifest(root_path / "package.json", identity):
+            return identity
 
         # 2. Python (pyproject.toml)
         pyproject = root_path / "pyproject.toml"
@@ -1394,22 +1401,8 @@ def get_project_identity(root_folder: str | Path) -> dict:
                 pass
 
         # 4. PHP (composer.json)
-        composer = root_path / "composer.json"
-        if composer.is_file():
-            try:
-                data = json.loads(composer.read_text(encoding='utf-8'))
-                if isinstance(data, dict):
-                    if data.get('name'):
-                        identity["project_name"] = str(data['name'])
-                    if data.get('version'):
-                        identity["project_version"] = str(data['version'])
-                    if data.get('description'):
-                        identity["project_description"] = str(data['description'])
-                    if data.get('license'):
-                        identity["project_license"] = str(data['license'])
-                    return identity
-            except Exception:
-                pass
+        if _parse_json_manifest(root_path / "composer.json", identity):
+            return identity
 
         # 5. Java (pom.xml)
         pom = root_path / "pom.xml"
