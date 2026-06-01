@@ -51,7 +51,7 @@ def test_limit_summary_warning(test_env, capsys):
             pass
 
     captured = capsys.readouterr()
-    assert "WARNING: Output shortened due to file limit." in captured.err
+    assert "WARNING: Output shortened due to: file limit" in captured.err
 
 def test_limit_main_config_injection(test_env):
     """Cover main() where it injects max_files into config even if filters section is missing."""
