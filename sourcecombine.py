@@ -2602,8 +2602,19 @@ def find_and_combine_files(
     exclude_folders = filter_opts.get('exclusions', {}).get('folders') or []
 
     pairing_enabled = pair_opts.get('enabled')
+    mirror_enabled = output_opts.get('mirror', False)
     root_folders = search_opts.get('root_folders') or []
     recursive = search_opts.get('recursive', True)
+
+    if mirror_enabled:
+        if pairing_enabled:
+            raise utils.InvalidConfigError("Mirror mode and pairing mode cannot be used at the same time.")
+        if clipboard:
+            raise utils.InvalidConfigError("Mirror mode and clipboard cannot be used at the same time.")
+        if output_path == '-':
+            raise utils.InvalidConfigError("Mirror mode cannot output to the terminal.")
+        if output_format in ('json', 'jsonl', 'manifest', 'csv'):
+            raise utils.InvalidConfigError(f"Mirror mode does not support {output_format.upper()} format.")
 
     if clipboard and pairing_enabled:
         raise utils.InvalidConfigError("The clipboard can only be used when combining many files into one.")
@@ -2613,6 +2624,16 @@ def find_and_combine_files(
 
     if output_format in ('json', 'jsonl', 'manifest', 'csv') and pairing_enabled:
         raise utils.InvalidConfigError(f"You cannot use {output_format.upper()} format when pairing files.")
+
+    if mirror_enabled:
+        # Default to no headers/footers for mirror mode unless explicitly overridden
+        default_header = utils.DEFAULT_CONFIG['output']['header_template']
+        default_footer = utils.DEFAULT_CONFIG['output']['footer_template']
+
+        if not output_opts.get('header_template') or output_opts.get('header_template') == default_header:
+            output_opts['header_template'] = ""
+        if not output_opts.get('footer_template') or output_opts.get('footer_template') == default_footer:
+            output_opts['footer_template'] = ""
 
     # Apply default Markdown templates if requested and not overridden
     if output_format == 'markdown':
@@ -2674,7 +2695,7 @@ def find_and_combine_files(
     elif (dry_run and output_opts.get('show_diff') and output_path and output_path != '-'):
         clipboard_buffer = io.StringIO()
         outfile_ctx = nullcontext(clipboard_buffer)
-    elif pairing_enabled or dry_run or clipboard:
+    elif pairing_enabled or mirror_enabled or dry_run or clipboard:
         outfile_ctx = nullcontext(clipboard_buffer)
     elif output_path == '-':
         outfile_ctx = nullcontext(sys.stdout)
@@ -3407,40 +3428,48 @@ def find_and_combine_files(
                 cached_processed = item[3] if len(item) > 3 else None
                 item_index = i + 1
 
-                rel_p_str = _get_rel_path(file_path, root_path).as_posix()
+                rel_p = _get_rel_path(file_path, root_path)
+                rel_p_str = rel_p.as_posix()
                 processing_bar.set_description(f"Processing {_truncate_path(rel_p_str, 40)}")
 
-                if output_format in ('json', 'manifest') and not dry_run and not estimate_tokens:
-                    if not first_item:
-                        outfile.write(',')
-                    first_item = False
-
-                token_count = 0
-                is_approx = True
-
-                if is_excluded_by_size:
-                    rel_path = _get_rel_path(file_path, root_path)
-                    logging.debug(
-                        "File exceeds max size; writing placeholder: %s", rel_path
-                    )
-                    token_count, is_approx, line_count = processor.write_max_size_placeholder(
-                        file_path, root_path, outfile,
-                        index=item_index, total=total_items,
-                        global_size=stats.get('total_size_bytes'),
-                        global_tokens=stats.get('total_tokens'),
-                        global_lines=stats.get('total_lines')
-                    )
+                if mirror_enabled and not dry_run and not estimate_tokens:
+                    target_file = Path(output_path) / rel_p
+                    target_file.parent.mkdir(parents=True, exist_ok=True)
+                    item_outfile_ctx = open(target_file, 'w', encoding='utf8', newline='')
                 else:
-                    token_count, is_approx, line_count = processor.process_and_write(
-                        file_path,
-                        root_path,
-                        outfile,
-                        cached_content=cached_processed,
-                        index=item_index, total=total_items,
-                        global_size=stats.get('total_size_bytes'),
-                        global_tokens=stats.get('total_tokens'),
-                        global_lines=stats.get('total_lines')
-                    )
+                    item_outfile_ctx = nullcontext(outfile)
+
+                with item_outfile_ctx as item_outfile:
+                    if output_format in ('json', 'manifest') and not dry_run and not estimate_tokens:
+                        if not first_item:
+                            item_outfile.write(',')
+                        first_item = False
+
+                    token_count = 0
+                    is_approx = True
+
+                    if is_excluded_by_size:
+                        logging.debug(
+                            "File exceeds max size; writing placeholder: %s", rel_p_str
+                        )
+                        token_count, is_approx, line_count = processor.write_max_size_placeholder(
+                            file_path, root_path, item_outfile,
+                            index=item_index, total=total_items,
+                            global_size=stats.get('total_size_bytes'),
+                            global_tokens=stats.get('total_tokens'),
+                            global_lines=stats.get('total_lines')
+                        )
+                    else:
+                        token_count, is_approx, line_count = processor.process_and_write(
+                            file_path,
+                            root_path,
+                            item_outfile,
+                            cached_content=cached_processed,
+                            index=item_index, total=total_items,
+                            global_size=stats.get('total_size_bytes'),
+                            global_tokens=stats.get('total_tokens'),
+                            global_lines=stats.get('total_lines')
+                        )
 
                 if not token_limit_pass_performed and (not dry_run or estimate_tokens):
                     # Total tokens for this file entry include boundaries
@@ -3902,6 +3931,11 @@ def main():
         "--json-summary",
         metavar="PATH",
         help="Save an execution summary (file counts, tokens, duration) in JSON format. Use '-' to print it to the terminal. Supports template placeholders.",
+    )
+    output_group.add_argument(
+        "--mirror",
+        action="store_true",
+        help="Recreate the input directory structure in the output folder, applying all filtering and processing rules to each file individually.",
     )
 
     # Pairing Options Group
@@ -4455,6 +4489,9 @@ def main():
     if args.json_summary:
         output_conf['summary_json'] = args.json_summary
 
+    if getattr(args, 'mirror', False):
+        output_conf['mirror'] = True
+
     if args.line_numbers:
         output_conf['add_line_numbers'] = True
 
@@ -4558,6 +4595,7 @@ def main():
             sys.exit(1)
 
     pairing_enabled = pairing_conf.get('enabled')
+    mirror_enabled = output_conf.get('mirror', False)
 
     # Auto-detect format from extension if not explicitly set via CLI flags
     effective_output = args.output if (args.output and args.output != '-') else output_conf.get('file')
@@ -4595,7 +4633,11 @@ def main():
             sys.exit(1)
         sys.exit(0)
 
-    if pairing_enabled:
+    if mirror_enabled:
+        output_path = output_conf.get('folder') or output_conf.get('file')
+        if not output_path:
+            raise utils.InvalidConfigError("You must set an output folder for mirror mode.")
+    elif pairing_enabled:
         output_path = output_conf.get('folder')
     else:
         # Determine the effective output file, falling back to the default if not set.
@@ -4636,6 +4678,8 @@ def main():
         destination_desc = "to clipboard"
     elif output_path == '-':
         destination_desc = "to the terminal"
+    elif mirror_enabled:
+        destination_desc = f"to '{output_path}' (mirrored)"
     elif pairing_enabled:
         destination_desc = (
             "alongside their source files"
@@ -4730,7 +4774,7 @@ def main():
             source_desc = f"from {len(sources)} sources"
 
         duration = time.perf_counter() - start_time
-        _print_execution_summary(stats, args, pairing_enabled=False, destination_desc=dest, duration=duration, source_desc=source_desc)
+        _print_execution_summary(stats, args, pairing_enabled=False, destination_desc=dest, duration=duration, source_desc=source_desc, mirror_enabled=mirror_enabled)
 
         summary_path = output_conf.get('summary_json')
         if summary_path and summary_path != '-' and '{{' in summary_path:
@@ -4739,7 +4783,12 @@ def main():
         _write_json_summary(stats, summary_path, duration=duration, source_desc=source_desc, destination_desc=dest)
         sys.exit(0)
 
-    action_desc = "Pair" if pairing_enabled else "Combine"
+    if mirror_enabled:
+        action_desc = "Mirror"
+    elif pairing_enabled:
+        action_desc = "Pair"
+    else:
+        action_desc = "Combine"
     logging.info("%sOperation: %s%s", C_DIM, action_desc, C_RESET)
 
     if args.list_files:
@@ -4790,7 +4839,7 @@ def main():
         if resolved_path and resolved_path != '-' and not pairing_enabled:
             destination_desc = f"to '{resolved_path}'"
 
-        _print_execution_summary(stats, args, pairing_enabled, destination_desc, duration=duration, source_desc=source_desc)
+        _print_execution_summary(stats, args, pairing_enabled, destination_desc, duration=duration, source_desc=source_desc, mirror_enabled=mirror_enabled)
 
         summary_path = output_conf.get('summary_json')
         if summary_path and summary_path != '-' and '{{' in summary_path:
@@ -5639,7 +5688,7 @@ def _print_limit_usage_bar(label, current, maximum, label_width, is_size=False):
     print(f"    {C_BOLD}{label:<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_DIM}{percent:>6.1f}%{C_RESET} {C_DIM}{detail}{C_RESET}", file=sys.stderr)
 
 
-def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None, duration=None, source_desc=None):
+def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None, duration=None, source_desc=None, mirror_enabled=False):
     """Print a summary of the totals to the terminal."""
 
     def _split_unit(s):
@@ -5737,7 +5786,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             source_desc = _truncate_path(source_desc, desc_limit)
 
     if destination_desc and len(destination_desc) > desc_limit:
-        if destination_desc.startswith("to '") and destination_desc.endswith("'"):
+        if destination_desc.startswith("to '") and destination_desc.endswith("' (mirrored)"):
+            destination_desc = f"to '{_truncate_path(destination_desc[4:-12], desc_limit - 16)}' (mirrored)"
+        elif destination_desc.startswith("to '") and destination_desc.endswith("'"):
             destination_desc = f"to '{_truncate_path(destination_desc[4:-1], desc_limit - 5)}'"
         else:
             destination_desc = _truncate_path(destination_desc, desc_limit)
@@ -5756,6 +5807,10 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         base_action = "UPDATE"
         verb = "update in-place"
         action = "Updated in-place"
+    elif mirror_enabled:
+        base_action = "MIRROR"
+        verb = "mirror"
+        action = "Mirrored"
     elif pairing_enabled:
         base_action = "PAIRING"
         verb = "pair"

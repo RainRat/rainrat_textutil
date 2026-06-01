@@ -184,6 +184,7 @@ DEFAULT_CONFIG = {
         'summary_json': None,
         'show_diff': False,
         'include_diff': False,
+        'mirror': False,
     },
     'processing': {
         'apply_in_place': False,
@@ -758,6 +759,7 @@ def _validate_output_section(config):
     _validate_bool(output_conf, 'sort_reverse', 'output')
     _validate_bool(output_conf, 'show_diff', 'output')
     _validate_bool(output_conf, 'include_diff', 'output')
+    _validate_bool(output_conf, 'mirror', 'output')
 
 
 def apply_line_regex_replacements(text, rules):
