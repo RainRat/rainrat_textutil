@@ -457,10 +457,10 @@ def test_validate_glob_pattern_warns_on_absolute_paths(caplog, tmp_path):
             },
         )
     )
-    assert "looks like an absolute path" in caplog.text
+    assert "appears to be an absolute path" in caplog.text
 
 
-def test_validate_glob_pattern_warns_on_regex_like_syntax(caplog, tmp_path):
+def test_validate_glob_pattern_warns_on_regex_syntax(caplog, tmp_path):
     load_and_validate_config(
         _write_config(
             tmp_path,
