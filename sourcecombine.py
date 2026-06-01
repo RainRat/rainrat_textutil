@@ -386,13 +386,14 @@ def _make_ascii_bar(
 
 
 def _get_folder_stats(top_files):
-    """Aggregate token and size statistics by parent folders."""
+    """Aggregate token, size, and line statistics by parent folders."""
     if not top_files:
         return {}
 
     folder_stats = {}
     for item in top_files:
         tokens, size, path = item[:3]
+        lines = item[4] if len(item) > 4 else 0
         p = Path(path)
         # Traverse up parent folders
         for parent in p.parents:
@@ -402,10 +403,11 @@ def _get_folder_stats(top_files):
 
             folder_path = parent.as_posix()
             if folder_path not in folder_stats:
-                folder_stats[folder_path] = {'tokens': 0, 'size': 0, 'files': 0}
+                folder_stats[folder_path] = {'tokens': 0, 'size': 0, 'lines': 0, 'files': 0}
 
             folder_stats[folder_path]['tokens'] += (tokens or 0)
             folder_stats[folder_path]['size'] += (size or 0)
+            folder_stats[folder_path]['lines'] += (lines or 0)
             folder_stats[folder_path]['files'] += 1
 
     return folder_stats
@@ -2375,37 +2377,66 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
     folder_stats = _get_folder_stats(top_files)
     if folder_stats:
         has_tokens = any(f['tokens'] > 0 for f in folder_stats.values())
+        has_lines = any(f.get('lines', 0) > 0 for f in folder_stats.values())
+
         if has_tokens:
             sorted_folders = sorted(folder_stats.items(), key=lambda x: (-x[1]['tokens'], x[0]))[:5]
             title = "Largest Folders (by tokens)"
+            total_weight = total_tokens
+        elif has_lines:
+            sorted_folders = sorted(folder_stats.items(), key=lambda x: (-x[1]['lines'], x[0]))[:5]
+            title = "Largest Folders (by lines)"
+            total_weight = total_lines
         else:
             sorted_folders = sorted(folder_stats.items(), key=lambda x: (-x[1]['size'], x[0]))[:5]
             title = "Largest Folders (by size)"
+            total_weight = total_size_bytes
 
         if output_format == 'markdown':
             lines.append(f"\n## {title}")
-            lines.append("| Folder | Tokens | Size | Files | % |")
-            lines.append("| :--- | :--- | :--- | :--- | :--- |")
+            md_header = "| Folder"
+            md_divider = "| :---"
+            if has_tokens:
+                md_header += " | Tokens"
+                md_divider += " | :---"
+            if has_lines:
+                md_header += " | Lines"
+                md_divider += " | :---"
+            md_header += " | Size | Files | % |"
+            md_divider += " | :--- | :--- | :--- |"
+            lines.append(md_header)
+            lines.append(md_divider)
+
             for path, data in sorted_folders:
                 tokens = data['tokens']
                 size = data['size']
+                f_lines = data.get('lines', 0)
                 files = data['files']
-                weight = tokens if has_tokens else size
-                total_weight = total_tokens if has_tokens else total_size_bytes
+                weight = tokens if has_tokens else (f_lines if has_lines else size)
                 percent = (weight / total_weight * 100) if total_weight > 0 else 0
-                t_str = f"{tokens:,}" if has_tokens else "-"
-                lines.append(f"| `{path}` | {t_str} | {utils.format_size(size)} | {files:,} | {percent:.1f}% |")
+
+                row = f"| `{path}`"
+                if has_tokens: row += f" | {tokens:,}"
+                if has_lines: row += f" | {f_lines:,}"
+                row += f" | {utils.format_size(size)} | {files:,} | {percent:.1f}% |"
+                lines.append(row)
         else:
             lines.append(f"\n  {title}:")
             for path, data in sorted_folders:
                 tokens = data['tokens']
                 size = data['size']
+                f_lines = data.get('lines', 0)
                 files = data['files']
-                weight = tokens if has_tokens else size
-                total_weight = total_tokens if has_tokens else total_size_bytes
+                weight = tokens if has_tokens else (f_lines if has_lines else size)
                 percent = (weight / total_weight * 100) if total_weight > 0 else 0
-                t_str = f"{tokens:,}" if has_tokens else "-"
-                lines.append(f"    {path:<30} {t_str:>10} tokens • {utils.format_size(size):>10} ({files:>4} files) ({percent:>5.1f}%)")
+
+                parts = []
+                if has_tokens: parts.append(f"{tokens:>10} tokens")
+                if has_lines: parts.append(f"{f_lines:>8} lines")
+                parts.append(f"{utils.format_size(size):>10}")
+                parts.append(f"{files:>4} files")
+
+                lines.append(f"    {path:<30} {' • '.join(parts)} ({percent:>5.1f}%)")
 
     # Language Breakdown
     ext_stats = stats.get('files_by_extension', {})
@@ -3213,6 +3244,7 @@ def find_and_combine_files(
                     'lines': content_lines,
                     'status': status
                 }
+                stats['top_files'].append((content_tokens, file_size, rel_p_str, status, content_lines))
 
                 # Account for header/footer templates in the limit
                 h_template = output_opts.get('header_template', utils.DEFAULT_CONFIG['output']['header_template'])
@@ -3491,9 +3523,10 @@ def find_and_combine_files(
                     _update_line_stats(stats, file_path, line_count)
 
                 f_size = file_path.stat().st_size if file_path.exists() else 0
-                rel_p_str = _get_rel_path(file_path, root_path).as_posix()
-                status = stats.get('file_statuses', {}).get(rel_p_str)
-                stats['top_files'].append((token_count, f_size, rel_p_str, status, line_count))
+                if not token_limit_pass_performed:
+                    rel_p_str = _get_rel_path(file_path, root_path).as_posix()
+                    status = stats.get('file_statuses', {}).get(rel_p_str)
+                    stats['top_files'].append((token_count, f_size, rel_p_str, status, line_count))
 
                 running_tokens += token_count
                 running_size += f_size
@@ -6080,46 +6113,75 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     folder_stats = _get_folder_stats(stats.get('top_files'))
     if folder_stats:
         has_tokens = any(f['tokens'] > 0 for f in folder_stats.values())
+        has_lines = any(f.get('lines', 0) > 0 for f in folder_stats.values())
+
         if has_tokens:
             top_f = sorted(folder_stats.items(), key=lambda x: (-x[1]['tokens'], x[0]))[:5]
             total_for_percent = stats.get('total_tokens', 0)
-            overhead = 50
+            title = "Largest Folders (by tokens)"
+        elif has_lines:
+            top_f = sorted(folder_stats.items(), key=lambda x: (-x[1]['lines'], x[0]))[:5]
+            total_for_percent = stats.get('total_lines', 0)
+            title = "Largest Folders (by lines)"
         else:
             top_f = sorted(folder_stats.items(), key=lambda x: (-x[1]['size'], x[0]))[:5]
             total_for_percent = stats.get('total_size_bytes', 0)
-            overhead = 37
+            title = "Largest Folders (by size)"
 
-        status_spacer = " " * 7 if has_status else ""
-        path_width = max(20, term_width - (overhead + (7 if has_status else 0)))
+        # Calculate dynamic overhead for path width
+        # TOKENS: 13, LINES: 13, SIZE: 13, %: 7, DISTRIBUTION: 13, STATUS: 7, FILES: 7
+        overhead = 13 + 7 + 13 + 7 # SIZE, %, DISTRIBUTION, FILES
+        if has_tokens: overhead += 13
+        if has_lines: overhead += 13
+        if has_status: overhead += 7
 
-        if has_tokens:
-            print(f"\n  {C_BOLD}{C_CYAN}Largest Folders (by tokens){C_RESET}", file=sys.stderr)
-            print(f"    {C_DIM}{'TOKENS':>12} {'SIZE':>12} {'%':>6} {'DISTRIBUTION':<13}{status_spacer} FOLDER{C_RESET}", file=sys.stderr)
-        else:
-            print(f"\n  {C_BOLD}{C_CYAN}Largest Folders (by size){C_RESET}", file=sys.stderr)
-            print(f"    {C_DIM}{'SIZE':>12} {'%':>6} {'DISTRIBUTION':<13}{status_spacer} FOLDER{C_RESET}", file=sys.stderr)
+        path_width = max(20, term_width - overhead)
+
+        # Build dynamic header
+        header_parts = []
+        if has_tokens: header_parts.append(f"{'TOKENS':>12}")
+        if has_lines: header_parts.append(f"{'LINES':>12}")
+        header_parts.append(f"{'SIZE':>12}")
+        header_parts.append(f"{'%':>6}")
+        header_parts.append(f"{'DISTRIBUTION':<12}")
+        if has_status: header_parts.append(f"{' ': <6}") # Spacer to match largest files
+        header_parts.append(f"{'FILES':>6}")
+        header_parts.append("FOLDER")
+
+        print(f"\n  {C_BOLD}{C_CYAN}{title}{C_RESET}", file=sys.stderr)
+        print(f"    {C_DIM}{' '.join(header_parts)}{C_RESET}", file=sys.stderr)
 
         for path, data in top_f:
             tokens = data['tokens']
             f_size = data['size']
-            val_num = tokens if has_tokens else f_size
+            f_lines = data.get('lines', 0)
+            files = data['files']
+            val_num = tokens if has_tokens else (f_lines if has_lines else f_size)
             percent = (val_num / total_for_percent * 100) if total_for_percent > 0 else 0.0
             bar = _make_ascii_bar(percent, colored=True)
 
-            token_str = f"{'~' if is_approx else ''}{tokens:,}" if has_tokens else f"{tokens:,}"
             size_str = utils.format_size(f_size)
             s_val, s_unit = _split_unit(size_str)
             display_path = _truncate_path(path, path_width)
             size_padding = " " * max(0, 12 - len(s_val) - len(s_unit))
 
-            row_metrics = ""
+            row_parts = []
             if has_tokens:
-                row_metrics = f"{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET} "
-            row_metrics += f"{size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET} "
-            row_metrics += f"{C_BOLD}{C_CYAN}{percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET} "
-            row_metrics += f"{C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET} "
+                token_str = f"{'~' if is_approx else ''}{tokens:,}"
+                row_parts.append(f"{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET}")
+            if has_lines:
+                row_parts.append(f"{C_BOLD}{C_CYAN}{f_lines:12,}{C_RESET}")
 
-            print(f"    {row_metrics}{status_spacer}{C_BOLD}{display_path}{C_RESET}{C_DIM}/{C_RESET}", file=sys.stderr)
+            row_parts.append(f"{size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}")
+            row_parts.append(f"{C_BOLD}{C_CYAN}{percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}")
+            row_parts.append(f"{C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}")
+
+            if has_status:
+                row_parts.append(" " * 6) # Spacer to match largest files
+
+            row_parts.append(f"{C_BOLD}{C_CYAN}{files:>6,}{C_RESET}")
+            row_parts.append(f"{C_BOLD}{display_path}{C_RESET}{C_DIM}/{C_RESET}")
+            print(f"    {' '.join(row_parts)}", file=sys.stderr)
 
     # Extensions List
     files_by_ext = stats.get('files_by_extension')
