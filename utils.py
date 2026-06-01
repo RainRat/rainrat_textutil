@@ -500,7 +500,7 @@ def _validate_positive_number(
     """Ensure the value at ``key`` in ``container`` is a non-negative number if present."""
     val = container.get(key)
     if val is not None:
-        if not isinstance(val, types) or val < 0:
+        if isinstance(val, bool) or not isinstance(val, types) or val < 0:
             _raise_validation_error(key, context, "must be 0 or more")
 
 
