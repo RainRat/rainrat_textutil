@@ -44,6 +44,7 @@ DEFAULT_CONFIG = utils.DEFAULT_CONFIG
 
 __version__ = "0.5.0"
 
+# Standardized labels for resource limit warnings
 TRUNCATION_CHECKS = [
     ('token_limit_reached', 'token limit'),
     ('size_limit_reached', 'total size limit'),
@@ -210,13 +211,6 @@ C_RESET = _LazyColor("\033[0m")
 # Regex for stripping ANSI escape codes to calculate display width accurately
 _ANSI_ESCAPE = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
 
-# Standardized labels for resource limit warnings
-TRUNCATION_CHECKS = [
-    ('token_limit_reached', 'token limit'),
-    ('size_limit_reached', 'total size limit'),
-    ('line_limit_reached', 'total line limit'),
-    ('limit_reached', 'file limit'),
-]
 
 
 class CLILogFormatter(logging.Formatter):
