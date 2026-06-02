@@ -1191,6 +1191,11 @@ def format_size(size_bytes: int) -> str:
     return f"{size_bytes:,.2f} YB"
 
 
+def format_tokens(count: int, is_approx: bool = False) -> str:
+    """Return the token count as a string with comma separators and a leading tilde if approximate."""
+    return f"{'~' if is_approx else ''}{count:,}"
+
+
 def parse_time_value(value: str) -> float:
     """Convert a time such as '1h' or '2023-01-01' into a number the computer can use.
 

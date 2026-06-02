@@ -31,6 +31,7 @@ from utils import (
     DEFAULT_OUTPUT_FILENAME,
     ConfigNotFoundError,
     add_line_numbers,
+    format_tokens,
     load_and_validate_config,
     process_content,
     read_file_best_effort,
@@ -661,7 +662,7 @@ def _render_global_template(template, stats):
     total_tokens = stats.get('total_tokens', 0)
     total_lines = stats.get('total_lines', 0)
     is_approx = stats.get('token_count_is_approx', False)
-    token_str = f"{'~' if is_approx else ''}{total_tokens:,}"
+    token_str = format_tokens(total_tokens, is_approx)
 
     replacements = {
         "{{FILE_COUNT}}": f"{file_count:,}",
@@ -2207,7 +2208,7 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
     total_lines = stats.get('total_lines', 0)
     is_approx = stats.get('token_count_is_approx', False)
 
-    token_str = f"{'~' if is_approx else ''}{total_tokens:,}"
+    token_str = format_tokens(total_tokens, is_approx)
     timestamp = stats.get('datetime') or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     project_name = stats.get('project_name', 'Project')
 
@@ -5975,7 +5976,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     # Token Counts
     # Show token counts if tokens were estimated
     if token_count > 0:
-        token_str = f"{'~' if is_approx else ''}{token_count:,}"
+        token_str = format_tokens(token_count, is_approx)
         token_word = _plural(token_count, "token")
         tokens_throughput = ""
         if tps > 0:
@@ -6075,7 +6076,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
             row_parts = []
             if has_tokens:
-                token_str = f"{'~' if is_approx else ''}{tokens:,}"
+                token_str = format_tokens(tokens, is_approx)
                 row_parts.append(f"{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET}")
             if has_lines:
                 row_parts.append(f"{C_BOLD}{C_CYAN}{f_lines:12,}{C_RESET}")
@@ -6161,7 +6162,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
             row_parts = []
             if has_tokens:
-                token_str = f"{'~' if is_approx else ''}{tokens:,}"
+                token_str = format_tokens(tokens, is_approx)
                 row_parts.append(f"{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET}")
             if has_lines:
                 row_parts.append(f"{C_BOLD}{C_CYAN}{f_lines:12,}{C_RESET}")
@@ -6260,7 +6261,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             # Row Metrics (TOKENS, LINES, SIZE, %, DISTRIBUTION) - Vertical alignment with Largest Files
             row_parts = []
             if has_ext_tokens:
-                token_str = f"{'~' if is_approx else ''}{d['tokens']:,}"
+                token_str = format_tokens(d['tokens'], is_approx)
                 row_parts.append(f"{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET}")
             if has_ext_lines:
                 row_parts.append(f"{C_BOLD}{C_CYAN}{d['lines']:12,}{C_RESET}")
