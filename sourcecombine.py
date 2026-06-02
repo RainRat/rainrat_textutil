@@ -5951,53 +5951,50 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
  
             print(f"    {C_DIM}└── {C_RESET}{C_BOLD}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_CYAN}{excluded_folders:12,}{C_RESET} {C_DIM}{_plural(excluded_folders, 'folder')}{C_RESET}", file=sys.stderr)
 
-    # Details Section
-    print(f"\n  {C_BOLD}{C_CYAN}Details{C_RESET}", file=sys.stderr)
-
-    bps = total_size_bytes / duration if duration and duration > 0 else 0
-    tps = token_count / duration if duration and duration > 0 else 0
-    lps = total_lines / duration if duration and duration > 0 else 0
-
-    val, unit = _split_unit(total_size_str)
-    size_throughput = ""
-    if bps > 0:
-        s_val, s_unit = _split_unit(utils.format_size(bps))
-        size_throughput = f" {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{s_val:>12}{C_RESET} {C_DIM}{s_unit.strip() + '/s':<8}){C_RESET}"
-    print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{val:>12}{C_RESET}{C_DIM}{unit:<8}{C_RESET}{size_throughput}", file=sys.stderr)
-
-    if total_lines > 0:
-        lines_throughput = ""
-        if lps > 0:
-            lines_throughput = f" {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{lps:>12,.0f}{C_RESET} {C_DIM}{'lines/s':<8}){C_RESET}"
-        unit_label = f" {line_word}"
-        print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET}{C_DIM}{unit_label:<8}{C_RESET}{lines_throughput}", file=sys.stderr)
-
-    # Token Counts
-    # Show token counts if tokens were estimated
-    if token_count > 0:
-        token_str = f"{'~' if is_approx else ''}{token_count:,}"
-        token_word = _plural(token_count, "token")
-        tokens_throughput = ""
-        if tps > 0:
-            tokens_throughput = f" {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{tps:>12,.0f}{C_RESET} {C_DIM}{'tokens/s':<8}){C_RESET}"
-        unit_label = f" {token_word}"
-        print(
-            f"    {C_BOLD}{'Total Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET}{C_DIM}{unit_label:<8}{C_RESET}{tokens_throughput}",
-            file=sys.stderr,
-        )
-        if is_approx:
-            print(
-                f"      {C_DIM}(Install 'tiktoken' for accurate counts){C_RESET}",
-                file=sys.stderr,
-            )
-
-    # Performance & Limits Section
+    # Performance Section
     # Check if any limits were active
     has_limits = any(stats.get(k, 0) > 0 for k in ('max_total_tokens', 'max_total_size_bytes', 'max_total_lines', 'max_files'))
 
-    if duration is not None or has_limits:
+    if duration is not None or has_limits or total_included > 0:
         section_name = "Performance & Limits" if has_limits else "Performance"
         print(f"\n  {C_BOLD}{C_CYAN}{section_name}{C_RESET}", file=sys.stderr)
+
+        bps = total_size_bytes / duration if duration and duration > 0 else 0
+        tps = token_count / duration if duration and duration > 0 else 0
+        lps = total_lines / duration if duration and duration > 0 else 0
+
+        val, unit = _split_unit(total_size_str)
+        size_throughput = ""
+        if bps > 0:
+            s_val, s_unit = _split_unit(utils.format_size(bps))
+            size_throughput = f" {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{s_val:>12}{C_RESET} {C_DIM}{s_unit.strip() + '/s':<8}){C_RESET}"
+        print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{val:>12}{C_RESET}{C_DIM}{unit:<8}{C_RESET}{size_throughput}", file=sys.stderr)
+
+        if total_lines > 0:
+            lines_throughput = ""
+            if lps > 0:
+                lines_throughput = f" {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{lps:>12,.0f}{C_RESET} {C_DIM}{'lines/s':<8}){C_RESET}"
+            unit_label = f" {line_word}"
+            print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET}{C_DIM}{unit_label:<8}{C_RESET}{lines_throughput}", file=sys.stderr)
+
+        # Token Counts
+        # Show token counts if tokens were estimated
+        if token_count > 0:
+            token_str = f"{'~' if is_approx else ''}{token_count:,}"
+            token_word = _plural(token_count, "token")
+            tokens_throughput = ""
+            if tps > 0:
+                tokens_throughput = f" {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{tps:>12,.0f}{C_RESET} {C_DIM}{'tokens/s':<8}){C_RESET}"
+            unit_label = f" {token_word}"
+            print(
+                f"    {C_BOLD}{'Total Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET}{C_DIM}{unit_label:<8}{C_RESET}{tokens_throughput}",
+                file=sys.stderr,
+            )
+            if is_approx:
+                print(
+                    f"      {C_DIM}(Install 'tiktoken' for accurate counts){C_RESET}",
+                    file=sys.stderr,
+                )
 
         if duration is not None:
             fps = total_discovered / duration if duration > 0 else 0
