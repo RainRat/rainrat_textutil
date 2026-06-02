@@ -130,7 +130,7 @@ def _print_diff(old_text, new_text, filename):
 
 
 def _convert_to_json_friendly(obj):
-    """Recursively convert objects (like Path) to JSON-compatible types."""
+    """Recursively convert objects (such as Path) to JSON-compatible types."""
     if isinstance(obj, dict):
         return {k: _convert_to_json_friendly(v) for k, v in obj.items()}
     elif isinstance(obj, (list, tuple)):
@@ -254,7 +254,7 @@ class CLILogFormatter(logging.Formatter):
 
 
 class _DevNull:
-    """A file-like object that discards all writes."""
+    """A file-compatible object that discards all writes."""
     def write(self, *args, **kwargs):
         pass
 
@@ -480,8 +480,8 @@ def _render_single_pass(template, replacements):
     """Replace many placeholders in a template in a single pass.
 
     Placeholders are matched in order of longest first to ensure that
-    more specific markers (like {{DIR_SLUG}}) are preferred over
-    shorter ones (like {{DIR}}).
+    more specific markers (such as {{DIR_SLUG}}) are preferred over
+    shorter ones (such as {{DIR}}).
     """
     if not template or not replacements:
         return template or ""
@@ -936,7 +936,7 @@ def _get_file_git_info(file_path, repo_root):
         return {}
 
     try:
-        # %an: author name, %ai: author date (ISO 8601-like), %s: subject
+        # %an: author name, %ai: author date (ISO 8601-compatible), %s: subject
         result = subprocess.run(
             ['git', 'log', '-1', '--format=%an%n%ai%n%s', '--', file_path],
             cwd=repo_root, capture_output=True, text=True, check=True
@@ -1864,7 +1864,7 @@ class FileProcessor:
         """Create a ``.bak`` backup for ``file_path`` when backups are enabled.
 
         The backup is an exact copy of the original file and keeps its
-        details (like the date it was changed). If ``create_backups`` is ``False``
+        details (such as the date it was changed). If ``create_backups`` is ``False``
         no action is taken. Failures to copy raise ``utils.InvalidConfigError`` so the
         tool stops before overwriting your code.
         """
@@ -3745,7 +3745,7 @@ def main():
         nargs="?",
         const=True,
         metavar="REF",
-        help="Include only files that have changed in Git. If a REF is provided (like 'main'), it finds changes since that commit. Otherwise, it finds unstaged, staged, and untracked changes.",
+        help="Include only files that have changed in Git. If a REF is provided (such as 'main'), it finds changes since that commit. Otherwise, it finds unstaged, staged, and untracked changes.",
     )
     filtering_group.add_argument(
         "--staged",
