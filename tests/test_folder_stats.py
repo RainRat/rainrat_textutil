@@ -18,11 +18,13 @@ def test_folder_stats_aggregation():
     assert 'src' in stats
     assert stats['src']['tokens'] == 300
     assert stats['src']['size'] == 3000
+    assert stats['src']['lines'] == 0
     assert stats['src']['files'] == 2
 
     assert 'tests' in stats
     assert stats['tests']['tokens'] == 50
     assert stats['tests']['size'] == 500
+    assert stats['tests']['lines'] == 0
     assert stats['tests']['files'] == 1
 
     assert '.' not in stats
@@ -50,7 +52,7 @@ def test_project_overview_includes_folders():
     assert "src " in output_text
     assert "300 tokens" in output_text
     assert "2.93 KB" in output_text
-    assert "(   2 files)" in output_text
+    assert "•    2 files" in output_text
 
     # Test Markdown Output
     output_md = sourcecombine._generate_project_overview(stats, output_format='markdown')
