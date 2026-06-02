@@ -6,7 +6,7 @@
 # --- Search Parameters ---
 search:
   # Paths to scan for files.
-  # Replace with one or more folders on your system.
+  # Replace with one or more folders on the system.
   root_folders:
     - '/path/to/project'
 
@@ -14,7 +14,7 @@ search:
   # Use 0 for no limit.
   max_depth: 0
 
-  # Use 'git ls-files' to find files. This automatically respects your .gitignore
+  # Use 'git ls-files' to find files. This automatically respects the .gitignore
   # and includes both tracked and untracked files. If the folder is not a
   # Git repository, it falls back to standard scanning.
   use_git: false
@@ -275,8 +275,8 @@ processing:
   # regex_replacements:
   #   - pattern: '^\s*//\s*TODO:.*$'
   #     replacement: ''
-  max_lines: 0                     # Truncate each file to this many lines before combining
-  max_tokens: 0                    # Truncate each file to this many tokens before combining
+  max_lines: 0                     # Shorten each file to this many lines before combining
+  max_tokens: 0                    # Shorten each file to this many tokens before combining
   apply_in_place: false            # Apply these processing rules back to the source files
   create_backups: true             # Create .bak backups before rewriting when apply_in_place is true
 

@@ -235,7 +235,7 @@ def load_yaml_config(config_file_path):
         hint = None
         if isinstance(e, yaml.scanner.ScannerError) and context:
             if 'quoted scalar' in context:
-                hint = "Check for missing closing quotes in your YAML file."
+                hint = "Check for missing closing quotes in the YAML file."
 
         message = f"Error parsing YAML file{location}: {details}"
         if hint:
@@ -630,7 +630,7 @@ def _validate_filters_section(config):
     ):
         raise InvalidConfigError(
             "'filters.inclusion_groups' and 'search.allowed_extensions' cannot be used at the same time; "
-            "specify file types in your inclusion group patterns instead (for example, 'src/**/*.py')."
+            "specify file types in the inclusion group patterns instead (for example, 'src/**/*.py')."
         )
 
 

@@ -1868,7 +1868,7 @@ class FileProcessor:
         The backup is an exact copy of the original file and keeps its
         details (such as the date it was changed). If ``create_backups`` is ``False``
         no action is taken. Failures to copy raise ``utils.InvalidConfigError`` so the
-        tool stops before overwriting your code.
+        tool stops before overwriting code.
         """
 
         if not self.create_backups:
@@ -2693,7 +2693,7 @@ def find_and_combine_files(
 
     if not pairing_enabled and not dry_run and not estimate_tokens and not clipboard and not list_files and not tree_view and output_path is None:
         raise utils.InvalidConfigError(
-            "You must set an output file in your configuration or use the --output option."
+            "You must set an output file in the configuration or use the --output option."
         )
 
     abs_output_path = None
@@ -3576,7 +3576,7 @@ def main():
         description=(
             "A versatile tool for the terminal to find, filter, and combine source code files "
             "from a project into one file (or folder). Use it to give better context to AI "
-            "models, generate documentation, or save your work."
+            "models, generate documentation, or save work."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=textwrap.dedent("""
@@ -3593,7 +3593,7 @@ def main():
               # Use a configuration but override the folders to search
               python sourcecombine.py my_config.yml project_a/ project_b/
 
-              # Copy the result to your clipboard
+              # Copy the result to the clipboard
               python sourcecombine.py src/ -c
 
               # Estimate how many tokens the output will use
@@ -3622,13 +3622,13 @@ def main():
         "--config",
         "-k",
         metavar="PATH",
-        help="Use a specific configuration file. This stops the tool from trying to find one automatically in your target list.",
+        help="Use a specific configuration file. This stops the tool from trying to find one automatically in the target list.",
     )
     core_group.add_argument(
         "--output",
         "-o",
         metavar="PATH",
-        help="Save the result to a specific file or folder. This takes priority over the path in your settings. Supports template placeholders (for example, '{{PROJECT_NAME}}_{{DATE}}.txt').",
+        help="Save the result to a specific file or folder. This takes priority over the path in the settings. Supports template placeholders (for example, '{{PROJECT_NAME}}_{{DATE}}.txt').",
     )
     core_group.add_argument(
         "--dry-run",
@@ -3771,7 +3771,7 @@ def main():
         "--git-files",
         "-G",
         action="store_true",
-        help="Use 'git ls-files' to find files. This follows your .gitignore rules.",
+        help="Use 'git ls-files' to find files. This follows the .gitignore rules.",
     )
     filtering_group.add_argument(
         "--git-diff",
@@ -3850,7 +3850,7 @@ def main():
         "--ai",
         "-a",
         action="store_true",
-        help="Enable a preset for AI models: Markdown format, line numbers, Table of Contents, folder tree, project overview, and skipping binary files. This also copies to your system clipboard if you do not specify an output.",
+        help="Enable a preset for AI models: Markdown format, line numbers, Table of Contents, folder tree, project overview, and skipping binary files. This also copies to the system clipboard if you do not specify an output.",
     )
     output_group.add_argument(
         "--clipboard",
@@ -4022,12 +4022,12 @@ def main():
     processing_group.add_argument(
         "--apply-in-place",
         action="store_true",
-        help="Apply processing rules directly to your source files (WARNING: modifies your files!).",
+        help="Apply processing rules directly to the source files (WARNING: modifies the files!).",
     )
     processing_group.add_argument(
         "--create-backups",
         action="store_true",
-        help="Create '.bak' copies of your original files when using --apply-in-place.",
+        help="Create '.bak' copies of original files when using --apply-in-place.",
     )
     processing_group.add_argument(
         "--max-lines",
@@ -4061,7 +4061,7 @@ def main():
     utility_group.add_argument(
         "--init",
         action="store_true",
-        help="Create a basic 'sourcecombine.yml' configuration file in your current folder to get started.",
+        help="Create a basic 'sourcecombine.yml' configuration file in the current folder to get started.",
     )
     utility_group.add_argument(
         "--list-languages",
@@ -4092,7 +4092,7 @@ def main():
     utility_group.add_argument(
         "--restore",
         action="store_true",
-        help="Undo 'apply-in-place' changes by restoring original files from their .bak copies. This command scans your target folders recursively for backup files.",
+        help="Undo 'apply-in-place' changes by restoring original files from their .bak copies. This command scans target folders recursively for backup files.",
     )
     utility_group.add_argument(
         "--verify",
@@ -4113,7 +4113,7 @@ def main():
         "--delete-backups",
         "--clean",
         action="store_true",
-        help="Remove all '.bak' files from your target folders. Use this to clean up after you are done with '--apply-in-place'.",
+        help="Remove all '.bak' files from target folders. Use this to clean up after '--apply-in-place'.",
     )
     utility_group.add_argument(
         "--show-config",
@@ -4130,7 +4130,7 @@ def main():
     utility_group.add_argument(
         "--system-info",
         action="store_true",
-        help="Show details about your computer and environment.",
+        help="Show details about the system and environment.",
     )
     utility_group.add_argument(
         "--version",
