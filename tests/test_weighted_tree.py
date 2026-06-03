@@ -12,12 +12,12 @@ def test_generate_tree_string_weighted_folders():
         root / "tests" / "test_main.py",
     ]
 
-    # Metadata with size and tokens
+    # Metadata with size, tokens, and lang
     metadata = {
-        root / "README.md": {'size': 1024, 'tokens': 250},
-        root / "src" / "main.py": {'size': 2048, 'tokens': 500},
-        root / "src" / "utils.py": {'size': 512, 'tokens': 125},
-        root / "tests" / "test_main.py": {'size': 1024, 'tokens': 250},
+        root / "README.md": {'size': 1024, 'tokens': 250, 'lang': 'markdown'},
+        root / "src" / "main.py": {'size': 2048, 'tokens': 500, 'lang': 'python'},
+        root / "src" / "utils.py": {'size': 512, 'tokens': 125, 'lang': 'python'},
+        root / "tests" / "test_main.py": {'size': 1024, 'tokens': 250, 'lang': 'python'},
     }
 
     result = _generate_tree_string(paths, root, 'text', metadata=metadata)
@@ -28,7 +28,7 @@ def test_generate_tree_string_weighted_folders():
     assert " (4 files • 4.50 KB • 1,125 tokens)" in result
 
     # README.md is first
-    assert "README.md (1.00 KB • 250 tokens)" in result
+    assert "README.md (1.00 KB • 250 tokens • markdown)" in result
 
     # Check src - total: 2 files, 2560 bytes (2.50 KB), 625 tokens
     # src is second, followed by tests, so it uses ├──
@@ -42,11 +42,11 @@ def test_generate_tree_string_weighted_folders():
 
     # Check individual files
     # main.py is child of src.
-    assert "main.py (2.00 KB • 500 tokens)" in result
-    assert "utils.py (512.00 B • 125 tokens)" in result
+    assert "main.py (2.00 KB • 500 tokens • python)" in result
+    assert "utils.py (512.00 B • 125 tokens • python)" in result
 
     # test_main.py is child of tests.
-    assert "test_main.py (1.00 KB • 250 tokens)" in result
+    assert "test_main.py (1.00 KB • 250 tokens • python)" in result
 
 def test_generate_tree_string_weighted_folders_no_tokens():
     root = Path("/root")

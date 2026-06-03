@@ -22,15 +22,15 @@ def test_generate_toc_text():
         (Path("/root/README.md"), Path("/root")),
     ]
     metadata = {
-        Path("/root/src/main.py"): {'size': 1024, 'tokens': 256},
-        Path("/root/README.md"): {'size': 512}
+        Path("/root/src/main.py"): {'size': 1024, 'tokens': 256, 'lang': 'python'},
+        Path("/root/README.md"): {'size': 512, 'lang': 'markdown'}
     }
 
     expected = (
         "Table of Contents:\n"
-        "- src/main.py (1.00 KB • 256 tokens)\n"
+        "- src/main.py (1.00 KB • 256 tokens • python)\n"
         "- src/utils.py\n"
-        "- README.md (512.00 B)\n"
+        "- README.md (512.00 B • markdown)\n"
         "\n--------------------\n"
     )
 
@@ -42,14 +42,14 @@ def test_generate_toc_markdown():
         (Path("/root/Hello World.md"), Path("/root")),
     ]
     metadata = {
-        Path("/root/src/main.py"): {'size': 1024, 'tokens': 256},
-        Path("/root/Hello World.md"): {'size': 512}
+        Path("/root/src/main.py"): {'size': 1024, 'tokens': 256, 'lang': 'python'},
+        Path("/root/Hello World.md"): {'size': 512, 'lang': 'markdown'}
     }
 
     expected = (
         "## Table of Contents\n"
-        "- [src/main.py](#srcmainpy) (1.00 KB • 256 tokens)\n"
-        "- [Hello World.md](#hello-worldmd) (512.00 B)\n"
+        "- [src/main.py](#srcmainpy) (1.00 KB • 256 tokens • python)\n"
+        "- [Hello World.md](#hello-worldmd) (512.00 B • markdown)\n"
     )
 
     assert _generate_table_of_contents(files, 'markdown', metadata=metadata) == expected

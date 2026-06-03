@@ -51,3 +51,12 @@ def test_format_metadata_summary_lines_zero():
     meta = {'lines': 0}
     result = _format_metadata_summary(meta)
     assert "line" not in result
+
+def test_format_metadata_summary_lang():
+    meta = {'lang': 'python'}
+    result = _format_metadata_summary(meta)
+    assert result == " (python)"
+
+    meta = {'files': 1, 'lang': 'python'}
+    result = _format_metadata_summary(meta)
+    assert "1 file • python" in result
