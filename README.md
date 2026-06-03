@@ -3,24 +3,24 @@
 SourceCombine is a tool for the terminal that helps you find, filter, and combine text files into a single file or folder. It supports many formats such as JSON, XML, Markdown, and CSV. It is helpful for preparing code context for AI models or managing large groups of files.
 
 ## Key Features
-*   **Find files in many folders:** Scan many folders at once. Use Git to find files and follow your `.gitignore` rules automatically.
+*   **Find files in many folders:** Scan many folders at once. Use Git to find files and follow the `.gitignore` rules automatically.
 *   **Filtering:** Skip folders, files, or specific names using glob patterns. You can also filter by language, file content (using regular expressions), or Git changes.
 *   **Deduplication:** Skip duplicate files by absolute path or content.
 *   **Include Groups:** Group specific files to always include, even if you skip others.
 *   **Pairing:** Combine related files (such as source and header pairs) into their own individual output files.
-*   **File Extraction:** Rebuild your original files and folders from combined files (such as JSON, XML, JSONL, CSV, or Markdown). Filtering, sorting, and processing rules are supported. Batch process multiple files or entire folders. Without an input file, the tool automatically searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`).
+*   **File Extraction:** Rebuild the original files and folders from combined files (such as JSON, XML, JSONL, CSV, or Markdown). Filtering, sorting, and processing rules are supported. Batch process multiple files or entire folders. Without an input file, the tool automatically searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`).
 *   **Sorting:** Sort files by `name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`.
 *   **Limiting:** Stop processing once you reach a file, token, size, or line limit.
-*   **Flexible Outputs:** Save results to the terminal, a file (JSON, XML, JSONL, CSV, or Markdown), or copy them to your system clipboard.
+*   **Flexible Outputs:** Save results to the terminal, a file (JSON, XML, JSONL, CSV, or Markdown), or copy them to the system clipboard.
 *   **AI Context Integration:** Automatically include environment metadata (Python version, OS, Git status) and presets for AI models.
 
 ## Common Flags
-*   `--config`: Use a custom configuration file (YAML). The tool automatically searches for `sourcecombine.yml`, `sourcecombine.yaml`, `config.yml`, or `config.yaml` in your current folder.
+*   `--config`: Use a custom configuration file (YAML). The tool automatically searches for `sourcecombine.yml`, `sourcecombine.yaml`, `config.yml`, or `config.yaml` in the current folder.
 *   `--output` (`-o`): Save results to a file or folder instead of the terminal. Supports template placeholders (for example, `{{PROJECT_NAME}}_{{DATE}}.txt`).
-*   `--clipboard` (`-c`): Copy the combined output to your system clipboard.
-*   `--git-files` (`-G`): Use Git to find files and follow your `.gitignore` rules automatically.
+*   `--clipboard` (`-c`): Copy the combined output to the system clipboard.
+*   `--git-files` (`-G`): Use Git to find files and follow the `.gitignore` rules automatically.
 *   `--limit` (`-L`): Stop processing once you reach this file limit.
-*   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, and skipping binary files). This also copies to your system clipboard if you do not specify an output.
+*   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, and skipping binary files). This also copies to the system clipboard if you do not specify an output.
 *   `--dry-run` (`-d`): Show what would happen without making any changes.
 *   `--mirror`: Recreate the input directory structure in the output folder, applying all filtering and processing rules to each file individually.
 *   `--apply-in-place`: Save processed changes back to the original source files.
@@ -31,7 +31,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--extract`: Rebuild original files and folders from combined outputs (JSON, XML, JSONL, CSV, or Markdown). You can read from files, folders, the terminal, or clipboard. Without an input file, it searches for `combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`.
 *   `--verify`: Verify that files on disk match the content or hashes in combined files or manifests. Without an input file, the tool searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`). For example: `python sourcecombine.py --verify combined_files.json`.
 *   `--restore`: Undo changes made by `--apply-in-place` using `.bak` backup files.
-*   `--delete-backups`: Remove all `.bak` files from your folders.
+*   `--delete-backups`: Remove all `.bak` files from the folders.
 *   `--list-languages`: Show all supported language identifiers.
 *   `--list-placeholders`: Show all supported template placeholders and then stop.
 *   `--show-config`: Display the final configuration being used.
@@ -47,7 +47,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   **charset-normalizer:** Required for detecting file encodings.
 *   **tiktoken (optional):** Install this for accurate token counting. If not installed, the tool uses a character-based estimate (1 token ≈ 4 characters).
 *   **tqdm (optional):** Install this to see progress bars while the tool scans and processes files.
-*   **pyperclip (optional):** Install this to enable copying output directly to your system clipboard.
+*   **pyperclip (optional):** Install this to enable copying output directly to the system clipboard.
 
 ## Getting Started
 1.  **Clone the Repository:**
@@ -76,7 +76,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 For more details, use `python sourcecombine.py --help` or check `config.template.yml`.
 
 ## Template Customization
-You can customize the output by using templates in your configuration file. Templates support placeholders that are replaced with actual data when the tool runs. All project-level and Git placeholders are available in both file-level and global templates.
+You can customize the output by using templates in the configuration file. Templates support placeholders that are replaced with actual data when the tool runs. All project-level and Git placeholders are available in both file-level and global templates.
 
 ### File-Level Placeholders
 Used in `header_template` and `footer_template`:
