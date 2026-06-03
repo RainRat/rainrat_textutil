@@ -498,14 +498,6 @@ def _render_single_pass(template, replacements):
     )
 
 
-def _resolve_env_placeholders(template, replacements):
-    """Resolve {{ENV:VAR_NAME}} placeholders from the environment."""
-    if '{{ENV:' in template:
-        env_matches = re.findall(r'{{ENV:([A-Za-z0-9_]+)}}', template)
-        for var_name in env_matches:
-            replacements[f"{{{{ENV:{var_name}}}}}"] = os.environ.get(var_name, '')
-
-
 def _resolve_metadata_placeholders(template, replacements, data):
     """Resolve project, system, datetime, and environment placeholders.
 
@@ -547,7 +539,10 @@ def _resolve_metadata_placeholders(template, replacements, data):
         ) or ""
 
     # Environment variable resolution
-    _resolve_env_placeholders(template, replacements)
+    if '{{ENV:' in template:
+        env_matches = re.findall(r'{{ENV:([A-Za-z0-9_]+)}}', template)
+        for var_name in env_matches:
+            replacements[f"{{{{ENV:{var_name}}}}}"] = os.environ.get(var_name, '')
 
 
 def _render_template(template, relative_path, size=None, tokens=None, lines=None, escape_func=None, modified=None, content=None, custom_languages=None, index=None, total=None, global_size=None, global_tokens=None, global_lines=None, git_info=None, file_path=None):
