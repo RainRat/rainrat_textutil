@@ -8,7 +8,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   **Deduplication:** Skip duplicate files by absolute path or content.
 *   **Include Groups:** Group specific files to always include, even if you skip others.
 *   **Pairing:** Combine related files (such as source and header pairs) into their own individual output files.
-*   **File Extraction:** Rebuild the original files and folders from combined files (such as JSON, XML, JSONL, CSV, or Markdown). Filtering, sorting, and processing rules are supported. Batch process multiple files or entire folders. Without an input file, the tool automatically searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`).
+*   **File Extraction:** Rebuild the original files and folders from combined files (such as JSON, XML, JSONL, CSV, or Markdown). The tool supports filtering, sorting, and processing rules. Batch process multiple files or entire folders. Without an input file, the tool searches for standard default files such as `combined_files.txt`, `.md`, `.json`, `.xml`, `.jsonl`, or `.csv`.
 *   **Sorting:** Sort files by `name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`.
 *   **Limiting:** Stop processing once you reach a file, token, size, or line limit.
 *   **Flexible Outputs:** Save results to the terminal, a file (JSON, XML, JSONL, CSV, or Markdown), or copy them to the system clipboard.
@@ -28,8 +28,8 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 
 ### Utility Commands
 *   `--init`: Create a basic `sourcecombine.yml` configuration file to get started.
-*   `--extract`: Rebuild original files and folders from combined outputs (JSON, XML, JSONL, CSV, or Markdown). You can read from files, folders, the terminal, or clipboard. Without an input file, it searches for `combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`.
-*   `--verify`: Verify that files on disk match the content or hashes in combined files or manifests. Without an input file, the tool searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`). For example: `python sourcecombine.py --verify combined_files.json`.
+*   `--extract`: Rebuild original files and folders from combined outputs (JSON, XML, JSONL, CSV, or Markdown). You can read from files, folders, the terminal, or clipboard. Without an input file, the tool searches for standard default files such as `combined_files.txt`, `.md`, `.json`, `.xml`, `.jsonl`, or `.csv`.
+*   `--verify`: Verify that files on disk match the content or hashes in combined files or manifests. Without an input file, the tool searches for standard default files such as `combined_files.txt`, `.md`, `.json`, `.xml`, `.jsonl`, or `.csv`. For example: `python sourcecombine.py --verify combined_files.json`.
 *   `--restore`: Undo changes made by `--apply-in-place` using `.bak` backup files.
 *   `--delete-backups`: Remove all `.bak` files from the folders.
 *   `--list-languages`: Show all supported language identifiers.
@@ -76,10 +76,10 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 For more details, use `python sourcecombine.py --help` or check `config.template.yml`.
 
 ## Template Customization
-You can customize the output by using templates in the configuration file. Templates support placeholders that are replaced with actual data when the tool runs. All project-level and Git placeholders are available in both file-level and global templates.
+You can customize the output by using templates in the configuration file. The tool replaces placeholders in templates with actual data when it runs. All project-level and Git placeholders are available in both file-level and global templates.
 
 ### File-Level Placeholders
-Used in `header_template` and `footer_template`:
+Use these in `header_template` and `footer_template`:
 *   `{{FILENAME}}`: Full relative path to the file.
 *   `{{EXT}}`: File extension (for example, `py`).
 *   `{{STEM}}`: Filename without extension (for example, `main`).
@@ -105,7 +105,7 @@ Used in `header_template` and `footer_template`:
 *   `{{FILE_STATUS}}`: Git status of the current file (for example, `M`, `A`, `??`).
 
 ### Project-Level Placeholders
-Used in `global_header_template`, `global_footer_template`, and other project-wide settings:
+Use these in `global_header_template`, `global_footer_template`, and other project-wide settings:
 *   `{{PROJECT_NAME}}`: Name of the project (detected from `package.json`, `pyproject.toml`, or folder name).
 *   `{{PROJECT_VERSION}}`: Version of the project.
 *   `{{PROJECT_DESCRIPTION}}`: Short description of the project.
@@ -122,7 +122,7 @@ Used in `global_header_template`, `global_footer_template`, and other project-wi
 *   `{{PROJECT_URL}}`: Web URL to the repository home (supports GitHub, GitLab, Bitbucket).
 
 ### Git Placeholders
-These require a Git repository to function:
+Use these in any template if you are working in a Git repository:
 *   `{{GIT_BRANCH}}`: Current branch name.
 *   `{{GIT_COMMIT}}`, `{{GIT_COMMIT_SHORT}}`: Full or short commit hash.
 *   `{{GIT_AUTHOR}}`: Author of the latest commit in the project.
@@ -133,7 +133,7 @@ These require a Git repository to function:
 *   `{{GIT_DIFF}}`: Project-wide changes (requires `--include-diff` flag).
 
 ### Pairing Placeholders
-Used in `paired_filename_template`. Supports all project-level, system, and Git placeholders, plus:
+Use these in `paired_filename_template`. These support all project-level, system, and Git placeholders, plus:
 *   `{{STEM}}`: Base filename shared by the pair.
 *   `{{SOURCE_EXT}}`: Extension of the source file (for example, `.cpp`).
 *   `{{HEADER_EXT}}`: Extension of the header file (for example, `.h`).
