@@ -429,6 +429,8 @@ def _format_metadata_summary(meta: Mapping[str, Any], colored: bool = False) -> 
         else:
             status_label = f"{label} "
 
+    if 'language' in meta and meta['language']:
+        parts.append(meta['language'])
     if 'files' in meta:
         count = meta['files']
         parts.append(f"{count} {_plural(count, 'file')}")
@@ -2899,6 +2901,7 @@ def find_and_combine_files(
                     lines = 0
                     is_approx = True
 
+                    content = None
                     if estimate_tokens:
                         content, _ = read_file_best_effort(p)
                         processed = process_content(content, processor.processing_opts)
@@ -2907,10 +2910,12 @@ def find_and_combine_files(
                         _update_stats_metrics(stats, tokens, lines, is_approx)
                         _update_token_stats(stats, p, tokens)
                         _update_line_stats(stats, p, lines)
+                        content = processed
 
                     rel_p_str = _get_rel_path(p, root_path).as_posix()
                     status = stats.get('file_statuses', {}).get(rel_p_str)
-                    view_metadata[p] = {'size': f_size, 'tokens': tokens, 'lines': lines, 'status': status}
+                    lang = utils.get_language_tag(p, content=content, overrides=processor.custom_languages)
+                    view_metadata[p] = {'size': f_size, 'tokens': tokens, 'lines': lines, 'status': status, 'language': lang}
                     stats['top_files'].append((tokens, f_size, rel_p_str, status, lines))
 
                 if tree_view:
@@ -3233,11 +3238,13 @@ def find_and_combine_files(
                 # Store content details for Table of Contents/Tree
                 rel_p_str = rel_p.as_posix()
                 status = stats.get('file_statuses', {}).get(rel_p_str)
+                lang = utils.get_language_tag(file_path, content=processed if not is_excluded_by_size else None, overrides=processor.custom_languages)
                 file_metadata[file_path] = {
                     'size': file_size,
                     'tokens': content_tokens,
                     'lines': content_lines,
-                    'status': status
+                    'status': status,
+                    'language': lang
                 }
                 stats['top_files'].append((content_tokens, file_size, rel_p_str, status, content_lines))
 
@@ -5387,6 +5394,8 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         if lines:
             stats['lines_by_extension'][ext] = stats['lines_by_extension'].get(ext, 0) + lines
 
+        lang = utils.get_language_tag(path_str, content=file_content, overrides=config.get('search', {}).get('custom_languages'))
+        meta['language'] = lang
         stats['top_files'].append((meta.get('tokens') or 0, meta['size'], path_str, meta.get('status'), lines))
 
     files_to_create = filtered_files
@@ -5399,7 +5408,7 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
     if tree_view:
         tree_paths = [Path(source_name) / p for p, _, _ in files_to_create]
         metadata_lookup = {
-            Path(source_name) / p: {'size': m['size'], 'tokens': m.get('tokens', 0), 'lines': m['lines']}
+            Path(source_name) / p: {'size': m['size'], 'tokens': m.get('tokens', 0), 'lines': m['lines'], 'language': m.get('language')}
             for p, _, m in files_to_create
         }
         print(_generate_tree_string(tree_paths, Path(source_name), include_header=False, metadata=metadata_lookup))
