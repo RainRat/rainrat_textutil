@@ -8,7 +8,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   **Deduplication:** Skip duplicate files by absolute path or content.
 *   **Include Groups:** Group specific files to always include, even if you skip others.
 *   **Pairing:** Combine related files (such as source and header pairs) into their own individual output files.
-*   **File Extraction:** Rebuild the original files and folders from combined files (such as JSON, XML, JSONL, CSV, or Markdown). Filtering, sorting, and processing rules are supported. Batch process multiple files or entire folders. Without an input file, the tool automatically searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`).
+*   **File Extraction:** Rebuild the original files and folders from combined files (such as JSON, XML, JSONL, CSV, or Markdown). The tool supports filtering, sorting, and processing rules. Batch process multiple files or entire folders. Without an input file, the tool automatically searches for standard defaults (such as `combined_files.txt`, `.md`, `.json`, `.xml`, `.jsonl`, or `.csv`).
 *   **Sorting:** Sort files by `name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`.
 *   **Limiting:** Stop processing once you reach a file, token, size, or line limit.
 *   **Flexible Outputs:** Save results to the terminal, a file (JSON, XML, JSONL, CSV, or Markdown), or copy them to the system clipboard.
@@ -28,14 +28,14 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 
 ### Utility Commands
 *   `--init`: Create a basic `sourcecombine.yml` configuration file to get started.
-*   `--extract`: Rebuild original files and folders from combined outputs (JSON, XML, JSONL, CSV, or Markdown). You can read from files, folders, the terminal, or clipboard. Without an input file, it searches for `combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`.
-*   `--verify`: Verify that files on disk match the content or hashes in combined files or manifests. Without an input file, the tool searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`). For example: `python sourcecombine.py --verify combined_files.json`.
+*   `--extract`: Rebuild original files and folders from combined outputs (JSON, XML, JSONL, CSV, or Markdown). You can read from files, folders, the terminal, or the system clipboard. Without an input file, the tool searches for standard defaults (such as `combined_files.txt`, `.md`, `.json`, `.xml`, `.jsonl`, or `.csv`).
+*   `--verify`: Verify that files on disk match the content or hashes in combined files or manifests. Without an input file, the tool searches for standard defaults (such as `combined_files.txt`, `.md`, `.json`, `.xml`, `.jsonl`, or `.csv`). For example: `python sourcecombine.py --verify combined_files.json`.
 *   `--restore`: Undo changes made by `--apply-in-place` using `.bak` backup files.
 *   `--delete-backups`: Remove all `.bak` files from the folders.
-*   `--list-languages`: Show all supported language identifiers.
-*   `--list-placeholders`: Show all supported template placeholders and then stop.
+*   `--list-languages`: Show all supported language identifiers and exit.
+*   `--list-placeholders`: Show all supported template placeholders and exit.
 *   `--show-config`: Display the final configuration being used.
-*   `--export-config`: Save the final combined configuration to a YAML file.
+*   `--export-config`: Save the final combined configuration to a YAML file and exit.
 *   `--system-info`: Show environment details (Python version, OS, and other system details).
 *   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without actually writing them to disk.
 *   `--clean`: (Alias for `--delete-backups`) Remove all `.bak` backup files from the current directory and its subfolders.

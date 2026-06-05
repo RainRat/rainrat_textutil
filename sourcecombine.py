@@ -3594,7 +3594,7 @@ def main():
               # Use a configuration but override the folders to search
               python sourcecombine.py my_config.yml project_a/ project_b/
 
-              # Copy the result to the clipboard
+              # Copy the result to the system clipboard
               python sourcecombine.py src/ -c
 
               # Estimate how many tokens the output will use
@@ -3998,13 +3998,13 @@ def main():
         "--list-files",
         "-l",
         action="store_true",
-        help="Show a list of all files that would be included and then stop.",
+        help="Show a list of all files that would be included and exit.",
     )
     display_group.add_argument(
         "--tree",
         "-t",
         action="store_true",
-        help="Show a visual folder tree of all included files with details and then stop.",
+        help="Show a visual folder tree of all included files with details and exit.",
     )
     display_group.add_argument(
         "--diff",
@@ -4067,22 +4067,23 @@ def main():
     utility_group.add_argument(
         "--list-languages",
         action="store_true",
-        help="Show a list of all supported language identifiers and then stop.",
+        help="Show a list of all supported language identifiers and exit.",
     )
     utility_group.add_argument(
         "--list-placeholders",
         action="store_true",
-        help="Show all supported template placeholders and then stop.",
+        help="Show all supported template placeholders and exit.",
     )
     utility_group.add_argument(
         "--extract",
         action="store_true",
         help=(
             "Restore original files and folders from combined files (JSON, XML, Markdown, and other formats). "
-            "Read from files, folders, the terminal ('-'), or the clipboard. "
-            "Without an input file, the tool searches for standard defaults (such as combined_files.txt). "
-            "Supports filtering, sorting, and processing rules. "
-            "Line numbers are removed automatically unless you use --keep-line-numbers."
+            "Read from files, folders, the terminal ('-'), or the system clipboard. "
+            "Without an input file, the tool searches for standard defaults (such as "
+            "'combined_files.txt', '.md', '.json', '.xml', '.jsonl', or '.csv'). "
+            "The tool supports filtering, sorting, and processing rules. "
+            "The tool removes line numbers automatically unless you use --keep-line-numbers."
         ),
     )
     utility_group.add_argument(
@@ -4101,8 +4102,8 @@ def main():
         help=(
             "Verify that files on disk match the content or hashes in combined files or manifests. "
             "Read from files, folders, the terminal ('-'), or the system clipboard. "
-            "Without an input file, the tool searches for combined_files.txt, combined_files.md, "
-            "combined_files.json, combined_files.xml, combined_files.jsonl, or combined_files.csv."
+            "Without an input file, the tool searches for standard defaults (such as "
+            "'combined_files.txt', '.md', '.json', '.xml', '.jsonl', or '.csv')."
         ),
     )
     utility_group.add_argument(
@@ -4126,7 +4127,7 @@ def main():
         nargs="?",
         const="sourcecombine.yml",
         metavar="FILENAME",
-        help="Save the final configuration to a YAML file (defaults to 'sourcecombine.yml') and then stop.",
+        help="Save the final configuration to a YAML file (defaults to 'sourcecombine.yml') and exit.",
     )
     utility_group.add_argument(
         "--system-info",
@@ -4151,13 +4152,13 @@ def main():
         args.overview = True
         args.skip_binary = True
 
-        # If no explicit output is provided, attempt to use the clipboard
+        # If no explicit output is provided, attempt to use the system clipboard
         if not args.output and not args.clipboard and not (
             args.dry_run or args.list_files or args.tree or args.estimate_tokens
         ):
             if importlib.util.find_spec("pyperclip"):
                 args.clipboard = True
-                logging.debug("AI preset: Automatically enabled the clipboard.")
+                logging.debug("AI preset: Automatically enabled the system clipboard.")
 
     # Configure logging *immediately* based on -v.
     # This ensures logging is set up *before* load_and_validate_config (which logs)

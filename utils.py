@@ -262,7 +262,7 @@ def save_yaml_config(config_file_path, config):
 
 
 def read_file_best_effort(file_path):
-    """Try to read a file using different ways.
+    """Try to read a file using multiple methods.
 
     The function first tries UTF-8, then tries to find the likely format
     before falling back to a basic UTF-8 read.
