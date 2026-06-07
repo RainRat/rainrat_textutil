@@ -3998,13 +3998,13 @@ def main():
         "--list-files",
         "-l",
         action="store_true",
-        help="Show a list of all files that would be included and then stop.",
+        help="Show a list of all files that would be included and exit.",
     )
     display_group.add_argument(
         "--tree",
         "-t",
         action="store_true",
-        help="Show a visual folder tree of all included files with details and then stop.",
+        help="Show a visual folder tree of all included files with details and exit.",
     )
     display_group.add_argument(
         "--diff",
@@ -4067,12 +4067,12 @@ def main():
     utility_group.add_argument(
         "--list-languages",
         action="store_true",
-        help="Show a list of all supported language identifiers and then stop.",
+        help="Show a list of all supported language identifiers and exit.",
     )
     utility_group.add_argument(
         "--list-placeholders",
         action="store_true",
-        help="Show all supported template placeholders and then stop.",
+        help="Show all supported template placeholders and exit.",
     )
     utility_group.add_argument(
         "--extract",
@@ -4126,7 +4126,7 @@ def main():
         nargs="?",
         const="sourcecombine.yml",
         metavar="FILENAME",
-        help="Save the final configuration to a YAML file (defaults to 'sourcecombine.yml') and then stop.",
+        help="Save the final configuration to a YAML file (defaults to 'sourcecombine.yml') and exit.",
     )
     utility_group.add_argument(
         "--system-info",

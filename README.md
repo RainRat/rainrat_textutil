@@ -32,10 +32,10 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--verify`: Verify that files on disk match the content or hashes in combined files or manifests. Without an input file, the tool searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`). For example: `python sourcecombine.py --verify combined_files.json`.
 *   `--restore`: Undo changes made by `--apply-in-place` using `.bak` backup files.
 *   `--delete-backups`: Remove all `.bak` files from the folders.
-*   `--list-languages`: Show all supported language identifiers.
-*   `--list-placeholders`: Show all supported template placeholders and then stop.
-*   `--show-config`: Display the final configuration being used.
-*   `--export-config`: Save the final combined configuration to a YAML file.
+*   `--list-languages`: Show all supported language identifiers and exit.
+*   `--list-placeholders`: Show all supported template placeholders and exit.
+*   `--show-config`: Display the final configuration being used and exit.
+*   `--export-config`: Save the final combined configuration to a YAML file and exit.
 *   `--system-info`: Show environment details (Python version, OS, and other system details).
 *   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without actually writing them to disk.
 *   `--clean`: (Alias for `--delete-backups`) Remove all `.bak` backup files from the current directory and its subfolders.
