@@ -86,6 +86,6 @@ def test_summary_shows_size_limit(tmp_path, capsys):
     sourcecombine._print_execution_summary(stats, MockArgs(), pairing_enabled=False)
 
     captured = capsys.readouterr().err
-    assert "WARNING: Output shortened due to: total size limit" in captured
+    assert "WARNING: Output shortened due to: size limit" in captured
     assert "Size Limit Usage:" in captured
     assert "[#####-----]" in captured # 50% usage
