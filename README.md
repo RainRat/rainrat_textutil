@@ -21,6 +21,11 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--git-files` (`-G`): Use Git to find files and follow the `.gitignore` rules automatically.
 *   `--limit` (`-L`): Stop processing once you reach this file limit.
 *   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, and skipping binary files). This also copies to the system clipboard if you do not specify an output.
+*   `--project-name NAME`: Override the project name used in templates and reports.
+*   `--project-version VERSION`: Override the project version.
+*   `--project-description TEXT`: Override the project description.
+*   `--project-license NAME`: Override the project license.
+*   `--project-url URL`: Override the project URL.
 *   `--dry-run` (`-d`): Show what would happen without making any changes.
 *   `--mirror`: Recreate the input directory structure in the output folder, applying all filtering and processing rules to each file individually.
 *   `--apply-in-place`: Save processed changes back to the original source files.

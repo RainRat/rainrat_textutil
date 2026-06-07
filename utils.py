@@ -186,6 +186,13 @@ DEFAULT_CONFIG = {
         'include_diff': False,
         'mirror': False,
     },
+    'project': {
+        'name': None,
+        'version': None,
+        'description': None,
+        'license': None,
+        'url': None,
+    },
     'processing': {
         'apply_in_place': False,
         'create_backups': True,
@@ -710,6 +717,22 @@ def _validate_pairing_section(config):
     search_conf['effective_allowed_extensions'] = effective_allowed_extensions
 
 
+def _validate_project_section(config):
+    """Validate the 'project' section of the configuration."""
+    project = config.get('project')
+    if project is None:
+        return
+
+    if not isinstance(project, dict):
+        raise InvalidConfigError("'project' section must be a dictionary.")
+
+    fields = ['name', 'version', 'description', 'license', 'url']
+    for field in fields:
+        val = project.get(field)
+        if val is not None and not isinstance(val, str):
+            raise InvalidConfigError(f"'project.{field}' must be text or nothing.")
+
+
 def _validate_output_section(config):
     """Validate the 'output' section of the configuration."""
 
@@ -838,6 +861,7 @@ def validate_config(
     _validate_processing_section(config, source=source)
     _validate_pairing_section(config)
     _validate_output_section(config)
+    _validate_project_section(config)
 
 
 def load_and_validate_config(
@@ -1442,9 +1466,31 @@ def get_project_identity(root_folder: str | Path) -> dict:
                 match = re.search(r'^module\s+(.+)$', content, re.MULTILINE)
                 if match:
                     identity["project_name"] = match.group(1).strip()
-                return identity
             except Exception:
                 pass
+
+        # 7. Fallback: Search for LICENSE or COPYING files if license is still missing
+        if not identity.get("project_license"):
+            license_files = ["LICENSE", "LICENSE.txt", "COPYING", "COPYING.txt", "LICENSE.md"]
+            for f_name in license_files:
+                license_file = root_path / f_name
+                if license_file.is_file():
+                    try:
+                        content = license_file.read_text(encoding='utf-8').strip()
+                        if content:
+                            # Try to extract license type from the first line (e.g., "MIT License" or "Apache License")
+                            first_line = content.split('\n')[0].strip()
+                            # Clean up common prefixes
+                            license_name = re.sub(r'^(The\s+)?(MIT|Apache|GPL|BSD|ISC|Mozilla|Unlicense|Zlib)\s+License.*$', r'\2', first_line, flags=re.IGNORECASE)
+                            if license_name != first_line:
+                                identity["project_license"] = license_name
+                            elif len(first_line) < 50:  # If it's a short line, assume it's the license name
+                                identity["project_license"] = first_line
+                            else:
+                                identity["project_license"] = f_name
+                            break
+                    except Exception:
+                        pass
 
     except Exception:
         pass
