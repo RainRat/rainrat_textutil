@@ -68,10 +68,11 @@ def test_validate_config_project_overview_non_bool():
     with pytest.raises(utils.InvalidConfigError, match="'output.project_overview' must be true or false"):
         utils.validate_config(config)
 
-def test_get_tqdm_import_error():
+def test_progress_bar_import_error():
     import sourcecombine
     with patch.dict(sys.modules, {'tqdm': None}):
-        assert sourcecombine._get_tqdm() is None
+        pb = sourcecombine._progress_bar(range(5), enabled=True)
+        assert isinstance(pb, sourcecombine._SilentProgress)
 
 
 def test_get_pyperclip_import_error():

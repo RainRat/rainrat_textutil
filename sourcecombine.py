@@ -54,15 +54,6 @@ TRUNCATION_CHECKS = [
 ]
 
 
-def _get_tqdm():
-    """Lazy-load tqdm for progress bars."""
-    try:
-        from tqdm import tqdm as _tqdm
-        return _tqdm
-    except ImportError:
-        return None
-
-
 def _get_pyperclip():
     """Lazy-load pyperclip for clipboard support."""
     try:
@@ -311,10 +302,13 @@ def _progress_enabled(dry_run):
 
 def _progress_bar(iterable=None, *, enabled=True, **kwargs):
     """Return a progress iterator/context manager with graceful fallback."""
-    _tqdm = _get_tqdm()
-    if not enabled or _tqdm is None:
-        return _SilentProgress(iterable)
-    return _tqdm(iterable, **kwargs)
+    if enabled:
+        try:
+            from tqdm import tqdm as _tqdm
+            return _tqdm(iterable, **kwargs)
+        except ImportError:
+            pass
+    return _SilentProgress(iterable)
 
 
 def _get_rel_path(path, root_path):

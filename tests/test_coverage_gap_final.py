@@ -123,14 +123,13 @@ def test_main_source_desc_empty():
                 with patch("sourcecombine.time.perf_counter", return_value=0):
                     sourcecombine.main()
 
-def test_progress_bar_hits_tqdm():
-    # Covers sourcecombine.py line 175
-    with patch("sourcecombine._get_tqdm") as mock_get_tqdm:
-        mock_tqdm = MagicMock()
-        mock_get_tqdm.return_value = mock_tqdm
-        with patch("sourcecombine._progress_enabled", return_value=True):
-            sourcecombine._progress_bar(range(10), enabled=True)
-            mock_tqdm.assert_called_once()
+def test_progress_bar_import_failure():
+    # Covers sourcecombine.py line 307-308
+    with patch("sourcecombine._progress_enabled", return_value=True):
+        with patch("sourcecombine._SilentProgress") as mock_silent:
+            with patch.dict(sys.modules, {'tqdm': None}):
+                sourcecombine._progress_bar(range(10), enabled=True)
+                mock_silent.assert_called_once()
 
 def test_utils_process_content_no_options():
     # Covers utils.py line 755
