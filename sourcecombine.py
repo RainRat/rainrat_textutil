@@ -536,9 +536,13 @@ def _resolve_metadata_placeholders(template, replacements, data):
             replacements[placeholder] = data.get(key) or ''
 
     if "{{PROJECT_URL}}" not in replacements:
-        replacements["{{PROJECT_URL}}"] = _construct_git_web_url(
-            data.get('git_remote_url'), data.get('git_commit')
-        ) or ""
+        # Prioritize manual project URL override
+        if data.get('project_url'):
+            replacements["{{PROJECT_URL}}"] = data['project_url']
+        else:
+            replacements["{{PROJECT_URL}}"] = _construct_git_web_url(
+                data.get('git_remote_url'), data.get('git_commit')
+            ) or ""
 
     # Environment variable resolution
     if '{{ENV:' in template:
@@ -2587,6 +2591,19 @@ def find_and_combine_files(
     stats.update(utils.get_datetime_placeholders())
     stats.update(utils.get_system_info())
 
+    # Apply manual project metadata overrides from configuration
+    project_meta = config.get('project', {})
+    if project_meta.get('name'):
+        stats['project_name'] = project_meta['name']
+    if project_meta.get('version'):
+        stats['project_version'] = project_meta['version']
+    if project_meta.get('description'):
+        stats['project_description'] = project_meta['description']
+    if project_meta.get('license'):
+        stats['project_license'] = project_meta['license']
+    if project_meta.get('url'):
+        stats['project_url'] = project_meta['url']
+
     search_opts = config.get('search', {})
     filter_opts = config.get('filters', {})
     output_opts = config.get('output', {})
@@ -3645,6 +3662,34 @@ def main():
         help="Show detailed status messages to help find and fix problems.",
     )
 
+    # Project Metadata Group
+    project_group = parser.add_argument_group("Project Metadata")
+    project_group.add_argument(
+        "--project-name",
+        metavar="NAME",
+        help="Override the project name used in templates and reports.",
+    )
+    project_group.add_argument(
+        "--project-version",
+        metavar="VERSION",
+        help="Override the project version used in templates and reports.",
+    )
+    project_group.add_argument(
+        "--project-description",
+        metavar="TEXT",
+        help="Override the project description used in templates and reports.",
+    )
+    project_group.add_argument(
+        "--project-license",
+        metavar="NAME",
+        help="Override the project license used in templates and reports.",
+    )
+    project_group.add_argument(
+        "--project-url",
+        metavar="URL",
+        help="Override the project URL used in templates and reports.",
+    )
+
     # Filtering & Selection Group
     filtering_group = parser.add_argument_group("Filtering & Selection")
     filtering_group.add_argument(
@@ -4529,6 +4574,22 @@ def main():
     if getattr(args, 'overview', False):
         output_conf['project_overview'] = True
 
+    # Inject project metadata CLI overrides
+    project_conf = config.setdefault('project', {})
+    if project_conf is None:
+        project_conf = config['project'] = {}
+
+    if getattr(args, 'project_name', None) is not None:
+        project_conf['name'] = args.project_name
+    if getattr(args, 'project_version', None) is not None:
+        project_conf['version'] = args.project_version
+    if getattr(args, 'project_description', None) is not None:
+        project_conf['description'] = args.project_description
+    if getattr(args, 'project_license', None) is not None:
+        project_conf['license'] = args.project_license
+    if getattr(args, 'project_url', None) is not None:
+        project_conf['url'] = args.project_url
+
     if args.diff:
         output_conf['show_diff'] = True
 
@@ -5220,6 +5281,19 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
     stats.update(utils.get_project_identity(output_folder))
     stats.update(utils.get_datetime_placeholders())
     stats.update(utils.get_system_info())
+
+    # Apply manual project metadata overrides from configuration
+    project_meta = config.get('project', {})
+    if project_meta.get('name'):
+        stats['project_name'] = project_meta['name']
+    if project_meta.get('version'):
+        stats['project_version'] = project_meta['version']
+    if project_meta.get('description'):
+        stats['project_description'] = project_meta['description']
+    if project_meta.get('license'):
+        stats['project_license'] = project_meta['license']
+    if project_meta.get('url'):
+        stats['project_url'] = project_meta['url']
 
     stats['total_discovered'] = len(files_to_create)
     filter_opts = config.get('filters', {})
