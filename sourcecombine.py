@@ -48,8 +48,8 @@ __version__ = "0.5.0"
 # Standardized labels for resource limit warnings
 TRUNCATION_CHECKS = [
     ('token_limit_reached', 'token limit'),
-    ('size_limit_reached', 'total size limit'),
-    ('line_limit_reached', 'total line limit'),
+    ('size_limit_reached', 'size limit'),
+    ('line_limit_reached', 'line limit'),
     ('limit_reached', 'file limit'),
 ]
 
@@ -5927,18 +5927,21 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     found_label_style = C_DIM if not has_any_skips else C_BOLD
     found_value_style = C_DIM if not has_any_skips else f"{C_BOLD}{C_CYAN}"
  
-    print(f"    {found_label_style}{'Total Found:':<{label_width}}{C_RESET}{found_value_style}{total_discovered:12,}{C_RESET} {C_DIM}{_plural(total_discovered, 'file')}{C_RESET}", file=sys.stderr)
+    found_unit = f" {_plural(total_discovered, 'file')}"
+    print(f"    {found_label_style}{'Total Found:':<{label_width}}{C_RESET}{found_value_style}{total_discovered:12,}{C_RESET}{C_DIM}{found_unit:<8}{C_RESET}", file=sys.stderr)
 
     if has_any_skips:
         included_percent = (total_included / total_discovered * 100) if total_discovered > 0 else 0
         skipped_percent = (total_filtered / total_discovered * 100) if total_discovered > 0 else 0
 
         # Files tree branches
-        print(f"    {C_DIM}├── {C_RESET}{C_BOLD}{'Included:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_GREEN}{total_included:12,}{C_RESET} {C_DIM}({included_percent:>5.1f}%){C_RESET}", file=sys.stderr)
+        included_unit = f" {_plural(total_included, 'file')}"
+        print(f"    {C_DIM}├── {C_RESET}{C_BOLD}{'Included:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_GREEN}{total_included:12,}{C_RESET}{C_DIM}{included_unit:<8}{C_RESET} {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{included_percent:>6.1f}{C_RESET}{C_DIM}%){C_RESET}", file=sys.stderr)
 
         if has_skipped_files:
             skipped_connector = "├── " if has_skipped_folders else "└── "
-            print(f"    {C_DIM}{skipped_connector}{C_RESET}{C_BOLD}{'Skipped:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_YELLOW}{total_filtered:12,}{C_RESET} {C_DIM}({skipped_percent:>5.1f}%){C_RESET}", file=sys.stderr)
+            skipped_unit = f" {_plural(total_filtered, 'file')}"
+            print(f"    {C_DIM}{skipped_connector}{C_RESET}{C_BOLD}{'Skipped:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_YELLOW}{total_filtered:12,}{C_RESET}{C_DIM}{skipped_unit:<8}{C_RESET} {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{skipped_percent:>6.1f}{C_RESET}{C_DIM}%){C_RESET}", file=sys.stderr)
 
             # Detailed breakdown of filtering reasons
             relevant_reasons = [(r, c) for r, c in stats.get('filter_reasons', {}).items() if r != 'excluded_folder' and c > 0]
@@ -5951,11 +5954,12 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                     connector = "└── " if is_last else "├── "
                     display_reason = (reason.replace('_', ' ').capitalize() + ":")
                     reason_percent = (count / total_filtered * 100) if total_filtered > 0 else 0
-                    print(f"    {C_DIM}{outer_skipped_indent}{connector}{C_RESET}{C_BOLD}{display_reason:<{label_width - 8}}{C_RESET}{C_BOLD}{C_CYAN}{count:12,}{C_RESET} {C_DIM}({reason_percent:>5.1f}%){C_RESET}", file=sys.stderr)
+                    reason_unit = f" {_plural(count, 'file')}"
+                    print(f"    {C_DIM}{outer_skipped_indent}{connector}{C_RESET}{C_BOLD}{display_reason:<{label_width - 8}}{C_RESET}{C_BOLD}{C_CYAN}{count:12,}{C_RESET}{C_DIM}{reason_unit:<8}{C_RESET} {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{reason_percent:>6.1f}{C_RESET}{C_DIM}%){C_RESET}", file=sys.stderr)
 
         if has_skipped_folders:
- 
-            print(f"    {C_DIM}└── {C_RESET}{C_BOLD}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_CYAN}{excluded_folders:12,}{C_RESET} {C_DIM}{_plural(excluded_folders, 'folder')}{C_RESET}", file=sys.stderr)
+            folder_unit = f" {_plural(excluded_folders, 'folder')}"
+            print(f"    {C_DIM}└── {C_RESET}{C_BOLD}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_CYAN}{excluded_folders:12,}{C_RESET}{C_DIM}{folder_unit:<8}{C_RESET}", file=sys.stderr)
 
     # Performance Section
     # Check if any limits were active

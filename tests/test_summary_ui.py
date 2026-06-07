@@ -132,6 +132,7 @@ def test_summary_printing_dry_run(monkeypatch, capsys):
     args.list_files = False
     args.tree = False
     args.extract = False
+    args.format = 'text'
 
     monkeypatch.setenv("NO_COLOR", "1")
 
@@ -346,6 +347,7 @@ def test_skip_reasons_alignment(monkeypatch, capsys):
     args.list_files = False
     args.tree = False
     args.extract = False
+    args.format = 'text'
 
     monkeypatch.setenv("NO_COLOR", "1")
 
@@ -355,9 +357,13 @@ def test_skip_reasons_alignment(monkeypatch, capsys):
     stderr = captured.err
 
     # Check indentation and format of skip reason
-    # "Excluded:" (9 chars) padded to label_width-8 (16) = 7 spaces
-    # 5 is right-aligned in 12. Total 18 spaces between ':' and '5'.
-    assert "└── Excluded:                  5 (100.0%)" in stderr
+    # New format includes unit and aligned percentage
+    # reason_percent is relative to total_filtered (5/5 = 100%)
+    # Total Found: 10
+    # Included: 5
+    # Skipped: 5
+    # Excluded: 5
+    assert "└── Excluded:                  5 files   ( 100.0%)" in stderr
 
 
 def test_summary_git_info(monkeypatch, capsys):
