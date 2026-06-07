@@ -2896,6 +2896,7 @@ def find_and_combine_files(
                     lines = 0
                     is_approx = True
 
+                    content = None
                     if estimate_tokens:
                         content, _ = read_file_best_effort(p)
                         processed = process_content(content, processor.processing_opts)
