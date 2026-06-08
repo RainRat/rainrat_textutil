@@ -1766,17 +1766,29 @@ def _update_file_stats(stats, file_path, size=None):
     if 'size_by_extension' in stats:
         stats['size_by_extension'][ext] = stats['size_by_extension'].get(ext, 0) + size
 
+    if 'files_by_language' in stats:
+        lang = utils.get_language_tag(file_path, overrides=stats.get('custom_languages'))
+        stats['files_by_language'][lang] = stats['files_by_language'].get(lang, 0) + 1
+        if 'size_by_language' in stats:
+            stats['size_by_language'][lang] = stats['size_by_language'].get(lang, 0) + size
+
 
 def _update_token_stats(stats, file_path, tokens):
     if tokens and 'tokens_by_extension' in stats:
         ext = file_path.suffix.lower() or '.no_extension'
         stats['tokens_by_extension'][ext] = stats['tokens_by_extension'].get(ext, 0) + tokens
+    if tokens and 'tokens_by_language' in stats:
+        lang = utils.get_language_tag(file_path, overrides=stats.get('custom_languages'))
+        stats['tokens_by_language'][lang] = stats['tokens_by_language'].get(lang, 0) + tokens
 
 
 def _update_line_stats(stats, file_path, lines):
     if lines and 'lines_by_extension' in stats:
         ext = file_path.suffix.lower() or '.no_extension'
         stats['lines_by_extension'][ext] = stats['lines_by_extension'].get(ext, 0) + lines
+    if lines and 'lines_by_language' in stats:
+        lang = utils.get_language_tag(file_path, overrides=stats.get('custom_languages'))
+        stats['lines_by_language'][lang] = stats['lines_by_language'].get(lang, 0) + lines
 
 
 def _update_stats_metrics(stats, tokens, lines, is_approx):
@@ -2555,6 +2567,7 @@ def find_and_combine_files(
 ):
     """Find, filter, and combine files based on the settings."""
     stats = {
+        'custom_languages': config.get('processing', {}).get('map_languages', {}),
         'total_discovered': 0,
         'total_files': 0,
         'total_size_bytes': 0,
@@ -2562,6 +2575,10 @@ def find_and_combine_files(
         'tokens_by_extension': {},
         'lines_by_extension': {},
         'size_by_extension': {},
+        'files_by_language': {},
+        'tokens_by_language': {},
+        'lines_by_language': {},
+        'size_by_language': {},
         'total_tokens': 0,
         'total_lines': 0,
         'token_count_is_approx': False,
@@ -5234,6 +5251,7 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         config = copy.deepcopy(utils.DEFAULT_CONFIG)
 
     stats = {
+        'custom_languages': config.get('processing', {}).get('map_languages', {}),
         'total_discovered': 0,
         'total_files': 0,
         'total_size_bytes': 0,
@@ -5242,6 +5260,10 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         'total_tokens': 0,
         'tokens_by_extension': {},
         'lines_by_extension': {},
+        'size_by_language': {},
+        'tokens_by_language': {},
+        'lines_by_language': {},
+        'files_by_language': {},
         'token_count_is_approx': False,
         'top_files': [],
         'files_by_extension': {},
@@ -6252,70 +6274,70 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             row_parts.append(f"{C_BOLD}{display_path}{C_RESET}{C_DIM}/{C_RESET}")
             print(f"    {' '.join(row_parts)}", file=sys.stderr)
 
-    # Extensions List
-    files_by_ext = stats.get('files_by_extension')
-    if files_by_ext:
-        tokens_by_ext = stats.get('tokens_by_extension', {})
-        lines_by_ext = stats.get('lines_by_extension', {})
-        size_by_ext = stats.get('size_by_extension', {})
-        has_ext_tokens = any(v > 0 for v in tokens_by_ext.values())
-        has_ext_lines = any(v > 0 for v in lines_by_ext.values())
+    # Languages List
+    files_by_lang = stats.get('files_by_language')
+    if files_by_lang:
+        tokens_by_lang = stats.get('tokens_by_language', {})
+        lines_by_lang = stats.get('lines_by_language', {})
+        size_by_lang = stats.get('size_by_language', {})
+        has_lang_tokens = any(v > 0 for v in tokens_by_lang.values())
+        has_lang_lines = any(v > 0 for v in lines_by_lang.values())
         status_spacer = " " * 7 if has_status else ""
 
-        if has_ext_tokens:
+        if has_lang_tokens:
             total_weight = stats.get('total_tokens', 0)
-            weight_by_ext = tokens_by_ext
-            title = "File Types (by tokens)"
-        elif has_ext_lines:
+            weight_by_lang = tokens_by_lang
+            title = "Languages (by tokens)"
+        elif has_lang_lines:
             total_weight = stats.get('total_lines', 0)
-            weight_by_ext = lines_by_ext
-            title = "File Types (by lines)"
+            weight_by_lang = lines_by_lang
+            title = "Languages (by lines)"
         else:
             total_weight = stats.get('total_size_bytes', 0)
-            weight_by_ext = size_by_ext
-            title = "File Types (by size)"
+            weight_by_lang = size_by_lang
+            title = "Languages (by size)"
 
         # Build dynamic header
         header_parts = []
-        if has_ext_tokens: header_parts.append(f"{'TOKENS':>12}")
-        if has_ext_lines: header_parts.append(f"{'LINES':>12}")
+        if has_lang_tokens: header_parts.append(f"{'TOKENS':>12}")
+        if has_lang_lines: header_parts.append(f"{'LINES':>12}")
         header_parts.append(f"{'SIZE':>12}")
         header_parts.append(f"{'%':>6}")
         header_parts.append(f"{'DISTRIBUTION':<12}")
         if has_status: header_parts.append(f"{' ': <6}") # Spacer to match largest files
-        header_parts.append(f"{'EXTENSION':<12}")
+        header_parts.append(f"{'LANGUAGE':<12}")
         header_parts.append(f"{'COUNT':>7}")
         header_parts.append(f"{'% FILES':>7}")
         header = f"    {C_DIM}{' '.join(header_parts)}{C_RESET}"
 
         # Sort by weight desc, then count desc, then alpha
-        sorted_exts = sorted(
-            files_by_ext.items(),
-            key=lambda item: (-weight_by_ext.get(item[0], 0), -item[1], item[0])
+        sorted_langs = sorted(
+            files_by_lang.items(),
+            key=lambda item: (-weight_by_lang.get(item[0], 0), -item[1], item[0])
         )
 
         display_items = []
-        top_10 = sorted_exts[:10]
-        others = sorted_exts[10:]
+        top_10 = sorted_langs[:10]
+        others = sorted_langs[10:]
 
-        for ext, count in top_10:
+        for lang, count in top_10:
             display_items.append({
-                'ext': ext,
+                'lang': lang,
                 'count': count,
-                'weight': weight_by_ext.get(ext, 0),
-                'tokens': tokens_by_ext.get(ext, 0),
-                'lines': lines_by_ext.get(ext, 0),
-                'size': size_by_ext.get(ext, 0)
+                'weight': weight_by_lang.get(lang, 0),
+                'tokens': tokens_by_lang.get(lang, 0),
+                'lines': lines_by_lang.get(lang, 0),
+                'size': size_by_lang.get(lang, 0)
             })
 
         if others:
             display_items.append({
-                'ext': '(others)',
+                'lang': '(others)',
                 'count': sum(c for e, c in others),
-                'weight': sum(weight_by_ext.get(e, 0) for e, c in others),
-                'tokens': sum(tokens_by_ext.get(e, 0) for e, c in others),
-                'lines': sum(lines_by_ext.get(e, 0) for e, c in others),
-                'size': sum(size_by_ext.get(e, 0) for e, c in others)
+                'weight': sum(weight_by_lang.get(e, 0) for e, c in others),
+                'tokens': sum(tokens_by_lang.get(e, 0) for e, c in others),
+                'lines': sum(lines_by_lang.get(e, 0) for e, c in others),
+                'size': sum(size_by_lang.get(e, 0) for e, c in others)
             })
 
         print(f"\n  {C_BOLD}{C_CYAN}{title}{C_RESET}", file=sys.stderr)
@@ -6334,10 +6356,10 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
             # Row Metrics (TOKENS, LINES, SIZE, %, DISTRIBUTION) - Vertical alignment with Largest Files
             row_parts = []
-            if has_ext_tokens:
+            if has_lang_tokens:
                 token_str = format_tokens(d['tokens'], is_approx)
                 row_parts.append(f"{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET}")
-            if has_ext_lines:
+            if has_lang_lines:
                 row_parts.append(f"{C_BOLD}{C_CYAN}{d['lines']:12,}{C_RESET}")
 
             row_parts.append(f"{size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}")
@@ -6347,12 +6369,12 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             if has_status:
                 row_parts.append(" " * 6) # Spacer to match largest files
 
-            # Row Ext Info (EXTENSION, COUNT, % FILES)
-            ext_label = d['ext']
-            if len(ext_label) > 12:
-                ext_label = ext_label[:9] + "..."
+            # Row Lang Info (LANGUAGE, COUNT, % FILES)
+            lang_label = d['lang']
+            if len(lang_label) > 12:
+                lang_label = lang_label[:9] + "..."
 
-            row_parts.append(f"{C_BOLD}{ext_label:<12}{C_RESET}")
+            row_parts.append(f"{C_BOLD}{lang_label:<12}{C_RESET}")
             row_parts.append(f"{C_BOLD}{C_CYAN}{count:>7,}{C_RESET}")
             row_parts.append(f"{C_BOLD}{C_CYAN}{f_percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}")
 

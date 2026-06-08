@@ -14,6 +14,7 @@ def test_summary_redesign_largest_files(monkeypatch, capsys):
         'total_files': 10,
         'total_size_bytes': 10000,
         'files_by_extension': {'.py': 5, '.md': 5},
+        'files_by_language': {'python': 5, 'markdown': 5},
         'total_tokens': 2500,
         'token_count_is_approx': False,
         'top_files': [
@@ -73,6 +74,11 @@ def test_summary_printing(monkeypatch, capsys):
             '.cpp': 1, '.hpp': 1, '.java': 1, '.js': 1, '.ts': 1,
             '.css': 1, '.html': 1, '.json': 1, '.xml': 1, '.yml': 1
         },
+        'files_by_language': {
+            'python': 10, 'text': 5, 'markdown': 3, 'c': 1, 'cpp': 2,
+            'java': 1, 'javascript': 1, 'typescript': 1,
+            'css': 1, 'html': 1, 'json': 1, 'xml': 1, 'yaml': 1
+        },
         'total_tokens': 5000,
         'token_count_is_approx': True,
         'excluded_folder_count': 2,
@@ -110,7 +116,7 @@ def test_summary_printing(monkeypatch, capsys):
     assert "SIZE" in stderr
     assert "%" in stderr
     assert "PATH" in stderr
-    assert "File Types" in stderr
+    assert "Languages" in stderr
     assert "Skipped Folders:" in stderr
     assert "2" in stderr
     assert "Total Tokens:" in stderr
@@ -204,6 +210,7 @@ def test_summary_terminal_size_fallback(capsys):
         'total_files': 1,
         'total_size_bytes': 10,
         'files_by_extension': {'.txt': 1},
+        'files_by_language': {'text': 1},
         'top_files': []
     }
 
@@ -221,9 +228,9 @@ def test_summary_terminal_size_fallback(capsys):
 
     captured = capsys.readouterr()
     stderr = captured.err
-    assert "File Types" in stderr
-    assert "EXTENSION" in stderr
-    assert ".txt" in stderr
+    assert "Languages" in stderr
+    assert "LANGUAGE" in stderr
+    assert "text" in stderr
 
 def test_summary_throughput_line(capsys):
     """Test that throughput is integrated into details."""
@@ -254,20 +261,20 @@ def test_summary_throughput_line(capsys):
     assert "500.00 B/s" in captured.err
 
 def test_file_types_redesign_sorting_and_others(monkeypatch, capsys):
-    # Mock stats with 12 extensions.
-    # .py should be top by weight even if .txt has more files.
+    # Mock stats with 12 languages.
+    # python should be top by weight even if text has more files.
     stats = {
         'total_files': 100,
         'total_discovered': 100,
         'total_included': 100,
         'total_size_bytes': 10000,
-        'files_by_extension': {
-            '.py': 10, '.txt': 50, '.md': 5, '.c1': 1, '.c2': 1,
-            '.c3': 1, '.c4': 1, '.c5': 1, '.c6': 1, '.c7': 1,
-            '.c8': 1, '.c9': 1
+        'files_by_language': {
+            'python': 10, 'text': 50, 'markdown': 5, 'c1': 1, 'c2': 1,
+            'c3': 1, 'c4': 1, 'c5': 1, 'c6': 1, 'c7': 1,
+            'c8': 1, 'c9': 1
         },
-        'tokens_by_extension': {
-            '.py': 8000, '.txt': 1000, '.md': 500, '.c1': 50
+        'tokens_by_language': {
+            'python': 8000, 'text': 1000, 'markdown': 500, 'c1': 50
         },
         'total_tokens': 10000,
         'token_count_is_approx': False,
@@ -289,23 +296,23 @@ def test_file_types_redesign_sorting_and_others(monkeypatch, capsys):
     captured = capsys.readouterr()
     stderr = captured.err
 
-    # Check sorting: .py should be first despite having fewer files than .txt
+    # Check sorting: python should be first despite having fewer files than text
     # Redesign uses a tabular format without colons
-    # We filter out the data hint line which starts with "  [" but doesn't have "EXTENSION" or "==="
+    # We filter out the data hint line which starts with "  [" but doesn't have "LANGUAGE" or "==="
     # The data hint line now also has the format "TEXT" which doesn't necessarily have a dot if we mock it correctly.
-    ext_lines = [line for line in stderr.splitlines() if " [" in line and "]" in line and ("." in line or "(others)" in line) and "EXTENSION" not in line and "===" not in line and "tokens" not in line]
+    lang_lines = [line for line in stderr.splitlines() if " [" in line and "]" in line and ("python" in line or "text" in line or "(others)" in line) and "LANGUAGE" not in line and "===" not in line and "tokens" not in line]
 
-    assert ".py" in ext_lines[0]
-    assert ".txt" in ext_lines[1]
+    assert "python" in lang_lines[0]
+    assert "text" in lang_lines[1]
 
     # Check "others" aggregation (12 extensions total, top 10 shown, others aggregated)
     assert "(others)" in stderr
 
     # Check distribution bar
     # 80% -> 8 blocks -> [########--]
-    assert "[########--]" in ext_lines[0]
+    assert "[########--]" in lang_lines[0]
     # 10% -> 1 block -> [#---------]
-    assert "[#---------]" in ext_lines[1]
+    assert "[#---------]" in lang_lines[1]
 
 def test_jsonl_shortcut(monkeypatch):
     """Test that -J sets format to jsonl."""

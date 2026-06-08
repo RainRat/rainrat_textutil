@@ -15,7 +15,8 @@ def test_summary_extension_truncation(monkeypatch, capsys):
         'total_discovered': 1,
         'total_size_bytes': 100,
         'files_by_extension': {long_ext: 1},
-        'tokens_by_extension': {long_ext: 10},
+        'files_by_language': {'verylonglanguagename': 1},
+        'tokens_by_language': {'verylonglanguagename': 10},
         'total_tokens': 10,
         'token_count_is_approx': False,
         'top_files': []
@@ -36,5 +37,5 @@ def test_summary_extension_truncation(monkeypatch, capsys):
     captured = capsys.readouterr()
     stderr = captured.err
 
-    assert ".verylong..." in stderr
-    assert "File Types" in stderr
+    assert "verylongl..." in stderr
+    assert "Languages" in stderr
