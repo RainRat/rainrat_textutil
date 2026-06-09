@@ -94,10 +94,10 @@ def test_main_source_desc_empty():
     # Covers sourcecombine.py line 2940
     stats = {
         'total_files': 1,
-        'files_by_extension': {'.txt': 1},
+        'files_by_language': {'.txt': 1},
         'total_size_bytes': 10,
-        'tokens_by_extension': {'.txt': 5},
-        'size_by_extension': {'.txt': 10},
+        'tokens_by_language': {'.txt': 5},
+        'size_by_language': {'.txt': 10},
         'total_tokens': 5,
         'total_lines': 2,
         'top_files': [(5, 10, 'test.txt')],

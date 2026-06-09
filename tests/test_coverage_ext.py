@@ -47,7 +47,7 @@ def test_token_count_is_approx_paired(tmp_path):
         'total_lines': 0,
         'token_count_is_approx': False,
         'top_files': [],
-        'files_by_extension': {}
+        'files_by_language': {}
     }
 
     with patch("utils.tiktoken", None):
@@ -84,7 +84,7 @@ def test_token_count_is_approx_paired_with_placeholder(tmp_path):
         'total_lines': 0,
         'token_count_is_approx': False,
         'top_files': [],
-        'files_by_extension': {}
+        'files_by_language': {}
     }
 
     size_excluded = [source_path]

@@ -118,7 +118,7 @@ def test_summary_ui_wide_and_truncation(monkeypatch, capsys):
         'total_files': 1,
         'total_discovered': 1,
         'total_size_bytes': 100,
-        'files_by_extension': {'.py': 1},
+        'files_by_language': {'.py': 1},
         'total_tokens': 10,
         'token_count_is_approx': False,
         'git_branch': 'a' * 70, # Trigger branch truncation
@@ -164,7 +164,7 @@ def test_summary_ui_truncation_with_quotes(monkeypatch, capsys):
         'total_files': 1,
         'total_discovered': 1,
         'total_size_bytes': 100,
-        'files_by_extension': {'.py': 1},
+        'files_by_language': {'.py': 1},
         'total_tokens': 10,
         'token_count_is_approx': False,
         'top_files': []
@@ -203,7 +203,7 @@ def test_summary_ui_narrow_terminal(monkeypatch, capsys):
         'total_files': 1,
         'total_discovered': 1,
         'total_size_bytes': 100,
-        'files_by_extension': {'.py': 1},
+        'files_by_language': {'.py': 1},
         'total_tokens': 10,
         'token_count_is_approx': False,
         'top_files': []

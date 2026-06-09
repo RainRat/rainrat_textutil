@@ -73,7 +73,7 @@ def test_summary_shows_size_limit(tmp_path, capsys):
         'max_total_size_bytes': 200,
         'size_limit_reached': True,
         'filter_reasons': {'size_limit': 2},
-        'files_by_extension': {'.txt': 1},
+        'files_by_language': {'.txt': 1},
         'top_files': [(25, 100, 'file1.txt')]
     }
 

@@ -118,7 +118,7 @@ def test_cli_git_files_flag():
         'total_tokens': 0,
         'total_lines': 0,
         'top_files': [],
-        'files_by_extension': {},
+        'files_by_language': {},
     }
     with patch('sourcecombine.find_and_combine_files', return_value=mock_stats) as mock_find:
         with patch('sys.argv', ['sourcecombine.py', '.', '-G']):

@@ -112,7 +112,7 @@ def test_cli_exclude_grep_config_injection(tmp_path, monkeypatch):
     with patch("sourcecombine.find_and_combine_files") as mock_combine:
         mock_combine.return_value = {
             'total_files': 0,
-            'files_by_extension': {},
+            'files_by_language': {},
             'filter_reasons': {'exclude_grep_match': 1},
             'top_files': [],
             'total_discovered': 1,

@@ -79,7 +79,7 @@ class TestLineLimit(unittest.TestCase):
                 'max_total_lines': 10,
                 'line_limit_reached': False,
                 'filter_reasons': {'line_limit': 2},
-                'files_by_extension': {'.txt': 1}
+                'files_by_language': {'.txt': 1}
             }
             args = type('Args', (), {'dry_run': False, 'estimate_tokens': False, 'list_files': False, 'tree': False, 'extract': False})()
 

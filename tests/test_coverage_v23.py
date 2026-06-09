@@ -271,9 +271,9 @@ def test_print_execution_summary_status_indicator(capsys):
         'total_lines': 5,
         'duration': 0.1,
         'top_files': [(10, 100, "file.txt", "M")], # status "M"
-        'files_by_extension': {".txt": 1},
-        'tokens_by_extension': {".txt": 10},
-        'size_by_extension': {".txt": 100},
+        'files_by_language': {".txt": 1},
+        'tokens_by_language': {".txt": 10},
+        'size_by_language': {".txt": 100},
         'total_tokens': 10,
         'filter_reasons': {}
     }

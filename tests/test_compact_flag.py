@@ -30,7 +30,7 @@ def test_compact_flag_injection(temp_cwd):
         'total_files': 1,
         'total_discovered': 1,
         'total_size_bytes': 10,
-        'files_by_extension': {'.txt': 1},
+        'files_by_language': {'.txt': 1},
         'total_tokens': 5,
         'token_count_is_approx': True,
         'top_files': [],

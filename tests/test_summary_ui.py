@@ -13,7 +13,7 @@ def test_summary_redesign_largest_files(monkeypatch, capsys):
     stats = {
         'total_files': 10,
         'total_size_bytes': 10000,
-        'files_by_extension': {'.py': 5, '.md': 5},
+        'files_by_language': {'.py': 5, '.md': 5},
         'total_tokens': 2500,
         'token_count_is_approx': False,
         'top_files': [
@@ -68,7 +68,7 @@ def test_summary_printing(monkeypatch, capsys):
         'total_files': 123,
         'total_discovered': 123,
         'total_size_bytes': 1024 * 1024 * 1.5, # 1.5 MB
-        'files_by_extension': {
+        'files_by_language': {
             '.py': 10, '.txt': 5, '.md': 3, '.c': 1, '.h': 1,
             '.cpp': 1, '.hpp': 1, '.java': 1, '.js': 1, '.ts': 1,
             '.css': 1, '.html': 1, '.json': 1, '.xml': 1, '.yml': 1
@@ -110,7 +110,7 @@ def test_summary_printing(monkeypatch, capsys):
     assert "SIZE" in stderr
     assert "%" in stderr
     assert "PATH" in stderr
-    assert "File Types" in stderr
+    assert "Languages" in stderr
     assert "Skipped Folders:" in stderr
     assert "2" in stderr
     assert "Total Tokens:" in stderr
@@ -121,7 +121,7 @@ def test_summary_printing_dry_run(monkeypatch, capsys):
         'total_files': 0,
         'total_discovered': 0,
         'total_size_bytes': 0,
-        'files_by_extension': {},
+        'files_by_language': {},
         'total_tokens': 0,
         'token_count_is_approx': False,
         'top_files': []
@@ -153,7 +153,7 @@ def test_output_shortened_warning(capsys):
     stats = {
         'total_files': 1,
         'total_size_bytes': 10,
-        'files_by_extension': {'.txt': 1},
+        'files_by_language': {'.txt': 1},
         'token_limit_reached': True,
         'total_tokens': 100,
         'max_total_tokens': 50,
@@ -178,7 +178,7 @@ def test_limit_bar_no_color(capsys):
     stats = {
         'total_files': 1,
         'total_size_bytes': 10,
-        'files_by_extension': {'.txt': 1},
+        'files_by_language': {'.txt': 1},
         'total_tokens': 50,
         'max_total_tokens': 100,
         'top_files': []
@@ -203,7 +203,7 @@ def test_summary_terminal_size_fallback(capsys):
     stats = {
         'total_files': 1,
         'total_size_bytes': 10,
-        'files_by_extension': {'.txt': 1},
+        'files_by_language': {'.txt': 1},
         'top_files': []
     }
 
@@ -221,8 +221,8 @@ def test_summary_terminal_size_fallback(capsys):
 
     captured = capsys.readouterr()
     stderr = captured.err
-    assert "File Types" in stderr
-    assert "EXTENSION" in stderr
+    assert "Languages" in stderr
+    assert "LANGUAGE" in stderr
     assert ".txt" in stderr
 
 def test_summary_throughput_line(capsys):
@@ -231,7 +231,7 @@ def test_summary_throughput_line(capsys):
         'total_files': 10,
         'total_discovered': 100,
         'total_size_bytes': 1000,
-        'files_by_extension': {'.txt': 10},
+        'files_by_language': {'.txt': 10},
         'top_files': []
     }
 
@@ -261,12 +261,12 @@ def test_file_types_redesign_sorting_and_others(monkeypatch, capsys):
         'total_discovered': 100,
         'total_included': 100,
         'total_size_bytes': 10000,
-        'files_by_extension': {
+        'files_by_language': {
             '.py': 10, '.txt': 50, '.md': 5, '.c1': 1, '.c2': 1,
             '.c3': 1, '.c4': 1, '.c5': 1, '.c6': 1, '.c7': 1,
             '.c8': 1, '.c9': 1
         },
-        'tokens_by_extension': {
+        'tokens_by_language': {
             '.py': 8000, '.txt': 1000, '.md': 500, '.c1': 50
         },
         'total_tokens': 10000,
@@ -291,21 +291,21 @@ def test_file_types_redesign_sorting_and_others(monkeypatch, capsys):
 
     # Check sorting: .py should be first despite having fewer files than .txt
     # Redesign uses a tabular format without colons
-    # We filter out the data hint line which starts with "  [" but doesn't have "EXTENSION" or "==="
+    # We filter out the data hint line which starts with "  [" but doesn't have "LANGUAGE" or "==="
     # The data hint line now also has the format "TEXT" which doesn't necessarily have a dot if we mock it correctly.
-    ext_lines = [line for line in stderr.splitlines() if " [" in line and "]" in line and ("." in line or "(others)" in line) and "EXTENSION" not in line and "===" not in line and "tokens" not in line]
+    lang_lines = [line for line in stderr.splitlines() if " [" in line and "]" in line and ("." in line or "(others)" in line) and "LANGUAGE" not in line and "===" not in line and "tokens" not in line]
 
-    assert ".py" in ext_lines[0]
-    assert ".txt" in ext_lines[1]
+    assert ".py" in lang_lines[0]
+    assert ".txt" in lang_lines[1]
 
     # Check "others" aggregation (12 extensions total, top 10 shown, others aggregated)
     assert "(others)" in stderr
 
     # Check distribution bar
     # 80% -> 8 blocks -> [########--]
-    assert "[########--]" in ext_lines[0]
+    assert "[########--]" in lang_lines[0]
     # 10% -> 1 block -> [#---------]
-    assert "[#---------]" in ext_lines[1]
+    assert "[#---------]" in lang_lines[1]
 
 def test_jsonl_shortcut(monkeypatch):
     """Test that -J sets format to jsonl."""
@@ -336,7 +336,7 @@ def test_skip_reasons_alignment(monkeypatch, capsys):
         'total_discovered': 10,
         'filter_reasons': {'excluded': 5},
         'total_size_bytes': 100,
-        'files_by_extension': {'.py': 5},
+        'files_by_language': {'.py': 5},
         'total_tokens': 0,
         'top_files': []
     }
@@ -372,7 +372,7 @@ def test_summary_git_info(monkeypatch, capsys):
         'total_files': 1,
         'total_discovered': 1,
         'total_size_bytes': 100,
-        'files_by_extension': {'.py': 1},
+        'files_by_language': {'.py': 1},
         'total_tokens': 10,
         'token_count_is_approx': False,
         'git_branch': 'main',

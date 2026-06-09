@@ -9,8 +9,8 @@ def test_enhanced_overview_text():
         'total_lines': 100,
         'git_branch': 'main',
         'git_commit_short': 'abc1234',
-        'files_by_extension': {'.py': 1, '.md': 1},
-        'tokens_by_extension': {'.py': 400, '.md': 100},
+        'files_by_language': {'.py': 1, '.md': 1},
+        'tokens_by_language': {'.py': 400, '.md': 100},
         'top_files': [
             (400, 1500, 'src/main.py'),
             (100, 548, 'README.md')
@@ -33,8 +33,8 @@ def test_enhanced_overview_text():
     assert "1.46 KB" in overview
     assert "( 80.0%)" in overview
 
-    # Check File Types section with bars
-    assert "File Types:" in overview
+    # Check Languages section with bars
+    assert "Languages:" in overview
     assert ".py" in overview
     assert "1 files ( 50.0% •  80.0%) [########--]" in overview
     assert ".md" in overview
@@ -48,8 +48,8 @@ def test_enhanced_overview_markdown():
         'total_lines': 100,
         'git_branch': 'feat/cool-feature',
         'git_commit_short': 'def5678',
-        'files_by_extension': {'.py': 1, '.md': 1},
-        'tokens_by_extension': {'.py': 400, '.md': 100},
+        'files_by_language': {'.py': 1, '.md': 1},
+        'tokens_by_language': {'.py': 400, '.md': 100},
         'top_files': [
             (400, 1500, 'src/main.py'),
             (100, 548, 'README.md')
@@ -68,8 +68,8 @@ def test_enhanced_overview_markdown():
     assert "| File | Tokens | Size | % |" in overview
     assert "| `src/main.py` | 400 | 1.46 KB | 80.0% |" in overview
 
-    # Check File Types table
-    assert "## File Types" in overview
-    assert "| Extension | Count | % Files | % Tokens |" in overview
+    # Check Languages table
+    assert "## Languages" in overview
+    assert "| Language | Count | % Files | % Tokens |" in overview
     assert "| `.py` | 1 | 50.0% | 80.0% |" in overview
     assert "| `.md` | 1 | 50.0% | 20.0% |" in overview

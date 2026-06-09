@@ -13,7 +13,7 @@ def test_print_execution_summary_status_other(capsys):
     stats = {
         'total_files': 1,
         'total_size_bytes': 100,
-        'files_by_extension': {'.py': 1},
+        'files_by_language': {'.py': 1},
         'total_tokens': 10,
         'token_count_is_approx': False,
         'top_files': [
@@ -42,7 +42,7 @@ def test_print_execution_summary_status_empty(capsys):
     stats = {
         'total_files': 2,
         'total_size_bytes': 200,
-        'files_by_extension': {'.py': 2},
+        'files_by_language': {'.py': 2},
         'total_tokens': 20,
         'token_count_is_approx': False,
         'top_files': [

@@ -10,7 +10,7 @@ def test_main_truncate_tokens_flag(tmp_path, monkeypatch):
     # We use --dry-run to avoid writing output
     with patch('sys.argv', ['sourcecombine.py', '--truncate-tokens', '100', '--dry-run', str(tmp_path)]):
         with patch('sourcecombine.find_and_combine_files') as mock_combine:
-            mock_combine.return_value = {'total_included': 1, 'files_by_extension': {'.py': 1}}
+            mock_combine.return_value = {'total_included': 1, 'files_by_language': {'.py': 1}}
             try:
                 main()
             except SystemExit:

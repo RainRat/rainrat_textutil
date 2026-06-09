@@ -117,7 +117,7 @@ def test_main_cli_injection(monkeypatch, temp_project):
             'total_size_bytes': 0,
             'total_tokens': 0,
             'total_lines': 0,
-            'files_by_extension': {},
+            'files_by_language': {},
             'top_files': [],
             'filter_reasons': {}
         }
