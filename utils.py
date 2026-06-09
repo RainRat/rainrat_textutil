@@ -1478,7 +1478,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     try:
                         content = license_file.read_text(encoding='utf-8').strip()
                         if content:
-                            # Try to extract license type from the first line (e.g., "MIT License" or "Apache License")
+                            # Try to extract license type from the first line (for example, "MIT License" or "Apache License")
                             first_line = content.split('\n')[0].strip()
                             # Clean up common prefixes
                             license_name = re.sub(r'^(The\s+)?(MIT|Apache|GPL|BSD|ISC|Mozilla|Unlicense|Zlib)\s+License.*$', r'\2', first_line, flags=re.IGNORECASE)
