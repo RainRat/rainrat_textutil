@@ -1787,6 +1787,25 @@ def _update_stats_metrics(stats, tokens, lines, is_approx):
         stats['token_count_is_approx'] = True
 
 
+def _populate_project_stats(stats, root_folder, config):
+    """Gather project identity, system info, and manual overrides."""
+    stats.update(utils.get_project_identity(root_folder))
+    stats.update(utils.get_datetime_placeholders())
+    stats.update(utils.get_system_info())
+
+    project_meta = config.get('project', {})
+    if project_meta.get('name'):
+        stats['project_name'] = project_meta['name']
+    if project_meta.get('version'):
+        stats['project_version'] = project_meta['version']
+    if project_meta.get('description'):
+        stats['project_description'] = project_meta['description']
+    if project_meta.get('license'):
+        stats['project_license'] = project_meta['license']
+    if project_meta.get('url'):
+        stats['project_url'] = project_meta['url']
+
+
 class FileProcessor:
     """Process files according to configuration and write them to an output.
 
@@ -2581,22 +2600,7 @@ def find_and_combine_files(
     if config.get('search', {}).get('root_folders'):
         first_root = config['search']['root_folders'][0]
 
-    stats.update(utils.get_project_identity(first_root))
-    stats.update(utils.get_datetime_placeholders())
-    stats.update(utils.get_system_info())
-
-    # Apply manual project metadata overrides from configuration
-    project_meta = config.get('project', {})
-    if project_meta.get('name'):
-        stats['project_name'] = project_meta['name']
-    if project_meta.get('version'):
-        stats['project_version'] = project_meta['version']
-    if project_meta.get('description'):
-        stats['project_description'] = project_meta['description']
-    if project_meta.get('license'):
-        stats['project_license'] = project_meta['license']
-    if project_meta.get('url'):
-        stats['project_url'] = project_meta['url']
+    _populate_project_stats(stats, first_root, config)
 
     search_opts = config.get('search', {})
     filter_opts = config.get('filters', {})
@@ -5272,22 +5276,7 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         sys.exit(1)
 
     # Gather project metadata for templates
-    stats.update(utils.get_project_identity(output_folder))
-    stats.update(utils.get_datetime_placeholders())
-    stats.update(utils.get_system_info())
-
-    # Apply manual project metadata overrides from configuration
-    project_meta = config.get('project', {})
-    if project_meta.get('name'):
-        stats['project_name'] = project_meta['name']
-    if project_meta.get('version'):
-        stats['project_version'] = project_meta['version']
-    if project_meta.get('description'):
-        stats['project_description'] = project_meta['description']
-    if project_meta.get('license'):
-        stats['project_license'] = project_meta['license']
-    if project_meta.get('url'):
-        stats['project_url'] = project_meta['url']
+    _populate_project_stats(stats, output_folder, config)
 
     stats['total_discovered'] = len(files_to_create)
     filter_opts = config.get('filters', {})
