@@ -3609,7 +3609,7 @@ def main():
               # Use a configuration but override the folders to search
               python sourcecombine.py my_config.yml project_a/ project_b/
 
-              # Copy the result to the clipboard
+              # Copy the result to the system clipboard
               python sourcecombine.py src/ -c
 
               # Estimate how many tokens the output will use
@@ -4122,10 +4122,10 @@ def main():
         action="store_true",
         help=(
             "Restore original files and folders from combined files (JSON, XML, Markdown, and other formats). "
-            "Read from files, folders, the terminal ('-'), or the clipboard. "
+            "Read from files, folders, the terminal ('-'), or the system clipboard. "
             "Without an input file, the tool searches for standard defaults (such as combined_files.txt). "
-            "Supports filtering, sorting, and processing rules. "
-            "Line numbers are removed automatically unless you use --keep-line-numbers."
+            "The tool supports filtering, sorting, and processing rules. "
+            "The tool removes line numbers automatically unless you use --keep-line-numbers."
         ),
     )
     utility_group.add_argument(
@@ -4194,13 +4194,13 @@ def main():
         args.overview = True
         args.skip_binary = True
 
-        # If no explicit output is provided, attempt to use the clipboard
+        # If no explicit output is provided, attempt to use the system clipboard
         if not args.output and not args.clipboard and not (
             args.dry_run or args.list_files or args.tree or args.estimate_tokens
         ):
             if importlib.util.find_spec("pyperclip"):
                 args.clipboard = True
-                logging.debug("AI preset: Automatically enabled the clipboard.")
+                logging.debug("AI preset: Automatically enabled the system clipboard.")
 
     # Configure logging *immediately* based on -v.
     # This ensures logging is set up *before* load_and_validate_config (which logs)

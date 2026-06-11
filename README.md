@@ -8,7 +8,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   **Deduplication:** Skip duplicate files by absolute path or content.
 *   **Include Groups:** Group specific files to always include, even if you skip others.
 *   **Pairing:** Combine related files (such as source and header pairs) into their own individual output files.
-*   **File Extraction:** Rebuild the original files and folders from combined files (such as JSON, XML, JSONL, CSV, or Markdown). Filtering, sorting, and processing rules are supported. Batch process multiple files or entire folders. Without an input file, the tool automatically searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`).
+*   **File Extraction:** Rebuild the original files and folders from combined files (such as JSON, XML, JSONL, CSV, or Markdown). The tool supports filtering, sorting, and processing rules. Batch process multiple files or entire folders. Without an input file, the tool automatically searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`).
 *   **Sorting:** Sort files by `name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`.
 *   **Limiting:** Stop processing once you reach a file, token, size, or line limit.
 *   **Flexible Outputs:** Save results to the terminal, a file (JSON, XML, JSONL, CSV, or Markdown), or copy them to the system clipboard.
@@ -85,8 +85,27 @@ The tool installs these automatically when you follow the installation steps:
 
 For more details, use `python sourcecombine.py --help` or check `config.template.yml`.
 
+## Usage Examples
+### Basic Combination
+Combine all files in the current directory into `combined_files.txt`:
+```bash
+python sourcecombine.py
+```
+
+### Filtering by Language
+Combine only Python and JavaScript files from the `src` folder:
+```bash
+python sourcecombine.py src/ --language python --language javascript --output project_context.txt
+```
+
+### File Extraction
+Rebuild the original project structure from a combined Markdown file:
+```bash
+python sourcecombine.py --extract combined_files.md --output restored_project/
+```
+
 ## Template Customization
-You can customize the output by using templates in the configuration file. Templates support placeholders that are replaced with actual data when the tool runs. All project-level and Git placeholders are available in both file-level and global templates.
+You can customize the output by using templates in the configuration file. Templates support placeholders that are replaced with actual data when the tool runs. Both file-level and global templates support all project-level and Git placeholders.
 
 ### File-Level Placeholders
 Used in `header_template` and `footer_template`:
