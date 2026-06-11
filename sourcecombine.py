@@ -4200,6 +4200,11 @@ def main():
         help="Show details about the system and environment.",
     )
     utility_group.add_argument(
+        "--project-info",
+        action="store_true",
+        help="Show detected project metadata and Git information for the current project.",
+    )
+    utility_group.add_argument(
         "--version",
         "-V",
         action="version",
@@ -4246,6 +4251,55 @@ def main():
 
     if args.system_info:
         print_system_info()
+        sys.exit(0)
+
+    if getattr(args, 'project_info', None) is True:
+        # We need to load and validate config first to get root folders and metadata overrides
+        targets = args.targets
+        config_path = args.config
+        remaining_targets = []
+        if targets:
+            first = targets[0]
+            if (not config_path and not args.extract and
+                first.lower().endswith(('.yml', '.yaml')) and not Path(first).is_dir()):
+                config_path = first
+                remaining_targets = targets[1:]
+            else:
+                remaining_targets = targets
+        if not config_path and not remaining_targets:
+            defaults = ['sourcecombine.yml', 'sourcecombine.yaml', 'config.yml', 'config.yaml']
+            for d in defaults:
+                if Path(d).is_file():
+                    config_path = d
+                    break
+        try:
+            if config_path:
+                config = load_and_validate_config(config_path)
+            else:
+                config = copy.deepcopy(utils.DEFAULT_CONFIG)
+                utils.validate_config(config)
+        except (ConfigNotFoundError, utils.InvalidConfigError) as e:
+            _handle_invalid_config_error(e, args.verbose)
+
+        if remaining_targets:
+            config['search']['root_folders'] = remaining_targets
+        elif not config.get('search', {}).get('root_folders'):
+            config.setdefault('search', {})['root_folders'] = ["."]
+
+        # Inject project metadata CLI overrides
+        project_conf = config.setdefault('project', {})
+        if getattr(args, 'project_name', None) is not None: project_conf['name'] = args.project_name
+        if getattr(args, 'project_version', None) is not None: project_conf['version'] = args.project_version
+        if getattr(args, 'project_description', None) is not None: project_conf['description'] = args.project_description
+        if getattr(args, 'project_license', None) is not None: project_conf['license'] = args.project_license
+        if getattr(args, 'project_url', None) is not None: project_conf['url'] = args.project_url
+
+        stats = {}
+        root = config['search']['root_folders'][0]
+        _populate_project_stats(stats, root, config)
+        git_info = _get_git_info(root, log_count=config['output'].get('git_log_count', 0), include_diff=config['output'].get('include_diff', False))
+        stats.update(git_info)
+        print_project_info(stats)
         sys.exit(0)
 
     if args.list_placeholders:
@@ -5780,6 +5834,54 @@ def print_placeholders():
         print(f"\n  {C_BOLD}{category}{C_RESET}")
         for placeholder, description in placeholders:
             print(f"    {C_BOLD}{C_CYAN}{placeholder:<{placeholder_width}}{C_RESET} {C_DIM}{description}{C_RESET}")
+
+    print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
+
+
+def print_project_info(stats):
+    """Print detected project metadata and Git information."""
+    print(f"\n{C_BOLD}{C_CYAN}Detected Project Information:{C_RESET}")
+
+    categories = {
+        "Project Metadata": [
+            ("Name", stats.get('project_name')),
+            ("Version", stats.get('project_version')),
+            ("Description", stats.get('project_description')),
+            ("License", stats.get('project_license')),
+            ("URL", stats.get('project_url')),
+        ],
+        "Git Information": [
+            ("Branch", stats.get('git_branch')),
+            ("Commit", stats.get('git_commit')),
+            ("Short Commit", stats.get('git_commit_short')),
+            ("Author", stats.get('git_author')),
+            ("Date", stats.get('git_author_date')),
+            ("Tag", stats.get('git_tag')),
+            ("Remote URL", stats.get('git_remote_url')),
+            ("Repo Root", stats.get('git_repo_root')),
+            ("Status", stats.get('git_status')),
+        ],
+        "System & Environment": [
+            ("OS", stats.get('os')),
+            ("Python", stats.get('python_version')),
+            ("Platform", stats.get('platform')),
+            ("Architecture", stats.get('arch')),
+        ]
+    }
+
+    label_width = 15
+
+    for category, fields in categories.items():
+        print(f"\n  {C_BOLD}{category}{C_RESET}")
+        for label, value in fields:
+            display_value = str(value) if value is not None else "N/A"
+            if "\n" in display_value:
+                lines = display_value.splitlines()
+                print(f"    {C_BOLD}{label:<{label_width}}{C_RESET} {C_DIM}{lines[0]}{C_RESET}")
+                for line in lines[1:]:
+                    print(f"    {' ':<{label_width}} {C_DIM}{line}{C_RESET}")
+            else:
+                print(f"    {C_BOLD}{label:<{label_width}}{C_RESET} {C_DIM}{display_value}{C_RESET}")
 
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
