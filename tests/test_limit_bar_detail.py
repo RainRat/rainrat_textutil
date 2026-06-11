@@ -7,7 +7,7 @@ def test_limit_bar_detail_tokens(capsys):
     stats = {
         'total_files': 1,
         'total_size_bytes': 10,
-        'files_by_extension': {'.txt': 1},
+        'files_by_language': {'.txt': 1},
         'total_tokens': 500,
         'max_total_tokens': 1000,
         'top_files': []
@@ -30,7 +30,7 @@ def test_limit_bar_detail_size(capsys):
     stats = {
         'total_files': 1,
         'total_size_bytes': 1024 * 5, # 5 KB
-        'files_by_extension': {'.txt': 1},
+        'files_by_language': {'.txt': 1},
         'total_tokens': 0,
         'max_total_size_bytes': 1024 * 10, # 10 KB
         'top_files': []
@@ -54,7 +54,7 @@ def test_limit_bar_detail_files(capsys):
         'total_files': 5,
         'max_files': 10,
         'total_size_bytes': 100,
-        'files_by_extension': {'.txt': 5},
+        'files_by_language': {'.txt': 5},
         'top_files': []
     }
 

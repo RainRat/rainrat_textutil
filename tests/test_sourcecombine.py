@@ -846,7 +846,7 @@ def test_update_file_stats_oserror():
     stats = {
         'total_files': 0,
         'total_size_bytes': 0,
-        'files_by_extension': {}
+        'files_by_language': {}
     }
     file_path = MagicMock(spec=Path)
     file_path.stat.side_effect = OSError("Permission denied")
@@ -856,7 +856,8 @@ def test_update_file_stats_oserror():
 
     assert stats['total_files'] == 1
     assert stats['total_size_bytes'] == 0
-    assert stats['files_by_extension'][".txt"] == 1
+    # utils.get_language_tag(".txt") returns "text" (fallback for unknown extensions)
+    assert stats['files_by_language']["text"] == 1
 
 def test_group_paths_by_stem_suffix_not_relative():
     root_path = Path("/app/project")

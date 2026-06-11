@@ -156,7 +156,7 @@ def test_terminal_summary_approx_tokens(capsys):
         'total_size_bytes': 100,
         'total_tokens': 1000,
         'token_count_is_approx': True,
-        'files_by_extension': {'.py': 1},
+        'files_by_language': {'.py': 1},
     }
     args = Namespace(
         dry_run=False,

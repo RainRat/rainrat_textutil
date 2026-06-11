@@ -7,7 +7,7 @@ def test_overview_generation_text():
         'total_size_bytes': 1024,
         'total_tokens': 250,
         'total_lines': 50,
-        'files_by_extension': {'.py': 1, '.md': 1}
+        'files_by_language': {'.py': 1, '.md': 1}
     }
     overview = _generate_project_overview(stats, output_format='text')
     assert "Project Overview:" in overview
@@ -22,12 +22,12 @@ def test_overview_generation_markdown():
         'total_size_bytes': 1024,
         'total_tokens': 250,
         'total_lines': 50,
-        'files_by_extension': {'.py': 1, '.md': 1}
+        'files_by_language': {'.py': 1, '.md': 1}
     }
     overview = _generate_project_overview(stats, output_format='markdown')
     assert "# Project Overview" in overview
     assert "## Statistics" in overview
-    assert "| Extension | Count |" in overview
+    assert "| Language | Count |" in overview
     assert "| `.py` | 1 |" in overview
 
 def test_overview_truncation_notices():

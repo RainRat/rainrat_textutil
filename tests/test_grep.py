@@ -111,7 +111,7 @@ def test_cli_grep_config_injection(tmp_path, monkeypatch):
     with patch("sourcecombine.find_and_combine_files") as mock_combine:
         mock_combine.return_value = {
             'total_files': 1,
-            'files_by_extension': {},
+            'files_by_language': {},
             'filter_reasons': {},
             'top_files': []
         }

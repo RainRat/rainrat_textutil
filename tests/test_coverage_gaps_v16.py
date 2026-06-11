@@ -112,10 +112,10 @@ def test_print_execution_summary_limits_mock_gap():
         'total_size_bytes': 100,
         'total_tokens': 0,
         'total_lines': 0,
-        'files_by_extension': {},
+        'files_by_language': {},
         'top_files': [],
-        'tokens_by_extension': {},
-        'size_by_extension': {},
+        'tokens_by_language': {},
+        'size_by_language': {},
     }
 
     args = Namespace(

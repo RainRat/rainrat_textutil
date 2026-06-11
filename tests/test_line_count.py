@@ -65,7 +65,7 @@ def test_line_count_in_summary(capsys, tmp_path):
         'total_size_bytes': 10,
         'total_lines': 123,
         'total_tokens': 45,
-        'files_by_extension': {'.txt': 1}
+        'files_by_language': {'.txt': 1}
     }
 
     args = argparse.Namespace(

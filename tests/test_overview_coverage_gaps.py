@@ -18,8 +18,8 @@ def test_overview_ascii_bar_minimum_fill():
         'total_size_bytes': 1000,
         'total_tokens': 0,
         'total_lines': 100,
-        'files_by_extension': {'.txt': 1, '.other': 9},
-        'size_by_extension': {'.txt': 20, '.other': 980}
+        'files_by_language': {'.txt': 1, '.other': 9},
+        'size_by_language': {'.txt': 20, '.other': 980}
     }
     overview = _generate_project_overview(stats, output_format='text')
     assert "[#---------]" in overview

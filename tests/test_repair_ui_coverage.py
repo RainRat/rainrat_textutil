@@ -242,9 +242,9 @@ def test_print_execution_summary_with_status():
         'total_tokens': 10,
         'total_lines': 5,
         'top_files': [(10, 100, 'test.py', 'M')],
-        'files_by_extension': {'.py': 1},
-        'tokens_by_extension': {'.py': 10},
-        'size_by_extension': {'.py': 100},
+        'files_by_language': {'.py': 1},
+        'tokens_by_language': {'.py': 10},
+        'size_by_language': {'.py': 100},
         'project_name': 'TestProj',
         'git_branch': 'main',
         'git_commit_short': 'abc1234'

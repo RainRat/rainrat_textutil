@@ -138,9 +138,9 @@ def test_extract_summary_json_template(tmp_path):
         'project_name': 'TestProj',
         'total_included': 0,
         'top_files': [],
-        'files_by_extension': {},
-        'tokens_by_extension': {},
-        'size_by_extension': {},
+        'files_by_language': {},
+        'tokens_by_language': {},
+        'size_by_language': {},
         'filter_reasons': {}
     }
 
@@ -177,9 +177,9 @@ def test_print_execution_summary_extra_metadata_and_deleted_status(capsys):
         'total_lines': 5,
         'duration': 0.1,
         'top_files': [(10, 100, "deleted.txt", "D", 5)], # status "D"
-        'files_by_extension': {".txt": 1},
-        'tokens_by_extension': {".txt": 10},
-        'size_by_extension': {".txt": 100},
+        'files_by_language': {".txt": 1},
+        'tokens_by_language': {".txt": 10},
+        'size_by_language': {".txt": 100},
         'total_tokens': 10,
         'filter_reasons': {}
     }

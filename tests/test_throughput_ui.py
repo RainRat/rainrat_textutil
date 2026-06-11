@@ -12,7 +12,7 @@ def test_throughput_with_tokens(monkeypatch, capsys):
         'total_files': 10,
         'total_discovered': 10,
         'total_size_bytes': 10240, # 10 KB
-        'files_by_extension': {'.py': 10},
+        'files_by_language': {'.py': 10},
         'total_tokens': 5000,
         'token_count_is_approx': False,
         'top_files': []
@@ -49,7 +49,7 @@ def test_throughput_without_tokens(monkeypatch, capsys):
         'total_files': 10,
         'total_discovered': 10,
         'total_size_bytes': 10240, # 10 KB
-        'files_by_extension': {'.py': 10},
+        'files_by_language': {'.py': 10},
         'total_tokens': 0,
         'token_count_is_approx': False,
         'top_files': []

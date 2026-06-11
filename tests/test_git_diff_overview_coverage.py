@@ -52,7 +52,7 @@ def test_generate_project_overview_with_diff():
         'git_diff': 'diff --git a/file b/file\n+new line',
         'files': [],
         'top_files': [],
-        'files_by_extension': {},
+        'files_by_language': {},
         'total_tokens': 100,
         'total_size_bytes': 1024
     }
@@ -89,7 +89,7 @@ def test_main_include_diff_flag(tmp_path):
 
     with patch.object(sys, 'argv', ['sourcecombine.py', str(repo), '--include-diff']):
         with patch('sourcecombine.load_and_validate_config', return_value=utils.DEFAULT_CONFIG.copy()):
-            with patch('sourcecombine.find_and_combine_files', return_value={'included': [], 'total_included': 0, 'total_found': 0, 'skipped': [], 'skipped_folders': 0, 'duration': 0.1, 'total_tokens': 0, 'total_size_bytes': 0, 'total_lines': 0, 'is_approx': False, 'top_files': [], 'files_by_extension': {}}) as mock_combine:
+            with patch('sourcecombine.find_and_combine_files', return_value={'included': [], 'total_included': 0, 'total_found': 0, 'skipped': [], 'skipped_folders': 0, 'duration': 0.1, 'total_tokens': 0, 'total_size_bytes': 0, 'total_lines': 0, 'is_approx': False, 'top_files': [], 'files_by_language': {}}) as mock_combine:
                 with patch('sourcecombine._get_git_info', return_value={}):
                     with patch('sys.stderr', new_callable=io.StringIO):
                         try:
@@ -151,7 +151,7 @@ def test_main_verbs_coverage(tmp_path):
         'total_lines': 5,
         'is_approx': False,
         'top_files': [],
-        'files_by_extension': {}
+        'files_by_language': {}
     }
 
     # Use a string buffer to capture stderr

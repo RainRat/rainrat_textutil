@@ -33,7 +33,7 @@ def test_multiple_folders_as_targets(temp_cwd, mock_argv):
     (folder2 / "b.py").write_text("b", encoding="utf-8")
 
     with patch('sourcecombine.find_and_combine_files') as mock_combine:
-        mock_combine.return_value = {'total_files': 0, 'files_by_extension': {}}
+        mock_combine.return_value = {'total_files': 0, 'files_by_language': {}}
 
         # Pass both folders as targets
         args = [str(folder1), str(folder2)]
@@ -57,7 +57,7 @@ def test_mixed_folder_and_file_targets(temp_cwd, mock_argv):
     standalone_file.write_text("main", encoding="utf-8")
 
     with patch('sourcecombine.find_and_combine_files') as mock_combine:
-        mock_combine.return_value = {'total_files': 0, 'files_by_extension': {}}
+        mock_combine.return_value = {'total_files': 0, 'files_by_language': {}}
 
         args = [str(folder), str(standalone_file)]
         with mock_argv(args):
@@ -84,7 +84,7 @@ def test_config_file_plus_additional_targets(temp_cwd, mock_argv):
     (folder / "file.txt").write_text("hello", encoding="utf-8")
 
     with patch('sourcecombine.find_and_combine_files') as mock_combine:
-        mock_combine.return_value = {'total_files': 0, 'files_by_extension': {}}
+        mock_combine.return_value = {'total_files': 0, 'files_by_language': {}}
 
         # Config file first, then the folder override
         args = [str(config_file), str(folder)]
@@ -109,7 +109,7 @@ def test_individual_file_target(temp_cwd, mock_argv):
     file.write_text("content", encoding="utf-8")
 
     with patch('sourcecombine.find_and_combine_files') as mock_combine:
-        mock_combine.return_value = {'total_files': 0, 'files_by_extension': {}}
+        mock_combine.return_value = {'total_files': 0, 'files_by_language': {}}
 
         args = [str(file)]
         with mock_argv(args):
@@ -125,7 +125,7 @@ def test_no_targets_auto_discovery(temp_cwd, mock_argv):
     yaml.dump({'search': {'root_folders': ['auto']}}, open(config_file, 'w'))
 
     with patch('sourcecombine.find_and_combine_files') as mock_combine:
-        mock_combine.return_value = {'total_files': 0, 'files_by_extension': {}}
+        mock_combine.return_value = {'total_files': 0, 'files_by_language': {}}
 
         with mock_argv([]):
             main()

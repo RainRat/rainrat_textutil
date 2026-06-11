@@ -26,7 +26,7 @@ def mock_stats():
         'total_files': 0,
         'total_discovered': 0,
         'total_size_bytes': 0,
-        'files_by_extension': {},
+        'files_by_language': {},
         'total_tokens': 0,
         'token_count_is_approx': False,
         'top_files': [],

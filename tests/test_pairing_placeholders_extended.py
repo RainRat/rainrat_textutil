@@ -97,7 +97,7 @@ def test_process_paired_files_integration(tmp_path, monkeypatch):
         'project_name': "SuperApp",
         'total_files': 0,
         'total_size_bytes': 0,
-        'files_by_extension': {},
+        'files_by_language': {},
         'top_files': [],
         'git_branch': 'N/A',
         'git_commit_short': 'N/A'

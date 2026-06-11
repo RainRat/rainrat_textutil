@@ -50,7 +50,7 @@ def test_process_paired_files_gaps(tmp_path):
         'total_lines': 0,
         'total_files': 0,
         'total_size_bytes': 0,
-        'files_by_extension': {},
+        'files_by_language': {},
         'top_files': [],
         'token_count_is_approx': False
     }
@@ -77,7 +77,7 @@ def test_process_paired_files_gaps(tmp_path):
         'total_lines': 0,
         'total_files': 0,
         'total_size_bytes': 0,
-        'files_by_extension': {},
+        'files_by_language': {},
         'top_files': [],
         'token_count_is_approx': False
     }

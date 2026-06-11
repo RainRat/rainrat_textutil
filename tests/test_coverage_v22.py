@@ -158,7 +158,7 @@ def test_print_execution_summary_has_limits_stats(capsys):
         'total_lines': 200,
         'duration': 1.0,
         'top_files': [],
-        'files_by_extension': {},
+        'files_by_language': {},
         'filter_reasons': {},
         'max_files': 100  # Trigger has_limits
     }

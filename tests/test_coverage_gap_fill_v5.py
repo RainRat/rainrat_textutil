@@ -82,7 +82,7 @@ filters:
 """
     config_file.write_text(config_content)
 
-    mock_stats = {'total_files': 0, 'total_discovered': 0, 'total_size_bytes': 0, 'files_by_extension': {}, 'total_tokens': 0, 'token_count_is_approx': False, 'top_files': [], 'filter_reasons': {}}
+    mock_stats = {'total_files': 0, 'total_discovered': 0, 'total_size_bytes': 0, 'files_by_language': {}, 'total_tokens': 0, 'token_count_is_approx': False, 'top_files': [], 'filter_reasons': {}}
 
     with patch('sourcecombine.find_and_combine_files', return_value=mock_stats) as mock_find:
         with patch('sys.argv', ['sourcecombine.py', str(config_file), '.', '--exclude-file', 'f.py', '--exclude-folder', 'd/', '--include', '*.c']):
@@ -136,7 +136,7 @@ def test_print_execution_summary_terminal_size_exception():
     mock_args.extract = False
     mock_stats = {
         'total_files': 0,
-        'files_by_extension': {}
+        'files_by_language': {}
     }
     with patch('shutil.get_terminal_size', side_effect=Exception("error")):
         with patch('sys.stderr', new=MagicMock()):
@@ -175,7 +175,7 @@ def test_line_limit_reached_warning_direct(capsys):
     mock_stats = {
         'line_limit_reached': True,
         'total_files': 0,
-        'files_by_extension': {}
+        'files_by_language': {}
     }
     mock_args = MagicMock()
     mock_args.extract = False
