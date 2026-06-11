@@ -402,6 +402,49 @@ def _get_folder_stats(top_files):
     return folder_stats
 
 
+def _get_summary_top_items(stats, items, is_folder=False):
+    """Select the best metric (tokens, lines, or size) and return top 5 items.
+
+    Returns a tuple of (sorted_items, title, total_weight, has_tokens, has_lines).
+    """
+    if is_folder:
+        # items is list of (path, data_dict)
+        has_tokens = any(f[1]['tokens'] > 0 for f in items)
+        has_lines = any(f[1].get('lines', 0) > 0 for f in items)
+
+        if has_tokens:
+            sorted_items = sorted(items, key=lambda x: (-x[1]['tokens'], x[0]))[:5]
+            title = "Largest Folders (by tokens)"
+            total_weight = stats.get('total_tokens', 0)
+        elif has_lines:
+            sorted_items = sorted(items, key=lambda x: (-x[1]['lines'], x[0]))[:5]
+            title = "Largest Folders (by lines)"
+            total_weight = stats.get('total_lines', 0)
+        else:
+            sorted_items = sorted(items, key=lambda x: (-x[1]['size'], x[0]))[:5]
+            title = "Largest Folders (by size)"
+            total_weight = stats.get('total_size_bytes', 0)
+    else:
+        # items is stats['top_files']: list of (tokens, size, path, status, lines)
+        has_tokens = any(f[0] > 0 for f in items)
+        has_lines = any(len(f) > 4 and f[4] > 0 for f in items)
+
+        if has_tokens:
+            sorted_items = sorted(items, key=lambda x: (-x[0], x[2]))[:5]
+            title = "Largest Files (by tokens)"
+            total_weight = stats.get('total_tokens', 0)
+        elif has_lines:
+            sorted_items = sorted(items, key=lambda x: (-x[4] if len(x) > 4 else 0, x[2]))[:5]
+            title = "Largest Files (by lines)"
+            total_weight = stats.get('total_lines', 0)
+        else:
+            sorted_items = sorted(items, key=lambda x: (-x[1], x[2]))[:5]
+            title = "Largest Files (by size)"
+            total_weight = stats.get('total_size_bytes', 0)
+
+    return sorted_items, title, total_weight, has_tokens, has_lines
+
+
 def _format_metadata_summary(meta: Mapping[str, Any], colored: bool = False) -> str:
     """Return file or folder details in an easy-to-read format."""
     parts = []
@@ -2341,22 +2384,9 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
     # Largest Files
     top_files = stats.get('top_files')
     if top_files:
-        # Sort and limit to top 5
-        has_tokens = any(f[0] > 0 for f in top_files)
-        has_lines = any(len(f) > 4 and f[4] > 0 for f in top_files)
-
-        if has_tokens:
-            sorted_top = sorted(top_files, key=lambda x: (-x[0], x[2]))[:5]
-            title = "Largest Files (by tokens)"
-            total_weight = total_tokens
-        elif has_lines:
-            sorted_top = sorted(top_files, key=lambda x: (-x[4] if len(x) > 4 else 0, x[2]))[:5]
-            title = "Largest Files (by lines)"
-            total_weight = total_lines
-        else:
-            sorted_top = sorted(top_files, key=lambda x: (-x[1], x[2]))[:5]
-            title = "Largest Files (by size)"
-            total_weight = total_size_bytes
+        sorted_top, title, total_weight, has_tokens, has_lines = _get_summary_top_items(
+            stats, top_files, is_folder=False
+        )
 
         if output_format == 'markdown':
             lines.append(f"\n## {title}")
@@ -2402,21 +2432,9 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
     # Largest Folders
     folder_stats = _get_folder_stats(top_files)
     if folder_stats:
-        has_tokens = any(f['tokens'] > 0 for f in folder_stats.values())
-        has_lines = any(f.get('lines', 0) > 0 for f in folder_stats.values())
-
-        if has_tokens:
-            sorted_folders = sorted(folder_stats.items(), key=lambda x: (-x[1]['tokens'], x[0]))[:5]
-            title = "Largest Folders (by tokens)"
-            total_weight = total_tokens
-        elif has_lines:
-            sorted_folders = sorted(folder_stats.items(), key=lambda x: (-x[1]['lines'], x[0]))[:5]
-            title = "Largest Folders (by lines)"
-            total_weight = total_lines
-        else:
-            sorted_folders = sorted(folder_stats.items(), key=lambda x: (-x[1]['size'], x[0]))[:5]
-            title = "Largest Folders (by size)"
-            total_weight = total_size_bytes
+        sorted_folders, title, total_weight, has_tokens, has_lines = _get_summary_top_items(
+            stats, list(folder_stats.items()), is_folder=True
+        )
 
         if output_format == 'markdown':
             lines.append(f"\n## {title}")
@@ -6103,22 +6121,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     # Largest Files
     has_status = False
     if stats.get('top_files'):
-        # Fallback to sorting by size if no token counts are available
-        has_tokens = any(f[0] > 0 for f in stats['top_files'])
-        has_lines = any(len(f) > 4 and f[4] > 0 for f in stats['top_files'])
-
-        if has_tokens:
-            top = sorted(stats['top_files'], key=lambda x: (-x[0], x[2]))[:5]
-            title = "Largest Files (by tokens)"
-            total_for_percent = stats.get('total_tokens', 0)
-        elif has_lines:
-            top = sorted(stats['top_files'], key=lambda x: (-x[4] if len(x) > 4 else 0, x[2]))[:5]
-            title = "Largest Files (by lines)"
-            total_for_percent = stats.get('total_lines', 0)
-        else:
-            top = sorted(stats['top_files'], key=lambda x: (-x[1], x[2]))[:5]
-            title = "Largest Files (by size)"
-            total_for_percent = stats.get('total_size_bytes', 0)
+        top, title, total_for_percent, has_tokens, has_lines = _get_summary_top_items(
+            stats, stats['top_files'], is_folder=False
+        )
 
         # Only show STATUS column if at least one displayed file has a status
         has_status = any(len(f) > 3 and f[3] for f in top)
@@ -6198,21 +6203,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     # Largest Folders
     folder_stats = _get_folder_stats(stats.get('top_files'))
     if folder_stats:
-        has_tokens = any(f['tokens'] > 0 for f in folder_stats.values())
-        has_lines = any(f.get('lines', 0) > 0 for f in folder_stats.values())
-
-        if has_tokens:
-            top_f = sorted(folder_stats.items(), key=lambda x: (-x[1]['tokens'], x[0]))[:5]
-            total_for_percent = stats.get('total_tokens', 0)
-            title = "Largest Folders (by tokens)"
-        elif has_lines:
-            top_f = sorted(folder_stats.items(), key=lambda x: (-x[1]['lines'], x[0]))[:5]
-            total_for_percent = stats.get('total_lines', 0)
-            title = "Largest Folders (by lines)"
-        else:
-            top_f = sorted(folder_stats.items(), key=lambda x: (-x[1]['size'], x[0]))[:5]
-            total_for_percent = stats.get('total_size_bytes', 0)
-            title = "Largest Folders (by size)"
+        top_f, title, total_for_percent, has_tokens, has_lines = _get_summary_top_items(
+            stats, list(folder_stats.items()), is_folder=True
+        )
 
         # Calculate dynamic overhead for path width
         # TOKENS: 13, LINES: 13, SIZE: 13, %: 7, DISTRIBUTION: 13, STATUS: 7, FILES: 7
