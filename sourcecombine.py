@@ -4164,8 +4164,8 @@ def main():
             "Rebuild original files and folders from combined files (JSON, XML, Markdown, and other formats). "
             "The tool reads from files, folders, the terminal ('-'), or the system clipboard. "
             "Without an input file, the tool searches for standard default files such as `combined_files.txt`, "
-            "`.md`, `.json`, `.xml`, `.jsonl`, or `.csv`. "
-            "The tool supports filtering, sorting, and processing rules. "
+            "`combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, "
+            "or `combined_files.csv`. The tool supports filtering, sorting, and processing rules. "
             "The tool removes line numbers automatically unless you use --keep-line-numbers."
         ),
     )
@@ -4184,9 +4184,10 @@ def main():
         action="store_true",
         help=(
             "Verify that files on disk match the content or hashes in combined files or manifests. "
-            "Read from files, folders, the terminal ('-'), or the system clipboard. "
-            "Without an input file, the tool searches for combined_files.txt, combined_files.md, "
-            "combined_files.json, combined_files.xml, combined_files.jsonl, or combined_files.csv."
+            "The tool reads from files, folders, the terminal ('-'), or the system clipboard. "
+            "Without an input file, the tool searches for standard default files such as `combined_files.txt`, "
+            "`combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, "
+            "or `combined_files.csv`."
         ),
     )
     utility_group.add_argument(
