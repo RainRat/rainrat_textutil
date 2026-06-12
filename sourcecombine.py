@@ -3132,6 +3132,11 @@ def find_and_combine_files(
             stats['files_by_extension'] = {}
             stats['size_by_extension'] = {}
             stats['tokens_by_extension'] = {}
+            stats['lines_by_extension'] = {}
+            stats['files_by_language'] = {}
+            stats['size_by_language'] = {}
+            stats['tokens_by_language'] = {}
+            stats['lines_by_language'] = {}
             if pairing_enabled:
                 for _, _, paths in all_paired_items:
                     for p in paths:
@@ -3367,6 +3372,10 @@ def find_and_combine_files(
             stats['size_by_extension'] = {}
             stats['tokens_by_extension'] = {}
             stats['lines_by_extension'] = {}
+            stats['files_by_language'] = {}
+            stats['size_by_language'] = {}
+            stats['tokens_by_language'] = {}
+            stats['lines_by_language'] = {}
             for item in all_combined_items:
                 file_p = item[0]
                 meta = file_metadata.get(file_p, {})
