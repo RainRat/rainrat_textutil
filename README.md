@@ -39,6 +39,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--delete-backups`: Remove all `.bak` files from the folders.
 *   `--list-languages`: Show all supported language identifiers and exit.
 *   `--list-placeholders`: Show all supported template placeholders and exit.
+*   `--project-info`: Show detected project metadata and Git information for the current project.
 *   `--show-config`: Display the final configuration being used and exit.
 *   `--export-config`: Save the final combined configuration to a YAML file and exit.
 *   `--system-info`: Show environment details (Python version, OS, and other system details).
