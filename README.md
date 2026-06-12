@@ -105,6 +105,13 @@ Rebuild the original project structure from a combined Markdown file:
 python sourcecombine.py --extract combined_files.md --output restored_project/
 ```
 
+### AI Model Context
+Prepare your project for an AI model by using the `--ai` preset. This automatically adds line numbers, a Table of Contents, a folder tree, and project metadata:
+```bash
+python sourcecombine.py src/ --ai
+```
+*(Tip: If you do not specify an output file, the results are automatically copied to the system clipboard.)*
+
 ## Template Customization
 You can customize the output by using templates in the configuration file. Templates support placeholders that are replaced with actual data when the tool runs. Both file-level and global templates support all project-level and Git placeholders.
 
