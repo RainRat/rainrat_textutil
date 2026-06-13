@@ -4171,7 +4171,7 @@ def main():
         action="store_true",
         help=(
             "Rebuild original files and folders from combined files (JSON, XML, Markdown, and other formats). "
-            "The tool reads from files, folders, the terminal ('-'), or the system clipboard. "
+            "The tool reads from files, folders, remote URLs (http/https), the terminal ('-'), or the system clipboard. "
             "Without an input file, the tool searches for standard default files such as `combined_files.txt`, "
             "`combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, "
             "or `combined_files.csv`. The tool supports filtering, sorting, and processing rules. "
@@ -4193,7 +4193,7 @@ def main():
         action="store_true",
         help=(
             "Verify that files on disk match the content or hashes in combined files or manifests. "
-            "The tool reads from files, folders, the terminal ('-'), or the system clipboard. "
+            "The tool reads from files, folders, remote URLs (http/https), the terminal ('-'), or the system clipboard. "
             "Without an input file, the tool searches for standard default files such as `combined_files.txt`, "
             "`combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, "
             "or `combined_files.csv`."
@@ -4896,9 +4896,14 @@ def main():
                 logging.error("The 'pyperclip' tool is required for clipboard support. Install it with: pip install pyperclip")
                 sys.exit(1)
 
+        user_agent = f"SourceCombine/{__version__}"
         for target in remaining_targets:
             if target == "-":
                 sources.append(("stdin", sys.stdin.read()))
+            elif target.startswith(("http://", "https://")):
+                content, _ = utils.read_url_best_effort(target, user_agent=user_agent)
+                if content:
+                    sources.append((target, content))
             else:
                 input_path = Path(target)
                 if input_path.is_dir():
