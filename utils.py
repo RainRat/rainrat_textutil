@@ -4,6 +4,7 @@ import logging
 import platform
 import re
 import sys
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -21,6 +22,7 @@ except ImportError:
     tiktoken = None
 
 
+__version__ = "0.5.0"
 DEFAULT_OUTPUT_FILENAME = "combined_files.txt"
 FILENAME_PLACEHOLDER = "{{FILENAME}}"
 
@@ -268,28 +270,15 @@ def save_yaml_config(config_file_path, config):
         raise InvalidConfigError(f"Could not write configuration file: {e}") from e
 
 
-def read_file_best_effort(file_path):
-    """Try to read a file using different ways.
+def _decode_best_effort(raw_bytes: bytes, source_label: str) -> tuple[str, str]:
+    """Identify and apply the best character encoding for the provided bytes.
 
-    The function first tries UTF-8, then tries to find the likely format
-    before falling back to a basic UTF-8 read.
-
-    Returns:
-        (str, str): The text content and the name of its encoding.
+    Returns a tuple of (decoded_text, encoding_name).
     """
-
-    try:
-        raw_bytes = Path(file_path).read_bytes()
-    except FileNotFoundError:
-        raise
-    except OSError:
-        logging.warning("Could not read %s.", file_path)
-        return "", 'utf-8'
-
     try:
         text = raw_bytes.decode('utf-8-sig')
         if '\x00' in text:
-            raise UnicodeError("Found empty (NUL) characters; trying other ways to read the file")
+            raise UnicodeError("Found empty (NUL) characters; trying fallback detection.")
         # Only return utf-8-sig if it actually had a BOM
         encoding = 'utf-8-sig' if raw_bytes.startswith(b'\xef\xbb\xbf') else 'utf-8'
         return text, encoding
@@ -309,14 +298,51 @@ def read_file_best_effort(file_path):
             return raw_bytes.decode(encoding, errors='replace').lstrip('\ufeff'), encoding
         except LookupError:
             logging.warning(
-                "Detected encoding '%s' is not supported.", best_guess.encoding
+                "Detected encoding '%s' is not supported for %s.", encoding, source_label
             )
 
     logging.warning(
         "Could not detect encoding for %s; decoding with UTF-8 replacements.",
-        file_path,
+        source_label,
     )
     return raw_bytes.decode('utf-8', errors='replace').lstrip('\ufeff'), 'utf-8'
+
+
+def read_file_best_effort(file_path: str | Path) -> tuple[str, str]:
+    """Try to read a file using different ways.
+
+    The function first tries UTF-8, then tries to find the likely format
+    before falling back to a basic UTF-8 read.
+
+    Returns:
+        (str, str): The text content and the name of its encoding.
+    """
+    try:
+        raw_bytes = Path(file_path).read_bytes()
+        return _decode_best_effort(raw_bytes, str(file_path))
+    except FileNotFoundError:
+        raise
+    except OSError:
+        logging.warning("Could not read %s.", file_path)
+        return "", 'utf-8'
+
+
+def read_url_best_effort(url: str, timeout: int = 15) -> tuple[str, str]:
+    """Fetch content from a URL and decode it using best-effort logic.
+
+    Returns a tuple of (content_text, encoding_name).
+    """
+    try:
+        req = urllib.request.Request(
+            url,
+            headers={'User-Agent': f'SourceCombine/{__version__}'}
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            raw_bytes = response.read()
+            return _decode_best_effort(raw_bytes, url)
+    except Exception as e:
+        logging.warning("Failed to fetch content from URL '%s': %s", url, e)
+        return "", 'utf-8'
 
 
 def _looks_binary(
