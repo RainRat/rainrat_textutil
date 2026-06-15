@@ -309,10 +309,11 @@ def _decode_best_effort(raw_bytes: bytes, source_label: str) -> tuple[str, str]:
 
 
 def read_file_best_effort(file_path: str | Path) -> tuple[str, str]:
-    """Try to read a file using different ways.
+    """Attempt to read a file using multiple methods.
 
-    The function first tries UTF-8, then tries to find the likely format
-    before falling back to a basic UTF-8 read.
+    Try to decode the file as UTF-8, then use automated detection to find the
+    most likely encoding before falling back to a standard UTF-8 read with
+    replacements.
 
     Returns:
         (str, str): The text content and the name of its encoding.
