@@ -1795,6 +1795,16 @@ def _process_paired_files(
                 _print_diff(old_content, pair_buffer.getvalue(), out_file.as_posix())
 
 
+def _get_stat_ext(file_path):
+    """Return the normalized extension for statistics tracking."""
+    return file_path.suffix.lower() or '.no_extension'
+
+
+def _get_stat_lang(file_path, stats):
+    """Return the detected language tag for statistics tracking."""
+    return utils.get_language_tag(file_path, overrides=stats.get('custom_languages'))
+
+
 def _update_file_stats(stats, file_path, size=None):
     stats['total_files'] += 1
     if size is None:
@@ -1805,13 +1815,13 @@ def _update_file_stats(stats, file_path, size=None):
     stats['total_size_bytes'] += size
 
     if 'files_by_extension' in stats:
-        ext = file_path.suffix.lower() or '.no_extension'
+        ext = _get_stat_ext(file_path)
         stats['files_by_extension'][ext] = stats['files_by_extension'].get(ext, 0) + 1
         if 'size_by_extension' in stats:
             stats['size_by_extension'][ext] = stats['size_by_extension'].get(ext, 0) + size
 
     if 'files_by_language' in stats:
-        lang = utils.get_language_tag(file_path, overrides=stats.get('custom_languages'))
+        lang = _get_stat_lang(file_path, stats)
         stats['files_by_language'][lang] = stats['files_by_language'].get(lang, 0) + 1
         if 'size_by_language' in stats:
             stats['size_by_language'][lang] = stats['size_by_language'].get(lang, 0) + size
@@ -1820,22 +1830,22 @@ def _update_file_stats(stats, file_path, size=None):
 def _update_token_stats(stats, file_path, tokens):
     if tokens:
         if 'tokens_by_extension' in stats:
-            ext = file_path.suffix.lower() or '.no_extension'
+            ext = _get_stat_ext(file_path)
             stats['tokens_by_extension'][ext] = stats['tokens_by_extension'].get(ext, 0) + tokens
 
         if 'tokens_by_language' in stats:
-            lang = utils.get_language_tag(file_path, overrides=stats.get('custom_languages'))
+            lang = _get_stat_lang(file_path, stats)
             stats['tokens_by_language'][lang] = stats['tokens_by_language'].get(lang, 0) + tokens
 
 
 def _update_line_stats(stats, file_path, lines):
     if lines:
         if 'lines_by_extension' in stats:
-            ext = file_path.suffix.lower() or '.no_extension'
+            ext = _get_stat_ext(file_path)
             stats['lines_by_extension'][ext] = stats['lines_by_extension'].get(ext, 0) + lines
 
         if 'lines_by_language' in stats:
-            lang = utils.get_language_tag(file_path, overrides=stats.get('custom_languages'))
+            lang = _get_stat_lang(file_path, stats)
             stats['lines_by_language'][lang] = stats['lines_by_language'].get(lang, 0) + lines
 
 
