@@ -36,5 +36,5 @@ def test_summary_extension_truncation(monkeypatch, capsys):
     captured = capsys.readouterr()
     stderr = captured.err
 
-    assert ".verylong..." in stderr
+    assert ".ver...ionname" in stderr or ".verylonge..." in stderr
     assert "Languages" in stderr

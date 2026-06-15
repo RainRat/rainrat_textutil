@@ -6265,8 +6265,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         has_status = any(len(f) > 3 and f[3] for f in top)
 
         # Calculate dynamic overhead for path width
-        # TOKENS: 13, LINES: 13, SIZE: 13, %: 7, DISTRIBUTION: 13, STATUS: 7
-        overhead = 13 + 7 + 13 # SIZE, %, DISTRIBUTION
+        # TOKENS: 13, LINES: 13, SIZE: 13, %: 7, DISTRIBUTION: 13, STATUS: 7, INDENT: 4
+        overhead = 13 + 7 + 13 + 4 # SIZE, %, DISTRIBUTION, INDENT
         if has_tokens: overhead += 13
         if has_lines: overhead += 13
         if has_status: overhead += 7
@@ -6344,8 +6344,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         )
 
         # Calculate dynamic overhead for path width
-        # TOKENS: 13, LINES: 13, SIZE: 13, %: 7, DISTRIBUTION: 13, STATUS: 7, FILES: 7
-        overhead = 13 + 7 + 13 + 7 # SIZE, %, DISTRIBUTION, FILES
+        # TOKENS: 13, LINES: 13, SIZE: 13, %: 7, DISTRIBUTION: 13, STATUS: 7, FILES: 8, INDENT: 4
+        overhead = 13 + 7 + 13 + 8 + 4 # SIZE, %, DISTRIBUTION, FILES, INDENT
         if has_tokens: overhead += 13
         if has_lines: overhead += 13
         if has_status: overhead += 7
@@ -6360,7 +6360,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         header_parts.append(f"{'%':>6}")
         header_parts.append(f"{'DISTRIBUTION':<12}")
         if has_status: header_parts.append(f"{' ': <6}") # Spacer to match largest files
-        header_parts.append(f"{'FILES':>6}")
+        header_parts.append(f"{'FILES':>7}")
         header_parts.append("FOLDER")
 
         print(f"\n  {C_BOLD}{C_CYAN}{title}{C_RESET}", file=sys.stderr)
@@ -6394,7 +6394,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             if has_status:
                 row_parts.append(" " * 6) # Spacer to match largest files
 
-            row_parts.append(f"{C_BOLD}{C_CYAN}{files:>6,}{C_RESET}")
+            row_parts.append(f"{C_BOLD}{C_CYAN}{files:7,}{C_RESET}")
             row_parts.append(f"{C_BOLD}{display_path}{C_RESET}{C_DIM}/{C_RESET}")
             print(f"    {' '.join(row_parts)}", file=sys.stderr)
 
@@ -6406,7 +6406,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         size_by_lang = stats.get('size_by_language', {})
         has_lang_tokens = any(v > 0 for v in tokens_by_lang.values())
         has_lang_lines = any(v > 0 for v in lines_by_lang.values())
-        status_spacer = " " * 7 if has_status else ""
 
         if has_lang_tokens:
             total_weight = stats.get('total_tokens', 0)
@@ -6421,6 +6420,15 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             weight_by_lang = size_by_lang
             title = "Languages (by size)"
 
+        # Calculate dynamic overhead for language tag width
+        # TOKENS: 13, LINES: 13, SIZE: 13, %: 7, DISTRIBUTION: 13, STATUS: 7, FILES: 8, % FILES: 8, INDENT: 4
+        overhead = 13 + 7 + 13 + 8 + 8 + 4 # SIZE, %, DISTRIBUTION, FILES, % FILES, INDENT
+        if has_lang_tokens: overhead += 13
+        if has_lang_lines: overhead += 13
+        if has_status: overhead += 7
+
+        lang_width = max(12, term_width - overhead)
+
         # Build dynamic header
         header_parts = []
         if has_lang_tokens: header_parts.append(f"{'TOKENS':>12}")
@@ -6429,9 +6437,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         header_parts.append(f"{'%':>6}")
         header_parts.append(f"{'DISTRIBUTION':<12}")
         if has_status: header_parts.append(f"{' ': <6}") # Spacer to match largest files
-        header_parts.append(f"{'LANGUAGE':<12}")
-        header_parts.append(f"{'COUNT':>7}")
+        header_parts.append(f"{'FILES':>7}")
         header_parts.append(f"{'% FILES':>7}")
+        header_parts.append("LANGUAGE")
         header = f"    {C_DIM}{' '.join(header_parts)}{C_RESET}"
 
         # Sort by weight desc, then count desc, then alpha
@@ -6493,14 +6501,13 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             if has_status:
                 row_parts.append(" " * 6) # Spacer to match largest files
 
-            # Row Lang Info (LANGUAGE, COUNT, % FILES)
-            lang_label = d['lang']
-            if len(lang_label) > 12:
-                lang_label = lang_label[:9] + "..."
+            row_parts.append(f"{C_BOLD}{C_CYAN}{count:7,}{C_RESET}")
+            row_parts.append(f"{C_BOLD}{C_CYAN}{f_percent:6.1f}%{C_RESET}")
 
-            row_parts.append(f"{C_BOLD}{lang_label:<12}{C_RESET}")
-            row_parts.append(f"{C_BOLD}{C_CYAN}{count:>7,}{C_RESET}")
-            row_parts.append(f"{C_BOLD}{C_CYAN}{f_percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}")
+            # Row Lang Info (LANGUAGE)
+            lang_label = d['lang']
+            display_lang = _truncate_path(lang_label, lang_width)
+            row_parts.append(f"{C_BOLD}{display_lang}{C_RESET}")
 
             print(f"    {' '.join(row_parts)}", file=sys.stderr)
 

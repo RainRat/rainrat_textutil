@@ -35,8 +35,8 @@ def test_summary_status_column_visibility(monkeypatch, capsys):
     stderr_no_status = capsys.readouterr().err
 
     assert "STATUS" not in stderr_no_status
-    # Verify alignment - Languages header should NOT have the spacer (1 space between DISTRIBUTION and LANGUAGE)
-    assert "DISTRIBUTION LANGUAGE" in stderr_no_status or "DISTRIBUTION  LANGUAGE" in stderr_no_status
+    # Verify alignment - Languages header should NOT have the spacer (3 spaces between DISTRIBUTION and FILES)
+    assert "DISTRIBUTION   FILES" in stderr_no_status
 
     # Case 2: Status present
     stats_with_status = {
@@ -54,6 +54,6 @@ def test_summary_status_column_visibility(monkeypatch, capsys):
     stderr_with_status = capsys.readouterr().err
 
     assert "STATUS" in stderr_with_status
-    # Verify alignment - Languages header SHOULD have the spacer (1 + 7 = 8 spaces between DISTRIBUTION and LANGUAGE)
-    assert "DISTRIBUTION        LANGUAGE" in stderr_with_status
+    # Verify alignment - Languages header SHOULD have the spacer (3 + 7 = 10 spaces between DISTRIBUTION and FILES)
+    assert "DISTRIBUTION          FILES" in stderr_with_status
     assert "[M]" in stderr_with_status

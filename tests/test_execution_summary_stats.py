@@ -53,9 +53,10 @@ def test_language_stats_reset_with_limit(tmp_path):
         # Verify that Included files is 2
         assert re.search(r"Included:\s+2 files", clean_output)
 
-        # Look for "python" and check following numbers
+        # Look for "python" and check preceding numbers
         # If buggy: it will show more than 1 file for python because it adds to previous stats.
-        python_match = re.search(r'python\s+(\d+)\s+([\d.]+)%', clean_output)
+        # New layout: ... [DISTRIBUTION] FILES % FILES LANGUAGE
+        python_match = re.search(r'(\d+)\s+([\d.]+)%\s+python', clean_output)
         assert python_match, "Could not find python in Languages table"
 
         count = int(python_match.group(1))
