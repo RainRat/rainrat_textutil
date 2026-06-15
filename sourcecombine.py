@@ -1799,12 +1799,13 @@ def _process_paired_files(
 
 
 def _get_stat_ext(file_path):
-    """Return the normalized extension for statistics tracking."""
-    return file_path.suffix.lower() or '.no_extension'
+    """Return the normalized extension or '.no_extension' for stats tracking."""
+    ext = file_path.suffix.lower() if hasattr(file_path, 'suffix') else Path(file_path).suffix.lower()
+    return ext or '.no_extension'
 
 
 def _get_stat_lang(file_path, stats):
-    """Return the detected language tag for statistics tracking."""
+    """Return the programming language tag for stats tracking."""
     return utils.get_language_tag(file_path, overrides=stats.get('custom_languages'))
 
 
@@ -1817,8 +1818,8 @@ def _update_file_stats(stats, file_path, size=None):
             size = 0
     stats['total_size_bytes'] += size
 
+    ext = _get_stat_ext(file_path)
     if 'files_by_extension' in stats:
-        ext = _get_stat_ext(file_path)
         stats['files_by_extension'][ext] = stats['files_by_extension'].get(ext, 0) + 1
         if 'size_by_extension' in stats:
             stats['size_by_extension'][ext] = stats['size_by_extension'].get(ext, 0) + size
@@ -1832,8 +1833,8 @@ def _update_file_stats(stats, file_path, size=None):
 
 def _update_token_stats(stats, file_path, tokens):
     if tokens:
+        ext = _get_stat_ext(file_path)
         if 'tokens_by_extension' in stats:
-            ext = _get_stat_ext(file_path)
             stats['tokens_by_extension'][ext] = stats['tokens_by_extension'].get(ext, 0) + tokens
 
         if 'tokens_by_language' in stats:
@@ -1843,8 +1844,8 @@ def _update_token_stats(stats, file_path, tokens):
 
 def _update_line_stats(stats, file_path, lines):
     if lines:
+        ext = _get_stat_ext(file_path)
         if 'lines_by_extension' in stats:
-            ext = _get_stat_ext(file_path)
             stats['lines_by_extension'][ext] = stats['lines_by_extension'].get(ext, 0) + lines
 
         if 'lines_by_language' in stats:
@@ -4186,7 +4187,7 @@ def main():
         action="store_true",
         help=(
             "Rebuild original files and folders from combined files (JSON, XML, Markdown, and other formats). "
-            "The tool reads from files, folders, the terminal ('-'), or the system clipboard. "
+            "The tool reads from files, folders, remote URLs (http/https), the terminal ('-'), or the system clipboard. "
             "Without an input file, the tool searches for standard default files such as `combined_files.txt`, "
             "`combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, "
             "or `combined_files.csv`. The tool supports filtering, sorting, and processing rules. "
@@ -4208,7 +4209,7 @@ def main():
         action="store_true",
         help=(
             "Verify that files on disk match the content or hashes in combined files or manifests. "
-            "The tool reads from files, folders, the terminal ('-'), or the system clipboard. "
+            "The tool reads from files, folders, remote URLs (http/https), the terminal ('-'), or the system clipboard. "
             "Without an input file, the tool searches for standard default files such as `combined_files.txt`, "
             "`combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, "
             "or `combined_files.csv`."
@@ -4914,6 +4915,10 @@ def main():
         for target in remaining_targets:
             if target == "-":
                 sources.append(("stdin", sys.stdin.read()))
+            elif target.startswith(('http://', 'https://')):
+                content, _ = utils.read_url_best_effort(target)
+                if content:
+                    sources.append((target, content))
             else:
                 input_path = Path(target)
                 if input_path.is_dir():
