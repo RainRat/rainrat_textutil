@@ -154,7 +154,8 @@ output:
 project:
   # Manual overrides for project metadata used in templates and reports.
   # If omit or set to null, the tool tries to find them in manifest files
-  # such as package.json, pyproject.toml, or Cargo.toml.
+  # such as package.json, pyproject.toml, Cargo.toml, Gemfile, mix.exs,
+  # Package.swift, or README.md.
   name: null
   version: null
   description: null
