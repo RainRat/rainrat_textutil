@@ -4284,6 +4284,11 @@ def main():
         args.overview = True
         args.skip_binary = True
 
+        # Automatically include Git context if not explicitly disabled
+        if args.git_log is None:
+            args.git_log = 5
+        args.include_diff = True
+
         # If no explicit output is provided, attempt to use the system clipboard
         if not args.output and not args.clipboard and not (
             args.dry_run or args.list_files or args.tree or args.estimate_tokens

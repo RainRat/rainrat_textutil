@@ -1496,7 +1496,74 @@ def get_project_identity(root_folder: str | Path) -> dict:
             except Exception:
                 pass
 
-        # 7. Fallback: Search for LICENSE or COPYING files if license is still missing
+        # 7. Ruby (Gemfile or *.gemspec)
+        gemspecs = list(root_path.glob("*.gemspec"))
+        if gemspecs:
+            try:
+                content = gemspecs[0].read_text(encoding='utf-8')
+                m = re.search(r'\.name\s*=\s*["\']([^"\']+)["\']', content)
+                if m: identity["project_name"] = m.group(1)
+                m = re.search(r'\.version\s*=\s*["\']([^"\']+)["\']', content)
+                if m: identity["project_version"] = m.group(1)
+                m = re.search(r'\.description\s*=\s*["\']([^"\']+)["\']', content)
+                if m: identity["project_description"] = m.group(1)
+                m = re.search(r'\.license\s*=\s*["\']([^"\']+)["\']', content)
+                if m: identity["project_license"] = m.group(1)
+                if identity.get("project_license"):
+                    return identity
+            except Exception:
+                pass
+
+        # 8. Elixir (mix.exs)
+        mix_exs = root_path / "mix.exs"
+        if mix_exs.is_file():
+            try:
+                content = mix_exs.read_text(encoding='utf-8')
+                m = re.search(r'app:\s*:([a-zA-Z0-9_]+)', content)
+                if m: identity["project_name"] = m.group(1)
+                m = re.search(r'version:\s*["\']([^"\']+)["\']', content)
+                if m: identity["project_version"] = m.group(1)
+            except Exception:
+                pass
+
+        # 9. Swift (Package.swift)
+        package_swift = root_path / "Package.swift"
+        if package_swift.is_file():
+            try:
+                content = package_swift.read_text(encoding='utf-8')
+                m = re.search(r'name:\s*["\']([^"\']+)["\']', content)
+                if m: identity["project_name"] = m.group(1)
+            except Exception:
+                pass
+
+        # 10. README Fallback
+        readme = root_path / "README.md"
+        if readme.is_file():
+            try:
+                content = readme.read_text(encoding='utf-8')
+                # Try to get the first H1
+                m = re.search(r'^#\s+(.+)$', content, re.MULTILINE)
+                if m:
+                    identity["project_name"] = m.group(1).strip()
+                    # Try to get the paragraph following the H1 for description
+                    # We look for the first non-empty line after the H1 that isn't another header
+                    remaining = content[m.end():].strip()
+                    if remaining:
+                        lines = remaining.splitlines()
+                        for line in lines:
+                            line = line.strip()
+                            if line:
+                                if not line.startswith('#'):
+                                    # Limit description length
+                                    desc = line
+                                    if len(desc) > 200:
+                                        desc = desc[:197] + "..."
+                                    identity["project_description"] = desc
+                                break
+            except Exception:
+                pass
+
+        # 11. Fallback: Search for LICENSE or COPYING files if license is still missing
         if not identity.get("project_license"):
             license_files = ["LICENSE", "LICENSE.txt", "COPYING", "COPYING.txt", "LICENSE.md"]
             for f_name in license_files:

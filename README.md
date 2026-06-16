@@ -20,7 +20,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--clipboard` (`-c`): Copy the combined output to the system clipboard.
 *   `--git-files` (`-G`): Use Git to find files and follow the `.gitignore` rules automatically.
 *   `--limit` (`-L`): Stop processing once you reach this file limit.
-*   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, and skipping binary files). This also copies to the system clipboard if you do not specify an output.
+*   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, skipping binary files, and automatically including Git context like logs and diffs). This also copies to the system clipboard if you do not specify an output.
 *   `--project-name NAME`: Override the project name used in templates and reports.
 *   `--project-version VERSION`: Override the project version.
 *   `--project-description TEXT`: Override the project description.
@@ -142,7 +142,7 @@ Used in `header_template` and `footer_template`:
 
 ### Project-Level Placeholders
 Used in `global_header_template`, `global_footer_template`, and other project-wide settings:
-*   `{{PROJECT_NAME}}`: Name of the project (detected from `package.json`, `pyproject.toml`, or folder name).
+*   `{{PROJECT_NAME}}`: Name of the project (detected from `package.json`, `pyproject.toml`, `Cargo.toml`, `Gemfile`, `mix.exs`, `Package.swift`, `README.md`, or folder name).
 *   `{{PROJECT_VERSION}}`: Version of the project.
 *   `{{PROJECT_DESCRIPTION}}`: Short description of the project.
 *   `{{PROJECT_LICENSE}}`: License identifier of the project.
