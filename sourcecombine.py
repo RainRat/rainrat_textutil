@@ -1880,6 +1880,24 @@ def _populate_project_stats(stats, root_folder, config):
         stats['project_url'] = project_meta['url']
 
 
+def _apply_project_overrides(config, args):
+    """Apply project metadata CLI overrides to the configuration."""
+    project_conf = config.setdefault('project', {})
+    if project_conf is None:
+        project_conf = config['project'] = {}
+
+    if getattr(args, 'project_name', None) is not None:
+        project_conf['name'] = args.project_name
+    if getattr(args, 'project_version', None) is not None:
+        project_conf['version'] = args.project_version
+    if getattr(args, 'project_description', None) is not None:
+        project_conf['description'] = args.project_description
+    if getattr(args, 'project_license', None) is not None:
+        project_conf['license'] = args.project_license
+    if getattr(args, 'project_url', None) is not None:
+        project_conf['url'] = args.project_url
+
+
 class FileProcessor:
     """Process files according to configuration and write them to an output.
 
@@ -4330,13 +4348,7 @@ def main():
         elif not config.get('search', {}).get('root_folders'):
             config.setdefault('search', {})['root_folders'] = ["."]
 
-        # Inject project metadata CLI overrides
-        project_conf = config.setdefault('project', {})
-        if getattr(args, 'project_name', None) is not None: project_conf['name'] = args.project_name
-        if getattr(args, 'project_version', None) is not None: project_conf['version'] = args.project_version
-        if getattr(args, 'project_description', None) is not None: project_conf['description'] = args.project_description
-        if getattr(args, 'project_license', None) is not None: project_conf['license'] = args.project_license
-        if getattr(args, 'project_url', None) is not None: project_conf['url'] = args.project_url
+        _apply_project_overrides(config, args)
 
         stats = {}
         root = config['search']['root_folders'][0]
@@ -4693,21 +4705,7 @@ def main():
     if getattr(args, 'overview', False):
         output_conf['project_overview'] = True
 
-    # Inject project metadata CLI overrides
-    project_conf = config.setdefault('project', {})
-    if project_conf is None:
-        project_conf = config['project'] = {}
-
-    if getattr(args, 'project_name', None) is not None:
-        project_conf['name'] = args.project_name
-    if getattr(args, 'project_version', None) is not None:
-        project_conf['version'] = args.project_version
-    if getattr(args, 'project_description', None) is not None:
-        project_conf['description'] = args.project_description
-    if getattr(args, 'project_license', None) is not None:
-        project_conf['license'] = args.project_license
-    if getattr(args, 'project_url', None) is not None:
-        project_conf['url'] = args.project_url
+    _apply_project_overrides(config, args)
 
     if args.diff:
         output_conf['show_diff'] = True
