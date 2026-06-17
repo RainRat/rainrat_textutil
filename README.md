@@ -20,6 +20,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--clipboard` (`-c`): Copy the combined output to the system clipboard.
 *   `--git-files` (`-G`): Use Git to find files and follow the `.gitignore` rules automatically.
 *   `--limit` (`-L`): Stop processing once you reach this file limit.
+*   `--unique` (`-u`): Skip duplicate files by absolute path or content.
 *   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, skipping binary files, and automatically including Git context like logs and diffs). This also copies to the system clipboard if you do not specify an output.
 *   `--project-name NAME`: Override the project name used in templates and reports.
 *   `--project-version VERSION`: Override the project version.
