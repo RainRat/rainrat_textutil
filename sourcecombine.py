@@ -3977,7 +3977,11 @@ def main():
         "--ai",
         "-a",
         action="store_true",
-        help="Enable a preset for AI models: Markdown format, line numbers, Table of Contents, folder tree, project overview, and skipping binary files. This also copies to the system clipboard if you do not specify an output.",
+        help=(
+            "Enable a preset for AI models: Markdown format, line numbers, Table of Contents, folder tree, "
+            "project overview, skipping binary files, deduplication, and automatic Git context. "
+            "This also copies to the system clipboard if you do not specify an output."
+        ),
     )
     output_group.add_argument(
         "--clipboard",
@@ -4283,6 +4287,7 @@ def main():
         args.include_tree = True
         args.overview = True
         args.skip_binary = True
+        args.unique = True
 
         # Automatically include Git context if not explicitly disabled
         if args.git_log is None:
