@@ -1374,194 +1374,203 @@ def get_project_identity(root_folder: str | Path) -> dict:
         root_path = Path(root_folder).resolve()
         identity["project_name"] = root_path.name or "Project"
 
+        manifest_found = False
         # 1. Node.js (package.json)
         if _parse_json_manifest(root_path / "package.json", identity):
-            return identity
+            manifest_found = True
 
         # 2. Python (pyproject.toml)
-        pyproject = root_path / "pyproject.toml"
-        if pyproject.is_file():
-            try:
-                content = pyproject.read_text(encoding='utf-8')
-                # Name
-                match = re.search(r'^name\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
-                if not match:
-                    match = re.search(
-                        r'\[project\][^\[]*name\s*=\s*["\']([^"\']+)["\']', content, re.DOTALL
-                    )
-                if match:
-                    identity["project_name"] = match.group(1)
+        if not manifest_found:
+            pyproject = root_path / "pyproject.toml"
+            if pyproject.is_file():
+                try:
+                    content = pyproject.read_text(encoding='utf-8')
+                    # Name
+                    match = re.search(r'^name\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
+                    if not match:
+                        match = re.search(
+                            r'\[project\][^\[]*name\s*=\s*["\']([^"\']+)["\']', content, re.DOTALL
+                        )
+                    if match:
+                        identity["project_name"] = match.group(1)
 
-                # Version
-                match = re.search(r'^version\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
-                if not match:
-                    match = re.search(
-                        r'\[project\][^\[]*version\s*=\s*["\']([^"\']+)["\']', content, re.DOTALL
-                    )
-                if match:
-                    identity["project_version"] = match.group(1)
+                    # Version
+                    match = re.search(r'^version\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
+                    if not match:
+                        match = re.search(
+                            r'\[project\][^\[]*version\s*=\s*["\']([^"\']+)["\']', content, re.DOTALL
+                        )
+                    if match:
+                        identity["project_version"] = match.group(1)
 
-                # Description
-                match = re.search(r'^description\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
-                if not match:
-                    match = re.search(
-                        r'\[project\][^\[]*description\s*=\s*["\']([^"\']+)["\']',
-                        content,
-                        re.DOTALL,
-                    )
-                if match:
-                    identity["project_description"] = match.group(1)
+                    # Description
+                    match = re.search(r'^description\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
+                    if not match:
+                        match = re.search(
+                            r'\[project\][^\[]*description\s*=\s*["\']([^"\']+)["\']',
+                            content,
+                            re.DOTALL,
+                        )
+                    if match:
+                        identity["project_description"] = match.group(1)
 
-                # License
-                match = re.search(r'^license\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
-                if not match:
-                    # Support license = { text = "MIT" }
-                    match = re.search(r'license\s*=\s*\{[^}]*text\s*=\s*["\']([^"\']+)["\']', content)
-                if not match:
-                    # Support [project.license] text = "MIT"
-                    match = re.search(
-                        r'\[project\.license\][^\[]*text\s*=\s*["\']([^"\']+)["\']',
-                        content,
-                        re.DOTALL,
-                    )
-                if match:
-                    identity["project_license"] = match.group(1)
+                    # License
+                    match = re.search(r'^license\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
+                    if not match:
+                        # Support license = { text = "MIT" }
+                        match = re.search(r'license\s*=\s*\{[^}]*text\s*=\s*["\']([^"\']+)["\']', content)
+                    if not match:
+                        # Support [project.license] text = "MIT"
+                        match = re.search(
+                            r'\[project\.license\][^\[]*text\s*=\s*["\']([^"\']+)["\']',
+                            content,
+                            re.DOTALL,
+                        )
+                    if match:
+                        identity["project_license"] = match.group(1)
 
-                return identity
-            except Exception:
-                pass
+                    manifest_found = True
+                except Exception:
+                    pass
 
         # 3. Rust (Cargo.toml)
-        cargo = root_path / "Cargo.toml"
-        if cargo.is_file():
-            try:
-                content = cargo.read_text(encoding='utf-8')
-                # [package] section
-                package_match = re.search(r'\[package\]([\s\S]*?)(?:\n\[|$)', content)
-                if package_match:
-                    pkg_content = package_match.group(1)
-                    m = re.search(r'^name\s*=\s*["\']([^"\']+)["\']', pkg_content, re.MULTILINE)
-                    if m:
-                        identity["project_name"] = m.group(1)
-                    m = re.search(r'^version\s*=\s*["\']([^"\']+)["\']', pkg_content, re.MULTILINE)
-                    if m:
-                        identity["project_version"] = m.group(1)
-                    m = re.search(
-                        r'^description\s*=\s*["\']([^"\']+)["\']', pkg_content, re.MULTILINE
-                    )
-                    if m:
-                        identity["project_description"] = m.group(1)
-                    m = re.search(r'^license\s*=\s*["\']([^"\']+)["\']', pkg_content, re.MULTILINE)
-                    if m:
-                        identity["project_license"] = m.group(1)
-                return identity
-            except Exception:
-                pass
+        if not manifest_found:
+            cargo = root_path / "Cargo.toml"
+            if cargo.is_file():
+                try:
+                    content = cargo.read_text(encoding='utf-8')
+                    # [package] section
+                    package_match = re.search(r'\[package\]([\s\S]*?)(?:\n\[|$)', content)
+                    if package_match:
+                        pkg_content = package_match.group(1)
+                        m = re.search(r'^name\s*=\s*["\']([^"\']+)["\']', pkg_content, re.MULTILINE)
+                        if m:
+                            identity["project_name"] = m.group(1)
+                        m = re.search(r'^version\s*=\s*["\']([^"\']+)["\']', pkg_content, re.MULTILINE)
+                        if m:
+                            identity["project_version"] = m.group(1)
+                        m = re.search(
+                            r'^description\s*=\s*["\']([^"\']+)["\']', pkg_content, re.MULTILINE
+                        )
+                        if m:
+                            identity["project_description"] = m.group(1)
+                        m = re.search(r'^license\s*=\s*["\']([^"\']+)["\']', pkg_content, re.MULTILINE)
+                        if m:
+                            identity["project_license"] = m.group(1)
+                    manifest_found = True
+                except Exception:
+                    pass
 
         # 4. PHP (composer.json)
-        if _parse_json_manifest(root_path / "composer.json", identity):
-            return identity
+        if not manifest_found:
+            if _parse_json_manifest(root_path / "composer.json", identity):
+                manifest_found = True
 
         # 5. Java (pom.xml)
-        pom = root_path / "pom.xml"
-        if pom.is_file():
-            try:
-                content = pom.read_text(encoding='utf-8')
-                # Simplified XML parsing with regex
-                m = re.search(r'<artifactId>(.*?)</artifactId>', content)
-                if m:
-                    identity["project_name"] = m.group(1)
-                m = re.search(r'<version>(.*?)</version>', content)
-                if m:
-                    identity["project_version"] = m.group(1)
-                m = re.search(r'<description>(.*?)</description>', content)
-                if m:
-                    identity["project_description"] = m.group(1)
-                # License is often in <licenses><license><name>...
-                m = re.search(r'<license>.*?<name>(.*?)</name>', content, re.DOTALL)
-                if m:
-                    identity["project_license"] = m.group(1)
-                return identity
-            except Exception:
-                pass
+        if not manifest_found:
+            pom = root_path / "pom.xml"
+            if pom.is_file():
+                try:
+                    content = pom.read_text(encoding='utf-8')
+                    # Simplified XML parsing with regex
+                    m = re.search(r'<artifactId>(.*?)</artifactId>', content)
+                    if m:
+                        identity["project_name"] = m.group(1)
+                    m = re.search(r'<version>(.*?)</version>', content)
+                    if m:
+                        identity["project_version"] = m.group(1)
+                    m = re.search(r'<description>(.*?)</description>', content)
+                    if m:
+                        identity["project_description"] = m.group(1)
+                    # License is often in <licenses><license><name>...
+                    m = re.search(r'<license>.*?<name>(.*?)</name>', content, re.DOTALL)
+                    if m:
+                        identity["project_license"] = m.group(1)
+                    manifest_found = True
+                except Exception:
+                    pass
 
         # 6. Go (go.mod)
-        gomod = root_path / "go.mod"
-        if gomod.is_file():
-            try:
-                content = gomod.read_text(encoding='utf-8')
-                match = re.search(r'^module\s+(.+)$', content, re.MULTILINE)
-                if match:
-                    identity["project_name"] = match.group(1).strip()
-            except Exception:
-                pass
+        if not manifest_found:
+            gomod = root_path / "go.mod"
+            if gomod.is_file():
+                try:
+                    content = gomod.read_text(encoding='utf-8')
+                    match = re.search(r'^module\s+(.+)$', content, re.MULTILINE)
+                    if match:
+                        identity["project_name"] = match.group(1).strip()
+                except Exception:
+                    pass
 
         # 7. Ruby (Gemfile or *.gemspec)
-        gemspecs = list(root_path.glob("*.gemspec"))
-        if gemspecs:
-            try:
-                content = gemspecs[0].read_text(encoding='utf-8')
-                m = re.search(r'\.name\s*=\s*["\']([^"\']+)["\']', content)
-                if m: identity["project_name"] = m.group(1)
-                m = re.search(r'\.version\s*=\s*["\']([^"\']+)["\']', content)
-                if m: identity["project_version"] = m.group(1)
-                m = re.search(r'\.description\s*=\s*["\']([^"\']+)["\']', content)
-                if m: identity["project_description"] = m.group(1)
-                m = re.search(r'\.license\s*=\s*["\']([^"\']+)["\']', content)
-                if m: identity["project_license"] = m.group(1)
-                if identity.get("project_license"):
-                    return identity
-            except Exception:
-                pass
+        if not manifest_found:
+            gemspecs = list(root_path.glob("*.gemspec"))
+            if gemspecs:
+                try:
+                    content = gemspecs[0].read_text(encoding='utf-8')
+                    m = re.search(r'\.name\s*=\s*["\']([^"\']+)["\']', content)
+                    if m: identity["project_name"] = m.group(1)
+                    m = re.search(r'\.version\s*=\s*["\']([^"\']+)["\']', content)
+                    if m: identity["project_version"] = m.group(1)
+                    m = re.search(r'\.description\s*=\s*["\']([^"\']+)["\']', content)
+                    if m: identity["project_description"] = m.group(1)
+                    m = re.search(r'\.license\s*=\s*["\']([^"\']+)["\']', content)
+                    if m: identity["project_license"] = m.group(1)
+                    manifest_found = True
+                except Exception:
+                    pass
 
         # 8. Elixir (mix.exs)
-        mix_exs = root_path / "mix.exs"
-        if mix_exs.is_file():
-            try:
-                content = mix_exs.read_text(encoding='utf-8')
-                m = re.search(r'app:\s*:([a-zA-Z0-9_]+)', content)
-                if m: identity["project_name"] = m.group(1)
-                m = re.search(r'version:\s*["\']([^"\']+)["\']', content)
-                if m: identity["project_version"] = m.group(1)
-            except Exception:
-                pass
+        if not manifest_found:
+            mix_exs = root_path / "mix.exs"
+            if mix_exs.is_file():
+                try:
+                    content = mix_exs.read_text(encoding='utf-8')
+                    m = re.search(r'app:\s*:([a-zA-Z0-9_]+)', content)
+                    if m: identity["project_name"] = m.group(1)
+                    m = re.search(r'version:\s*["\']([^"\']+)["\']', content)
+                    if m: identity["project_version"] = m.group(1)
+                except Exception:
+                    pass
 
         # 9. Swift (Package.swift)
-        package_swift = root_path / "Package.swift"
-        if package_swift.is_file():
-            try:
-                content = package_swift.read_text(encoding='utf-8')
-                m = re.search(r'name:\s*["\']([^"\']+)["\']', content)
-                if m: identity["project_name"] = m.group(1)
-            except Exception:
-                pass
+        if not manifest_found:
+            package_swift = root_path / "Package.swift"
+            if package_swift.is_file():
+                try:
+                    content = package_swift.read_text(encoding='utf-8')
+                    m = re.search(r'name:\s*["\']([^"\']+)["\']', content)
+                    if m: identity["project_name"] = m.group(1)
+                except Exception:
+                    pass
 
         # 10. README Fallback
-        readme = root_path / "README.md"
-        if readme.is_file():
-            try:
-                content = readme.read_text(encoding='utf-8')
-                # Try to get the first H1
-                m = re.search(r'^#\s+(.+)$', content, re.MULTILINE)
-                if m:
-                    identity["project_name"] = m.group(1).strip()
-                    # Try to get the paragraph following the H1 for description
-                    # We look for the first non-empty line after the H1 that isn't another header
-                    remaining = content[m.end():].strip()
-                    if remaining:
-                        lines = remaining.splitlines()
-                        for line in lines:
-                            line = line.strip()
-                            if line:
-                                if not line.startswith('#'):
-                                    # Limit description length
-                                    desc = line
-                                    if len(desc) > 200:
-                                        desc = desc[:197] + "..."
-                                    identity["project_description"] = desc
-                                break
-            except Exception:
-                pass
+        if not manifest_found:
+            readme = root_path / "README.md"
+            if readme.is_file():
+                try:
+                    content = readme.read_text(encoding='utf-8')
+                    # Try to get the first H1
+                    m = re.search(r'^#\s+(.+)$', content, re.MULTILINE)
+                    if m:
+                        identity["project_name"] = m.group(1).strip()
+                        # Try to get the paragraph following the H1 for description
+                        # We look for the first non-empty line after the H1 that isn't another header
+                        remaining = content[m.end():].strip()
+                        if remaining:
+                            lines = remaining.splitlines()
+                            for line in lines:
+                                line = line.strip()
+                                if line:
+                                    if not line.startswith('#'):
+                                        # Limit description length
+                                        desc = line
+                                        if len(desc) > 200:
+                                            desc = desc[:197] + "..."
+                                        identity["project_description"] = desc
+                                    break
+                except Exception:
+                    pass
 
         # 11. Fallback: Search for LICENSE or COPYING files if license is still missing
         if not identity.get("project_license"):
