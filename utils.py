@@ -1431,17 +1431,22 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     if target_file.suffix != '.sln':
                         content = target_file.read_text(encoding='utf-8')
                         m = re.search(r'<AssemblyName>(.*?)</AssemblyName>', content)
-                        if m: identity["project_name"] = m.group(1)
-                        else: identity["project_name"] = target_file.stem
+                        if m:
+                            identity["project_name"] = m.group(1)
+                        else:
+                            identity["project_name"] = target_file.stem
 
                         m = re.search(r'<Version>(.*?)</Version>', content)
-                        if m: identity["project_version"] = m.group(1)
+                        if m:
+                            identity["project_version"] = m.group(1)
 
                         m = re.search(r'<Description>(.*?)</Description>', content)
-                        if m: identity["project_description"] = m.group(1)
+                        if m:
+                            identity["project_description"] = m.group(1)
 
                         m = re.search(r'<PackageLicenseExpression>(.*?)</PackageLicenseExpression>', content)
-                        if m: identity["project_license"] = m.group(1)
+                        if m:
+                            identity["project_license"] = m.group(1)
 
                     manifest_found = True
                 except Exception:
@@ -1487,10 +1492,12 @@ def get_project_identity(root_folder: str | Path) -> dict:
                         identity["project_version"] = match.group(2)
 
                         m = re.search(r':description\s+"([^"]+)"', content)
-                        if m: identity["project_description"] = m.group(1)
+                        if m:
+                            identity["project_description"] = m.group(1)
 
                         m = re.search(r':license\s+\{:name\s+"([^"]+)"', content)
-                        if m: identity["project_license"] = m.group(1)
+                        if m:
+                            identity["project_license"] = m.group(1)
 
                     manifest_found = True
                 except Exception:
@@ -1503,13 +1510,17 @@ def get_project_identity(root_folder: str | Path) -> dict:
                 try:
                     content = podspecs[0].read_text(encoding='utf-8')
                     m = re.search(r'\.name\s*=\s*["\']([^"\']+)["\']', content)
-                    if m: identity["project_name"] = m.group(1)
+                    if m:
+                        identity["project_name"] = m.group(1)
                     m = re.search(r'\.version\s*=\s*["\']([^"\']+)["\']', content)
-                    if m: identity["project_version"] = m.group(1)
+                    if m:
+                        identity["project_version"] = m.group(1)
                     m = re.search(r'\.summary\s*=\s*["\']([^"\']+)["\']', content)
-                    if m: identity["project_description"] = m.group(1)
+                    if m:
+                        identity["project_description"] = m.group(1)
                     m = re.search(r'\.license\s*=\s*.*["\']([^"\']+)["\']', content)
-                    if m: identity["project_license"] = m.group(1)
+                    if m:
+                        identity["project_license"] = m.group(1)
                     manifest_found = True
                 except Exception:
                     pass
@@ -1653,13 +1664,17 @@ def get_project_identity(root_folder: str | Path) -> dict:
                 try:
                     content = gemspecs[0].read_text(encoding='utf-8')
                     m = re.search(r'\.name\s*=\s*["\']([^"\']+)["\']', content)
-                    if m: identity["project_name"] = m.group(1)
+                    if m:
+                        identity["project_name"] = m.group(1)
                     m = re.search(r'\.version\s*=\s*["\']([^"\']+)["\']', content)
-                    if m: identity["project_version"] = m.group(1)
+                    if m:
+                        identity["project_version"] = m.group(1)
                     m = re.search(r'\.description\s*=\s*["\']([^"\']+)["\']', content)
-                    if m: identity["project_description"] = m.group(1)
+                    if m:
+                        identity["project_description"] = m.group(1)
                     m = re.search(r'\.license\s*=\s*["\']([^"\']+)["\']', content)
-                    if m: identity["project_license"] = m.group(1)
+                    if m:
+                        identity["project_license"] = m.group(1)
                     manifest_found = True
                 except Exception:
                     pass
@@ -1671,9 +1686,11 @@ def get_project_identity(root_folder: str | Path) -> dict:
                 try:
                     content = mix_exs.read_text(encoding='utf-8')
                     m = re.search(r'app:\s*:([a-zA-Z0-9_]+)', content)
-                    if m: identity["project_name"] = m.group(1)
+                    if m:
+                        identity["project_name"] = m.group(1)
                     m = re.search(r'version:\s*["\']([^"\']+)["\']', content)
-                    if m: identity["project_version"] = m.group(1)
+                    if m:
+                        identity["project_version"] = m.group(1)
                     manifest_found = True
                 except Exception:
                     pass
@@ -1685,7 +1702,8 @@ def get_project_identity(root_folder: str | Path) -> dict:
                 try:
                     content = package_swift.read_text(encoding='utf-8')
                     m = re.search(r'name:\s*["\']([^"\']+)["\']', content)
-                    if m: identity["project_name"] = m.group(1)
+                    if m:
+                        identity["project_name"] = m.group(1)
                     manifest_found = True
                 except Exception:
                     pass
