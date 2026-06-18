@@ -83,6 +83,30 @@ EXTENSION_TO_LANG = {
     ".vue": "vue",
     ".svelte": "svelte",
     ".groovy": "groovy",
+    ".m": "objectivec",
+    ".mm": "objectivecpp",
+    ".ex": "elixir",
+    ".exs": "elixir",
+    ".erl": "erlang",
+    ".hrl": "erlang",
+    ".clj": "clojure",
+    ".cljs": "clojure",
+    ".cljc": "clojure",
+    ".edn": "clojure",
+    ".hs": "haskell",
+    ".lhs": "haskell",
+    ".sol": "solidity",
+    ".jl": "julia",
+    ".proto": "protobuf",
+    ".graphql": "graphql",
+    ".gql": "graphql",
+    ".hcl": "hcl",
+    ".tf": "hcl",
+    ".pyx": "cython",
+    ".pxd": "cython",
+    ".pxi": "cython",
+    ".zig": "zig",
+    ".nim": "nim",
 }
 
 # Mapping of specific filenames to Markdown-friendly language tags.
@@ -92,10 +116,14 @@ FILENAME_TO_LANG = {
     "cmakelists.txt": "cmake",
     "package.json": "json",
     "package-lock.json": "json",
+    "yarn.lock": "yaml",
+    "pnpm-lock.yaml": "yaml",
     "composer.json": "json",
+    "composer.lock": "json",
     "cargo.toml": "toml",
     "cargo.lock": "toml",
     "pyproject.toml": "toml",
+    "poetry.lock": "toml",
     "gemfile": "ruby",
     "rakefile": "ruby",
     "jenkinsfile": "groovy",
@@ -1379,6 +1407,121 @@ def get_project_identity(root_folder: str | Path) -> dict:
         if _parse_json_manifest(root_path / "package.json", identity):
             manifest_found = True
 
+        # 1.1 .NET Projects (*.csproj, *.fsproj, *.vbproj, *.sln)
+        if not manifest_found:
+            dotnet_projects = list(root_path.glob("*.csproj")) + \
+                             list(root_path.glob("*.fsproj")) + \
+                             list(root_path.glob("*.vbproj"))
+            if not dotnet_projects:
+                dotnet_projects = list(root_path.glob("*.sln"))
+
+            if dotnet_projects:
+                try:
+                    # If it's a solution, try to find the first project file
+                    target_file = dotnet_projects[0]
+                    if target_file.suffix == '.sln':
+                        # Heuristic: look for first .csproj mentioned in .sln
+                        sln_content = target_file.read_text(encoding='utf-8')
+                        match = re.search(r'Project\(".*"\) = ".*", "(.*\.csproj)"', sln_content)
+                        if match:
+                            potential_proj = root_path / match.group(1).replace('\\', '/')
+                            if potential_proj.is_file():
+                                target_file = potential_proj
+
+                    if target_file.suffix != '.sln':
+                        content = target_file.read_text(encoding='utf-8')
+                        m = re.search(r'<AssemblyName>(.*?)</AssemblyName>', content)
+                        if m: identity["project_name"] = m.group(1)
+                        else: identity["project_name"] = target_file.stem
+
+                        m = re.search(r'<Version>(.*?)</Version>', content)
+                        if m: identity["project_version"] = m.group(1)
+
+                        m = re.search(r'<Description>(.*?)</Description>', content)
+                        if m: identity["project_description"] = m.group(1)
+
+                        m = re.search(r'<PackageLicenseExpression>(.*?)</PackageLicenseExpression>', content)
+                        if m: identity["project_license"] = m.group(1)
+
+                    manifest_found = True
+                except Exception:
+                    pass
+
+        # 1.2 Gradle Projects (build.gradle, build.gradle.kts, settings.gradle)
+        if not manifest_found:
+            gradle_settings = root_path / "settings.gradle"
+            if not gradle_settings.is_file():
+                gradle_settings = root_path / "settings.gradle.kts"
+
+            if gradle_settings.is_file():
+                try:
+                    content = gradle_settings.read_text(encoding='utf-8')
+                    match = re.search(r'rootProject\.name\s*=\s*["\']([^"\']+)["\']', content)
+                    if match:
+                        identity["project_name"] = match.group(1)
+
+                    # Now try to get version from build.gradle
+                    gradle_build = root_path / "build.gradle"
+                    if not gradle_build.is_file():
+                        gradle_build = root_path / "build.gradle.kts"
+
+                    if gradle_build.is_file():
+                        build_content = gradle_build.read_text(encoding='utf-8')
+                        match = re.search(r'^version\s*=\s*["\']([^"\']+)["\']', build_content, re.MULTILINE)
+                        if match:
+                            identity["project_version"] = match.group(1)
+
+                    manifest_found = True
+                except Exception:
+                    pass
+
+        # 1.3 Clojure Projects (project.clj)
+        if not manifest_found:
+            project_clj = root_path / "project.clj"
+            if project_clj.is_file():
+                try:
+                    content = project_clj.read_text(encoding='utf-8')
+                    match = re.search(r'\(defproject\s+([^\s]+)\s+"([^"]+)"', content)
+                    if match:
+                        identity["project_name"] = match.group(1)
+                        identity["project_version"] = match.group(2)
+
+                        m = re.search(r':description\s+"([^"]+)"', content)
+                        if m: identity["project_description"] = m.group(1)
+
+                        m = re.search(r':license\s+\{:name\s+"([^"]+)"', content)
+                        if m: identity["project_license"] = m.group(1)
+
+                    manifest_found = True
+                except Exception:
+                    pass
+
+        # 1.4 CocoaPods (*.podspec)
+        if not manifest_found:
+            podspecs = list(root_path.glob("*.podspec"))
+            if podspecs:
+                try:
+                    content = podspecs[0].read_text(encoding='utf-8')
+                    m = re.search(r'\.name\s*=\s*["\']([^"\']+)["\']', content)
+                    if m: identity["project_name"] = m.group(1)
+                    m = re.search(r'\.version\s*=\s*["\']([^"\']+)["\']', content)
+                    if m: identity["project_version"] = m.group(1)
+                    m = re.search(r'\.summary\s*=\s*["\']([^"\']+)["\']', content)
+                    if m: identity["project_description"] = m.group(1)
+                    m = re.search(r'\.license\s*=\s*.*["\']([^"\']+)["\']', content)
+                    if m: identity["project_license"] = m.group(1)
+                    manifest_found = True
+                except Exception:
+                    pass
+
+        # 1.5 Xcode Projects (*.xcodeproj)
+        if not manifest_found:
+            xcodeproj = list(root_path.glob("*.xcodeproj"))
+            if xcodeproj:
+                identity["project_name"] = xcodeproj[0].stem
+                # Xcode project metadata is buried in pbxproj, usually easier to just take the name
+                manifest_found = True
+
         # 2. Python (pyproject.toml)
         if not manifest_found:
             pyproject = root_path / "pyproject.toml"
@@ -1499,6 +1642,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     match = re.search(r'^module\s+(.+)$', content, re.MULTILINE)
                     if match:
                         identity["project_name"] = match.group(1).strip()
+                        manifest_found = True
                 except Exception:
                     pass
 
@@ -1530,6 +1674,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     if m: identity["project_name"] = m.group(1)
                     m = re.search(r'version:\s*["\']([^"\']+)["\']', content)
                     if m: identity["project_version"] = m.group(1)
+                    manifest_found = True
                 except Exception:
                     pass
 
@@ -1541,6 +1686,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     content = package_swift.read_text(encoding='utf-8')
                     m = re.search(r'name:\s*["\']([^"\']+)["\']', content)
                     if m: identity["project_name"] = m.group(1)
+                    manifest_found = True
                 except Exception:
                     pass
 
@@ -1550,8 +1696,13 @@ def get_project_identity(root_folder: str | Path) -> dict:
             if readme.is_file():
                 try:
                     content = readme.read_text(encoding='utf-8')
-                    # Try to get the first H1
+                    # Try to get the first H1 (ATX style: # Name)
                     m = re.search(r'^#\s+(.+)$', content, re.MULTILINE)
+
+                    # If not found, try Setext style (Name followed by ===)
+                    if not m:
+                        m = re.search(r'^([^\n]+)\n={3,}\s*$', content, re.MULTILINE)
+
                     if m:
                         identity["project_name"] = m.group(1).strip()
                         # Try to get the paragraph following the H1 for description
@@ -1562,7 +1713,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
                             for line in lines:
                                 line = line.strip()
                                 if line:
-                                    if not line.startswith('#'):
+                                    if not line.startswith('#') and not (line.startswith('===') or line.startswith('---')):
                                         # Limit description length
                                         desc = line
                                         if len(desc) > 200:
