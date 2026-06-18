@@ -5,7 +5,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 ## Key Features
 *   **Find files in many folders:** Scan many folders at once. Use Git to find files and follow the `.gitignore` rules automatically.
 *   **Filtering:** Skip folders, files, or specific names using glob patterns. You can also filter by language, file content (using regular expressions), or Git changes.
-*   **Deduplication:** Skip duplicate files by absolute path or content.
+*   **Duplicate Removal:** Skip duplicate files by path or content.
 *   **Include Groups:** Group specific files to always include, even if you skip others.
 *   **Pairing:** Combine related files (such as source and header pairs) into their own individual output files.
 *   **File Extraction:** Rebuild the original files and folders from combined files (such as JSON, XML, JSONL, CSV, or Markdown). The tool supports filtering, sorting, and processing rules. Batch process multiple files, entire folders, or remote URLs (http/https). Without an input file, the tool automatically searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`).
@@ -21,7 +21,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--git-files` (`-G`): Use Git to find files and follow the `.gitignore` rules automatically.
 *   `--limit` (`-L`): Stop processing once you reach this file limit.
 *   `--unique` (`-u`): Skip duplicate files by absolute path or content.
-*   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, skipping binary files, deduplication, and automatically including Git context like logs and diffs). This also copies to the system clipboard if you do not specify an output.
+*   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, skipping binary files, removing duplicates, and automatically including Git context like logs and diffs). This also copies to the system clipboard if you do not specify an output.
 *   `--project-name NAME`: Override the project name used in templates and reports.
 *   `--project-version VERSION`: Override the project version.
 *   `--project-description TEXT`: Override the project description.
@@ -121,7 +121,7 @@ Used in `header_template` and `footer_template`:
 *   `{{EXT}}`: File extension (for example, `py`).
 *   `{{STEM}}`: Filename without extension (for example, `main`).
 *   `{{DIR}}`: Folder path containing the file.
-*   `{{DIR_SLUG}}`: A filesystem-safe version of the folder path.
+*   `{{DIR_SLUG}}`: A version of the folder path safe for use in filenames.
 *   `{{LANG}}`: Detected language tag (for example, `python`, `cpp`).
 *   `{{SIZE}}`: Human-readable file size.
 *   `{{TOKENS}}`: Number of tokens in the file.
@@ -143,7 +143,7 @@ Used in `header_template` and `footer_template`:
 
 ### Project-Level Placeholders
 Used in `global_header_template`, `global_footer_template`, and other project-wide settings:
-*   `{{PROJECT_NAME}}`: Name of the project (detected from `package.json`, `pyproject.toml`, `Cargo.toml`, `Gemfile`, `mix.exs`, `Package.swift`, `.csproj`, `.fsproj`, `.vbproj`, `.sln`, `settings.gradle`, `project.clj`, `.podspec`, `.xcodeproj`, `README.md`, or folder name).
+*   `{{PROJECT_NAME}}`: Name of the project (detected from `package.json`, `pyproject.toml`, `Cargo.toml`, `composer.json`, `pom.xml`, `go.mod`, `*.gemspec`, `mix.exs`, `Package.swift`, `.csproj`, `.fsproj`, `.vbproj`, `.sln`, `settings.gradle`, `project.clj`, `.podspec`, `.xcodeproj`, `README.md`, or folder name).
 *   `{{PROJECT_VERSION}}`: Version of the project.
 *   `{{PROJECT_DESCRIPTION}}`: Short description of the project.
 *   `{{PROJECT_LICENSE}}`: License identifier of the project.
