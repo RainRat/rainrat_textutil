@@ -3924,6 +3924,13 @@ def main():
         help="Skip duplicate files by absolute path or content.",
     )
     filtering_group.add_argument(
+        "--strip-components",
+        type=int,
+        default=0,
+        metavar="N",
+        help="Remove N leading components from file paths during extraction or verification.",
+    )
+    filtering_group.add_argument(
         "--map-lang",
         nargs=2,
         action="append",
@@ -4969,6 +4976,7 @@ def main():
                 show_diff=config.get('output', {}).get('show_diff', False),
                 repair=args.repair,
                 dry_run=args.dry_run,
+                strip_components=args.strip_components,
             )
             sys.exit(0)
 
@@ -4985,7 +4993,8 @@ def main():
             sort_by=config.get('output', {}).get('sort_by', 'name'),
             sort_reverse=config.get('output', {}).get('sort_reverse', False),
             keep_line_numbers=args.keep_line_numbers,
-            show_diff=config.get('output', {}).get('show_diff', False)
+            show_diff=config.get('output', {}).get('show_diff', False),
+            strip_components=args.strip_components,
         )
         dest = f"to '{output_folder}'"
         if len(sources) == 1:
@@ -5211,7 +5220,7 @@ def _parse_combined_content(content, source_name="combined file"):
     return files_found
 
 
-def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=False, dry_run=False):
+def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=False, dry_run=False, strip_components=0):
     """Verify that files on disk match the manifest or combined file."""
     root_folder = Path(root_folder)
     if config is None:
@@ -5241,6 +5250,13 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
         # Safety check: prevent path traversal (similar to extract_files)
         try:
             requested_path = Path(rel_path_str)
+
+            if strip_components > 0:
+                parts = requested_path.parts
+                if len(parts) <= strip_components:
+                    logging.warning("Skipping path with fewer than %d components: %s", strip_components, rel_path_str)
+                    continue
+                requested_path = Path(*parts[strip_components:])
             if requested_path.is_absolute() or PurePosixPath(rel_path_str).is_absolute() or PureWindowsPath(rel_path_str).is_absolute() or '..' in requested_path.parts or ':' in rel_path_str:
                 logging.warning("Skipping unsafe path: %s", rel_path_str)
                 continue
@@ -5363,7 +5379,7 @@ def _handle_invalid_config_error(exc, verbose, message=None):
     sys.exit(1)
 
 
-def extract_files(sources, output_folder, dry_run=False, source_name="combined file", config=None, list_files=False, tree_view=False, limit=0, estimate_tokens=False, sort_by='name', sort_reverse=False, keep_line_numbers=False, show_diff=False):
+def extract_files(sources, output_folder, dry_run=False, source_name="combined file", config=None, list_files=False, tree_view=False, limit=0, estimate_tokens=False, sort_by='name', sort_reverse=False, keep_line_numbers=False, show_diff=False, strip_components=0):
     """Recreate the original folder structure and files from combined content sources."""
     output_folder = Path(output_folder)
 
@@ -5629,6 +5645,13 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
             # We use joinpath and resolve to catch traversal and absolute path attempts.
             # Malformed paths such as 'C:../' or '/etc/passwd' are handled safely.
             requested_path = Path(rel_path_str)
+
+            if strip_components > 0:
+                parts = requested_path.parts
+                if len(parts) <= strip_components:
+                    logging.warning("Skipping path with fewer than %d components: %s", strip_components, rel_path_str)
+                    continue
+                requested_path = Path(*parts[strip_components:])
             
             # Absolute paths are always unsafe.
             if requested_path.is_absolute() or PurePosixPath(rel_path_str).is_absolute() or PureWindowsPath(rel_path_str).is_absolute():
