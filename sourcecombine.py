@@ -466,14 +466,14 @@ def _format_metadata_summary(meta: Mapping[str, Any], colored: bool = False) -> 
         else:
             status_label = f"{label} "
 
-    if 'files' in meta:
+    if 'files' in meta and meta['files'] is not None:
         count = meta['files']
         parts.append(f"{count} {_plural(count, 'file')}")
     if 'language' in meta and meta['language']:
         parts.append(meta['language'])
-    if 'size' in meta:
+    if 'size' in meta and meta['size'] is not None:
         parts.append(utils.format_size(meta['size']))
-    if 'lines' in meta and meta['lines'] > 0:
+    if 'lines' in meta and meta['lines'] is not None and meta['lines'] > 0:
         parts.append(f"{meta['lines']:,} {_plural(meta['lines'], 'line')}")
     if 'tokens' in meta and meta['tokens'] is not None and meta['tokens'] > 0:
         count = meta['tokens']
