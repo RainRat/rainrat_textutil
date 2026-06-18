@@ -76,7 +76,7 @@ output:
   #   {{SOURCE_EXT}} - The extension of the source file (for example, '.cpp')
   #   {{HEADER_EXT}} - The extension of the header file (for example, '.h')
   #   {{DIR}}        - The relative folder path using forward slashes (or '.' for the root folder)
-  #   {{DIR_SLUG}}   - A simplified name for {{DIR}} ('root' when DIR is '.')
+  #   {{DIR_SLUG}}   - A simplified name for {{DIR}} safe for use in filenames
   #   {{LANG}}       - Detected language of the pair
   #   {{INDEX}}      - The current pair's position in the list (1, 2, 3...)
   #   {{TOTAL}}      - The total number of pairs being processed
@@ -154,8 +154,8 @@ output:
 project:
   # Manual overrides for project metadata used in templates and reports.
   # If omit or set to null, the tool tries to find them in manifest files
-  # such as package.json, pyproject.toml, Cargo.toml, Gemfile, mix.exs,
-  # Package.swift, or README.md.
+  # such as package.json, pyproject.toml, Cargo.toml, composer.json, pom.xml,
+  # go.mod, *.gemspec, mix.exs, Package.swift, or README.md.
   name: null
   version: null
   description: null

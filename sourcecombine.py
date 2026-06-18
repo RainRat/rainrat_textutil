@@ -3921,7 +3921,7 @@ def main():
         "--unique",
         "-u",
         action="store_true",
-        help="Skip duplicate files by absolute path or content.",
+        help="Skip duplicate files by path or content (duplicate removal).",
     )
     filtering_group.add_argument(
         "--map-lang",
@@ -3979,7 +3979,7 @@ def main():
         action="store_true",
         help=(
             "Enable a preset for AI models: Markdown format, line numbers, Table of Contents, folder tree, "
-            "project overview, skipping binary files, deduplication, and automatic Git context. "
+            "project overview, skipping binary files, removing duplicates, and automatic Git context. "
             "This also copies to the system clipboard if you do not specify an output."
         ),
     )
@@ -4208,12 +4208,11 @@ def main():
         "--extract",
         action="store_true",
         help=(
-            "Rebuild original files and folders from combined files (JSON, XML, Markdown, and other formats). "
-            "The tool reads from files, folders, remote URLs (http/https), the terminal ('-'), or the system clipboard. "
-            "Without an input file, the tool searches for standard default files such as `combined_files.txt`, "
-            "`combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, "
-            "or `combined_files.csv`. The tool supports filtering, sorting, and processing rules. "
-            "The tool removes line numbers automatically unless you use --keep-line-numbers."
+            "Rebuild original files and folders from combined outputs (JSON, XML, Markdown, and more). "
+            "Read from files, folders, remote URLs, the terminal, or the clipboard. "
+            "Searches for standard defaults if no input is provided. "
+            "Supports filtering, sorting, and processing rules. "
+            "Removes line numbers automatically unless you use --keep-line-numbers."
         ),
     )
     utility_group.add_argument(
@@ -4231,10 +4230,8 @@ def main():
         action="store_true",
         help=(
             "Verify that files on disk match the content or hashes in combined files or manifests. "
-            "The tool reads from files, folders, remote URLs (http/https), the terminal ('-'), or the system clipboard. "
-            "Without an input file, the tool searches for standard default files such as `combined_files.txt`, "
-            "`combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, "
-            "or `combined_files.csv`."
+            "Read from files, folders, remote URLs, the terminal, or the clipboard. "
+            "Searches for standard defaults if no input is provided."
         ),
     )
     utility_group.add_argument(
@@ -5823,7 +5820,7 @@ def print_placeholders():
             ("{{EXT}}", "File extension (for example, 'py')."),
             ("{{STEM}}", "Filename without extension (for example, 'main')."),
             ("{{DIR}}", "Folder path containing the file."),
-            ("{{DIR_SLUG}}", "A filesystem-safe version of the folder path."),
+            ("{{DIR_SLUG}}", "A version of the folder path safe for use in filenames."),
             ("{{LANG}}", "Detected language tag (for example, 'python', 'cpp')."),
             ("{{SIZE}}", "Human-readable file size."),
             ("{{TOKENS}}", "Number of tokens in the file."),
@@ -5880,7 +5877,7 @@ def print_placeholders():
             ("{{SOURCE_EXT}}", "Extension of the source file (for example, '.cpp')."),
             ("{{HEADER_EXT}}", "Extension of the header file (for example, '.h')."),
             ("{{DIR}}", "Folder path containing the pair."),
-            ("{{DIR_SLUG}}", "A filesystem-safe version of the folder path."),
+            ("{{DIR_SLUG}}", "A version of the folder path safe for use in filenames."),
             ("{{LANG}}", "Detected language of the pair."),
             ("{{INDEX}}", "The current pair's position in the list."),
             ("{{TOTAL}}", "The total number of pairs being processed."),
