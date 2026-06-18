@@ -123,6 +123,7 @@ def test_ai_preset_enables_git_context():
                 assert args.include_tree is True
                 assert args.overview is True
                 assert args.skip_binary is True
+                assert args.unique is True
                 assert args.git_log == 5
                 assert args.include_diff is True
 
