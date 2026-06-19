@@ -591,8 +591,24 @@ def _validate_search_section(config):
         raise InvalidConfigError("search.root_folders must be a list of folders.")
 
     allowed_exts = search.get('allowed_extensions')
-    if allowed_exts is not None and not isinstance(allowed_exts, list):
-        raise InvalidConfigError("search.allowed_extensions must be a list.")
+    if allowed_exts is not None:
+        if not isinstance(allowed_exts, list):
+            raise InvalidConfigError("search.allowed_extensions must be a list.")
+        # Normalize: ensure leading dot
+        search['allowed_extensions'] = [
+            (ext if ext.startswith('.') else f'.{ext}')
+            for ext in allowed_exts if isinstance(ext, str)
+        ]
+
+    exclude_exts = search.get('exclude_extensions')
+    if exclude_exts is not None:
+        if not isinstance(exclude_exts, list):
+            raise InvalidConfigError("search.exclude_extensions must be a list.")
+        # Normalize: ensure leading dot
+        search['exclude_extensions'] = [
+            (ext if ext.startswith('.') else f'.{ext}')
+            for ext in exclude_exts if isinstance(ext, str)
+        ]
 
     allowed_langs = search.get('allowed_languages')
     if allowed_langs is not None:
@@ -748,6 +764,10 @@ def _validate_pairing_section(config):
             raise InvalidConfigError(
                 "'allowed_extensions' cannot be used when pairing is enabled; remove it or disable pairing."
             )
+        if search_conf.get('exclude_extensions'):
+            raise InvalidConfigError(
+                "'exclude_extensions' cannot be used when pairing is enabled; remove it or disable pairing."
+            )
 
         source_ext_list = pairing_conf.get('source_extensions')
         if source_ext_list is not None and not isinstance(source_ext_list, list):
@@ -770,6 +790,9 @@ def _validate_pairing_section(config):
         )
 
     search_conf['effective_allowed_extensions'] = effective_allowed_extensions
+    search_conf['effective_exclude_extensions'] = tuple(
+        e.lower() for e in (search_conf.get('exclude_extensions') or [])
+    )
 
 
 def _validate_project_section(config):

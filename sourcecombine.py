@@ -794,7 +794,12 @@ def should_include(
         return (False, 'excluded') if return_reason else False
 
     allowed_extensions = search_opts.get('effective_allowed_extensions') or ()
+    exclude_extensions = search_opts.get('effective_exclude_extensions') or ()
     suffix = relative_path.suffix.lower()
+
+    if exclude_extensions and suffix in exclude_extensions:
+        return (False, 'extension_excluded') if return_reason else False
+
     if allowed_extensions and suffix not in allowed_extensions:
         return (False, 'extension') if return_reason else False
 
@@ -3803,6 +3808,22 @@ def main():
         help="Include only files that match this glob pattern (for example, '*.py'). Use this option again to include more.",
     )
     filtering_group.add_argument(
+        "--extension",
+        "--ext",
+        action="append",
+        metavar="EXT",
+        default=[],
+        help="Include only files with these extensions (for example, 'py', '.js'). Use this option again to include more.",
+    )
+    filtering_group.add_argument(
+        "--exclude-extension",
+        "--exclude-ext",
+        action="append",
+        metavar="EXT",
+        default=[],
+        help="Skip files with these extensions (for example, 'log', '.tmp'). Use this option again to skip more.",
+    )
+    filtering_group.add_argument(
         "--language",
         "--lang",
         action="append",
@@ -4573,6 +4594,18 @@ def main():
         logging.debug("Added terminal language mappings: %s", args.map_lang)
 
     search = config.get('search') or {}
+
+    if getattr(args, 'extension', None):
+        if not isinstance(search.get('allowed_extensions'), list):
+            search['allowed_extensions'] = []
+        search['allowed_extensions'].extend(args.extension)
+        logging.debug("Added terminal extension inclusions: %s", args.extension)
+
+    if getattr(args, 'exclude_extension', None):
+        if not isinstance(search.get('exclude_extensions'), list):
+            search['exclude_extensions'] = []
+        search['exclude_extensions'].extend(args.exclude_extension)
+        logging.debug("Added terminal extension exclusions: %s", args.exclude_extension)
 
     if args.language:
         if not isinstance(search.get('allowed_languages'), list):
