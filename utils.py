@@ -1447,6 +1447,8 @@ def get_project_identity(root_folder: str | Path) -> dict:
                         m = re.search(r'<PackageLicenseExpression>(.*?)</PackageLicenseExpression>', content)
                         if m:
                             identity["project_license"] = m.group(1)
+                    else:
+                        identity["project_name"] = target_file.stem
 
                     manifest_found = True
                 except Exception:
@@ -1753,7 +1755,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
                             # Try to extract license type from the first line (for example, "MIT License" or "Apache License")
                             first_line = content.split('\n')[0].strip()
                             # Clean up common prefixes
-                            license_name = re.sub(r'^(The\s+)?(MIT|Apache|GPL|BSD|ISC|Mozilla|Unlicense|Zlib)\s+License.*$', r'\2', first_line, flags=re.IGNORECASE)
+                            license_name = re.sub(r'^(The\s+)?(MIT|Apache|GPL|BSD|ISC|Mozilla|Unlicense|Zlib)\b.*$', r'\2', first_line, flags=re.IGNORECASE)
                             if license_name != first_line:
                                 identity["project_license"] = license_name
                             elif len(first_line) < 50:  # If it's a short line, assume it's the license name
@@ -1768,11 +1770,6 @@ def get_project_identity(root_folder: str | Path) -> dict:
         pass
 
     return identity
-
-
-def get_project_name(root_folder: str | Path) -> str:
-    """Detect the project name from the folder name or manifest files."""
-    return get_project_identity(root_folder)["project_name"]
 
 
 def get_datetime_placeholders() -> dict:

@@ -6,7 +6,7 @@ import pytest
 import yaml
 import sourcecombine
 from sourcecombine import main, _render_template, extract_files
-from utils import get_project_name
+from utils import get_project_identity
 
 def test_main_template_overrides_via_cli(capsys):
     """Cover sourcecombine.py lines 4235, 4237, 4239, 4241, 4243."""
@@ -65,7 +65,7 @@ def test_get_project_name_empty_package_json(tmp_path):
     pkg_json = tmp_path / "package.json"
     pkg_json.write_text("{}", encoding="utf-8")
     # Should skip name-less package.json and fallback to folder name
-    assert get_project_name(tmp_path) == tmp_path.name
+    assert get_project_identity(tmp_path)["project_name"] == tmp_path.name
 
 def test_render_template_missing_git_info():
     """Cover sourcecombine.py branch 549->559."""

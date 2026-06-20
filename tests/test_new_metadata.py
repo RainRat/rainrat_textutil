@@ -6,22 +6,22 @@ import utils
 def test_get_project_name_package_json(tmp_path):
     pkg_json = tmp_path / "package.json"
     pkg_json.write_text(json.dumps({"name": "test-pkg"}), encoding='utf-8')
-    assert utils.get_project_name(tmp_path) == "test-pkg"
+    assert utils.get_project_identity(tmp_path)["project_name"] == "test-pkg"
 
 def test_get_project_name_pyproject_toml_top(tmp_path):
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text('name = "test-pyproject"', encoding='utf-8')
-    assert utils.get_project_name(tmp_path) == "test-pyproject"
+    assert utils.get_project_identity(tmp_path)["project_name"] == "test-pyproject"
 
 def test_get_project_name_pyproject_toml_project_section(tmp_path):
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text('[project]\nname = "test-section"', encoding='utf-8')
-    assert utils.get_project_name(tmp_path) == "test-section"
+    assert utils.get_project_identity(tmp_path)["project_name"] == "test-section"
 
 def test_get_project_name_fallback_folder(tmp_path):
     folder = tmp_path / "my-awesome-project"
     folder.mkdir()
-    assert utils.get_project_name(folder) == "my-awesome-project"
+    assert utils.get_project_identity(folder)["project_name"] == "my-awesome-project"
 
 def test_datetime_placeholders():
     placeholders = utils.get_datetime_placeholders()
