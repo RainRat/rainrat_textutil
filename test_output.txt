@@ -1,0 +1,40 @@
+Project Overview:
+  Project:      test_dir
+  Generated at: 2026-06-20 13:13:57
+  OS:           Linux
+  Python:       3.12.13
+  Git Branch:   jules-2300517390118455195-98ca5e92
+  Git Commit:   f295f1e
+  Git Status:   1 modified, 3 added, 1 untracked
+  Files:        3
+  Total Size:   47.00 B
+  Total Lines:  12
+  Total Tokens: ~59
+
+  Largest Files (by tokens):
+    index.js                                5 tokens •        1 lines •    21.00 B (  8.5%)
+    main.py                                 3 tokens •        1 lines •    15.00 B (  5.1%)
+    nested/long_folder_name_to_test_truncation/script.js          2 tokens •        1 lines •    11.00 B (  3.4%)
+
+  Largest Folders (by tokens):
+    nested                                  2 tokens •        1 lines •    11.00 B •    1 files (  3.4%)
+    nested/long_folder_name_to_test_truncation          2 tokens •        1 lines •    11.00 B •    1 files (  3.4%)
+
+  Languages:
+    javascript     2 files •        2 lines ( 66.7% •  11.9%) [#---------]
+    python         1 files •        1 lines ( 33.3% •   5.1%) [#---------]
+
+--------------------
+
+--- index.js ---
+console.log('hello')
+
+--- end index.js ---
+--- main.py ---
+print('hello')
+
+--- end main.py ---
+--- nested/long_folder_name_to_test_truncation/script.js ---
+// JS file
+
+--- end nested/long_folder_name_to_test_truncation/script.js ---
