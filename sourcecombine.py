@@ -3781,7 +3781,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Skip files that match this glob pattern (for example, '*.log'). Use this option again to skip more.",
+        help="Skip files that match this pattern (for example, '*.log'). Use this option again to skip more.",
     )
     filtering_group.add_argument(
         "--exclude-folder",
@@ -3791,7 +3791,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Skip folders that match this glob pattern (for example, 'build'). Use this option again to skip more.",
+        help="Skip folders that match this pattern (for example, 'build'). Use this option again to skip more.",
     )
     filtering_group.add_argument(
         "--include",
@@ -3800,7 +3800,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Include only files that match this glob pattern (for example, '*.py'). Use this option again to include more.",
+        help="Include only files that match this pattern (for example, '*.py'). Use this option again to include more.",
     )
     filtering_group.add_argument(
         "--language",
@@ -3985,9 +3985,8 @@ def main():
         "-a",
         action="store_true",
         help=(
-            "Enable a preset for AI models: Markdown format, line numbers, Table of Contents, folder tree, "
-            "project overview, skipping binary files, removing duplicates, and automatic Git context. "
-            "This also copies to the system clipboard if you do not specify an output."
+            "Optimize results for AI models by enabling line numbers, folder trees, and Git context. "
+            "This also copies output to the clipboard automatically if no output path is set."
         ),
     )
     output_group.add_argument(
@@ -5876,7 +5875,7 @@ def print_placeholders():
             ("{{GIT_AUTHOR}}", "Author of the latest commit."),
             ("{{GIT_AUTHOR_DATE}}", "Date of the latest commit."),
             ("{{GIT_TAG}}", "Latest Git tag."),
-            ("{{GIT_STATUS}}", "Summary of working tree changes."),
+            ("{{GIT_STATUS}}", "Summary of project changes."),
             ("{{GIT_LOG}}", "Recent commit messages."),
             ("{{GIT_DIFF}}", "Project-wide changes."),
             ("{{FILE_DIFF}}", "Changes specific to the current file (File-level only)."),
