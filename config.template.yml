@@ -36,10 +36,17 @@ search:
   # Search folders recursively.
   recursive: true
 
-  # Only include files with these extensions. Leave empty to include all.
+  # Only include files with these extensions (for example, ['.py', '.js']).
+  # Leave empty to include all. Extensions can be specified with or without
+  # a leading dot.
   # NOTE: This option cannot be used if `pairing.enabled` is true or
   # if any `inclusion_groups` are enabled.
   allowed_extensions: []
+
+  # Skip files with these extensions (for example, ['.log', '.tmp']).
+  # Leave empty to skip none.
+  # NOTE: This option cannot be used if `pairing.enabled` is true.
+  exclude_extensions: []
 
   # Only include files of these languages (for example, 'python', 'cpp').
   # See `--list-languages` for a full list. Leave empty to include all.

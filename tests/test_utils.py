@@ -216,7 +216,7 @@ def test_load_and_validate_config_preserves_user_allowed_extensions(tmp_path):
         },
     )
     config = load_and_validate_config(config_path)
-    assert config["search"]["allowed_extensions"] == [".Py"]
+    assert config["search"]["allowed_extensions"] == [".py"]
     assert config["search"]["effective_allowed_extensions"] == (".py",)
 
 
