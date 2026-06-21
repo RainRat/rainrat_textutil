@@ -425,7 +425,7 @@ def _get_summary_top_items(stats, items, is_folder=False):
             title = "Largest Folders (by size)"
             total_weight = stats.get('total_size_bytes', 0)
     else:
-        # items is stats['top_files']: list of (tokens, size, path, status, lines)
+        # items is stats['top_files']: list of (tokens, size, path, status, lines, language)
         has_tokens = any(f[0] > 0 for f in items)
         has_lines = any(len(f) > 4 and f[4] > 0 for f in items)
 
@@ -1602,6 +1602,17 @@ def _pair_files(filtered_paths, source_exts, header_exts, include_mismatched, *,
     return paired
 
 
+def _get_stat_ext(file_path):
+    """Return the normalized extension or '.no_extension' for stats tracking."""
+    ext = file_path.suffix.lower() if hasattr(file_path, 'suffix') else Path(file_path).suffix.lower()
+    return ext or '.no_extension'
+
+
+def _get_stat_lang(file_path, stats):
+    """Return the programming language tag for stats tracking."""
+    return utils.get_language_tag(file_path, overrides=stats.get('custom_languages'))
+
+
 def _process_paired_files(
     paired_items,
     *,
@@ -1694,7 +1705,8 @@ def _process_paired_files(
                     for path in paths:
                         rel_p_str = _get_rel_path(path, root_path).as_posix()
                         status = stats.get('file_statuses', {}).get(rel_p_str)
-                        stats['top_files'].append((0, path.stat().st_size if path.exists() else 0, rel_p_str, status, 0))
+                        lang = _get_stat_lang(path, stats)
+                        stats['top_files'].append((0, path.stat().st_size if path.exists() else 0, rel_p_str, status, 0, lang))
                 continue
 
         pair_buffer = None
@@ -1735,7 +1747,8 @@ def _process_paired_files(
                     _update_line_stats(stats, primary_path, line_count)
                     rel_p_str = _get_rel_path(primary_path, root_path).as_posix()
                     status = stats.get('file_statuses', {}).get(rel_p_str)
-                    stats['top_files'].append((token_count, f_size, rel_p_str, status, line_count))
+                    lang = _get_stat_lang(primary_path, stats)
+                    stats['top_files'].append((token_count, f_size, rel_p_str, status, line_count, lang))
 
                 running_tokens += token_count
                 running_lines += line_count
@@ -1780,7 +1793,8 @@ def _process_paired_files(
                         _update_line_stats(stats, file_path, line_count)
                         rel_p_str = _get_rel_path(file_path, root_path).as_posix()
                         status = stats.get('file_statuses', {}).get(rel_p_str)
-                        stats['top_files'].append((token_count, f_size, rel_p_str, status, line_count))
+                        lang = _get_stat_lang(file_path, stats)
+                        stats['top_files'].append((token_count, f_size, rel_p_str, status, line_count, lang))
 
                     running_tokens += token_count
                     running_lines += line_count
@@ -1796,17 +1810,6 @@ def _process_paired_files(
             if out_file.exists():
                 old_content, _ = read_file_best_effort(out_file)
                 _print_diff(old_content, pair_buffer.getvalue(), out_file.as_posix())
-
-
-def _get_stat_ext(file_path):
-    """Return the normalized extension or '.no_extension' for stats tracking."""
-    ext = file_path.suffix.lower() if hasattr(file_path, 'suffix') else Path(file_path).suffix.lower()
-    return ext or '.no_extension'
-
-
-def _get_stat_lang(file_path, stats):
-    """Return the programming language tag for stats tracking."""
-    return utils.get_language_tag(file_path, overrides=stats.get('custom_languages'))
 
 
 def _update_file_stats(stats, file_path, size=None):
@@ -2997,7 +3000,7 @@ def find_and_combine_files(
                     status = stats.get('file_statuses', {}).get(rel_p_str)
                     lang = utils.get_language_tag(p, content=content if estimate_tokens else None, overrides=processor.custom_languages)
                     view_metadata[p] = {'size': f_size, 'tokens': tokens, 'lines': lines, 'status': status, 'language': lang}
-                    stats['top_files'].append((tokens, f_size, rel_p_str, status, lines))
+                    stats['top_files'].append((tokens, f_size, rel_p_str, status, lines, lang))
 
                 if tree_view:
                     print(_generate_tree_string(paths_to_list, root_path, include_header=False, metadata=view_metadata))
@@ -3331,7 +3334,8 @@ def find_and_combine_files(
                     'status': status,
                     'language': utils.get_language_tag(file_path, content=processed, overrides=processor.custom_languages)
                 }
-                stats['top_files'].append((content_tokens, file_size, rel_p_str, status, content_lines))
+                lang = file_metadata[file_path]['language']
+                stats['top_files'].append((content_tokens, file_size, rel_p_str, status, content_lines, lang))
 
                 # Account for header/footer templates in the limit
                 h_template = output_opts.get('header_template', utils.DEFAULT_CONFIG['output']['header_template'])
@@ -3618,7 +3622,8 @@ def find_and_combine_files(
                 if not token_limit_pass_performed:
                     rel_p_str = _get_rel_path(file_path, root_path).as_posix()
                     status = stats.get('file_statuses', {}).get(rel_p_str)
-                    stats['top_files'].append((token_count, f_size, rel_p_str, status, line_count))
+                    lang = _get_stat_lang(file_path, stats)
+                    stats['top_files'].append((token_count, f_size, rel_p_str, status, line_count, lang))
 
                 running_tokens += token_count
                 running_lines += line_count
@@ -5597,7 +5602,8 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         if lines:
             stats['lines_by_extension'][ext] = stats['lines_by_extension'].get(ext, 0) + lines
 
-        stats['top_files'].append((meta.get('tokens') or 0, meta['size'], path_str, meta.get('status'), lines))
+        lang = utils.get_language_tag(path_str, content=file_content, overrides=stats.get('custom_languages'))
+        stats['top_files'].append((meta.get('tokens') or 0, meta['size'], path_str, meta.get('status'), lines, lang))
 
     files_to_create = filtered_files
 
@@ -6304,8 +6310,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         has_status = any(len(f) > 3 and f[3] for f in top)
 
         # Calculate dynamic overhead for path width
-        # TOKENS: 13, LINES: 13, SIZE: 13, %: 7, DISTRIBUTION: 13, STATUS: 7
-        overhead = 13 + 7 + 13 + 4 # SIZE, %, DISTRIBUTION + indentation
+        # TOKENS: 13, LINES: 13, SIZE: 13, %: 7, DISTRIBUTION: 13, STATUS: 7, LANGUAGE: 12
+        overhead = 13 + 7 + 13 + 12 + 4 # SIZE, %, DISTRIBUTION, LANGUAGE + indentation
         if has_tokens: overhead += 13
         if has_lines: overhead += 13
         if has_status: overhead += 7
@@ -6322,6 +6328,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         header_parts.append(f"{'%':>6}")
         header_parts.append(f"{'DISTRIBUTION':<12}")
         if has_status: header_parts.append(f"{'STATUS':<6}")
+        header_parts.append(f"{'LANGUAGE':<11}")
         header_parts.append("PATH")
 
         print(f"\n  {C_BOLD}{C_CYAN}{title}{C_RESET}", file=sys.stderr)
@@ -6331,6 +6338,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             tokens, f_size, path = item[:3]
             status = item[3] if len(item) > 3 else None
             f_lines = item[4] if len(item) > 4 else 0
+            lang = item[5] if len(item) > 5 else ""
             val_num = tokens if has_tokens else (f_lines if has_lines else f_size)
             percent = 0.0
             if total_for_percent > 0:
@@ -6376,6 +6384,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                     row_parts.append(f"{status_text}{' ' * (6 - visible_len)}")
                 else:
                     row_parts.append(" " * 6)
+
+            display_lang = _truncate_path(lang, 11)
+            row_parts.append(f"{C_DIM}{display_lang:<11}{C_RESET}")
 
             row_parts.append(f"{C_BOLD}{display_path}{C_RESET}")
             print(f"    {' '.join(row_parts)}", file=sys.stderr)
