@@ -2320,6 +2320,12 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
 
     if output_format == 'markdown':
         lines.append(f"- **Project:** {project_name}")
+        if stats.get('project_version'):
+            lines.append(f"- **Version:** {stats['project_version']}")
+        if stats.get('project_license'):
+            lines.append(f"- **License:** {stats['project_license']}")
+        if stats.get('project_url'):
+            lines.append(f"- **URL:** {stats['project_url']}")
         lines.append(f"- **Generated at:** {timestamp}")
         if stats.get('os'):
             lines.append(f"- **OS:** {stats['os']}")
@@ -2352,6 +2358,12 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
         lines.append(f"- **Total Tokens:** {token_str}")
     else:
         lines.append(f"  Project:      {project_name}")
+        if stats.get('project_version'):
+            lines.append(f"  Version:      {stats['project_version']}")
+        if stats.get('project_license'):
+            lines.append(f"  License:      {stats['project_license']}")
+        if stats.get('project_url'):
+            lines.append(f"  URL:          {stats['project_url']}")
         lines.append(f"  Generated at: {timestamp}")
         if stats.get('os'):
             lines.append(f"  OS:           {stats['os']}")
