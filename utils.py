@@ -1770,11 +1770,6 @@ def get_project_identity(root_folder: str | Path) -> dict:
     return identity
 
 
-def get_project_name(root_folder: str | Path) -> str:
-    """Detect the project name from the folder name or manifest files."""
-    return get_project_identity(root_folder)["project_name"]
-
-
 def get_datetime_placeholders() -> dict:
     """Return a dictionary of current date and time values."""
     now = datetime.now()
