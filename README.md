@@ -175,7 +175,8 @@ Used in `paired_filename_template`. Supports all project-level, system, and Git 
 *   `{{STEM}}`: Base filename shared by the pair.
 *   `{{SOURCE_EXT}}`: Extension of the source file (for example, `.cpp`).
 *   `{{HEADER_EXT}}`: Extension of the header file (for example, `.h`).
-*   `{{LANG}}`: Detected language of the pair (for example, `cpp`).
+*   `{{DIR}}`: Folder path containing the pair.
+*   `{{DIR_SLUG}}`: A version of the folder path safe for use in filenames.
+*   `{{LANG}}`: Detected language tag of the pair (for example, `cpp`).
 *   `{{INDEX}}`: The current pair's position in the list (1, 2, 3...).
 *   `{{TOTAL}}`: The total number of pairs being processed.
-*   `{{DIR}}`, `{{DIR_SLUG}}`: Relative folder path.
