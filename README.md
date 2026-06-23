@@ -29,6 +29,8 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--project-license NAME`: Override the project license.
 *   `--project-url URL`: Override the project URL.
 *   `--dry-run` (`-d`): Show what would happen without making any changes.
+*   `--remove-comments`: Remove both single-line and multi-line comments based on the detected language.
+*   `--remove-single-line-comments`: Remove only single-line comments based on the detected language.
 *   `--mirror`: Recreate the input directory structure in the output folder, applying all filtering and processing rules to each file individually.
 *   `--apply-in-place`: Save processed changes back to the original source files.
 *   `--create-backups`: Create `.bak` copies of original files when using `--apply-in-place`.
