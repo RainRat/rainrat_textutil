@@ -1694,7 +1694,7 @@ def _process_paired_files(
                     for path in paths:
                         rel_p_str = _get_rel_path(path, root_path).as_posix()
                         status = stats.get('file_statuses', {}).get(rel_p_str)
-                        stats['top_files'].append((0, path.stat().st_size if path.exists() else 0, rel_p_str, status, 0))
+                        stats['top_files'].append((0, path.stat().st_size if path.exists() else 0, rel_p_str, status, 0, _get_stat_lang(path, stats)))
                 continue
 
         pair_buffer = None
@@ -1735,7 +1735,7 @@ def _process_paired_files(
                     _update_line_stats(stats, primary_path, line_count)
                     rel_p_str = _get_rel_path(primary_path, root_path).as_posix()
                     status = stats.get('file_statuses', {}).get(rel_p_str)
-                    stats['top_files'].append((token_count, f_size, rel_p_str, status, line_count))
+                    stats['top_files'].append((token_count, f_size, rel_p_str, status, line_count, _get_stat_lang(primary_path, stats)))
 
                 running_tokens += token_count
                 running_lines += line_count
@@ -1780,7 +1780,7 @@ def _process_paired_files(
                         _update_line_stats(stats, file_path, line_count)
                         rel_p_str = _get_rel_path(file_path, root_path).as_posix()
                         status = stats.get('file_statuses', {}).get(rel_p_str)
-                        stats['top_files'].append((token_count, f_size, rel_p_str, status, line_count))
+                        stats['top_files'].append((token_count, f_size, rel_p_str, status, line_count, _get_stat_lang(file_path, stats)))
 
                     running_tokens += token_count
                     running_lines += line_count
@@ -2430,27 +2430,29 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
             if has_lines:
                 md_header += " | Lines"
                 md_divider += " | :---"
-            md_header += " | Size | % |"
-            md_divider += " | :--- | :--- |"
+            md_header += " | Size | Language | % |"
+            md_divider += " | :--- | :--- | :--- |"
             lines.append(md_header)
             lines.append(md_divider)
 
             for item in sorted_top:
                 tokens, size, path = item[:3]
                 f_lines = item[4] if len(item) > 4 else 0
+                f_lang = item[5] if len(item) > 5 else ""
                 weight = tokens if has_tokens else (f_lines if has_lines else size)
                 percent = (weight / total_weight * 100) if total_weight > 0 else 0
 
                 row = f"| `{path}`"
                 if has_tokens: row += f" | {tokens:,}"
                 if has_lines: row += f" | {f_lines:,}"
-                row += f" | {utils.format_size(size)} | {percent:.1f}% |"
+                row += f" | {utils.format_size(size)} | {f_lang} | {percent:.1f}% |"
                 lines.append(row)
         else:
             lines.append(f"\n  {title}:")
             for item in sorted_top:
                 tokens, size, path = item[:3]
                 f_lines = item[4] if len(item) > 4 else 0
+                f_lang = item[5] if len(item) > 5 else ""
                 weight = tokens if has_tokens else (f_lines if has_lines else size)
                 percent = (weight / total_weight * 100) if total_weight > 0 else 0
 
@@ -2458,6 +2460,8 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
                 if has_tokens: parts.append(f"{tokens:>10} tokens")
                 if has_lines: parts.append(f"{f_lines:>8} lines")
                 parts.append(f"{utils.format_size(size):>10}")
+                f_lang_label = f_lang[:10] if len(f_lang) <= 10 else (f_lang[:7] + "...")
+                parts.append(f"{f_lang_label:<10}")
 
                 lines.append(f"    {path:<30} {' • '.join(parts)} ({percent:>5.1f}%)")
 
@@ -2997,7 +3001,7 @@ def find_and_combine_files(
                     status = stats.get('file_statuses', {}).get(rel_p_str)
                     lang = utils.get_language_tag(p, content=content if estimate_tokens else None, overrides=processor.custom_languages)
                     view_metadata[p] = {'size': f_size, 'tokens': tokens, 'lines': lines, 'status': status, 'language': lang}
-                    stats['top_files'].append((tokens, f_size, rel_p_str, status, lines))
+                    stats['top_files'].append((tokens, f_size, rel_p_str, status, lines, lang))
 
                 if tree_view:
                     print(_generate_tree_string(paths_to_list, root_path, include_header=False, metadata=view_metadata))
@@ -3331,7 +3335,7 @@ def find_and_combine_files(
                     'status': status,
                     'language': utils.get_language_tag(file_path, content=processed, overrides=processor.custom_languages)
                 }
-                stats['top_files'].append((content_tokens, file_size, rel_p_str, status, content_lines))
+                stats['top_files'].append((content_tokens, file_size, rel_p_str, status, content_lines, file_metadata[file_path]['language']))
 
                 # Account for header/footer templates in the limit
                 h_template = output_opts.get('header_template', utils.DEFAULT_CONFIG['output']['header_template'])
@@ -3340,12 +3344,12 @@ def find_and_combine_files(
                 rendered_h = _render_template(
                     h_template, rel_p, size=file_size, tokens=content_tokens,
                     lines=content_lines, custom_languages=search_opts.get('custom_languages'),
-                        git_info=stats, file_path=file_path
+                    git_info=stats, file_path=file_path
                 )
                 rendered_f = _render_template(
                     f_template, rel_p, size=file_size, tokens=content_tokens,
                     lines=content_lines, custom_languages=search_opts.get('custom_languages'),
-                        git_info=stats, file_path=file_path
+                    git_info=stats, file_path=file_path
                 )
 
                 header_tokens = utils.estimate_tokens(rendered_h)[0]
@@ -3618,7 +3622,7 @@ def find_and_combine_files(
                 if not token_limit_pass_performed:
                     rel_p_str = _get_rel_path(file_path, root_path).as_posix()
                     status = stats.get('file_statuses', {}).get(rel_p_str)
-                    stats['top_files'].append((token_count, f_size, rel_p_str, status, line_count))
+                    stats['top_files'].append((token_count, f_size, rel_p_str, status, line_count, _get_stat_lang(file_path, stats)))
 
                 running_tokens += token_count
                 running_lines += line_count
@@ -5094,6 +5098,7 @@ def _parse_combined_content(content, source_name="combined file"):
                         'is_approx': entry.get('tokens_is_approx', False),
                         'modified': entry.get('modified'),
                         'sha256': entry.get('sha256'),
+                        'language': entry.get('language'),
                     }
                     files_found.append((entry['path'], entry.get('content'), meta))
             if files_found:
@@ -5117,6 +5122,7 @@ def _parse_combined_content(content, source_name="combined file"):
                     'is_approx': entry.get('tokens_is_approx', False),
                     'modified': entry.get('modified'),
                     'sha256': entry.get('sha256'),
+                    'language': entry.get('language'),
                 }
                 potential_files.append((entry['path'], entry.get('content'), meta))
             else:
@@ -5145,6 +5151,7 @@ def _parse_combined_content(content, source_name="combined file"):
                     lines_val = file_node.get('lines')
                     mod_val = file_node.get('modified')
                     sha_val = file_node.get('sha256')
+                    lang_val = file_node.get('language')
 
                     tokens = _to_int_or_none(tokens_val)
                     size = utils.parse_size_value(size_val) if size_val else None
@@ -5161,6 +5168,7 @@ def _parse_combined_content(content, source_name="combined file"):
                         'is_approx': is_approx,
                         'modified': datetime.fromisoformat(mod_val).timestamp() if mod_val else None,
                         'sha256': sha_val,
+                        'language': lang_val,
                     }
                     files_found.append((path, file_content, meta))
             except (ValueError, TypeError, Exception) as exc:
@@ -5185,6 +5193,7 @@ def _parse_combined_content(content, source_name="combined file"):
                         'is_approx': row.get('tokens_is_approx') == 'True',
                         'modified': float(row['modified']) if row.get('modified') else None,
                         'sha256': row.get('sha256'),
+                        'language': row.get('language'),
                     }
                     files_found.append((row['path'], row.get('content'), meta))
             if files_found:
@@ -5597,7 +5606,8 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         if lines:
             stats['lines_by_extension'][ext] = stats['lines_by_extension'].get(ext, 0) + lines
 
-        stats['top_files'].append((meta.get('tokens') or 0, meta['size'], path_str, meta.get('status'), lines))
+        lang = utils.get_language_tag(path_str, content=file_content, overrides=stats.get('custom_languages'))
+        stats['top_files'].append((meta.get('tokens') or 0, meta['size'], path_str, meta.get('status'), lines, lang))
 
     files_to_create = filtered_files
 
@@ -6304,8 +6314,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         has_status = any(len(f) > 3 and f[3] for f in top)
 
         # Calculate dynamic overhead for path width
-        # TOKENS: 13, LINES: 13, SIZE: 13, %: 7, DISTRIBUTION: 13, STATUS: 7
-        overhead = 13 + 7 + 13 + 4 # SIZE, %, DISTRIBUTION + indentation
+        # TOKENS: 13, LINES: 13, SIZE: 13, %: 7, DISTRIBUTION: 13, STATUS: 7, LANGUAGE: 12
+        overhead = 13 + 7 + 13 + 12 + 4 # SIZE, %, DISTRIBUTION, LANGUAGE + indentation
         if has_tokens: overhead += 13
         if has_lines: overhead += 13
         if has_status: overhead += 7
@@ -6322,6 +6332,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         header_parts.append(f"{'%':>6}")
         header_parts.append(f"{'DISTRIBUTION':<12}")
         if has_status: header_parts.append(f"{'STATUS':<6}")
+        header_parts.append(f"{'LANGUAGE':<11}")
         header_parts.append("PATH")
 
         print(f"\n  {C_BOLD}{C_CYAN}{title}{C_RESET}", file=sys.stderr)
@@ -6331,6 +6342,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             tokens, f_size, path = item[:3]
             status = item[3] if len(item) > 3 else None
             f_lines = item[4] if len(item) > 4 else 0
+            lang = item[5] if len(item) > 5 else ""
             val_num = tokens if has_tokens else (f_lines if has_lines else f_size)
             percent = 0.0
             if total_for_percent > 0:
@@ -6376,6 +6388,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                     row_parts.append(f"{status_text}{' ' * (6 - visible_len)}")
                 else:
                     row_parts.append(" " * 6)
+
+            lang_label = lang[:11] if len(lang) <= 11 else (lang[:8] + "...")
+            row_parts.append(f"{C_DIM}{lang_label:<11}{C_RESET}")
 
             row_parts.append(f"{C_BOLD}{display_path}{C_RESET}")
             print(f"    {' '.join(row_parts)}", file=sys.stderr)
