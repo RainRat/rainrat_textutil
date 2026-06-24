@@ -4,7 +4,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 
 ## Key Features
 *   **Find files in many folders:** Scan many folders at once. Use Git to find files and follow the `.gitignore` rules automatically.
-*   **Filtering:** Skip folders, files, or specific names using glob patterns. You can also filter by language, file content (using regular expressions), or Git changes.
+*   **Filtering:** Skip folders, files, or specific names using patterns. You can also filter by language, file content (using regular expressions), or Git changes.
 *   **Duplicate Removal:** Skip duplicate files by path or content.
 *   **Include Groups:** Group specific files to always include, even if you skip others.
 *   **Pairing:** Combine related files (such as source and header pairs) into their own individual output files.
@@ -20,7 +20,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--clipboard` (`-c`): Copy the combined output to the system clipboard.
 *   `--git-files` (`-G`): Use Git to find files and follow the `.gitignore` rules automatically.
 *   `--limit` (`-L`): Stop processing once you reach this file limit.
-*   `--unique` (`-u`): Skip duplicate files by absolute path or content.
+*   `--unique` (`-u`): Skip duplicate files by path or content (duplicate removal).
 *   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, skipping binary files, removing duplicates, and automatically including Git context like logs and diffs). This also copies to the system clipboard if you do not specify an output.
 *   `--strip-components N`: Remove N leading components from file paths during extraction or verification.
 *   `--project-name NAME`: Override the project name used in templates and reports.
@@ -134,7 +134,7 @@ Used in `header_template` and `footer_template`:
 *   `{{FILE_AUTHOR}}`: Last author of the file according to Git.
 *   `{{FILE_AUTHOR_DATE}}`: Last commit date of the file according to Git.
 *   `{{FILE_LOG}}`: Subject of the last commit for the file according to Git.
-*   `{{GIT_STATUS}}`: Summary of working tree changes (for example, "2 modified, 1 added").
+*   `{{GIT_STATUS}}`: Summary of project changes (for example, "2 modified, 1 added").
 *   `{{OS}}`, `{{PYTHON_VERSION}}`, `{{PLATFORM}}`, `{{ARCH}}`: System and environment metadata.
 *   `{{ENV:VAR_NAME}}`: Value of an environment variable.
 *   `{{SIZE_PERCENT}}`, `{{TOKEN_PERCENT}}`, `{{LINE_PERCENT}}`: Percentage of the total project.
@@ -155,7 +155,7 @@ Used in `global_header_template`, `global_footer_template`, and other project-wi
 *   `{{DATE}}`, `{{TIME}}`, `{{DATETIME}}`: Current date and time.
 *   `{{OS}}`, `{{PYTHON_VERSION}}`, `{{PLATFORM}}`, `{{ARCH}}`: System and environment metadata.
 *   `{{ENV:VAR_NAME}}`: Value of an environment variable.
-*   `{{GIT_STATUS}}`: Summary of working tree changes (for example, "2 modified, 1 added").
+*   `{{GIT_STATUS}}`: Summary of project changes (for example, "2 modified, 1 added").
 *   `{{GIT_REMOTE_URL}}`: The repository's origin remote URL.
 *   `{{PROJECT_URL}}`: Web URL to the repository home (supports GitHub, GitLab, Bitbucket).
 
@@ -166,7 +166,7 @@ These require a Git repository to function:
 *   `{{GIT_AUTHOR}}`: Author of the latest commit in the project.
 *   `{{GIT_TAG}}`: Latest Git tag in the project.
 *   `{{GIT_AUTHOR_DATE}}`: Date of the latest commit in the project.
-*   `{{GIT_STATUS}}`: Summary of working tree changes (for example, "2 modified, 1 added").
+*   `{{GIT_STATUS}}`: Summary of project changes (for example, "2 modified, 1 added").
 *   `{{GIT_LOG}}`: Recent commit messages (requires `--git-log` flag).
 *   `{{GIT_DIFF}}`: Project-wide changes (requires `--include-diff` flag).
 
@@ -178,4 +178,5 @@ Used in `paired_filename_template`. Supports all project-level, system, and Git 
 *   `{{LANG}}`: Detected language of the pair (for example, `cpp`).
 *   `{{INDEX}}`: The current pair's position in the list (1, 2, 3...).
 *   `{{TOTAL}}`: The total number of pairs being processed.
-*   `{{DIR}}`, `{{DIR_SLUG}}`: Relative folder path.
+*   `{{DIR}}`: Folder path containing the pair.
+*   `{{DIR_SLUG}}`: A version of the folder path safe for use in filenames.
