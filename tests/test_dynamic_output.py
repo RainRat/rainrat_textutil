@@ -77,7 +77,7 @@ def test_json_summary_path_resolution(mock_git_info, tmp_path, monkeypatch):
         with patch("sys.exit") as mock_exit:
             sourcecombine.main()
 
-    # Project name defaults to the folder name in get_project_name
+    # Project name defaults to the folder name in get_project_identity
     project_name = tmp_path.name
     expected_summary = tmp_path / f"summary_{project_name}.json"
 
