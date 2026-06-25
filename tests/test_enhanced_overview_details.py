@@ -12,8 +12,8 @@ def test_enhanced_overview_text():
         'files_by_language': {'.py': 1, '.md': 1},
         'tokens_by_language': {'.py': 400, '.md': 100},
         'top_files': [
-            (400, 1500, 'src/main.py'),
-            (100, 548, 'README.md')
+            (400, 1500, 'src/main.py', '', 0, 'python'),
+            (100, 548, 'README.md', '', 0, 'markdown')
         ]
     }
     overview = _generate_project_overview(stats, output_format='text')
@@ -31,6 +31,7 @@ def test_enhanced_overview_text():
     assert "src/main.py" in overview
     assert "400 tokens" in overview
     assert "1.46 KB" in overview
+    assert "python" in overview
     assert "( 80.0%)" in overview
 
     # Check Languages section with bars
@@ -51,8 +52,8 @@ def test_enhanced_overview_markdown():
         'files_by_language': {'.py': 1, '.md': 1},
         'tokens_by_language': {'.py': 400, '.md': 100},
         'top_files': [
-            (400, 1500, 'src/main.py'),
-            (100, 548, 'README.md')
+            (400, 1500, 'src/main.py', '', 0, 'python'),
+            (100, 548, 'README.md', '', 0, 'markdown')
         ]
     }
     overview = _generate_project_overview(stats, output_format='markdown')
@@ -65,8 +66,8 @@ def test_enhanced_overview_markdown():
 
     # Check Largest Files table
     assert "## Largest Files (by tokens)" in overview
-    assert "| File | Tokens | Size | % |" in overview
-    assert "| `src/main.py` | 400 | 1.46 KB | 80.0% |" in overview
+    assert "| File | Tokens | Size | Language | % |" in overview
+    assert "| `src/main.py` | 400 | 1.46 KB | python | 80.0% |" in overview
 
     # Check Languages table
     assert "## Languages" in overview
