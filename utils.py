@@ -1744,6 +1744,48 @@ def get_project_identity(root_folder: str | Path) -> dict:
                 except Exception:
                     pass
 
+        # 9.1 CMake Projects (CMakeLists.txt)
+        if not manifest_found:
+            cmake = root_path / "CMakeLists.txt"
+            if cmake.is_file():
+                try:
+                    content = cmake.read_text(encoding='utf-8')
+                    # Match project(Name ...) with support for multi-line and various arguments
+                    # Use re.IGNORECASE as CMake commands are case-insensitive
+                    m = re.search(r'project\s*\(\s*([a-zA-Z0-9._-]+)', content, re.IGNORECASE)
+                    if m:
+                        identity["project_name"] = m.group(1)
+
+                        # Extract VERSION
+                        v_match = re.search(r'VERSION\s+([0-9.]+)', content, re.IGNORECASE)
+                        if v_match:
+                            identity["project_version"] = v_match.group(1)
+
+                        # Extract DESCRIPTION
+                        d_match = re.search(r'DESCRIPTION\s+["\']([^"\']+)["\']', content, re.IGNORECASE)
+                        if d_match:
+                            identity["project_description"] = d_match.group(1)
+
+                        manifest_found = True
+                except Exception:
+                    pass
+
+        # 9.2 Julia Projects (Project.toml)
+        if not manifest_found:
+            julia_project = root_path / "Project.toml"
+            if julia_project.is_file():
+                try:
+                    content = julia_project.read_text(encoding='utf-8')
+                    m = re.search(r'^name\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
+                    if m:
+                        identity["project_name"] = m.group(1)
+                    m = re.search(r'^version\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
+                    if m:
+                        identity["project_version"] = m.group(1)
+                    manifest_found = True
+                except Exception:
+                    pass
+
         # 10. README Fallback
         if not manifest_found:
             readme = root_path / "README.md"
