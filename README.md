@@ -115,6 +115,12 @@ Prepare a comprehensive project context for AI models (includes line numbers, tr
 python sourcecombine.py src/ --ai
 ```
 
+### File Pairing
+Combine related files (such as `.cpp` and `.h` pairs) into their own individual combined files in a separate folder:
+```bash
+python sourcecombine.py src/ --pair .cpp .h --output combined_src/
+```
+
 ## Template Customization
 You can customize the output by using templates in the configuration file. Templates support placeholders that are replaced with actual data when the tool runs. Both file-level and global templates support all project-level and Git placeholders.
 
