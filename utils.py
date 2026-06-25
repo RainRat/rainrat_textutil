@@ -1456,9 +1456,9 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     # If it's a solution, try to find the first project file
                     target_file = dotnet_projects[0]
                     if target_file.suffix == '.sln':
-                        # Heuristic: look for first .csproj mentioned in .sln
+                        # Heuristic: look for first project file mentioned in .sln
                         sln_content = target_file.read_text(encoding='utf-8')
-                        match = re.search(r'Project\(".*"\) = ".*", "(.*\.csproj)"', sln_content)
+                        match = re.search(r'Project\(".*"\) = ".*", "(.*\.(?:cs|fs|vb)proj)"', sln_content)
                         if match:
                             potential_proj = root_path / match.group(1).replace('\\', '/')
                             if potential_proj.is_file():
