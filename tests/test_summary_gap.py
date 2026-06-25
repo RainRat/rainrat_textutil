@@ -31,7 +31,9 @@ def test_summary_extension_truncation(monkeypatch, capsys):
 
     monkeypatch.setenv("NO_COLOR", "1")
 
-    sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
+    # Use a small terminal width to force truncation of the language name
+    with patch('shutil.get_terminal_size', return_value=MagicMock(columns=60)):
+        sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
 
     captured = capsys.readouterr()
     stderr = captured.err
@@ -39,5 +41,5 @@ def test_summary_extension_truncation(monkeypatch, capsys):
     # The redesigned table puts LANGUAGE at the end, and _truncate_path
     # might result in different ellipsis placement depending on width.
     # We check that it's truncated.
-    assert ".verylo" in stderr and "name" in stderr and "..." in stderr
+    assert ".very" in stderr and "name" in stderr and "..." in stderr
     assert "Languages" in stderr

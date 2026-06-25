@@ -6094,11 +6094,10 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
     # Determine available width for layout and truncation
     term_width = 80
-    if sys.stderr.isatty():
-        try:
-            term_width = shutil.get_terminal_size((80, 20)).columns
-        except Exception:
-            pass
+    try:
+        term_width = shutil.get_terminal_size((80, 20)).columns
+    except Exception:
+        pass
 
     total_included = stats.get('total_files', 0)
     total_discovered = stats.get('total_discovered', 0)
@@ -6378,6 +6377,13 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         _print_limit_usage_bar('Size Limit Usage:', total_size_bytes, stats.get('max_total_size_bytes', 0), label_width, is_size=True)
         _print_limit_usage_bar('Line Limit Usage:', total_lines, stats.get('max_total_lines', 0), label_width)
 
+    # Determine column visibility based on terminal width to prevent wrapping
+    # We prioritize: Primary Metric > Percentage > Path > Language > Status > Distribution > Secondary Metrics
+    show_secondary = term_width >= 100
+    show_dist = term_width >= 80
+    show_status_col = term_width >= 60
+    show_lang_col = term_width >= 70
+
     # Largest Files
     has_status = False
     if stats.get('top_files'):
@@ -6387,28 +6393,41 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         primary_metric = _get_primary_metric(has_tokens, has_lines)
 
         # Only show STATUS column if at least one displayed file has a status
-        has_status = any(len(f) > 3 and f[3] for f in top)
+        has_status = any(len(f) > 3 and f[3] for f in top) and show_status_col
 
         # Calculate dynamic overhead for path width
-        # TOKENS: 13, LINES: 13, SIZE: 13, %: 7, DISTRIBUTION: 13, STATUS: 7, LANGUAGE: 12
-        overhead = 13 + 7 + 13 + 12 + 4 # SIZE, %, DISTRIBUTION, LANGUAGE + indentation
-        if has_tokens: overhead += 13
-        if has_lines: overhead += 13
+        # Indentation (4)
+        overhead = 4
+        # Primary Metric (13)
+        overhead += 13
+        # Secondary Metrics (13 each)
+        if show_secondary:
+            if has_tokens and primary_metric != 'tokens': overhead += 13
+            if has_lines and primary_metric != 'lines': overhead += 13
+            if primary_metric != 'size': overhead += 13
+        # Percentage (7)
+        overhead += 7
+        # Distribution (13)
+        if show_dist: overhead += 13
+        # Status (7)
         if has_status: overhead += 7
+        # Language (12)
+        if show_lang_col: overhead += 12
 
         path_width = max(20, term_width - overhead)
 
         # Build dynamic header
         header_parts = []
-        if has_tokens:
+        if has_tokens and (primary_metric == 'tokens' or show_secondary):
             header_parts.append(_format_header('TOKENS', 'tokens', primary_metric))
-        if has_lines:
+        if has_lines and (primary_metric == 'lines' or show_secondary):
             header_parts.append(_format_header('LINES', 'lines', primary_metric))
-        header_parts.append(_format_header('SIZE', 'size', primary_metric))
+        if primary_metric == 'size' or show_secondary:
+            header_parts.append(_format_header('SIZE', 'size', primary_metric))
         header_parts.append(f"{'%':>6}")
-        header_parts.append(f"{'DISTRIBUTION':<12}")
+        if show_dist: header_parts.append(f"{'DISTRIBUTION':<12}")
         if has_status: header_parts.append(f"{'STATUS':<6}")
-        header_parts.append(f"{'LANGUAGE':<11}")
+        if show_lang_col: header_parts.append(f"{'LANGUAGE':<11}")
         header_parts.append("PATH")
 
         print(f"\n  {C_BOLD}{C_CYAN}{title}{C_RESET}", file=sys.stderr)
@@ -6436,18 +6455,22 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             size_padding = " " * max(0, 12 - len(s_val) - len(s_unit))
 
             row_parts = []
-            if has_tokens:
+            if has_tokens and (primary_metric == 'tokens' or show_secondary):
                 token_str = format_tokens(tokens, is_approx)
                 style = _get_metric_style('tokens', primary_metric)
                 row_parts.append(f"{style}{token_str:>12}{C_RESET}")
-            if has_lines:
+            if has_lines and (primary_metric == 'lines' or show_secondary):
                 style = _get_metric_style('lines', primary_metric)
                 row_parts.append(f"{style}{f_lines:12,}{C_RESET}")
 
-            style = _get_metric_style('size', primary_metric)
-            row_parts.append(f"{size_padding}{style}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}")
+            if primary_metric == 'size' or show_secondary:
+                style = _get_metric_style('size', primary_metric)
+                row_parts.append(f"{size_padding}{style}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}")
+
             row_parts.append(f"{C_BOLD}{C_CYAN}{percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}")
-            row_parts.append(f"{C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}")
+
+            if show_dist:
+                row_parts.append(f"{C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}")
 
             if has_status:
                 if status:
@@ -6465,8 +6488,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 else:
                     row_parts.append(" " * 6)
 
-            lang_label = lang[:11] if len(lang) <= 11 else (lang[:8] + "...")
-            row_parts.append(f"{C_DIM}{lang_label:<11}{C_RESET}")
+            if show_lang_col:
+                lang_label = lang[:11] if len(lang) <= 11 else (lang[:8] + "...")
+                row_parts.append(f"{C_DIM}{lang_label:<11}{C_RESET}")
 
             row_parts.append(f"{C_BOLD}{display_path}{C_RESET}")
             print(f"    {' '.join(row_parts)}", file=sys.stderr)
@@ -6480,24 +6504,36 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         primary_metric = _get_primary_metric(has_tokens, has_lines)
 
         # Calculate dynamic overhead for path width
-        # TOKENS: 13, LINES: 13, SIZE: 13, %: 7, DISTRIBUTION: 13, STATUS: 7, FILES: 8
-        overhead = 13 + 7 + 13 + 8 + 4 # SIZE, %, DISTRIBUTION, FILES + indentation
-        if has_tokens: overhead += 13
-        if has_lines: overhead += 13
+        # Indentation (4)
+        overhead = 4
+        # Primary Metric (13)
+        overhead += 13
+        # Secondary Metrics (13 each)
+        if show_secondary:
+            if has_tokens and primary_metric != 'tokens': overhead += 13
+            if has_lines and primary_metric != 'lines': overhead += 13
+            if primary_metric != 'size': overhead += 13
+        # Percentage (7)
+        overhead += 7
+        # Distribution (13)
+        if show_dist: overhead += 13
+        # Status Spacer (7)
         if has_status: overhead += 7
+        # Files (8)
+        overhead += 8
 
         path_width = max(20, term_width - overhead)
 
         # Build dynamic header
-        primary_metric = 'tokens' if has_tokens else ('lines' if has_lines else 'size')
         header_parts = []
-        if has_tokens:
+        if has_tokens and (primary_metric == 'tokens' or show_secondary):
             header_parts.append(_format_header('TOKENS', 'tokens', primary_metric))
-        if has_lines:
+        if has_lines and (primary_metric == 'lines' or show_secondary):
             header_parts.append(_format_header('LINES', 'lines', primary_metric))
-        header_parts.append(_format_header('SIZE', 'size', primary_metric))
+        if primary_metric == 'size' or show_secondary:
+            header_parts.append(_format_header('SIZE', 'size', primary_metric))
         header_parts.append(f"{'%':>6}")
-        header_parts.append(f"{'DISTRIBUTION':<12}")
+        if show_dist: header_parts.append(f"{'DISTRIBUTION':<12}")
         if has_status: header_parts.append(f"{' ': <6}") # Spacer to match largest files
         header_parts.append(f"{'FILES':>7}")
         header_parts.append("FOLDER")
@@ -6520,18 +6556,22 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             size_padding = " " * max(0, 12 - len(s_val) - len(s_unit))
 
             row_parts = []
-            if has_tokens:
+            if has_tokens and (primary_metric == 'tokens' or show_secondary):
                 token_str = format_tokens(tokens, is_approx)
                 style = _get_metric_style('tokens', primary_metric)
                 row_parts.append(f"{style}{token_str:>12}{C_RESET}")
-            if has_lines:
+            if has_lines and (primary_metric == 'lines' or show_secondary):
                 style = _get_metric_style('lines', primary_metric)
                 row_parts.append(f"{style}{f_lines:12,}{C_RESET}")
 
-            style = _get_metric_style('size', primary_metric)
-            row_parts.append(f"{size_padding}{style}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}")
+            if primary_metric == 'size' or show_secondary:
+                style = _get_metric_style('size', primary_metric)
+                row_parts.append(f"{size_padding}{style}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}")
+
             row_parts.append(f"{C_BOLD}{C_CYAN}{percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}")
-            row_parts.append(f"{C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}")
+
+            if show_dist:
+                row_parts.append(f"{C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}")
 
             if has_status:
                 row_parts.append(" " * 6) # Spacer to match largest files
@@ -6565,23 +6605,38 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         primary_metric = _get_primary_metric(has_lang_tokens, has_lang_lines)
 
         # Calculate dynamic overhead for language width
-        # TOKENS: 12+1, LINES: 12+1, SIZE: 12+1, %: 6+1, DISTRIBUTION: 12+1, STATUS: 6+1, FILES: 7+1, % FILES: 7+1
-        overhead = 13 + 7 + 13 + 8 + 8 + 4 # SIZE, %, DISTRIBUTION, FILES, % FILES + indentation
-        if has_lang_tokens: overhead += 13
-        if has_lang_lines: overhead += 13
+        # Indentation (4)
+        overhead = 4
+        # Primary Metric (13)
+        overhead += 13
+        # Secondary Metrics (13 each)
+        if show_secondary:
+            if has_lang_tokens and primary_metric != 'tokens': overhead += 13
+            if has_lang_lines and primary_metric != 'lines': overhead += 13
+            if primary_metric != 'size': overhead += 13
+        # Percentage (7)
+        overhead += 7
+        # Distribution (13)
+        if show_dist: overhead += 13
+        # Status Spacer (7)
         if has_status: overhead += 7
+        # Files (8)
+        overhead += 8
+        # % Files (8)
+        overhead += 8
 
         lang_width = max(20, term_width - overhead)
 
         # Build dynamic header
         header_parts = []
-        if has_lang_tokens:
+        if has_lang_tokens and (primary_metric == 'tokens' or show_secondary):
             header_parts.append(_format_header('TOKENS', 'tokens', primary_metric))
-        if has_lang_lines:
+        if has_lang_lines and (primary_metric == 'lines' or show_secondary):
             header_parts.append(_format_header('LINES', 'lines', primary_metric))
-        header_parts.append(_format_header('SIZE', 'size', primary_metric))
+        if primary_metric == 'size' or show_secondary:
+            header_parts.append(_format_header('SIZE', 'size', primary_metric))
         header_parts.append(f"{'%':>6}")
-        header_parts.append(f"{'DISTRIBUTION':<12}")
+        if show_dist: header_parts.append(f"{'DISTRIBUTION':<12}")
         if has_status: header_parts.append(f"{' ': <6}") # Spacer to match largest files
         header_parts.append(f"{'FILES':>7}")
         header_parts.append(f"{'% FILES':>7}")
@@ -6634,18 +6689,22 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
             # Row Metrics (TOKENS, LINES, SIZE, %, DISTRIBUTION) - Vertical alignment with Largest Files
             row_parts = []
-            if has_lang_tokens:
+            if has_lang_tokens and (primary_metric == 'tokens' or show_secondary):
                 token_str = format_tokens(d['tokens'], is_approx)
                 style = _get_metric_style('tokens', primary_metric)
                 row_parts.append(f"{style}{token_str:>12}{C_RESET}")
-            if has_lang_lines:
+            if has_lang_lines and (primary_metric == 'lines' or show_secondary):
                 style = _get_metric_style('lines', primary_metric)
                 row_parts.append(f"{style}{d['lines']:12,}{C_RESET}")
 
-            style = _get_metric_style('size', primary_metric)
-            row_parts.append(f"{size_padding}{style}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}")
+            if primary_metric == 'size' or show_secondary:
+                style = _get_metric_style('size', primary_metric)
+                row_parts.append(f"{size_padding}{style}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}")
+
             row_parts.append(f"{C_BOLD}{C_CYAN}{w_percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}")
-            row_parts.append(f"{C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}")
+
+            if show_dist:
+                row_parts.append(f"{C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}")
 
             if has_status:
                 row_parts.append(" " * 6) # Spacer to match largest files

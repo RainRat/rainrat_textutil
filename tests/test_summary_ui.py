@@ -35,7 +35,9 @@ def test_summary_redesign_largest_files(monkeypatch, capsys):
 
     # Force extract=False for this test to match "Combined"
     args.extract = False
-    sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
+    # Mock terminal width to ensure all columns are visible
+    with patch('shutil.get_terminal_size', return_value=MagicMock(columns=120)):
+        sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
 
     captured = capsys.readouterr()
     stderr = captured.err
@@ -92,7 +94,8 @@ def test_summary_printing(monkeypatch, capsys):
     # Force NO_COLOR to avoid ANSI codes in test check
     monkeypatch.setenv("NO_COLOR", "1")
 
-    sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
+    with patch('shutil.get_terminal_size', return_value=MagicMock(columns=120)):
+        sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
 
     captured = capsys.readouterr()
     stderr = captured.err
@@ -136,7 +139,8 @@ def test_summary_printing_dry_run(monkeypatch, capsys):
 
     monkeypatch.setenv("NO_COLOR", "1")
 
-    sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
+    with patch('shutil.get_terminal_size', return_value=MagicMock(columns=120)):
+        sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
 
     captured = capsys.readouterr()
     stderr = captured.err
@@ -284,7 +288,8 @@ def test_file_types_redesign_sorting_and_others(monkeypatch, capsys):
 
     monkeypatch.setenv("NO_COLOR", "1")
 
-    sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
+    with patch('shutil.get_terminal_size', return_value=MagicMock(columns=120)):
+        sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
 
     captured = capsys.readouterr()
     stderr = captured.err

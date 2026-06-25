@@ -259,7 +259,8 @@ def test_print_execution_summary_with_status():
         format='text'
     )
 
-    with patch('sys.stderr', new_callable=MagicMock) as mock_stderr:
+    with patch('sys.stderr', new_callable=MagicMock) as mock_stderr, \
+         patch('shutil.get_terminal_size', return_value=MagicMock(columns=120)):
         # We need isatty to be true to trigger colored output if we want to see it,
         # but here we just want to ensure it doesn't crash and includes status.
         mock_stderr.isatty.return_value = True
