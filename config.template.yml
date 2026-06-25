@@ -171,7 +171,7 @@ project:
 
 # --- File Filtering ---
 filters:
-  # Skip duplicate files by absolute path or content.
+  # Skip duplicate files by path or content.
   unique: false
 
   # Include only files larger than this size.
@@ -227,7 +227,7 @@ filters:
   exclude_grep: ""
 
   # --- Inclusion Groups ---
-  # Enable specific groups to only include listed filenames or glob patterns.
+  # Enable specific groups to only include listed filenames or patterns.
   # Cannot be used at the same time with ``search.allowed_extensions``; specify file types within the patterns instead.
   inclusion_groups:
     example_group:
@@ -236,7 +236,7 @@ filters:
 
   # --- Exclusion Rules ---
   exclusions:
-    # Skip files matching glob patterns.
+    # Skip files matching patterns.
     # Defaults include: *.pyc, .DS_Store, Thumbs.db, .coverage, .tox, .nox
     filenames:
       - '*.pyc'
@@ -249,7 +249,7 @@ filters:
       - '.nox'
 
     # Exclude folders if any folder name in the path matches one of these
-    # glob patterns. Case-insensitive.
+    # patterns. Case-insensitive.
     # Defaults include: .git, __pycache__, node_modules, .venv, dist, build, and other common build folders.
     folders:
       - '.git'

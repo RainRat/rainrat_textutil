@@ -33,7 +33,7 @@ filters:
   max_size_bytes: 204800 # 200 KiB
 
   # --- Inclusion Groups ---
-  # Define groups of filenames or glob patterns that can be toggled on or off.
+  # Define groups of filenames or patterns that can be toggled on or off.
   # When at least one group is enabled, only files listed in enabled groups will
   # be processed.
   inclusion_groups:
@@ -54,7 +54,7 @@ filters:
   # --- Exclusion Rules ---
   # Files and folders matching these rules will be skipped.
   exclusions:
-    # Exclude files matching these glob patterns (for example, 'test.py', '*.log').
+    # Exclude files matching these patterns (for example, 'test.py', '*.log').
     filenames:
       - 'test.py'
       - '*.log'
