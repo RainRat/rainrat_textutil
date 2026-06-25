@@ -142,6 +142,57 @@ COMPACT_WHITESPACE_GROUPS = (
     'compact_space_runs',
 )
 
+# Mapping of language tags to their comment styles.
+# Each entry is a tuple of (single_line_prefix, multi_line_start, multi_line_end).
+# Use None if a style is not supported for that language.
+LANG_TO_COMMENT_STYLE = {
+    "python": ("#", '"""', '"""'),
+    "javascript": ("//", "/*", "*/"),
+    "typescript": ("//", "/*", "*/"),
+    "html": (None, "<!--", "-->"),
+    "css": (None, "/*", "*/"),
+    "scss": ("//", "/*", "*/"),
+    "sass": ("//", "/*", "*/"),
+    "less": ("//", "/*", "*/"),
+    "bash": ("#", None, None),
+    "ruby": ("#", "=begin", "=end"),
+    "rust": ("//", "/*", "*/"),
+    "go": ("//", "/*", "*/"),
+    "c": ("//", "/*", "*/"),
+    "cpp": ("//", "/*", "*/"),
+    "csharp": ("//", "/*", "*/"),
+    "java": ("//", "/*", "*/"),
+    "kotlin": ("//", "/*", "*/"),
+    "php": ("//", "/*", "*/"),
+    "sql": ("--", "/*", "*/"),
+    "xml": (None, "<!--", "-->"),
+    "toml": ("#", None, None),
+    "ini": (";", None, None),
+    "batch": ("REM", None, None),
+    "powershell": ("#", "<#", "#>"),
+    "dockerfile": ("#", None, None),
+    "makefile": ("#", None, None),
+    "cmake": ("#", None, None),
+    "swift": ("//", "/*", "*/"),
+    "dart": ("//", "/*", "*/"),
+    "scala": ("//", "/*", "*/"),
+    "lua": ("--", "--[[", "]]"),
+    "r": ("#", None, None),
+    "perl": ("#", "=pod", "=cut"),
+    "groovy": ("//", "/*", "*/"),
+    "objectivec": ("//", "/*", "*/"),
+    "objectivecpp": ("//", "/*", "*/"),
+    "elixir": ("#", None, None),
+    "erlang": ("%", None, None),
+    "clojure": (";", None, None),
+    "haskell": ("--", "{-", "-}"),
+    "solidity": ("//", "/*", "*/"),
+    "julia": ("#", "#=", "=#"),
+    "hcl": ("#", "/*", "*/"),
+    "zig": ("//", None, None),
+    "nim": ("#", "#[", "]#"),
+}
+
 DEFAULT_CONFIG = {
     'logging': {
         'level': 'INFO',
@@ -227,6 +278,8 @@ DEFAULT_CONFIG = {
     'processing': {
         'apply_in_place': False,
         'create_backups': True,
+        'remove_comments': False,
+        'remove_single_line_comments': False,
         'max_lines': 0,
         'max_tokens': 0,
     },
@@ -402,6 +455,48 @@ def _looks_binary(
         1 for byte in sample if byte < 0x20 and byte not in allowed_control_bytes
     )
     return (non_text_control / len(sample)) > 0.30
+
+
+def remove_comments_by_lang(text, lang, single_only=False, multi_only=False):
+    """Remove comments from text based on the language style.
+
+    Parameters
+    ----------
+    text : str
+        The source text to process.
+    lang : str
+        The language tag (for example, 'python', 'cpp').
+    single_only : bool
+        If true, only remove single-line comments.
+    multi_only : bool
+        If true, only remove multi-line comments.
+    """
+    if not text or not lang or lang not in LANG_TO_COMMENT_STYLE:
+        return text
+
+    single_prefix, multi_start, multi_end = LANG_TO_COMMENT_STYLE[lang]
+
+    # Handle multi-line comments first to avoid them being partially
+    # matched by single-line prefix rules.
+    if multi_start and multi_end and not single_only:
+        # We use a non-greedy dotall match to find all comment blocks.
+        pattern = re.escape(multi_start) + r'.*?' + re.escape(multi_end)
+        text = re.sub(pattern, '', text, flags=re.DOTALL)
+
+    if single_prefix and not multi_only:
+        # Match from prefix to end of line, being careful not to match
+        # prefixes inside strings or already within multi-line comments.
+        # This is a basic implementation; robust comment removal usually
+        # requires a proper lexer, but this works for most common cases.
+        pattern = r'^[ \t]*' + re.escape(single_prefix) + r'.*$'
+        text = re.sub(pattern, '', text, flags=re.MULTILINE)
+
+        # Also try to catch trailing comments, but only if they are preceded by whitespace
+        # to reduce the risk of matching markers inside strings.
+        trailing_pattern = r'[ \t]+' + re.escape(single_prefix) + r'.*$'
+        text = re.sub(trailing_pattern, '', text, flags=re.MULTILINE)
+
+    return text
 
 
 def compact_whitespace(text, *, groups=None):
@@ -732,6 +827,8 @@ def _validate_processing_section(config, *, source=None):
     _validate_bool(processing_conf, 'apply_in_place', 'processing')
     _validate_bool(processing_conf, 'compact_whitespace', 'processing')
     _validate_bool(processing_conf, 'create_backups', 'processing')
+    _validate_bool(processing_conf, 'remove_comments', 'processing')
+    _validate_bool(processing_conf, 'remove_single_line_comments', 'processing')
 
     _validate_compact_whitespace_groups(
         processing_conf.get('compact_whitespace_groups'),
@@ -979,12 +1076,14 @@ def load_and_validate_config(
     return config
 
 
-def process_content(buffer: str, options: Mapping[str, Any]) -> str:
+def process_content(buffer: str, options: Mapping[str, Any], language: str | None = None) -> str:
     """Process text based on a dictionary of options.
 
     Supported options include:
     - ``remove_initial_c_style_comment`` (bool)
     - ``remove_all_c_style_comments`` (bool)
+    - ``remove_comments`` (bool): remove both single-line and multi-line comments.
+    - ``remove_single_line_comments`` (bool): remove only single-line comments.
     - ``regex_replacements`` (list of dicts): each rule must contain ``pattern`` (str)
       and ``replacement`` (str). Rules are applied sequentially. Capture groups
       can be referenced in the replacement string (for example, ``"\\1"``).
@@ -1011,6 +1110,10 @@ def process_content(buffer: str, options: Mapping[str, Any]) -> str:
 
     if options.get('remove_all_c_style_comments'):
         buffer = re.sub(r'/\*.*?\*/', '', buffer, flags=re.DOTALL)
+
+    if language and (options.get('remove_comments') or options.get('remove_single_line_comments')):
+        single_only = bool(options.get('remove_single_line_comments') and not options.get('remove_comments'))
+        buffer = remove_comments_by_lang(buffer, language, single_only=single_only)
 
     regex_rules = []
     for rule in options.get('regex_replacements', []):

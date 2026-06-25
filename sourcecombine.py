@@ -1753,7 +1753,8 @@ def _process_paired_files(
                 pair_lines = 0
                 for file_path in paths:
                     content, _ = read_file_best_effort(file_path)
-                    processed = process_content(content, processor.processing_opts)
+                    lang = utils.get_language_tag(file_path, content=content, overrides=processor.custom_languages)
+                    processed = utils.process_content(content, processor.processing_opts, language=lang)
                     tokens, _ = utils.estimate_tokens(processed)
                     pair_tokens += tokens
                     pair_lines += utils.count_lines(processed)
@@ -2108,7 +2109,8 @@ class FileProcessor:
             content = None
         else:
             content, encoding = read_file_best_effort(file_path)
-            processed_content = process_content(content, self.processing_opts)
+            lang = utils.get_language_tag(file_path, content=content, overrides=self.custom_languages)
+            processed_content = utils.process_content(content, self.processing_opts, language=lang)
             self._apply_inplace_if_needed(file_path, root_path, content, processed_content, encoding)
 
         relative_path = _get_rel_path(file_path, root_path)
@@ -2414,6 +2416,10 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
         active_rules = []
         if processing_opts.get('compact_whitespace'):
             active_rules.append("Whitespace compaction")
+        if processing_opts.get('remove_comments'):
+            active_rules.append("Comment removal")
+        elif processing_opts.get('remove_single_line_comments'):
+            active_rules.append("Single-line comment removal")
         if processing_opts.get('remove_all_c_style_comments'):
             active_rules.append("C-style comment removal")
         if processing_opts.get('max_lines'):
@@ -3261,7 +3267,8 @@ def find_and_combine_files(
                             val = utils.count_lines(rendered)
                     else:
                         content, _ = read_file_best_effort(file_path)
-                        processed = process_content(content, processor.processing_opts)
+                        lang = utils.get_language_tag(file_path, content=content, overrides=processor.custom_languages)
+                        processed = utils.process_content(content, processor.processing_opts, language=lang)
                         if sort_by == 'tokens':
                             val, _ = utils.estimate_tokens(processed)
                         else:
@@ -3320,7 +3327,8 @@ def find_and_combine_files(
                             stats['token_count_is_approx'] = True
                 else:
                     content, encoding = read_file_best_effort(file_path)
-                    processed = process_content(content, processor.processing_opts)
+                    lang = utils.get_language_tag(file_path, content=content, overrides=processor.custom_languages)
+                    processed = utils.process_content(content, processor.processing_opts, language=lang)
                     processor._apply_inplace_if_needed(file_path, root_path, content, processed, encoding, dry_run=dry_run, estimate_tokens=estimate_tokens)
 
                     # Content-based deduplication
@@ -4204,6 +4212,16 @@ def main():
         help="Create '.bak' copies of original files when using --apply-in-place.",
     )
     processing_group.add_argument(
+        "--remove-comments",
+        action="store_true",
+        help="Remove both single-line and multi-line comments based on the detected language.",
+    )
+    processing_group.add_argument(
+        "--remove-single-line-comments",
+        action="store_true",
+        help="Remove only single-line comments based on the detected language.",
+    )
+    processing_group.add_argument(
         "--max-lines",
         type=int,
         metavar="N",
@@ -4782,6 +4800,12 @@ def main():
 
     if args.create_backups:
         config['processing']['create_backups'] = True
+
+    if getattr(args, 'remove_comments', False):
+        config['processing']['remove_comments'] = True
+
+    if getattr(args, 'remove_single_line_comments', False):
+        config['processing']['remove_single_line_comments'] = True
 
     if args.max_lines is not None:
         config['processing']['max_lines'] = args.max_lines
@@ -5499,7 +5523,8 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         # Apply processing rules if any are configured
         processing_opts = config.get('processing', {})
         if processing_opts:
-            processed_content = utils.process_content(file_content, processing_opts)
+            lang = utils.get_language_tag(rel_path, content=file_content, overrides=config.get('search', {}).get('custom_languages'))
+            processed_content = utils.process_content(file_content, processing_opts, language=lang)
             if processed_content != file_content:
                 file_content = processed_content
                 # Clear metrics metadata as it's no longer accurate for the processed content

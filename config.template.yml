@@ -279,6 +279,10 @@ processing:
   # replace_mid_line_tabs, trim_trailing_whitespace, compact_blank_lines,
   # compact_space_runs
   compact_whitespace_groups: {}
+  # If true, removes both single-line and multi-line comments based on the detected language.
+  remove_comments: false
+  # If true, removes only single-line comments based on the detected language.
+  remove_single_line_comments: false
   # If true, removes all C-style block comments (/* ... */). This runs *after* remove_initial_c_style_comment.
   remove_all_c_style_comments: false
   # If true, removes only the *first* C-style block comment if it's at the top of the file.
