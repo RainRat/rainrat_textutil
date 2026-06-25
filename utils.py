@@ -635,6 +635,29 @@ def _validate_glob_list(filenames, context_prefix):
             filenames[i] = sanitized
 
 
+def _normalize_extension_list(ext_list, context_prefix):
+    """Normalize a list of file extensions in place.
+
+    Ensures each extension is a lowercase string with a leading dot.
+    """
+    if ext_list is None:
+        return []
+    if not isinstance(ext_list, list):
+        raise InvalidConfigError(f"{context_prefix} must be a list.")
+
+    normalized = []
+    for i, ext in enumerate(ext_list):
+        if not isinstance(ext, str):
+            raise InvalidConfigError(f"Values in '{context_prefix}' must be text.")
+        ext = ext.lower()
+        if not ext.startswith('.'):
+            ext = '.' + ext
+        normalized.append(ext)
+
+    ext_list[:] = normalized
+    return normalized
+
+
 def _raise_validation_error(key: str, context: str, requirement: str) -> None:
     """Raise InvalidConfigError with context-dependent formatting."""
     if context in ('search', 'filters'):
@@ -686,35 +709,8 @@ def _validate_search_section(config):
     if root_folders is not None and not isinstance(root_folders, list):
         raise InvalidConfigError("search.root_folders must be a list of folders.")
 
-    allowed_exts = search.get('allowed_extensions')
-    if allowed_exts is not None:
-        if not isinstance(allowed_exts, list):
-            raise InvalidConfigError("search.allowed_extensions must be a list.")
-        # Normalize: lowercase and ensure leading dot
-        normalized = []
-        for ext in allowed_exts:
-            if not isinstance(ext, str):
-                raise InvalidConfigError("Values in 'search.allowed_extensions' must be text.")
-            ext = ext.lower()
-            if not ext.startswith('.'):
-                ext = '.' + ext
-            normalized.append(ext)
-        search['allowed_extensions'] = normalized
-
-    exclude_exts = search.get('exclude_extensions')
-    if exclude_exts is not None:
-        if not isinstance(exclude_exts, list):
-            raise InvalidConfigError("search.exclude_extensions must be a list.")
-        # Normalize: lowercase and ensure leading dot
-        normalized = []
-        for ext in exclude_exts:
-            if not isinstance(ext, str):
-                raise InvalidConfigError("Values in 'search.exclude_extensions' must be text.")
-            ext = ext.lower()
-            if not ext.startswith('.'):
-                ext = '.' + ext
-            normalized.append(ext)
-        search['exclude_extensions'] = normalized
+    _normalize_extension_list(search.get('allowed_extensions'), 'search.allowed_extensions')
+    _normalize_extension_list(search.get('exclude_extensions'), 'search.exclude_extensions')
 
     allowed_langs = search.get('allowed_languages')
     if allowed_langs is not None:
@@ -878,19 +874,13 @@ def _validate_pairing_section(config):
             )
 
         source_ext_list = pairing_conf.get('source_extensions')
-        if source_ext_list is not None and not isinstance(source_ext_list, list):
-            raise InvalidConfigError("pairing.source_extensions must be a list.")
+        _normalize_extension_list(source_ext_list, 'pairing.source_extensions')
 
         header_ext_list = pairing_conf.get('header_extensions')
-        if header_ext_list is not None and not isinstance(header_ext_list, list):
-            raise InvalidConfigError("pairing.header_extensions must be a list.")
+        _normalize_extension_list(header_ext_list, 'pairing.header_extensions')
 
-        source_exts = tuple(
-            e.lower() for e in (source_ext_list or [])
-        )
-        header_exts = tuple(
-            e.lower() for e in (header_ext_list or [])
-        )
+        source_exts = tuple(e.lower() for e in (source_ext_list or []))
+        header_exts = tuple(e.lower() for e in (header_ext_list or []))
         effective_allowed_extensions = source_exts + header_exts
         effective_exclude_extensions = ()
     else:
