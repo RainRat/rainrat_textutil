@@ -1698,7 +1698,8 @@ def _process_paired_files(
                     for path in paths:
                         rel_p_str = _get_rel_path(path, root_path).as_posix()
                         status = stats.get('file_statuses', {}).get(rel_p_str)
-                        stats['top_files'].append((0, path.stat().st_size if path.exists() else 0, rel_p_str, status, 0, _get_stat_lang(path, stats)))
+                        lang = _get_stat_lang(path, stats)
+                        stats['top_files'].append((0, path.stat().st_size if path.exists() else 0, rel_p_str, status, 0, lang))
                 continue
 
         pair_buffer = None
@@ -1739,7 +1740,8 @@ def _process_paired_files(
                     _update_line_stats(stats, primary_path, line_count)
                     rel_p_str = _get_rel_path(primary_path, root_path).as_posix()
                     status = stats.get('file_statuses', {}).get(rel_p_str)
-                    stats['top_files'].append((token_count, f_size, rel_p_str, status, line_count, _get_stat_lang(primary_path, stats)))
+                    lang = _get_stat_lang(primary_path, stats)
+                    stats['top_files'].append((token_count, f_size, rel_p_str, status, line_count, lang))
 
                 running_tokens += token_count
                 running_lines += line_count
@@ -1785,7 +1787,8 @@ def _process_paired_files(
                         _update_line_stats(stats, file_path, line_count)
                         rel_p_str = _get_rel_path(file_path, root_path).as_posix()
                         status = stats.get('file_statuses', {}).get(rel_p_str)
-                        stats['top_files'].append((token_count, f_size, rel_p_str, status, line_count, _get_stat_lang(file_path, stats)))
+                        lang = _get_stat_lang(file_path, stats)
+                        stats['top_files'].append((token_count, f_size, rel_p_str, status, line_count, lang))
 
                     running_tokens += token_count
                     running_lines += line_count
@@ -3359,7 +3362,8 @@ def find_and_combine_files(
                     'status': status,
                     'language': utils.get_language_tag(file_path, content=processed, overrides=processor.custom_languages)
                 }
-                stats['top_files'].append((content_tokens, file_size, rel_p_str, status, content_lines, file_metadata[file_path]['language']))
+                lang = file_metadata[file_path]['language']
+                stats['top_files'].append((content_tokens, file_size, rel_p_str, status, content_lines, lang))
 
                 # Account for header/footer templates in the limit
                 h_template = output_opts.get('header_template', utils.DEFAULT_CONFIG['output']['header_template'])
@@ -3646,7 +3650,8 @@ def find_and_combine_files(
                 if not token_limit_pass_performed:
                     rel_p_str = _get_rel_path(file_path, root_path).as_posix()
                     status = stats.get('file_statuses', {}).get(rel_p_str)
-                    stats['top_files'].append((token_count, f_size, rel_p_str, status, line_count, _get_stat_lang(file_path, stats)))
+                    lang = _get_stat_lang(file_path, stats)
+                    stats['top_files'].append((token_count, f_size, rel_p_str, status, line_count, lang))
 
                 running_tokens += token_count
                 running_lines += line_count
@@ -5677,7 +5682,7 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         if lines:
             stats['lines_by_extension'][ext] = stats['lines_by_extension'].get(ext, 0) + lines
 
-        lang = utils.get_language_tag(path_str, content=file_content, overrides=stats.get('custom_languages'))
+        lang = meta.get('language') or utils.get_language_tag(path_str, content=file_content, overrides=stats.get('custom_languages'))
         stats['top_files'].append((meta.get('tokens') or 0, meta['size'], path_str, meta.get('status'), lines, lang))
 
     files_to_create = filtered_files
