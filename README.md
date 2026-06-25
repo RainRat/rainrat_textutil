@@ -154,7 +154,7 @@ Used in `header_template` and `footer_template`:
 
 ### Project-Level Placeholders
 Used in `global_header_template`, `global_footer_template`, and other project-wide settings:
-*   `{{PROJECT_NAME}}`: Name of the project (detected from `package.json`, `pyproject.toml`, `Cargo.toml`, `composer.json`, `pom.xml`, `go.mod`, `*.gemspec`, `mix.exs`, `Package.swift`, `.csproj`, `.fsproj`, `.vbproj`, `.sln`, `settings.gradle`, `project.clj`, `.podspec`, `.xcodeproj`, `README.md`, or folder name).
+*   `{{PROJECT_NAME}}`: Name of the project (detected from `package.json`, `pyproject.toml`, `Cargo.toml`, `composer.json`, `pom.xml`, `go.mod`, `*.gemspec`, `mix.exs`, `Package.swift`, `.csproj`, `.fsproj`, `.vbproj`, `.sln`, `settings.gradle`, `project.clj`, `.podspec`, `.xcodeproj`, `deno.json`, `deno.jsonc`, `build.zig.zon`, `README.md`, or folder name).
 *   `{{PROJECT_VERSION}}`: Version of the project.
 *   `{{PROJECT_DESCRIPTION}}`: Short description of the project.
 *   `{{PROJECT_LICENSE}}`: License identifier of the project.

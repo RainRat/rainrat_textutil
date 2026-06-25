@@ -107,10 +107,14 @@ EXTENSION_TO_LANG = {
     ".pxi": "cython",
     ".zig": "zig",
     ".nim": "nim",
+    ".jsonc": "json",
+    ".zon": "zig",
 }
 
 # Mapping of specific filenames to Markdown-friendly language tags.
 FILENAME_TO_LANG = {
+    ".gitignore": "gitignore",
+    ".gitattributes": "gitattributes",
     "dockerfile": "dockerfile",
     "makefile": "makefile",
     "cmakelists.txt": "cmake",
@@ -1534,7 +1538,8 @@ def get_project_identity(root_folder: str | Path) -> dict:
         "project_name": "Project",
         "project_version": "",
         "project_description": "",
-        "project_license": ""
+        "project_license": "",
+        "manifest_source": None
     }
 
     try:
@@ -1544,6 +1549,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
         manifest_found = False
         # 1. Node.js (package.json)
         if _parse_json_manifest(root_path / "package.json", identity):
+            identity["manifest_source"] = "package.json"
             manifest_found = True
 
         # 1.1 .NET Projects (*.csproj, *.fsproj, *.vbproj, *.sln)
@@ -1587,6 +1593,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
                         if m:
                             identity["project_license"] = m.group(1)
 
+                    identity["manifest_source"] = target_file.name
                     manifest_found = True
                 except Exception:
                     pass
@@ -1615,6 +1622,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
                         if match:
                             identity["project_version"] = match.group(1)
 
+                    identity["manifest_source"] = gradle_settings.name
                     manifest_found = True
                 except Exception:
                     pass
@@ -1638,6 +1646,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
                         if m:
                             identity["project_license"] = m.group(1)
 
+                    identity["manifest_source"] = "project.clj"
                     manifest_found = True
                 except Exception:
                     pass
@@ -1647,7 +1656,8 @@ def get_project_identity(root_folder: str | Path) -> dict:
             podspecs = list(root_path.glob("*.podspec"))
             if podspecs:
                 try:
-                    content = podspecs[0].read_text(encoding='utf-8')
+                    target_file = podspecs[0]
+                    content = target_file.read_text(encoding='utf-8')
                     m = re.search(r'\.name\s*=\s*["\']([^"\']+)["\']', content)
                     if m:
                         identity["project_name"] = m.group(1)
@@ -1660,6 +1670,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     m = re.search(r'\.license\s*=\s*.*["\']([^"\']+)["\']', content)
                     if m:
                         identity["project_license"] = m.group(1)
+                    identity["manifest_source"] = target_file.name
                     manifest_found = True
                 except Exception:
                     pass
@@ -1669,6 +1680,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
             xcodeproj = list(root_path.glob("*.xcodeproj"))
             if xcodeproj:
                 identity["project_name"] = xcodeproj[0].stem
+                identity["manifest_source"] = xcodeproj[0].name
                 # Xcode project metadata is buried in pbxproj, usually easier to just take the name
                 manifest_found = True
 
@@ -1722,6 +1734,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     if match:
                         identity["project_license"] = match.group(1)
 
+                    identity["manifest_source"] = "pyproject.toml"
                     manifest_found = True
                 except Exception:
                     pass
@@ -1750,6 +1763,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
                         m = re.search(r'^license\s*=\s*["\']([^"\']+)["\']', pkg_content, re.MULTILINE)
                         if m:
                             identity["project_license"] = m.group(1)
+                    identity["manifest_source"] = "Cargo.toml"
                     manifest_found = True
                 except Exception:
                     pass
@@ -1757,6 +1771,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
         # 4. PHP (composer.json)
         if not manifest_found:
             if _parse_json_manifest(root_path / "composer.json", identity):
+                identity["manifest_source"] = "composer.json"
                 manifest_found = True
 
         # 5. Java (pom.xml)
@@ -1779,6 +1794,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     m = re.search(r'<license>.*?<name>(.*?)</name>', content, re.DOTALL)
                     if m:
                         identity["project_license"] = m.group(1)
+                    identity["manifest_source"] = "pom.xml"
                     manifest_found = True
                 except Exception:
                     pass
@@ -1792,6 +1808,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     match = re.search(r'^module\s+(.+)$', content, re.MULTILINE)
                     if match:
                         identity["project_name"] = match.group(1).strip()
+                        identity["manifest_source"] = "go.mod"
                         manifest_found = True
                 except Exception:
                     pass
@@ -1801,7 +1818,8 @@ def get_project_identity(root_folder: str | Path) -> dict:
             gemspecs = list(root_path.glob("*.gemspec"))
             if gemspecs:
                 try:
-                    content = gemspecs[0].read_text(encoding='utf-8')
+                    target_file = gemspecs[0]
+                    content = target_file.read_text(encoding='utf-8')
                     m = re.search(r'\.name\s*=\s*["\']([^"\']+)["\']', content)
                     if m:
                         identity["project_name"] = m.group(1)
@@ -1814,6 +1832,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     m = re.search(r'\.license\s*=\s*["\']([^"\']+)["\']', content)
                     if m:
                         identity["project_license"] = m.group(1)
+                    identity["manifest_source"] = target_file.name
                     manifest_found = True
                 except Exception:
                     pass
@@ -1830,6 +1849,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     m = re.search(r'version:\s*["\']([^"\']+)["\']', content)
                     if m:
                         identity["project_version"] = m.group(1)
+                    identity["manifest_source"] = "mix.exs"
                     manifest_found = True
                 except Exception:
                     pass
@@ -1843,6 +1863,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     m = re.search(r'name:\s*["\']([^"\']+)["\']', content)
                     if m:
                         identity["project_name"] = m.group(1)
+                    identity["manifest_source"] = "Package.swift"
                     manifest_found = True
                 except Exception:
                     pass
@@ -1869,6 +1890,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
                         if d_match:
                             identity["project_description"] = d_match.group(1)
 
+                        identity["manifest_source"] = "CMakeLists.txt"
                         manifest_found = True
                 except Exception:
                     pass
@@ -1885,6 +1907,56 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     m = re.search(r'^version\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
                     if m:
                         identity["project_version"] = m.group(1)
+                    identity["manifest_source"] = "Project.toml"
+                    manifest_found = True
+                except Exception:
+                    pass
+
+        # 9.3 Deno Projects (deno.json, deno.jsonc)
+        if not manifest_found:
+            deno_manifest = root_path / "deno.json"
+            if not deno_manifest.is_file():
+                deno_manifest = root_path / "deno.jsonc"
+
+            if deno_manifest.is_file():
+                try:
+                    content = deno_manifest.read_text(encoding='utf-8')
+                    if deno_manifest.suffix == '.jsonc':
+                        content = remove_comments_by_lang(content, 'javascript')
+
+                    data = json.loads(content)
+                    if isinstance(data, dict):
+                        if data.get('name'):
+                            identity["project_name"] = str(data['name'])
+                        if data.get('version'):
+                            identity["project_version"] = str(data['version'])
+                        if data.get('description'):
+                            identity["project_description"] = str(data['description'])
+                        if data.get('license'):
+                            identity["project_license"] = str(data['license'])
+
+                        identity["manifest_source"] = deno_manifest.name
+                        manifest_found = True
+                except Exception:
+                    pass
+
+        # 9.4 Zig Projects (build.zig.zon)
+        if not manifest_found:
+            zig_manifest = root_path / "build.zig.zon"
+            if zig_manifest.is_file():
+                try:
+                    content = zig_manifest.read_text(encoding='utf-8')
+                    # .name = "my-project" or .name = .my_project
+                    name_match = re.search(r'\.name\s*=\s*[".]?(.*?)[",]?\s*(?:\n|,)', content)
+                    if name_match:
+                        identity["project_name"] = name_match.group(1).strip()
+
+                    # .version = "1.2.3"
+                    version_match = re.search(r'\.version\s*=\s*"(.*?)"', content)
+                    if version_match:
+                        identity["project_version"] = version_match.group(1).strip()
+
+                    identity["manifest_source"] = "build.zig.zon"
                     manifest_found = True
                 except Exception:
                     pass
