@@ -3752,40 +3752,40 @@ def main():
         "targets",
         nargs="*",
         metavar="TARGET",
-        help="Folders or files to search. If empty, the tool searches the current folder. If the first target is a YAML file (.yml or .yaml), it is used as the configuration.",
+        help="Folders or files to search (defaults to '.'). If the first target is a YAML file, it is used as the configuration.",
     )
     core_group.add_argument(
         "--config",
         "-k",
         metavar="PATH",
-        help="Use a specific configuration file. This stops the tool from trying to find one automatically in the target list.",
+        help="Use a specific configuration file instead of searching for one automatically.",
     )
     core_group.add_argument(
         "--output",
         "-o",
         metavar="PATH",
-        help="Save the result to a specific file or folder. This takes priority over the path in the settings. Supports template placeholders (for example, '{{PROJECT_NAME}}_{{DATE}}.txt').",
+        help="Save the result to a file or folder. Supports placeholders like '{{PROJECT_NAME}}_{{DATE}}.txt'.",
     )
     core_group.add_argument(
         "--dry-run",
         "--preview",
         "-d",
         action="store_true",
-        help="Show what would happen without making any changes.",
+        help="Show what would happen without making changes.",
     )
     core_group.add_argument(
         "-v",
         "--verbose",
         action="store_true",
-        help="Show detailed status messages to help find and fix problems.",
+        help="Show detailed status messages.",
     )
 
-    # Project Metadata Group
-    project_group = parser.add_argument_group("Project Metadata")
+    # Project Information Group
+    project_group = parser.add_argument_group("Project Information")
     project_group.add_argument(
         "--project-name",
         metavar="NAME",
-        help="Override the project name used in templates and reports.",
+        help="Override the project name used in templates.",
     )
     project_group.add_argument(
         "--project-version",
@@ -3818,7 +3818,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Skip files that match this pattern (for example, '*.log'). Use this option again to skip more.",
+        help="Skip files matching this pattern (for example, '*.log'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--exclude-folder",
@@ -3828,7 +3828,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Skip folders that match this pattern (for example, 'build'). Use this option again to skip more.",
+        help="Skip folders matching this pattern (for example, 'build'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--include",
@@ -3837,7 +3837,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Include only files that match this pattern (for example, '*.py'). Use this option again to include more.",
+        help="Include only files matching this pattern (for example, '*.py'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--extension",
@@ -3845,7 +3845,7 @@ def main():
         action="append",
         metavar="EXT",
         default=[],
-        help="Include only files with these extensions (for example, 'py', 'js'). Use this option again to include more.",
+        help="Include only files with these extensions (for example, 'py', 'js'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--exclude-extension",
@@ -3853,7 +3853,7 @@ def main():
         action="append",
         metavar="EXT",
         default=[],
-        help="Skip files with these extensions (for example, 'log', 'tmp'). Use this option again to skip more.",
+        help="Skip files with these extensions (for example, 'log', 'tmp'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--language",
@@ -3861,7 +3861,7 @@ def main():
         action="append",
         metavar="LANG",
         default=[],
-        help="Include only files of these languages (for example, 'python', 'cpp'). Use this option again to include more. See --list-languages for a full list.",
+        help="Include only files of these languages (for example, 'python', 'cpp'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--exclude-language",
@@ -3869,7 +3869,7 @@ def main():
         action="append",
         metavar="LANG",
         default=[],
-        help="Skip files of these languages (for example, 'javascript', 'html'). Use this option again to skip more.",
+        help="Skip files of these languages (for example, 'javascript', 'html'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--since",
@@ -3926,49 +3926,49 @@ def main():
         "--grep",
         "-g",
         metavar="REGEX",
-        help="Include only files whose content matches this regular expression.",
+        help="Include only files matching this regular expression.",
     )
     filtering_group.add_argument(
         "--exclude-grep",
         "-E",
         metavar="REGEX",
-        help="Skip files whose content matches this regular expression.",
+        help="Skip files matching this regular expression.",
     )
     filtering_group.add_argument(
         "--skip-binary",
         "-B",
         action="store_true",
-        help="Skip files that contain non-text data (binary files).",
+        help="Skip non-text (binary) files.",
     )
     filtering_group.add_argument(
         "--max-depth",
         "-D",
         type=int,
         metavar="N",
-        help="Limit folder scanning to this depth (for example, '-D 1' for root files only; 0 for no limit).",
+        help="Limit folder scanning depth (for example, '-D 1' for root files only).",
     )
     filtering_group.add_argument(
         "--git-files",
         "-G",
         action="store_true",
-        help="Use 'git ls-files' to find files. This follows the .gitignore rules.",
+        help="Use 'git ls-files' to find files, following '.gitignore' rules automatically.",
     )
     filtering_group.add_argument(
         "--git-diff",
         nargs="?",
         const=True,
         metavar="REF",
-        help="Include only files that have changed in Git. If a REF is provided (such as 'main'), it finds changes since that commit. Otherwise, it finds unstaged, staged, and untracked changes.",
+        help="Include only files changed in Git. If a REF is provided (like 'main'), it finds changes since that commit. Otherwise, it finds all local changes.",
     )
     filtering_group.add_argument(
         "--staged",
         action="store_true",
-        help="Include only staged changes in Git. This automatically enables Git diff functionality.",
+        help="Include only staged changes in Git (automatically enables Git diff).",
     )
     filtering_group.add_argument(
         "--unstaged",
         action="store_true",
-        help="Include only unstaged and untracked changes in Git. This automatically enables Git diff functionality.",
+        help="Include only unstaged and untracked changes in Git (automatically enables Git diff).",
     )
     filtering_group.add_argument(
         "--unique",
@@ -3988,7 +3988,7 @@ def main():
         nargs=2,
         action="append",
         metavar=("EXTENSION", "LANGUAGE"),
-        help="Manually map a file extension or filename to a specific language (for example, '.mjml' 'html'). Use this option again to add more.",
+        help="Manually map an extension or filename to a language (for example, '.mjml' 'html'). Can be used multiple times.",
     )
 
     # Sorting & Limiting Group
@@ -3997,7 +3997,7 @@ def main():
         "--sort",
         "-s",
         choices=["name", "size", "modified", "tokens", "lines", "depth", "language"],
-        help="Sort files by name, size, date (modified), tokens, lines, folder depth, or language before combining.",
+        help="Sort files before combining.",
     )
     sorting_group.add_argument(
         "--reverse",
@@ -4038,22 +4038,22 @@ def main():
         "-a",
         action="store_true",
         help=(
-            "Enable a preset for AI models: Markdown format, line numbers, Table of Contents, folder tree, "
-            "project overview, skipping binary files, removing duplicates, and automatic Git context. "
-            "This also copies to the system clipboard if you do not specify an output."
+            "Optimize for AI models: enables Markdown, line numbers, Table of Contents, folder tree, "
+            "project overview, and Git context while removing duplicates and skipping binary files. "
+            "Also copies to the clipboard if no output is specified."
         ),
     )
     output_group.add_argument(
         "--clipboard",
         "-c",
         action="store_true",
-        help="Use the system clipboard to save combined output or read content for extraction.",
+        help="Use the system clipboard for output or as a source for extraction.",
     )
     output_group.add_argument(
         "--format",
         "-f",
         choices=["text", "json", "jsonl", "markdown", "xml", "manifest", "csv"],
-        help="Choose the output format ('text', 'json', 'jsonl', 'markdown', 'xml', 'manifest', 'csv'). 'json', 'jsonl', 'manifest', and 'csv' only work when combining many files into one.",
+        help="Choose the output format. Some formats only support combining many files into one.",
     )
     output_group.add_argument(
         "--markdown",
@@ -4094,18 +4094,18 @@ def main():
         "--toc",
         "-T",
         action="store_true",
-        help="Add a Table of Contents with sizes and tokens to the start of the output (only when combining many files into one in 'text' or 'markdown' formats).",
+        help="Add a Table of Contents to the start of the output (Text and Markdown formats only).",
     )
     output_group.add_argument(
         "--include-tree",
         "-p",
         action="store_true",
-        help="Include a visual folder tree with details at the start of the output (only when combining many files into one).",
+        help="Include a visual folder tree at the start of the output.",
     )
     output_group.add_argument(
         "--overview",
         action="store_true",
-        help="Add a project overview summary with statistics and language breakdown to the start of the output (only when combining many files into one).",
+        help="Add a project overview summary with statistics and language breakdown.",
     )
     output_group.add_argument(
         "--git-log",
@@ -4113,12 +4113,12 @@ def main():
         const=5,
         type=int,
         metavar="N",
-        help="Include the last N git commit messages in the project overview and templates ({{GIT_LOG}}). Default is 5 if the flag is present.",
+        help="Include the last N Git commit messages (defaults to 5).",
     )
     output_group.add_argument(
         "--include-diff",
         action="store_true",
-        help="Include the Git diff in the project overview and templates ({{GIT_DIFF}} and {{FILE_DIFF}}).",
+        help="Include the Git diff in the overview and templates.",
     )
     output_group.add_argument(
         "--header",
@@ -4163,7 +4163,7 @@ def main():
         nargs=2,
         action="append",
         metavar=("SOURCE_EXT", "HEADER_EXT"),
-        help="Enable file pairing by matching source and header extensions (for example, '.cpp' '.h'). Use this option again to add more pairs.",
+        help="Enable file pairing by matching source and header extensions (for example, '.cpp' '.h'). Can be used multiple times.",
     )
     pairing_group.add_argument(
         "--include-unpaired",
@@ -4247,14 +4247,14 @@ def main():
         nargs=2,
         action="append",
         metavar=("REGEX", "REPLACEMENT"),
-        help="Add a global search-and-replace rule using regular expressions. Use this option again to add more.",
+        help="Add a global search-and-replace rule. Can be used multiple times.",
     )
     processing_group.add_argument(
         "--replace-line",
         nargs=2,
         action="append",
         metavar=("REGEX", "REPLACEMENT"),
-        help="Add a line-based regular expression rule to find and replace content. Matching lines that follow each other are replaced by a single entry. Use this option again to add more.",
+        help="Add a line-based search-and-replace rule. Contiguous matching lines are replaced by a single entry. Can be used multiple times.",
     )
 
     # Utility Commands Group
@@ -4278,11 +4278,9 @@ def main():
         "--extract",
         action="store_true",
         help=(
-            "Rebuild original files and folders from combined outputs (JSON, XML, Markdown, and more). "
-            "Read from files, folders, remote URLs, the terminal, or the clipboard. "
-            "Searches for standard defaults if no input is provided. "
-            "Supports filtering, sorting, and processing rules. "
-            "Removes line numbers automatically unless you use --keep-line-numbers."
+            "Rebuild original files and folders from combined outputs. Reads from "
+            "files, folders, URLs, or the clipboard. Supports filtering, sorting, "
+            "and processing rules. Automatically removes line numbers."
         ),
     )
     utility_group.add_argument(
@@ -5929,19 +5927,19 @@ def print_placeholders():
 
     categories = {
         "File-Level Placeholders": [
-            ("{{FILENAME}}", "Full relative path to the file."),
+            ("{{FILENAME}}", "Relative path to the file."),
             ("{{EXT}}", "File extension (for example, 'py')."),
             ("{{STEM}}", "Filename without extension (for example, 'main')."),
             ("{{DIR}}", "Folder path containing the file."),
-            ("{{DIR_SLUG}}", "A version of the folder path safe for use in filenames."),
+            ("{{DIR_SLUG}}", "Version of the folder path safe for use in filenames."),
             ("{{LANG}}", "Detected language tag (for example, 'python', 'cpp')."),
             ("{{SIZE}}", "Human-readable file size."),
             ("{{TOKENS}}", "Number of tokens in the file."),
             ("{{LINE_COUNT}}", "Number of lines in the file."),
             ("{{MODIFIED}}", "Last modified date and time."),
             ("{{HASH}}", "SHA-256 hash of the file content."),
-            ("{{INDEX}}", "The current file's position in the list (1, 2, 3...)."),
-            ("{{TOTAL}}", "The total number of files being processed."),
+            ("{{INDEX}}", "The file's position in the list (1, 2, 3...)."),
+            ("{{TOTAL}}", "Total number of files being processed."),
             ("{{SIZE_PERCENT}}", "Percentage of the total project size."),
             ("{{TOKEN_PERCENT}}", "Percentage of the total project tokens."),
             ("{{LINE_PERCENT}}", "Percentage of the total project lines."),
@@ -5969,14 +5967,14 @@ def print_placeholders():
             ("{{GIT_STATUS}}", "Summary of project changes."),
             ("{{GIT_LOG}}", "Recent commit messages."),
             ("{{GIT_DIFF}}", "Project-wide changes."),
-            ("{{FILE_DIFF}}", "Changes specific to the current file (File-level only)."),
+            ("{{FILE_DIFF}}", "Changes for this file (File-level only)."),
             ("{{GIT_REMOTE_URL}}", "The repository's origin remote URL."),
             ("{{PROJECT_URL}}", "Web URL to the repository home."),
-            ("{{FILE_URL}}", "Direct web link to the specific file and commit (File-level only)."),
-            ("{{FILE_AUTHOR}}", "Last author of the file (File-level only)."),
-            ("{{FILE_AUTHOR_DATE}}", "Last commit date of the file (File-level only)."),
-            ("{{FILE_LOG}}", "Subject of the last commit for the file (File-level only)."),
-            ("{{FILE_STATUS}}", "Git status of the file (for example, 'M', 'A', '??') (File-level only)."),
+            ("{{FILE_URL}}", "Web link to this file and commit (File-level only)."),
+            ("{{FILE_AUTHOR}}", "Last author of this file (File-level only)."),
+            ("{{FILE_AUTHOR_DATE}}", "Last commit date for this file (File-level only)."),
+            ("{{FILE_LOG}}", "Subject of the last commit for this file (File-level only)."),
+            ("{{FILE_STATUS}}", "Git status of this file (for example, 'M', 'A') (File-level only)."),
         ],
         "System & Environment Placeholders": [
             ("{{OS}}", "Operating system name."),
@@ -6013,7 +6011,7 @@ def print_project_info(stats):
     print(f"\n{C_BOLD}{C_CYAN}Detected Project Information:{C_RESET}")
 
     categories = {
-        "Project Metadata": [
+        "Project Information": [
             ("Name", stats.get('project_name')),
             ("Version", stats.get('project_version')),
             ("Description", stats.get('project_description')),
