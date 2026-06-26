@@ -2335,6 +2335,8 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
             lines.append(f"- **License:** {stats['project_license']}")
         if stats.get('project_url'):
             lines.append(f"- **URL:** {stats['project_url']}")
+        if stats.get('manifest_source'):
+            lines.append(f"- **Manifest:** {stats['manifest_source']}")
         lines.append(f"- **Generated at:** {timestamp}")
         if stats.get('os'):
             lines.append(f"- **OS:** {stats['os']}")
@@ -2373,6 +2375,8 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
             lines.append(f"  License:      {stats['project_license']}")
         if stats.get('project_url'):
             lines.append(f"  URL:          {stats['project_url']}")
+        if stats.get('manifest_source'):
+            lines.append(f"  Manifest:     {stats['manifest_source']}")
         lines.append(f"  Generated at: {timestamp}")
         if stats.get('os'):
             lines.append(f"  OS:           {stats['os']}")
@@ -6015,6 +6019,7 @@ def print_project_info(stats):
             ("Description", stats.get('project_description')),
             ("License", stats.get('project_license')),
             ("URL", stats.get('project_url')),
+            ("Manifest", stats.get('manifest_source')),
         ],
         "Git Information": [
             ("Branch", stats.get('git_branch')),
