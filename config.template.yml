@@ -162,8 +162,9 @@ project:
   # Manual overrides for project metadata used in templates and reports.
   # If omit or set to null, the tool tries to find them in manifest files
   # such as package.json, pyproject.toml, Cargo.toml, composer.json, pom.xml,
-  # go.mod, *.gemspec, mix.exs, Package.swift, deno.json, deno.jsonc,
-  # build.zig.zon, or README.md.
+  # go.mod, *.gemspec, mix.exs, Package.swift, .csproj, .fsproj, .vbproj,
+  # .sln, settings.gradle, project.clj, .podspec, .xcodeproj, CMakeLists.txt,
+  # Project.toml, deno.json, deno.jsonc, build.zig.zon, or README.md.
   name: null
   version: null
   description: null
