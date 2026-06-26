@@ -83,7 +83,9 @@ def test_execution_summary_includes_folders():
     old_stderr = sys.stderr
     sys.stderr = io.StringIO()
     try:
-        sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
+        from unittest.mock import patch, MagicMock
+        with patch('shutil.get_terminal_size', return_value=MagicMock(columns=120)):
+            sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
         output = sys.stderr.getvalue()
     finally:
         sys.stderr = old_stderr

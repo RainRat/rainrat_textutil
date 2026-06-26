@@ -39,7 +39,8 @@ def test_language_stats_reset_with_limit(tmp_path):
             "--output", str(output_file)
         ]
 
-        with patch.object(sys, 'argv', args):
+        with patch.object(sys, 'argv', args), \
+             patch('shutil.get_terminal_size', return_value=MagicMock(columns=120)):
             sourcecombine.main()
 
         # Get stderr output which contains the execution summary
