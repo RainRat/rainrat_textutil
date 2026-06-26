@@ -1964,7 +1964,8 @@ class FileProcessor:
             global_size=global_size, global_tokens=global_tokens, global_lines=global_lines,
             git_info=self.git_info, file_path=file_path
         ))
-        outfile.write(content)
+        if not self.output_opts.get('skip_content'):
+            outfile.write(content)
         outfile.write(_render_template(
             footer_template, relative_path, size=size, tokens=tokens, lines=lines,
             escape_func=escape_func, modified=modified, content=content,
@@ -2047,7 +2048,7 @@ class FileProcessor:
                 "language": utils.get_language_tag(relative_path, content=content, overrides=self.custom_languages),
                 "sha256": self.get_content_hash(content),
             }
-            if self.output_format != "manifest":
+            if self.output_format != "manifest" and not self.output_opts.get('skip_content'):
                 entry["content"] = content
             if modified is not None:
                 entry["modified"] = modified
@@ -2069,7 +2070,7 @@ class FileProcessor:
                 "lines": line_count,
                 "language": utils.get_language_tag(relative_path, content=content, overrides=self.custom_languages),
                 "sha256": self.get_content_hash(content),
-                "content": content,
+                "content": content if not self.output_opts.get('skip_content') else "",
                 "modified": modified if modified is not None else "",
             }
             self.csv_writer.writerow(entry)
@@ -4151,6 +4152,11 @@ def main():
         help="Save an execution summary (file counts, tokens, duration) in JSON format. Use '-' to print it to the terminal. Supports template placeholders.",
     )
     output_group.add_argument(
+        "--no-content",
+        action="store_true",
+        help="Omit the actual file content from the output. This is useful for creating manifests or project maps.",
+    )
+    output_group.add_argument(
         "--mirror",
         action="store_true",
         help="Recreate the input directory structure in the output folder, applying all filtering and processing rules to each file individually.",
@@ -4786,6 +4792,9 @@ def main():
 
     if getattr(args, 'mirror', False):
         output_conf['mirror'] = True
+
+    if getattr(args, 'no_content', False):
+        output_conf['skip_content'] = True
 
     if args.line_numbers:
         output_conf['add_line_numbers'] = True

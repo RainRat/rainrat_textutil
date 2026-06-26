@@ -24,6 +24,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--limit` (`-L`): Stop processing once you reach this file limit.
 *   `--unique` (`-u`): Skip duplicate files by path or content (duplicate removal).
 *   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, skipping binary files, removing duplicates, and automatically including Git context like logs and diffs). This also copies to the system clipboard if you do not specify an output.
+*   `--no-content`: Omit the actual file content from the output. This is useful for creating manifests or project maps.
 *   `--strip-components N`: Remove N leading components from file paths during extraction or verification.
 *   `--project-name NAME`: Override the project name used in templates and reports.
 *   `--project-version VERSION`: Override the project version.
