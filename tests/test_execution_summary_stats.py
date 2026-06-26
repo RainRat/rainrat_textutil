@@ -56,8 +56,9 @@ def test_language_stats_reset_with_limit(tmp_path):
 
         # Look for "python" and check following numbers
         # If buggy: it will show more than 1 file for python because it adds to previous stats.
-        # Format is: [FILES] [% FILES] [LANGUAGE]
-        python_match = re.search(r'(\d+)\s+([\d.]+)%\s+python', clean_output)
+        # Format is: [FILES] (% [FILES]) [LANGUAGE]
+        # New layout: row_parts.append(f"{C_DIM}{f_val:>6} {f_p_val}{C_RESET}")
+        python_match = re.search(r'(\d+)\s+\(\s*([\d.]+)%\)\s+python', clean_output)
         assert python_match, "Could not find python in Languages table"
 
         count = int(python_match.group(1))
