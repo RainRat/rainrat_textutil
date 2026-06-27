@@ -134,6 +134,8 @@ FILENAME_TO_LANG = {
     "procfile": "yaml",
     "sourcecombine.yml": "yaml",
     "sourcecombine.yaml": "yaml",
+    "pubspec.yaml": "yaml",
+    "pubspec.lock": "yaml",
 }
 
 COMPACT_WHITESPACE_GROUPS = (
@@ -1947,6 +1949,32 @@ def get_project_identity(root_folder: str | Path) -> dict:
                         identity["project_version"] = version_match.group(1).strip()
 
                     identity["manifest_source"] = "build.zig.zon"
+                    manifest_found = True
+                except Exception:
+                    pass
+
+        # 9.5 Dart/Flutter Projects (pubspec.yaml)
+        if not manifest_found:
+            pubspec = root_path / "pubspec.yaml"
+            if pubspec.is_file():
+                try:
+                    content = pubspec.read_text(encoding='utf-8')
+                    # name: my_app
+                    m = re.search(r'^name\s*:\s*["\']?([^"\s\'#]+)["\']?', content, re.MULTILINE)
+                    if m:
+                        identity["project_name"] = m.group(1).strip()
+
+                    # version: 1.0.0+1
+                    m = re.search(r'^version\s*:\s*["\']?([^"\s\'#]+)["\']?', content, re.MULTILINE)
+                    if m:
+                        identity["project_version"] = m.group(1).strip()
+
+                    # description: A new Flutter project.
+                    m = re.search(r'^description\s*:\s*["\']?([^"\r\n\'#]+)["\']?', content, re.MULTILINE)
+                    if m:
+                        identity["project_description"] = m.group(1).strip()
+
+                    identity["manifest_source"] = "pubspec.yaml"
                     manifest_found = True
                 except Exception:
                     pass
