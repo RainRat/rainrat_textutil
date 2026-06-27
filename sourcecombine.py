@@ -540,7 +540,7 @@ def _render_single_pass(template, replacements):
 def _resolve_metadata_placeholders(template, replacements, data):
     """Resolve project, system, datetime, and environment placeholders.
 
-    This consolidates common metadata logic used in both file-level and
+    This consolidates common information logic used in both file-level and
     global templates.
     """
     if not template:
@@ -1889,7 +1889,7 @@ def _populate_project_stats(stats, root_folder, config):
 
 
 def _apply_project_overrides(config, args):
-    """Apply project metadata CLI overrides to the configuration."""
+    """Apply project information CLI overrides to the configuration."""
     project_conf = config.setdefault('project', {})
     if project_conf is None:
         project_conf = config['project'] = {}
@@ -2700,7 +2700,7 @@ def find_and_combine_files(
         'filter_reasons': {},
     }
 
-    # Gather project metadata for templates
+    # Gather project information for templates
     first_root = "."
     if config.get('search', {}).get('root_folders'):
         first_root = config['search']['root_folders'][0]
@@ -2727,7 +2727,7 @@ def find_and_combine_files(
 
     stats['resolved_output_path'] = output_path
 
-    # Ensure project metadata is also in git_info for FileProcessor when Git is not present
+    # Ensure project information is also in git_info for FileProcessor when Git is not present
     git_info = config.get('git_info', {})
     git_info.update({
         'project_name': stats.get('project_name', 'Project'),
@@ -2855,7 +2855,7 @@ def find_and_combine_files(
         dry_run=processor_dry_run,
         estimate_tokens=estimate_tokens,
         output_format=output_format,
-        git_info=stats  # stats already contains git_branch and other metadata
+        git_info=stats  # stats already contains git_branch and other information
     )
 
     total_excluded_folders = 0
@@ -3096,7 +3096,7 @@ def find_and_combine_files(
 
         # End of root_folder loop
 
-        # Metadata and Sorting Pass
+        # Information and Sorting Pass
         sort_by = output_opts.get('sort_by', 'name')
         sort_reverse = output_opts.get('sort_reverse', False)
 
@@ -3116,7 +3116,7 @@ def find_and_combine_files(
             or has_new_placeholders
         )
 
-        # We need metadata for sorting (except name), token limit, size limit, Table of Contents/Tree, or global placeholders
+        # We need information for sorting (except name), token limit, size limit, Table of Contents/Tree, or global placeholders
         global_placeholders = ["{{FILE_COUNT}}", "{{TOTAL_SIZE}}", "{{TOTAL_TOKENS}}", "{{TOTAL_LINES}}"]
         has_global_placeholders = (global_header and any(p in global_header for p in global_placeholders)) or \
                                   (global_footer and any(p in global_footer for p in global_placeholders))
@@ -3171,7 +3171,7 @@ def find_and_combine_files(
                             val = rel_p.as_posix()
                         return (val, rel_p.as_posix())
                     all_combined_items.sort(key=get_single_sort_key, reverse=sort_reverse)
-                # Note: 'tokens' and 'lines' sort when combining many files into one is handled inside the metadata pass below
+                # Note: 'tokens' and 'lines' sort when combining many files into one is handled inside the information pass below
 
         # Apply file limit after global sorting
         max_files = filter_opts.get('max_files', 0)
@@ -3504,7 +3504,7 @@ def find_and_combine_files(
                     lines = utils.count_lines(rendered_h)
                     _update_stats_metrics(stats, tokens, lines, is_approx)
 
-            # Write global header after metadata pass to ensure placeholders are filled
+            # Write global header after information pass to ensure placeholders are filled
             if global_header and not dry_run and not estimate_tokens and output_format in ('text', 'markdown', 'xml'):
                 outfile.write(_render_global_template(global_header, stats))
 
@@ -3780,8 +3780,8 @@ def main():
         help="Show detailed status messages to help find and fix problems.",
     )
 
-    # Project Metadata Group
-    project_group = parser.add_argument_group("Project Metadata")
+    # Project Information Group
+    project_group = parser.add_argument_group("Project Information")
     project_group.add_argument(
         "--project-name",
         metavar="NAME",
@@ -4335,7 +4335,7 @@ def main():
     utility_group.add_argument(
         "--project-info",
         action="store_true",
-        help="Show detected project metadata and Git information for the current project.",
+        help="Show detected project information and Git information for the current project.",
     )
     utility_group.add_argument(
         "--version",
@@ -4393,7 +4393,7 @@ def main():
         sys.exit(0)
 
     if getattr(args, 'project_info', None) is True:
-        # We need to load and validate config first to get root folders and metadata overrides
+        # We need to load and validate config first to get root folders and information overrides
         targets = args.targets
         config_path = args.config
         remaining_targets = []
@@ -5371,7 +5371,7 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
                 missing += 1
             continue
 
-        # Priority 1: Check SHA-256 if available in metadata
+        # Priority 1: Check SHA-256 if available in information
         expected_sha = meta.get('sha256')
         if expected_sha:
             try:
@@ -5514,7 +5514,7 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         logging.error("Could not find any files to extract in any of the sources.")
         sys.exit(1)
 
-    # Gather project metadata for templates
+    # Gather project information for templates
     _populate_project_stats(stats, output_folder, config)
 
     stats['total_discovered'] = len(files_to_create)
@@ -5536,7 +5536,7 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
             processed_content = utils.process_content(file_content, processing_opts, language=lang)
             if processed_content != file_content:
                 file_content = processed_content
-                # Clear metrics metadata as it's no longer accurate for the processed content
+                # Clear metrics information as it's no longer accurate for the processed content
                 meta.pop('size', None)
                 meta.pop('tokens', None)
                 meta.pop('lines', None)
@@ -5571,7 +5571,7 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
             unique_files.append((path_str, file_content, meta))
         filtered_files = unique_files
 
-    # Initial metadata calculation needed for sorting and limits
+    # Initial information calculation needed for sorting and limits
     for path_str, file_content, meta in filtered_files:
         if meta.get('size') is None:
             meta['size'] = len(file_content.encode('utf-8'))
@@ -6009,11 +6009,11 @@ def print_placeholders():
 
 
 def print_project_info(stats):
-    """Print detected project metadata and Git information."""
+    """Print detected project information and Git information."""
     print(f"\n{C_BOLD}{C_CYAN}Detected Project Information:{C_RESET}")
 
     categories = {
-        "Project Metadata": [
+        "Project Information": [
             ("Name", stats.get('project_name')),
             ("Version", stats.get('project_version')),
             ("Description", stats.get('project_description')),
