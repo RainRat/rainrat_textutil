@@ -639,6 +639,23 @@ def _validate_glob_list(filenames, context_prefix):
             filenames[i] = sanitized
 
 
+def _normalize_string_list(items, context_prefix, item_label="text", list_label="a list"):
+    """Validate and lowercase a list of strings in place."""
+    if items is None:
+        return []
+    if not isinstance(items, list):
+        raise InvalidConfigError(f"{context_prefix} must be {list_label}.")
+
+    normalized = []
+    for item in items:
+        if not isinstance(item, str):
+            raise InvalidConfigError(f"Values in '{context_prefix}' must be {item_label}.")
+        normalized.append(item.lower())
+
+    items[:] = normalized
+    return normalized
+
+
 def _normalize_extension_list(ext_list, context_prefix):
     """Normalize a list of file extensions in place.
 
@@ -646,14 +663,10 @@ def _normalize_extension_list(ext_list, context_prefix):
     """
     if ext_list is None:
         return []
-    if not isinstance(ext_list, list):
-        raise InvalidConfigError(f"{context_prefix} must be a list.")
+    _normalize_string_list(ext_list, context_prefix)
 
     normalized = []
-    for i, ext in enumerate(ext_list):
-        if not isinstance(ext, str):
-            raise InvalidConfigError(f"Values in '{context_prefix}' must be text.")
-        ext = ext.lower()
+    for ext in ext_list:
         if not ext.startswith('.'):
             ext = '.' + ext
         normalized.append(ext)
@@ -716,23 +729,16 @@ def _validate_search_section(config):
     _normalize_extension_list(search.get('allowed_extensions'), 'search.allowed_extensions')
     _normalize_extension_list(search.get('exclude_extensions'), 'search.exclude_extensions')
 
-    allowed_langs = search.get('allowed_languages')
-    if allowed_langs is not None:
-        if not isinstance(allowed_langs, list):
-            raise InvalidConfigError("search.allowed_languages must be a list of languages.")
-        for lang in allowed_langs:
-            if not isinstance(lang, str):
-                raise InvalidConfigError("Values in 'search.allowed_languages' must be text.")
-        search['allowed_languages'] = [lang.lower() for lang in allowed_langs]
-
-    exclude_langs = search.get('exclude_languages')
-    if exclude_langs is not None:
-        if not isinstance(exclude_langs, list):
-            raise InvalidConfigError("search.exclude_languages must be a list of languages.")
-        for lang in exclude_langs:
-            if not isinstance(lang, str):
-                raise InvalidConfigError("Values in 'search.exclude_languages' must be text.")
-        search['exclude_languages'] = [lang.lower() for lang in exclude_langs]
+    _normalize_string_list(
+        search.get('allowed_languages'),
+        'search.allowed_languages',
+        list_label="a list of languages",
+    )
+    _normalize_string_list(
+        search.get('exclude_languages'),
+        'search.exclude_languages',
+        list_label="a list of languages",
+    )
 
     custom_langs = search.get('custom_languages')
     if custom_langs is not None:
