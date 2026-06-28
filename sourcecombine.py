@@ -5947,7 +5947,7 @@ def print_placeholders():
             ("{{LINE_PERCENT}}", "Percentage of the total project lines."),
         ],
         "Project-Level (Global) Placeholders": [
-            ("{{PROJECT_NAME}}", "Name of the project."),
+            ("{{PROJECT_NAME}}", "Name of the project (detected from package.json, pyproject.toml, pubspec.yaml, etc.)."),
             ("{{PROJECT_VERSION}}", "Version of the project."),
             ("{{PROJECT_DESCRIPTION}}", "Short description of the project."),
             ("{{PROJECT_LICENSE}}", "License identifier of the project."),

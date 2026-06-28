@@ -132,6 +132,10 @@ FILENAME_TO_LANG = {
     "rakefile": "ruby",
     "jenkinsfile": "groovy",
     "procfile": "yaml",
+    "pubspec.yaml": "yaml",
+    "pubspec.lock": "yaml",
+    "Project.toml": "toml",
+    "mix.exs": "elixir",
     "sourcecombine.yml": "yaml",
     "sourcecombine.yaml": "yaml",
 }
@@ -1947,6 +1951,40 @@ def get_project_identity(root_folder: str | Path) -> dict:
                         identity["project_version"] = version_match.group(1).strip()
 
                     identity["manifest_source"] = "build.zig.zon"
+                    manifest_found = True
+                except Exception:
+                    pass
+
+        # 9.5 Dart/Flutter Projects (pubspec.yaml)
+        if not manifest_found:
+            pubspec = root_path / "pubspec.yaml"
+            if pubspec.is_file():
+                try:
+                    content = pubspec.read_text(encoding='utf-8')
+                    # name: my_app
+                    m = re.search(r'^name\s*:\s*["\']?([^"\s\'#]+)["\']?', content, re.MULTILINE)
+                    if m:
+                        identity["project_name"] = m.group(1)
+
+                    # version: 1.0.0+1
+                    m = re.search(r'^version\s*:\s*["\']?([^"\s\'#]+)["\']?', content, re.MULTILINE)
+                    if m:
+                        identity["project_version"] = m.group(1)
+
+                    # description: A new Flutter project.
+                    # We handle simple single-line descriptions first.
+                    m = re.search(r'^description\s*:\s*(?!>|\|)(.+)$', content, re.MULTILINE)
+                    if m:
+                        identity["project_description"] = m.group(1).strip().strip('"').strip("'")
+                    else:
+                        # Try to catch multi-line if it's not a block scalar
+                        m = re.search(r'^description\s*:\s*(.+)$', content, re.MULTILINE)
+                        if m:
+                            desc = m.group(1).strip()
+                            if desc not in ('>', '|'):
+                                identity["project_description"] = desc.strip('"').strip("'")
+
+                    identity["manifest_source"] = "pubspec.yaml"
                     manifest_found = True
                 except Exception:
                     pass
