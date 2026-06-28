@@ -1870,7 +1870,7 @@ def _update_stats_metrics(stats, tokens, lines, is_approx):
 
 
 def _populate_project_stats(stats, root_folder, config):
-    """Gather project identity, system info, and manual overrides."""
+    """Gather project information, system info, and manual overrides."""
     stats.update(utils.get_project_identity(root_folder))
     stats.update(utils.get_datetime_placeholders())
     stats.update(utils.get_system_info())
@@ -1889,7 +1889,7 @@ def _populate_project_stats(stats, root_folder, config):
 
 
 def _apply_project_overrides(config, args):
-    """Apply project metadata CLI overrides to the configuration."""
+    """Apply project information CLI overrides to the configuration."""
     project_conf = config.setdefault('project', {})
     if project_conf is None:
         project_conf = config['project'] = {}
@@ -2700,7 +2700,7 @@ def find_and_combine_files(
         'filter_reasons': {},
     }
 
-    # Gather project metadata for templates
+    # Gather project information for templates
     first_root = "."
     if config.get('search', {}).get('root_folders'):
         first_root = config['search']['root_folders'][0]
@@ -2727,7 +2727,7 @@ def find_and_combine_files(
 
     stats['resolved_output_path'] = output_path
 
-    # Ensure project metadata is also in git_info for FileProcessor when Git is not present
+    # Ensure project information is also in git_info for FileProcessor when Git is not present
     git_info = config.get('git_info', {})
     git_info.update({
         'project_name': stats.get('project_name', 'Project'),
@@ -3780,8 +3780,8 @@ def main():
         help="Show detailed status messages to help find and fix problems.",
     )
 
-    # Project Metadata Group
-    project_group = parser.add_argument_group("Project Metadata")
+    # Project Information Group
+    project_group = parser.add_argument_group("Project Information")
     project_group.add_argument(
         "--project-name",
         metavar="NAME",
@@ -4335,7 +4335,7 @@ def main():
     utility_group.add_argument(
         "--project-info",
         action="store_true",
-        help="Show detected project metadata and Git information for the current project.",
+        help="Show detected project and Git information for the current project.",
     )
     utility_group.add_argument(
         "--version",
@@ -5514,7 +5514,7 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         logging.error("Could not find any files to extract in any of the sources.")
         sys.exit(1)
 
-    # Gather project metadata for templates
+    # Gather project information for templates
     _populate_project_stats(stats, output_folder, config)
 
     stats['total_discovered'] = len(files_to_create)
@@ -6009,11 +6009,11 @@ def print_placeholders():
 
 
 def print_project_info(stats):
-    """Print detected project metadata and Git information."""
+    """Print detected project and Git information."""
     print(f"\n{C_BOLD}{C_CYAN}Detected Project Information:{C_RESET}")
 
     categories = {
-        "Project Metadata": [
+        "Project Information": [
             ("Name", stats.get('project_name')),
             ("Version", stats.get('project_version')),
             ("Description", stats.get('project_description')),

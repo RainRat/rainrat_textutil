@@ -157,9 +157,9 @@ output:
   # Show a colored diff of changes (when using --output, --apply-in-place, or --extract).
   show_diff: false
 
-# --- Project Metadata ---
+# --- Project Information ---
 project:
-  # Manual overrides for project metadata used in templates and reports.
+  # Manual overrides for project information used in templates and reports.
   # If omit or set to null, the tool tries to find them in manifest files
   # such as package.json, pyproject.toml, Cargo.toml, composer.json, pom.xml,
   # go.mod, *.gemspec, mix.exs, Package.swift, .csproj, .fsproj, .vbproj,
