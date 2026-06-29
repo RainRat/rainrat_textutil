@@ -1271,7 +1271,7 @@ def collect_file_paths(root_folder, recursive, exclude_folders, progress=None, m
         if root_path.is_file():
             if progress is not None:
                 progress.update(1)
-            # Use parent as root for absolute paths, but preserve context for relative paths
+            # Use parent as root for paths, but preserve context for relative paths
             root = root_path.parent if root_path.is_absolute() else Path('.')
             return [root_path], root, 0
 
@@ -1889,7 +1889,7 @@ def _populate_project_stats(stats, root_folder, config):
 
 
 def _apply_project_overrides(config, args):
-    """Apply project metadata CLI overrides to the configuration."""
+    """Apply project information CLI overrides to the configuration."""
     project_conf = config.setdefault('project', {})
     if project_conf is None:
         project_conf = config['project'] = {}
@@ -2700,7 +2700,7 @@ def find_and_combine_files(
         'filter_reasons': {},
     }
 
-    # Gather project metadata for templates
+    # Gather project information for templates
     first_root = "."
     if config.get('search', {}).get('root_folders'):
         first_root = config['search']['root_folders'][0]
@@ -2727,7 +2727,7 @@ def find_and_combine_files(
 
     stats['resolved_output_path'] = output_path
 
-    # Ensure project metadata is also in git_info for FileProcessor when Git is not present
+    # Ensure project information is also in git_info for FileProcessor when Git is not present
     git_info = config.get('git_info', {})
     git_info.update({
         'project_name': stats.get('project_name', 'Project'),
@@ -2819,7 +2819,7 @@ def find_and_combine_files(
         try:
             abs_output_path = Path(output_path).resolve()
         except OSError:
-            # Fallback to absolute path if resolve fails (for example, file doesn't exist yet and parent is weird)
+            # Fallback to path if resolve fails (for example, file doesn't exist yet and parent is weird)
             try:
                 abs_output_path = Path(output_path).absolute()
             except OSError:
@@ -2870,7 +2870,7 @@ def find_and_combine_files(
     all_size_excluded = set()
     # For path-based deduplication
     seen_paths = set()
-    # Metadata for Table of Contents and Tree: {Path: {'size': int, 'tokens': int, 'mtime': float, 'depth': int}}
+    # Information for Table of Contents and Tree: {Path: {'size': int, 'tokens': int, 'mtime': float, 'depth': int}}
     file_metadata = {}
 
     with outfile_ctx as outfile:
@@ -3096,7 +3096,7 @@ def find_and_combine_files(
 
         # End of root_folder loop
 
-        # Metadata and Sorting Pass
+        # Information and Sorting Pass
         sort_by = output_opts.get('sort_by', 'name')
         sort_reverse = output_opts.get('sort_reverse', False)
 
@@ -3780,8 +3780,8 @@ def main():
         help="Show detailed status messages to help find and fix problems.",
     )
 
-    # Project Metadata Group
-    project_group = parser.add_argument_group("Project Metadata")
+    # Project Information Group
+    project_group = parser.add_argument_group("Project Information")
     project_group.add_argument(
         "--project-name",
         metavar="NAME",
@@ -3818,7 +3818,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Skip files that match this pattern (for example, '*.log'). Use this option again to skip more.",
+        help="Skip files that match this pattern (e.g., '*.log'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--exclude-folder",
@@ -3828,7 +3828,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Skip folders that match this pattern (for example, 'build'). Use this option again to skip more.",
+        help="Skip folders that match this pattern (e.g., 'build'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--include",
@@ -3837,7 +3837,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Include only files that match this pattern (for example, '*.py'). Use this option again to include more.",
+        help="Include only files that match this pattern (e.g., '*.py'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--extension",
@@ -3845,7 +3845,7 @@ def main():
         action="append",
         metavar="EXT",
         default=[],
-        help="Include only files with these extensions (for example, 'py', 'js'). Use this option again to include more.",
+        help="Include only files with these extensions (e.g., 'py', 'js'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--exclude-extension",
@@ -3853,7 +3853,7 @@ def main():
         action="append",
         metavar="EXT",
         default=[],
-        help="Skip files with these extensions (for example, 'log', 'tmp'). Use this option again to skip more.",
+        help="Skip files with these extensions (e.g., 'log', 'tmp'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--language",
@@ -3861,7 +3861,7 @@ def main():
         action="append",
         metavar="LANG",
         default=[],
-        help="Include only files of these languages (for example, 'python', 'cpp'). Use this option again to include more. See --list-languages for a full list.",
+        help="Include only files of these languages (e.g., 'python', 'cpp'). Can be used multiple times. See --list-languages for a full list.",
     )
     filtering_group.add_argument(
         "--exclude-language",
@@ -3869,7 +3869,7 @@ def main():
         action="append",
         metavar="LANG",
         default=[],
-        help="Skip files of these languages (for example, 'javascript', 'html'). Use this option again to skip more.",
+        help="Skip files of these languages (e.g., 'javascript', 'html'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--since",
@@ -3958,7 +3958,7 @@ def main():
         nargs="?",
         const=True,
         metavar="REF",
-        help="Include only files that have changed in Git. If a REF is provided (such as 'main'), it finds changes since that commit. Otherwise, it finds unstaged, staged, and untracked changes.",
+        help="Include files changed in Git. Compares against REF (e.g., 'main') if provided; otherwise includes all local changes (staged, unstaged, and untracked).",
     )
     filtering_group.add_argument(
         "--staged",
@@ -3988,7 +3988,7 @@ def main():
         nargs=2,
         action="append",
         metavar=("EXTENSION", "LANGUAGE"),
-        help="Manually map a file extension or filename to a specific language (for example, '.mjml' 'html'). Use this option again to add more.",
+        help="Manually map a file extension or filename to a specific language (e.g., '.mjml' 'html'). Can be used multiple times.",
     )
 
     # Sorting & Limiting Group
@@ -4038,9 +4038,8 @@ def main():
         "-a",
         action="store_true",
         help=(
-            "Enable a preset for AI models: Markdown format, line numbers, Table of Contents, folder tree, "
-            "project overview, skipping binary files, removing duplicates, and automatic Git context. "
-            "This also copies to the system clipboard if you do not specify an output."
+            "Enable AI preset: Markdown, line numbers, TOC, tree, project overview, skipping binary files, "
+            "duplicate removal, and Git context. Copies to clipboard if no output is specified."
         ),
     )
     output_group.add_argument(
@@ -4163,7 +4162,7 @@ def main():
         nargs=2,
         action="append",
         metavar=("SOURCE_EXT", "HEADER_EXT"),
-        help="Enable file pairing by matching source and header extensions (for example, '.cpp' '.h'). Use this option again to add more pairs.",
+        help="Enable file pairing by matching source and header extensions (e.g., '.cpp' '.h'). Can be used multiple times.",
     )
     pairing_group.add_argument(
         "--include-unpaired",
@@ -4247,14 +4246,14 @@ def main():
         nargs=2,
         action="append",
         metavar=("REGEX", "REPLACEMENT"),
-        help="Add a global search-and-replace rule using regular expressions. Use this option again to add more.",
+        help="Add a global search-and-replace rule using regular expressions. Can be used multiple times.",
     )
     processing_group.add_argument(
         "--replace-line",
         nargs=2,
         action="append",
         metavar=("REGEX", "REPLACEMENT"),
-        help="Add a line-based regular expression rule to find and replace content. Matching lines that follow each other are replaced by a single entry. Use this option again to add more.",
+        help="Add a line-based regular expression rule to find and replace content. Contiguous matching lines are replaced by a single entry. Can be used multiple times.",
     )
 
     # Utility Commands Group
@@ -4278,11 +4277,9 @@ def main():
         "--extract",
         action="store_true",
         help=(
-            "Rebuild original files and folders from combined outputs (JSON, XML, Markdown, and more). "
-            "Read from files, folders, remote URLs, the terminal, or the clipboard. "
-            "Searches for standard defaults if no input is provided. "
-            "Supports filtering, sorting, and processing rules. "
-            "Removes line numbers automatically unless you use --keep-line-numbers."
+            "Restore original files from combined outputs. Reads from files, URLs, or clipboard. "
+            "Automatically finds standard combined files if no input is given. "
+            "Supports filtering, sorting, and processing. Removes line numbers by default."
         ),
     )
     utility_group.add_argument(
@@ -4335,7 +4332,7 @@ def main():
     utility_group.add_argument(
         "--project-info",
         action="store_true",
-        help="Show detected project metadata and Git information for the current project.",
+        help="Show detected project information and Git information for the current project.",
     )
     utility_group.add_argument(
         "--version",
@@ -5514,7 +5511,7 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         logging.error("Could not find any files to extract in any of the sources.")
         sys.exit(1)
 
-    # Gather project metadata for templates
+    # Gather project information for templates
     _populate_project_stats(stats, output_folder, config)
 
     stats['total_discovered'] = len(files_to_create)
@@ -6009,11 +6006,11 @@ def print_placeholders():
 
 
 def print_project_info(stats):
-    """Print detected project metadata and Git information."""
+    """Print detected project information and Git information."""
     print(f"\n{C_BOLD}{C_CYAN}Detected Project Information:{C_RESET}")
 
     categories = {
-        "Project Metadata": [
+        "Project Information": [
             ("Name", stats.get('project_name')),
             ("Version", stats.get('project_version')),
             ("Description", stats.get('project_description')),
