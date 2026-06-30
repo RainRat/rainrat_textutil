@@ -45,7 +45,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--delete-backups`: Remove all `.bak` files from the folders.
 *   `--list-languages`: Show all supported language identifiers and exit.
 *   `--list-placeholders`: Show all supported template placeholders and exit.
-*   `--project-info`: Show detected project metadata and Git information for the current project.
+*   `--project-info`: Show detected project information and Git information for the current project.
 *   `--show-config`: Display the final configuration being used and exit.
 *   `--export-config`: Save the final combined configuration to a YAML file and exit.
 *   `--system-info`: Show environment details (Python version, OS, and other system details).
@@ -152,7 +152,7 @@ Used in `header_template` and `footer_template`:
 *   `{{FILE_DIFF}}`: Changes specific to the current file (requires `--include-diff` flag).
 *   `{{FILE_STATUS}}`: Git status of the current file (for example, `M`, `A`, `??`).
 
-### Project-Level Placeholders
+### Project Information Placeholders
 Used in `global_header_template`, `global_footer_template`, and other project-wide settings:
 *   `{{PROJECT_NAME}}`: Name of the project (detected from `package.json`, `pyproject.toml`, `Cargo.toml`, `composer.json`, `pom.xml`, `go.mod`, `*.gemspec`, `mix.exs`, `Package.swift`, `.csproj`, `.fsproj`, `.vbproj`, `.sln`, `settings.gradle`, `project.clj`, `.podspec`, `.xcodeproj`, `CMakeLists.txt`, `Project.toml`, `deno.json`, `deno.jsonc`, `build.zig.zon`, `README.md`, or folder name).
 *   `{{PROJECT_VERSION}}`: Version of the project.
