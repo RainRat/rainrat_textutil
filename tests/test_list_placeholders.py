@@ -14,10 +14,10 @@ class TestListPlaceholders(unittest.TestCase):
             sys.stdout = sys.__stdout__
 
         output = captured_output.getvalue()
-        self.assertIn("Supported Template Placeholders:", output)
+        self.assertIn("=== TEMPLATE PLACEHOLDERS ===", output)
         self.assertIn("File-Level Placeholders", output)
         self.assertIn("{{FILENAME}}", output)
-        self.assertIn("Project-Level (Global) Placeholders", output)
+        self.assertIn("Project Information (Global) Placeholders", output)
         self.assertIn("{{FILE_COUNT}}", output)
         self.assertIn("Git Placeholders", output)
         self.assertIn("{{GIT_BRANCH}}", output)

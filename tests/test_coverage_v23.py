@@ -141,7 +141,7 @@ def test_main_list_placeholders(capsys):
         assert cm.value.code == 0
 
     captured = capsys.readouterr()
-    assert "Supported Template Placeholders:" in captured.out
+    assert "=== TEMPLATE PLACEHOLDERS ===" in captured.out
 
 def test_verify_files_repair_missing_with_mtime(tmp_path, capsys):
     """Cover verify_files line 4768: missing file repair with modification time."""
