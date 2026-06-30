@@ -1930,6 +1930,7 @@ class FileProcessor:
         self.dry_run = dry_run
         self.estimate_tokens = estimate_tokens
         self.output_format = output_format
+        self.skip_content = bool(self.output_opts.get('skip_content', False))
         self.show_diff = bool(self.output_opts.get('show_diff', False))
         self.processing_opts = config.get('processing', {}) or {}
         self.apply_in_place = bool(self.processing_opts.get('apply_in_place'))
@@ -1957,21 +1958,23 @@ class FileProcessor:
 
         escape_func = xml_escape if self.output_format == 'xml' else None
 
-        outfile.write(_render_template(
-            header_template, relative_path, size=size, tokens=tokens, lines=lines,
-            escape_func=escape_func, modified=modified, content=content,
-            custom_languages=self.custom_languages, index=index, total=total,
-            global_size=global_size, global_tokens=global_tokens, global_lines=global_lines,
-            git_info=self.git_info, file_path=file_path
-        ))
+        if self.output_format not in ("json", "jsonl", "manifest", "csv"):
+            outfile.write(_render_template(
+                header_template, relative_path, size=size, tokens=tokens, lines=lines,
+                escape_func=escape_func, modified=modified, content=content,
+                custom_languages=self.custom_languages, index=index, total=total,
+                global_size=global_size, global_tokens=global_tokens, global_lines=global_lines,
+                git_info=self.git_info, file_path=file_path
+            ))
         outfile.write(content)
-        outfile.write(_render_template(
-            footer_template, relative_path, size=size, tokens=tokens, lines=lines,
-            escape_func=escape_func, modified=modified, content=content,
-            custom_languages=self.custom_languages, index=index, total=total,
-            global_size=global_size, global_tokens=global_tokens, global_lines=global_lines,
-            git_info=self.git_info, file_path=file_path
-        ))
+        if self.output_format not in ("json", "jsonl", "manifest", "csv"):
+            outfile.write(_render_template(
+                footer_template, relative_path, size=size, tokens=tokens, lines=lines,
+                escape_func=escape_func, modified=modified, content=content,
+                custom_languages=self.custom_languages, index=index, total=total,
+                global_size=global_size, global_tokens=global_tokens, global_lines=global_lines,
+                git_info=self.git_info, file_path=file_path
+            ))
 
     def get_content_hash(self, content):
         """Return the SHA-256 hash of the content."""
@@ -2047,7 +2050,7 @@ class FileProcessor:
                 "language": utils.get_language_tag(relative_path, content=content, overrides=self.custom_languages),
                 "sha256": self.get_content_hash(content),
             }
-            if self.output_format != "manifest":
+            if self.output_format != "manifest" and not self.skip_content:
                 entry["content"] = content
             if modified is not None:
                 entry["modified"] = modified
@@ -2069,7 +2072,7 @@ class FileProcessor:
                 "lines": line_count,
                 "language": utils.get_language_tag(relative_path, content=content, overrides=self.custom_languages),
                 "sha256": self.get_content_hash(content),
-                "content": content,
+                "content": content if not self.skip_content else "",
                 "modified": modified if modified is not None else "",
             }
             self.csv_writer.writerow(entry)
@@ -2128,7 +2131,7 @@ class FileProcessor:
         if not self.dry_run or outfile is not None:
             self._emit_entry(
                 outfile,
-                processed_content,
+                processed_content if not self.skip_content else "",
                 relative_path,
                 file_size,
                 token_count,
@@ -4155,6 +4158,11 @@ def main():
         action="store_true",
         help="Recreate the input directory structure in the output folder, applying all filtering and processing rules to each file individually.",
     )
+    output_group.add_argument(
+        "--no-content",
+        action="store_true",
+        help="Skip the actual file content in the output, while keeping templates and metadata. (Supported in all formats).",
+    )
 
     # Pairing Options Group
     pairing_group = parser.add_argument_group("Pairing Options")
@@ -4786,6 +4794,9 @@ def main():
 
     if getattr(args, 'mirror', False):
         output_conf['mirror'] = True
+
+    if getattr(args, 'no_content', False):
+        output_conf['skip_content'] = True
 
     if args.line_numbers:
         output_conf['add_line_numbers'] = True
