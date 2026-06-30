@@ -16,7 +16,7 @@ def test_system_info_flag():
     )
 
     output = result.stdout
-    assert "SourceCombine System Information" in output
+    assert "=== SYSTEM INFORMATION ===" in output
     assert "SourceCombine Version" in output
     assert "Python Version" in output
     assert "Platform" in output
@@ -48,7 +48,7 @@ def test_print_system_info_with_and_without_optional_dependencies(capsys):
         print_system_info()
 
     captured = capsys.readouterr()
-    assert "SourceCombine System Information" in captured.out
+    assert "=== SYSTEM INFORMATION ===" in captured.out
     assert "tiktoken" in captured.out
     assert "Installed" in captured.out
     assert "pyperclip" in captured.out

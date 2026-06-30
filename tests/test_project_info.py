@@ -47,8 +47,8 @@ def test_project_info_basic(tmp_path, capsys, monkeypatch, mocker):
     out, err = capsys.readouterr()
 
     # Check for expected output components
-    assert "Detected Project Information:" in out
-    assert "Project Metadata" in out
+    assert "=== PROJECT INFORMATION ===" in out
+    assert "Project Information" in out
     assert "Name" in out
     assert "test-project" in out
     assert "Version" in out
