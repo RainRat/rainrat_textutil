@@ -3780,8 +3780,8 @@ def main():
         help="Show detailed status messages to help find and fix problems.",
     )
 
-    # Project Metadata Group
-    project_group = parser.add_argument_group("Project Metadata")
+    # Project Information Group
+    project_group = parser.add_argument_group("Project Information")
     project_group.add_argument(
         "--project-name",
         metavar="NAME",
@@ -4335,7 +4335,7 @@ def main():
     utility_group.add_argument(
         "--project-info",
         action="store_true",
-        help="Show detected project metadata and Git information for the current project.",
+        help="Show detected project information and Git information for the current project.",
     )
     utility_group.add_argument(
         "--version",
@@ -5946,7 +5946,7 @@ def print_placeholders():
             ("{{TOKEN_PERCENT}}", "Percentage of the total project tokens."),
             ("{{LINE_PERCENT}}", "Percentage of the total project lines."),
         ],
-        "Project-Level (Global) Placeholders": [
+        "Project Information (Global) Placeholders": [
             ("{{PROJECT_NAME}}", "Name of the project."),
             ("{{PROJECT_VERSION}}", "Version of the project."),
             ("{{PROJECT_DESCRIPTION}}", "Short description of the project."),
@@ -6013,7 +6013,7 @@ def print_project_info(stats):
     print(f"\n{C_BOLD}{C_CYAN}Detected Project Information:{C_RESET}")
 
     categories = {
-        "Project Metadata": [
+        "Project Information": [
             ("Name", stats.get('project_name')),
             ("Version", stats.get('project_version')),
             ("Description", stats.get('project_description')),
