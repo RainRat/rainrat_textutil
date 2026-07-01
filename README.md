@@ -151,13 +151,14 @@ Used in `header_template` and `footer_template`:
 *   `{{FILE_URL}}`: Direct web link to the specific file and commit.
 *   `{{FILE_DIFF}}`: Changes specific to the current file (requires `--include-diff` flag).
 *   `{{FILE_STATUS}}`: Git status of the current file (for example, `M`, `A`, `??`).
+*   `{{PROJECT_URL}}`: Web URL to the repository home (supports GitHub, GitLab, Bitbucket).
 
 ### Project-Level Placeholders
 Used in `global_header_template`, `global_footer_template`, and other project-wide settings:
-*   `{{PROJECT_NAME}}`: Name of the project (detected from `package.json`, `pyproject.toml`, `Cargo.toml`, `composer.json`, `pom.xml`, `go.mod`, `*.gemspec`, `mix.exs`, `Package.swift`, `.csproj`, `.fsproj`, `.vbproj`, `.sln`, `settings.gradle`, `project.clj`, `.podspec`, `.xcodeproj`, `CMakeLists.txt`, `Project.toml`, `deno.json`, `deno.jsonc`, `build.zig.zon`, `README.md`, or folder name).
-*   `{{PROJECT_VERSION}}`: Version of the project.
-*   `{{PROJECT_DESCRIPTION}}`: Short description of the project.
-*   `{{PROJECT_LICENSE}}`: License identifier of the project.
+*   `{{PROJECT_NAME}}`: Name of the project (detected from `package.json`, `pyproject.toml`, `Cargo.toml`, `composer.json`, `pom.xml`, `go.mod`, `*.gemspec`, `mix.exs`, `Package.swift`, `.csproj`, `.fsproj`, `.vbproj`, `.sln`, `settings.gradle`, `project.clj`, `.podspec`, `.xcodeproj`, `CMakeLists.txt`, `Project.toml`, `deno.json`, `deno.jsonc`, `build.zig.zon`, `pubspec.yaml`, `README.md`, or folder name).
+*   `{{PROJECT_VERSION}}`: Version of the project (automatically detected from project manifests).
+*   `{{PROJECT_DESCRIPTION}}`: Short description of the project (automatically detected from project manifests).
+*   `{{PROJECT_LICENSE}}`: License identifier of the project (automatically detected from project manifests or LICENSE files).
 *   `{{FILE_COUNT}}`: Total number of files included.
 *   `{{TOTAL_SIZE}}`: Total size of all files.
 *   `{{TOTAL_TOKENS}}`: Total number of tokens.

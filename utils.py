@@ -134,6 +134,8 @@ FILENAME_TO_LANG = {
     "procfile": "yaml",
     "sourcecombine.yml": "yaml",
     "sourcecombine.yaml": "yaml",
+    "pubspec.yaml": "yaml",
+    "pubspec.lock": "yaml",
 }
 
 COMPACT_WHITESPACE_GROUPS = (
@@ -1516,6 +1518,14 @@ def _parse_json_manifest(manifest_path: Path, identity: dict) -> bool:
                 identity["project_description"] = str(data['description'])
             if data.get('license'):
                 identity["project_license"] = str(data['license'])
+            if data.get('homepage'):
+                identity["project_url"] = str(data['homepage'])
+            elif data.get('repository'):
+                repo = data.get('repository')
+                if isinstance(repo, dict) and repo.get('url'):
+                    identity["project_url"] = str(repo['url'])
+                elif isinstance(repo, str):
+                    identity["project_url"] = repo
             return True
     except Exception:
         pass
@@ -1529,6 +1539,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
         "project_version": "",
         "project_description": "",
         "project_license": "",
+        "project_url": "",
         "manifest_source": None
     }
 
@@ -1583,6 +1594,10 @@ def get_project_identity(root_folder: str | Path) -> dict:
                         if m:
                             identity["project_license"] = m.group(1)
 
+                        m = re.search(r'<PackageProjectUrl>(.*?)</PackageProjectUrl>', content)
+                        if m:
+                            identity["project_url"] = m.group(1)
+
                     identity["manifest_source"] = target_file.name
                     manifest_found = True
                 except Exception:
@@ -1600,6 +1615,9 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     match = re.search(r'rootProject\.name\s*=\s*["\']([^"\']+)["\']', content)
                     if match:
                         identity["project_name"] = match.group(1)
+
+                    # Try to get project URL from settings.gradle if available (less common)
+                    # or stay with default if not found.
 
                     # Now try to get version from build.gradle
                     gradle_build = root_path / "build.gradle"
@@ -1636,6 +1654,10 @@ def get_project_identity(root_folder: str | Path) -> dict:
                         if m:
                             identity["project_license"] = m.group(1)
 
+                        m = re.search(r':url\s+"([^"]+)"', content)
+                        if m:
+                            identity["project_url"] = m.group(1)
+
                     identity["manifest_source"] = "project.clj"
                     manifest_found = True
                 except Exception:
@@ -1660,6 +1682,9 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     m = re.search(r'\.license\s*=\s*.*["\']([^"\']+)["\']', content)
                     if m:
                         identity["project_license"] = m.group(1)
+                    m = re.search(r'\.homepage\s*=\s*["\']([^"\']+)["\']', content)
+                    if m:
+                        identity["project_url"] = m.group(1)
                     identity["manifest_source"] = target_file.name
                     manifest_found = True
                 except Exception:
@@ -1724,6 +1749,13 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     if match:
                         identity["project_license"] = match.group(1)
 
+                    # Project URL
+                    match = re.search(r'^urls?\s*=\s*\{[^}]*homepage\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE | re.IGNORECASE)
+                    if not match:
+                        match = re.search(r'\[project\.urls\][^\[]*homepage\s*=\s*["\']([^"\']+)["\']', content, re.DOTALL | re.IGNORECASE)
+                    if match:
+                        identity["project_url"] = match.group(1)
+
                     identity["manifest_source"] = "pyproject.toml"
                     manifest_found = True
                 except Exception:
@@ -1753,6 +1785,13 @@ def get_project_identity(root_folder: str | Path) -> dict:
                         m = re.search(r'^license\s*=\s*["\']([^"\']+)["\']', pkg_content, re.MULTILINE)
                         if m:
                             identity["project_license"] = m.group(1)
+                        m = re.search(r'^homepage\s*=\s*["\']([^"\']+)["\']', pkg_content, re.MULTILINE)
+                        if m:
+                            identity["project_url"] = m.group(1)
+                        elif not identity["project_url"]:
+                            m = re.search(r'^repository\s*=\s*["\']([^"\']+)["\']', pkg_content, re.MULTILINE)
+                            if m:
+                                identity["project_url"] = m.group(1)
                     identity["manifest_source"] = "Cargo.toml"
                     manifest_found = True
                 except Exception:
@@ -1784,6 +1823,9 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     m = re.search(r'<license>.*?<name>(.*?)</name>', content, re.DOTALL)
                     if m:
                         identity["project_license"] = m.group(1)
+                    m = re.search(r'<url>(.*?)</url>', content)
+                    if m:
+                        identity["project_url"] = m.group(1)
                     identity["manifest_source"] = "pom.xml"
                     manifest_found = True
                 except Exception:
@@ -1822,6 +1864,9 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     m = re.search(r'\.license\s*=\s*["\']([^"\']+)["\']', content)
                     if m:
                         identity["project_license"] = m.group(1)
+                    m = re.search(r'\.homepage\s*=\s*["\']([^"\']+)["\']', content)
+                    if m:
+                        identity["project_url"] = m.group(1)
                     identity["manifest_source"] = target_file.name
                     manifest_found = True
                 except Exception:
@@ -1839,6 +1884,9 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     m = re.search(r'version:\s*["\']([^"\']+)["\']', content)
                     if m:
                         identity["project_version"] = m.group(1)
+                    m = re.search(r'homepage_url:\s*["\']([^"\']+)["\']', content)
+                    if m:
+                        identity["project_url"] = m.group(1)
                     identity["manifest_source"] = "mix.exs"
                     manifest_found = True
                 except Exception:
@@ -1879,6 +1927,11 @@ def get_project_identity(root_folder: str | Path) -> dict:
                         d_match = re.search(r'DESCRIPTION\s+["\']([^"\']+)["\']', content, re.IGNORECASE)
                         if d_match:
                             identity["project_description"] = d_match.group(1)
+
+                        # Extract HOMEPAGE_URL
+                        h_match = re.search(r'HOMEPAGE_URL\s+["\']([^"\']+)["\']', content, re.IGNORECASE)
+                        if h_match:
+                            identity["project_url"] = h_match.group(1)
 
                         identity["manifest_source"] = "CMakeLists.txt"
                         manifest_found = True
@@ -1951,7 +2004,35 @@ def get_project_identity(root_folder: str | Path) -> dict:
                 except Exception:
                     pass
 
-        # 10. README Fallback
+        # 10. Flutter/Dart (pubspec.yaml)
+        if not manifest_found:
+            pubspec = root_path / "pubspec.yaml"
+            if pubspec.is_file():
+                try:
+                    content = pubspec.read_text(encoding='utf-8')
+                    m = re.search(r'^name:\s*(.+)$', content, re.MULTILINE)
+                    if m:
+                        identity["project_name"] = m.group(1).strip()
+                    m = re.search(r'^version:\s*(.+)$', content, re.MULTILINE)
+                    if m:
+                        identity["project_version"] = m.group(1).strip()
+                    m = re.search(r'^description:\s*(.+)$', content, re.MULTILINE)
+                    if m:
+                        identity["project_description"] = m.group(1).strip()
+                    m = re.search(r'^homepage:\s*(.+)$', content, re.MULTILINE)
+                    if m:
+                        identity["project_url"] = m.group(1).strip()
+                    elif not identity["project_url"]:
+                        m = re.search(r'^repository:\s*(.+)$', content, re.MULTILINE)
+                        if m:
+                            identity["project_url"] = m.group(1).strip()
+
+                    identity["manifest_source"] = "pubspec.yaml"
+                    manifest_found = True
+                except Exception:
+                    pass
+
+        # 11. README Fallback
         if not manifest_found:
             readme = root_path / "README.md"
             if readme.is_file():
