@@ -1523,7 +1523,7 @@ def _parse_json_manifest(manifest_path: Path, identity: dict) -> bool:
 
 
 def get_project_identity(root_folder: str | Path) -> dict:
-    """Detect project metadata (name, version, description, license) from manifest files."""
+    """Detect project information (name, version, description, license) from manifest files."""
     identity = {
         "project_name": "Project",
         "project_version": "",
@@ -1671,7 +1671,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
             if xcodeproj:
                 identity["project_name"] = xcodeproj[0].stem
                 identity["manifest_source"] = xcodeproj[0].name
-                # Xcode project metadata is buried in pbxproj, usually easier to just take the name
+                # Xcode project information is buried in pbxproj, usually easier to just take the name
                 manifest_found = True
 
         # 2. Python (pyproject.toml)
