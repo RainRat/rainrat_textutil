@@ -8,6 +8,8 @@ sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
 import sourcecombine
 
+from unittest.mock import patch, MagicMock
+
 def test_summary_status_column_visibility(monkeypatch, capsys):
     # Case 1: No status present
     stats_no_status = {
@@ -31,13 +33,15 @@ def test_summary_status_column_visibility(monkeypatch, capsys):
 
     monkeypatch.setenv("NO_COLOR", "1")
 
-    sourcecombine._print_execution_summary(stats_no_status, args, pairing_enabled=False)
+    with patch('shutil.get_terminal_size', return_value=MagicMock(columns=120)):
+        sourcecombine._print_execution_summary(stats_no_status, args, pairing_enabled=False)
     stderr_no_status = capsys.readouterr().err
 
     assert "STATUS" not in stderr_no_status
     # Verify alignment - Languages header should NOT have the status spacer
-    # but still has padding from field widths: DISTRIBUTION (12) + " " + FILES (7)
-    assert "DISTRIBUTION   FILES" in stderr_no_status
+    # but still has padding from field widths: DISTRIBUTION (12) + " " + FILES (%) (15)
+    # 1 space from join + 6 spaces from :>15 padding = 7 spaces
+    assert "DISTRIBUTION       FILES (%)" in stderr_no_status
 
     # Case 2: Status present
     stats_with_status = {
@@ -51,11 +55,16 @@ def test_summary_status_column_visibility(monkeypatch, capsys):
         ]
     }
 
-    sourcecombine._print_execution_summary(stats_with_status, args, pairing_enabled=False)
+    with patch('shutil.get_terminal_size', return_value=MagicMock(columns=120)):
+        sourcecombine._print_execution_summary(stats_with_status, args, pairing_enabled=False)
     stderr_with_status = capsys.readouterr().err
 
     assert "STATUS" in stderr_with_status
     # Verify alignment - Languages header SHOULD have the status spacer (6)
-    # 12 (DISTRIBUTION) + 1 (join) + 6 (spacer) + 1 (join) + 7 (FILES) = 10 spaces between labels
-    assert "DISTRIBUTION          FILES" in stderr_with_status
+    # DISTRIBUTION (12) + " " + FILES (%) (15)
+    # The status spacer comes AFTER FILES (%) in Languages table now.
+    assert "DISTRIBUTION       FILES (%)" in stderr_with_status
+    # Check for the spacers after FILES (%)
+    # FILES (%) (9 chars) + 1 (join) + spacer(6) + 1 (join) + lang_spacer(11) + 1 (join) + LANGUAGE (8) = 20 spaces
+    assert "FILES (%)                    LANGUAGE" in stderr_with_status
     assert "[M]" in stderr_with_status
