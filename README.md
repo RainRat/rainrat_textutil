@@ -34,6 +34,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--remove-comments`: Remove both single-line and multi-line comments based on the detected language.
 *   `--remove-single-line-comments`: Remove only single-line comments based on the detected language.
 *   `--mirror`: Recreate the input directory structure in the output folder, applying all filtering and processing rules to each file individually.
+*   `--no-content`: Skip the actual file content in the output, while preserving templates, metadata, and structured components like the Table of Contents and Tree View.
 *   `--apply-in-place`: Save processed changes back to the original source files.
 *   `--create-backups`: Create `.bak` copies of original files when using `--apply-in-place`.
 
