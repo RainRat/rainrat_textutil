@@ -1636,7 +1636,7 @@ def _process_paired_files(
         item_index = pair_index if pair_index is not None else (i + 1)
         stem = Path(pairing_key).name
         if processing_bar:
-            processing_bar.set_description(f"Pairing {stem}")
+            processing_bar.set_description(f"Pairing {_truncate_path(stem, 40)}")
         ext_map = {p.suffix.lower(): [p] for p in paths}
         source_path = _select_preferred_path(ext_map, source_exts)
         header_path = _select_preferred_path(ext_map, header_exts)
@@ -2894,7 +2894,7 @@ def find_and_combine_files(
             # Standard finding from root folders
             for root_folder in root_folders:
                 finding_bar = processor._make_bar(
-                    desc=f"Finding in {root_folder}",
+                    desc=f"Finding in {_truncate_path(root_folder, 40)}",
                     unit="file",
                     leave=False,
                 )
