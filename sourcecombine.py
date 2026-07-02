@@ -3783,8 +3783,8 @@ def main():
         help="Show detailed status messages to help find and fix problems.",
     )
 
-    # Project Metadata Group
-    project_group = parser.add_argument_group("Project Metadata")
+    # Project Information Group
+    project_group = parser.add_argument_group("Project Information")
     project_group.add_argument(
         "--project-name",
         metavar="NAME",
@@ -3961,7 +3961,7 @@ def main():
         nargs="?",
         const=True,
         metavar="REF",
-        help="Include only files that have changed in Git. If a REF is provided (such as 'main'), it finds changes since that commit. Otherwise, it finds unstaged, staged, and untracked changes.",
+        help="Include only files changed in Git since REF (default: HEAD, staged, and untracked).",
     )
     filtering_group.add_argument(
         "--staged",
@@ -4041,9 +4041,8 @@ def main():
         "-a",
         action="store_true",
         help=(
-            "Enable a preset for AI models: Markdown format, line numbers, Table of Contents, folder tree, "
-            "project overview, skipping binary files, removing duplicates, and automatic Git context. "
-            "This also copies to the system clipboard if you do not specify an output."
+            "Enable preset for AI models (Markdown, line numbers, TOC, tree, project info, skipping binary, "
+            "duplicate removal, and Git context). Copies to clipboard if no output is specified."
         ),
     )
     output_group.add_argument(
@@ -4286,11 +4285,8 @@ def main():
         "--extract",
         action="store_true",
         help=(
-            "Rebuild original files and folders from combined outputs (JSON, XML, Markdown, and more). "
-            "Read from files, folders, remote URLs, the terminal, or the clipboard. "
-            "Searches for standard defaults if no input is provided. "
-            "Supports filtering, sorting, and processing rules. "
-            "Removes line numbers automatically unless you use --keep-line-numbers."
+            "Rebuild original files and folders from combined outputs (JSON, XML, Markdown, etc.). "
+            "Supports filtering, sorting, and processing."
         ),
     )
     utility_group.add_argument(
@@ -4343,7 +4339,7 @@ def main():
     utility_group.add_argument(
         "--project-info",
         action="store_true",
-        help="Show detected project metadata and Git information for the current project.",
+        help="Show detected project information and Git status for the current project.",
     )
     utility_group.add_argument(
         "--version",
@@ -5905,7 +5901,7 @@ def delete_backups(targets, dry_run=False):
 def print_system_info():
     """Print environment diagnostics and optional dependency status."""
 
-    print(f"\n{C_BOLD}=== SourceCombine System Information ==={C_RESET}")
+    print(f"\n{C_BOLD}{C_CYAN}=== SYSTEM INFORMATION ==={C_RESET}")
     print(f"  {C_BOLD}SourceCombine Version:{C_RESET} {__version__}")
     print(f"  {C_BOLD}Python Version:{C_RESET}      {sys.version.split()[0]}")
     print(f"  {C_BOLD}Platform:{C_RESET}            {platform.platform()}")
@@ -5936,7 +5932,7 @@ def print_system_info():
 
 def print_placeholders():
     """Print all supported template placeholders and their descriptions."""
-    print(f"\n{C_BOLD}{C_CYAN}Supported Template Placeholders:{C_RESET}")
+    print(f"\n{C_BOLD}{C_CYAN}=== TEMPLATE PLACEHOLDERS ==={C_RESET}")
 
     categories = {
         "File-Level Placeholders": [
@@ -5957,7 +5953,7 @@ def print_placeholders():
             ("{{TOKEN_PERCENT}}", "Percentage of the total project tokens."),
             ("{{LINE_PERCENT}}", "Percentage of the total project lines."),
         ],
-        "Project-Level (Global) Placeholders": [
+        "Project Information (Global) Placeholders": [
             ("{{PROJECT_NAME}}", "Name of the project."),
             ("{{PROJECT_VERSION}}", "Version of the project."),
             ("{{PROJECT_DESCRIPTION}}", "Short description of the project."),
@@ -6020,11 +6016,11 @@ def print_placeholders():
 
 
 def print_project_info(stats):
-    """Print detected project metadata and Git information."""
-    print(f"\n{C_BOLD}{C_CYAN}Detected Project Information:{C_RESET}")
+    """Print detected project information and Git status."""
+    print(f"\n{C_BOLD}{C_CYAN}=== PROJECT INFORMATION ==={C_RESET}")
 
     categories = {
-        "Project Metadata": [
+        "Project Information": [
             ("Name", stats.get('project_name')),
             ("Version", stats.get('project_version')),
             ("Description", stats.get('project_description')),

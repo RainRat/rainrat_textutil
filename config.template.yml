@@ -161,7 +161,7 @@ output:
   # Show a colored diff of changes (when using --output, --apply-in-place, or --extract).
   show_diff: false
 
-# --- Project Metadata ---
+# --- Project Information ---
 project:
   # Manual overrides for project metadata used in templates and reports.
   # If omit or set to null, the tool tries to find them in manifest files

@@ -154,7 +154,7 @@ Used in `header_template` and `footer_template`:
 *   `{{FILE_STATUS}}`: Git status of the current file (for example, `M`, `A`, `??`).
 *   `{{PROJECT_URL}}`: Web URL to the repository home (supports GitHub, GitLab, Bitbucket).
 
-### Project-Level Placeholders
+### Project Information Placeholders
 Used in `global_header_template`, `global_footer_template`, and other project-wide settings:
 *   `{{PROJECT_NAME}}`: Name of the project (detected from `package.json`, `pyproject.toml`, `Cargo.toml`, `composer.json`, `pom.xml`, `go.mod`, `*.gemspec`, `mix.exs`, `Package.swift`, `.csproj`, `.fsproj`, `.vbproj`, `.sln`, `settings.gradle`, `project.clj`, `.podspec`, `.xcodeproj`, `CMakeLists.txt`, `Project.toml`, `deno.json`, `deno.jsonc`, `build.zig.zon`, `pubspec.yaml`, `README.md`, or folder name).
 *   `{{PROJECT_VERSION}}`: Version of the project (automatically detected from project manifests).
