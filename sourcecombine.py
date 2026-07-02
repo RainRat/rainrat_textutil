@@ -3821,7 +3821,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Skip files that match this pattern (for example, '*.log'). Use this option again to skip more.",
+        help="Skip files that match this pattern (for example, '*.log'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--exclude-folder",
@@ -3831,7 +3831,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Skip folders that match this pattern (for example, 'build'). Use this option again to skip more.",
+        help="Skip folders that match this pattern (for example, 'build'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--include",
@@ -3840,7 +3840,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Include only files that match this pattern (for example, '*.py'). Use this option again to include more.",
+        help="Include only files that match this pattern (for example, '*.py'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--extension",
@@ -3848,7 +3848,7 @@ def main():
         action="append",
         metavar="EXT",
         default=[],
-        help="Include only files with these extensions (for example, 'py', 'js'). Use this option again to include more.",
+        help="Include only files with these extensions (for example, 'py', 'js'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--exclude-extension",
@@ -3856,7 +3856,7 @@ def main():
         action="append",
         metavar="EXT",
         default=[],
-        help="Skip files with these extensions (for example, 'log', 'tmp'). Use this option again to skip more.",
+        help="Skip files with these extensions (for example, 'log', 'tmp'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--language",
@@ -3864,7 +3864,7 @@ def main():
         action="append",
         metavar="LANG",
         default=[],
-        help="Include only files of these languages (for example, 'python', 'cpp'). Use this option again to include more. See --list-languages for a full list.",
+        help="Include only files of these languages (for example, 'python', 'cpp'). Can be used multiple times. See --list-languages for a full list.",
     )
     filtering_group.add_argument(
         "--exclude-language",
@@ -3872,7 +3872,7 @@ def main():
         action="append",
         metavar="LANG",
         default=[],
-        help="Skip files of these languages (for example, 'javascript', 'html'). Use this option again to skip more.",
+        help="Skip files of these languages (for example, 'javascript', 'html'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--since",
@@ -3991,7 +3991,7 @@ def main():
         nargs=2,
         action="append",
         metavar=("EXTENSION", "LANGUAGE"),
-        help="Manually map a file extension or filename to a specific language (for example, '.mjml' 'html'). Use this option again to add more.",
+        help="Manually map a file extension or filename to a specific language (for example, '.mjml' 'html'). Can be used multiple times.",
     )
 
     # Sorting & Limiting Group
@@ -4041,8 +4041,9 @@ def main():
         "-a",
         action="store_true",
         help=(
-            "Enable preset for AI models (Markdown, line numbers, TOC, tree, project info, skipping binary, "
-            "duplicate removal, and Git context). Copies to clipboard if no output is specified."
+            "Enable preset for AI models (Markdown, line numbers, Table of Contents, tree, project overview, "
+            "skipping binary, duplicate removal, and Git context (logs and diffs)). Copies to clipboard if "
+            "no output is specified."
         ),
     )
     output_group.add_argument(
@@ -4170,7 +4171,7 @@ def main():
         nargs=2,
         action="append",
         metavar=("SOURCE_EXT", "HEADER_EXT"),
-        help="Enable file pairing by matching source and header extensions (for example, '.cpp' '.h'). Use this option again to add more pairs.",
+        help="Enable file pairing by matching source and header extensions (for example, '.cpp' '.h'). Can be used multiple times.",
     )
     pairing_group.add_argument(
         "--include-unpaired",
@@ -4254,14 +4255,14 @@ def main():
         nargs=2,
         action="append",
         metavar=("REGEX", "REPLACEMENT"),
-        help="Add a global search-and-replace rule using regular expressions. Use this option again to add more.",
+        help="Add a global search-and-replace rule using regular expressions. Can be used multiple times.",
     )
     processing_group.add_argument(
         "--replace-line",
         nargs=2,
         action="append",
         metavar=("REGEX", "REPLACEMENT"),
-        help="Add a line-based regular expression rule to find and replace content. Matching lines that follow each other are replaced by a single entry. Use this option again to add more.",
+        help="Add a line-based regular expression rule to find and replace content. Matching lines that follow each other are replaced by a single entry. Can be used multiple times.",
     )
 
     # Utility Commands Group
