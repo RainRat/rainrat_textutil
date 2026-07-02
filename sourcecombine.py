@@ -6797,9 +6797,41 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
             print(f"    {' '.join(row_parts)}", file=sys.stderr)
 
-    # Footer
-    footer_len = min(raw_title_len, term_width)
-    print(f"\n{title_color}{'=' * footer_len}{C_RESET}", file=sys.stderr)
+    # Footer with destination confirmation
+    footer_label = ""
+    if total_included > 0:
+        if getattr(args, 'dry_run', False) is True:
+            footer_label = " PREVIEW ONLY "
+        elif getattr(args, 'estimate_tokens', False) is True:
+            footer_label = " ESTIMATION ONLY "
+        elif getattr(args, 'list_files', False) is True:
+            footer_label = " LISTING ONLY "
+        elif getattr(args, 'tree', False) is True:
+            footer_label = " TREE VIEW ONLY "
+        elif getattr(args, 'clipboard', False) is True:
+            footer_label = " COPIED TO CLIPBOARD "
+        elif destination_desc:
+            # Clean up destination_desc for footer
+            dest = destination_desc
+            if dest.startswith("to "):
+                dest = dest[3:]
+
+            # Shorten if too long for footer
+            dest_limit = max(20, term_width - 20)
+            if len(dest) > dest_limit:
+                dest = _truncate_path(dest, dest_limit)
+
+            footer_label = f" SAVED TO {dest.upper()} "
+
+    footer_len = max(40, min(raw_title_len, term_width))
+    if footer_label and len(footer_label) + 10 <= footer_len:
+        # Center the label in the footer line
+        side_len = (footer_len - len(footer_label)) // 2
+        footer_line = f"{'=' * side_len}{footer_label}{'=' * (footer_len - side_len - len(footer_label))}"
+    else:
+        footer_line = '=' * footer_len
+
+    print(f"\n{title_color}{C_BOLD}{footer_line}{C_RESET}", file=sys.stderr)
 
 
 if __name__ == "__main__":
