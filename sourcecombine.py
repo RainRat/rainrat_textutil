@@ -4445,37 +4445,7 @@ def main():
         sys.exit(0)
 
     if args.list_languages:
-        print(f"\n{C_BOLD}{C_CYAN}Supported Languages and Mappings:{C_RESET}")
-
-        # Group extensions and filenames by language tag
-        lang_groups = {}
-        for ext, lang in utils.EXTENSION_TO_LANG.items():
-            lang_groups.setdefault(lang, []).append(ext)
-        for name, lang in utils.FILENAME_TO_LANG.items():
-            lang_groups.setdefault(lang, []).append(name)
-
-        # Format the output as a table
-        lang_tags = sorted(lang_groups.keys())
-        tag_width = 15
-        desc_width = max(40, shutil.get_terminal_size((80, 20)).columns - tag_width - 6)
-
-        print(f"  {C_DIM}{'LANGUAGE TAG':<{tag_width}}  EXTENSION / FILENAME MAPPINGS{C_RESET}")
-        for tag in lang_tags:
-            items = sorted(lang_groups[tag])
-            items_str = ", ".join(items)
-
-            # Wrap long lists of extensions
-            wrapped = textwrap.wrap(items_str, width=desc_width)
-
-            # Print the first line with the tag
-            first_line = wrapped[0] if wrapped else ""
-            print(f"  {C_BOLD}{C_CYAN}{tag:<{tag_width}}{C_RESET}  {C_DIM}{first_line}{C_RESET}")
-
-            # Print subsequent lines indented
-            for line in wrapped[1:]:
-                print(f"  {' ':<{tag_width}}  {C_DIM}{line}{C_RESET}")
-
-        print(f"\n{C_BOLD}Total:{C_RESET} {len(lang_tags)} languages supported.\n")
+        print_languages()
         sys.exit(0)
 
     if args.init:
@@ -5037,6 +5007,7 @@ def main():
                     sources.append((str(input_path), content))
                 else:
                     logging.warning("%s target not found: %s", "Verification" if args.verify else "Extraction", target)
+                    sys.exit(1)
 
         if not sources:
             # Fallback: look for the default combined file
@@ -6013,6 +5984,42 @@ def print_placeholders():
         for placeholder, description in placeholders:
             print(f"    {C_BOLD}{C_CYAN}{placeholder:<{placeholder_width}}{C_RESET} {C_DIM}{description}{C_RESET}")
 
+    print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
+
+
+def print_languages():
+    """Print all supported language identifiers and their mappings."""
+    print(f"\n{C_BOLD}{C_CYAN}=== SUPPORTED LANGUAGES ==={C_RESET}")
+
+    # Group extensions and filenames by language tag
+    lang_groups = {}
+    for ext, lang in utils.EXTENSION_TO_LANG.items():
+        lang_groups.setdefault(lang, []).append(ext)
+    for name, lang in utils.FILENAME_TO_LANG.items():
+        lang_groups.setdefault(lang, []).append(name)
+
+    # Format the output as a table
+    lang_tags = sorted(lang_groups.keys())
+    tag_width = 15
+    desc_width = max(40, shutil.get_terminal_size((80, 20)).columns - tag_width - 6)
+
+    print(f"  {C_DIM}{'LANGUAGE TAG':<{tag_width}}  EXTENSION / FILENAME MAPPINGS{C_RESET}")
+    for tag in lang_tags:
+        items = sorted(lang_groups[tag])
+        items_str = ", ".join(items)
+
+        # Wrap long lists of extensions
+        wrapped = textwrap.wrap(items_str, width=desc_width)
+
+        # Print the first line with the tag
+        first_line = wrapped[0] if wrapped else ""
+        print(f"  {C_BOLD}{C_CYAN}{tag:<{tag_width}}{C_RESET}  {C_DIM}{first_line}{C_RESET}")
+
+        # Print subsequent lines indented
+        for line in wrapped[1:]:
+            print(f"  {' ':<{tag_width}}  {C_DIM}{line}{C_RESET}")
+
+    print(f"\n  {C_BOLD}Total:{C_RESET} {len(lang_tags)} languages supported.")
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
 
