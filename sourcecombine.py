@@ -3755,7 +3755,7 @@ def main():
         "targets",
         nargs="*",
         metavar="TARGET",
-        help="Folders or files to search. If empty, the tool searches the current folder. If the first target is a YAML file (.yml or .yaml), it is used as the configuration.",
+        help="Folders or files to search. If empty, the tool searches the current folder. If the first target is a YAML file (.yml or .yaml), the tool uses it as the configuration.",
     )
     core_group.add_argument(
         "--config",
@@ -3928,14 +3928,14 @@ def main():
     filtering_group.add_argument(
         "--grep",
         "-g",
-        metavar="REGEX",
-        help="Include only files whose content matches this regular expression.",
+        metavar="PATTERN",
+        help="Include only files whose content matches this pattern.",
     )
     filtering_group.add_argument(
         "--exclude-grep",
         "-E",
-        metavar="REGEX",
-        help="Skip files whose content matches this regular expression.",
+        metavar="PATTERN",
+        help="Skip files whose content matches this pattern.",
     )
     filtering_group.add_argument(
         "--skip-binary",
@@ -4254,15 +4254,15 @@ def main():
         "--replace",
         nargs=2,
         action="append",
-        metavar=("REGEX", "REPLACEMENT"),
-        help="Add a global search-and-replace rule using regular expressions. Can be used multiple times.",
+        metavar=("PATTERN", "REPLACEMENT"),
+        help="Add a global search-and-replace rule using patterns. Can be used multiple times.",
     )
     processing_group.add_argument(
         "--replace-line",
         nargs=2,
         action="append",
-        metavar=("REGEX", "REPLACEMENT"),
-        help="Add a line-based regular expression rule to find and replace content. Matching lines that follow each other are replaced by a single entry. Can be used multiple times.",
+        metavar=("PATTERN", "REPLACEMENT"),
+        help="Add a line-based pattern rule to find and replace content. The tool replaces matching lines that follow each other with a single entry. Can be used multiple times.",
     )
 
     # Utility Commands Group
