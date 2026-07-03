@@ -588,7 +588,7 @@ def _resolve_metadata_placeholders(template, replacements, data):
             replacements[f"{{{{ENV:{var_name}}}}}"] = os.environ.get(var_name, '')
 
 
-def _render_template(template, relative_path, size=None, tokens=None, lines=None, escape_func=None, modified=None, content=None, custom_languages=None, index=None, total=None, global_size=None, global_tokens=None, global_lines=None, git_info=None, file_path=None):
+def _render_template(template, relative_path, size=None, tokens=None, lines=None, escape_func=None, modified=None, content=None, custom_languages=None, index=None, total=None, global_size=None, global_tokens=None, global_lines=None, git_info=None, file_path=None, language=None, sha256=None):
     """Replace placeholders in a template with file information.
 
     The placeholders include FILENAME, EXT, STEM, DIR, DIR_SLUG, SIZE,
@@ -604,7 +604,7 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
     stem = relative_path.stem
     parent_dir = relative_path.parent.as_posix()
     dir_slug = _slugify_relative_dir(parent_dir)
-    lang = utils.get_language_tag(relative_path, content=content, overrides=custom_languages)
+    lang = language or utils.get_language_tag(relative_path, content=content, overrides=custom_languages)
 
     if escape_func:
         filename = escape_func(filename)
@@ -623,11 +623,14 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
     }
 
     if "{{HASH}}" in template:
-        replacements["{{HASH}}"] = (
-            hashlib.sha256(content.encode('utf-8', errors='replace')).hexdigest()
-            if content is not None
-            else ""
-        )
+        if sha256:
+            replacements["{{HASH}}"] = sha256
+        else:
+            replacements["{{HASH}}"] = (
+                hashlib.sha256(content.encode('utf-8', errors='replace')).hexdigest()
+                if content is not None
+                else ""
+            )
 
     replacements["{{SIZE}}"] = utils.format_size(size) if size is not None else ""
     replacements["{{TOKENS}}"] = f"{tokens:,}" if tokens is not None else ""
@@ -1946,7 +1949,7 @@ class FileProcessor:
     def _make_bar(self, **kwargs):
         return _progress_bar(enabled=_progress_enabled(self.dry_run), **kwargs)
 
-    def _write_with_templates(self, outfile, content, relative_path, size=None, tokens=None, lines=None, modified=None, index=None, total=None, global_size=None, global_tokens=None, global_lines=None, file_path=None):
+    def _write_with_templates(self, outfile, content, relative_path, size=None, tokens=None, lines=None, modified=None, index=None, total=None, global_size=None, global_tokens=None, global_lines=None, file_path=None, language=None, sha256=None):
         """Write ``content`` with configured header/footer templates."""
 
         header_template = self.output_opts.get(
@@ -1964,7 +1967,7 @@ class FileProcessor:
                 escape_func=escape_func, modified=modified, content=content,
                 custom_languages=self.custom_languages, index=index, total=total,
                 global_size=global_size, global_tokens=global_tokens, global_lines=global_lines,
-                git_info=self.git_info, file_path=file_path
+                git_info=self.git_info, file_path=file_path, language=language, sha256=sha256
             ))
         outfile.write(content)
         if self.output_format not in ("json", "jsonl", "manifest", "csv"):
@@ -1973,7 +1976,7 @@ class FileProcessor:
                 escape_func=escape_func, modified=modified, content=content,
                 custom_languages=self.custom_languages, index=index, total=total,
                 global_size=global_size, global_tokens=global_tokens, global_lines=global_lines,
-                git_info=self.git_info, file_path=file_path
+                git_info=self.git_info, file_path=file_path, language=language, sha256=sha256
             ))
 
     def get_content_hash(self, content):
@@ -2035,6 +2038,8 @@ class FileProcessor:
         global_tokens=None,
         global_lines=None,
         file_path=None,
+        language=None,
+        sha256=None,
     ):
         """Format and write a single file entry to the output stream."""
         if self.estimate_tokens:
@@ -2047,8 +2052,8 @@ class FileProcessor:
                 "tokens": token_count,
                 "tokens_is_approx": is_approx,
                 "lines": line_count,
-                "language": utils.get_language_tag(relative_path, content=content, overrides=self.custom_languages),
-                "sha256": self.get_content_hash(content),
+                "language": language or utils.get_language_tag(relative_path, content=content, overrides=self.custom_languages),
+                "sha256": sha256 or self.get_content_hash(content),
             }
             if self.output_format != "manifest" and not self.skip_content:
                 entry["content"] = content
@@ -2070,8 +2075,8 @@ class FileProcessor:
                 "tokens": token_count,
                 "tokens_is_approx": is_approx,
                 "lines": line_count,
-                "language": utils.get_language_tag(relative_path, content=content, overrides=self.custom_languages),
-                "sha256": self.get_content_hash(content),
+                "language": language or utils.get_language_tag(relative_path, content=content, overrides=self.custom_languages),
+                "sha256": sha256 or self.get_content_hash(content),
                 "content": content if not self.skip_content else "",
                 "modified": modified if modified is not None else "",
             }
@@ -2095,6 +2100,8 @@ class FileProcessor:
                 global_tokens=global_tokens,
                 global_lines=global_lines,
                 file_path=file_path,
+                language=language,
+                sha256=sha256,
             )
 
     def process_and_write(self, file_path, root_path, outfile, cached_content=None, index=None, total=None, global_size=None, global_tokens=None, global_lines=None):
@@ -2110,6 +2117,7 @@ class FileProcessor:
             return 0, True, 0
 
         logging.debug("Processing: %s", file_path)
+        lang = None
         if cached_content is not None:
             processed_content = cached_content
             content = None
@@ -2127,6 +2135,7 @@ class FileProcessor:
         # Estimate tokens on the final processed content
         token_count, is_approx = utils.estimate_tokens(processed_content)
         line_count = utils.count_lines(processed_content)
+        sha256 = self.get_content_hash(processed_content)
 
         if not self.dry_run or outfile is not None:
             self._emit_entry(
@@ -2144,6 +2153,8 @@ class FileProcessor:
                 global_tokens=global_tokens,
                 global_lines=global_lines,
                 file_path=file_path,
+                language=lang,
+                sha256=sha256,
             )
 
         return token_count, is_approx, line_count
@@ -2170,6 +2181,19 @@ class FileProcessor:
         file_size = stat.st_size if stat else 0
         modified = stat.st_mtime if stat else None
 
+        # Detect language from the actual file if extension is missing/unrecognized
+        sample_content = None
+        suffix = relative_path.suffix.lower()
+        file_name = relative_path.name
+        if not suffix or (suffix not in utils.EXTENSION_TO_LANG and file_name.lower() not in utils.FILENAME_TO_LANG):
+            if file_path:
+                try:
+                    with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+                        sample_content = f.readline()
+                except OSError:
+                    pass
+        lang = utils.get_language_tag(relative_path, content=sample_content, overrides=self.custom_languages)
+
         # Estimate tokens on the placeholder content (but the placeholder itself might have tokens placeholder)
         # For max_size_placeholder, it's a bit tricky because we don't know the token count of the placeholder
         # until it's rendered. But we want to support {{SIZE}} in it.
@@ -2178,11 +2202,12 @@ class FileProcessor:
             content=None, custom_languages=self.custom_languages,
             index=index, total=total, global_size=global_size,
             global_tokens=global_tokens, global_lines=global_lines,
-            git_info=self.git_info, file_path=file_path
+            git_info=self.git_info, file_path=file_path, language=lang
         )
 
         token_count, is_approx = utils.estimate_tokens(rendered)
         line_count = utils.count_lines(rendered)
+        sha256 = self.get_content_hash(rendered)
 
         self._emit_entry(
             outfile,
@@ -2200,6 +2225,8 @@ class FileProcessor:
             global_tokens=global_tokens,
             global_lines=global_lines,
             file_path=file_path,
+            language=lang,
+            sha256=sha256,
         )
 
         return token_count, is_approx, line_count
