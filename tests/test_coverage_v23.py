@@ -110,7 +110,7 @@ def test_main_list_languages(capsys):
         assert cm.value.code == 0
 
     captured = capsys.readouterr()
-    assert "Supported Languages and Mappings:" in captured.out
+    assert "SUPPORTED LANGUAGES" in captured.out
     assert "python" in captured.out
 
 def test_main_list_placeholders(capsys):
