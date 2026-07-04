@@ -399,7 +399,35 @@ def _get_folder_stats(top_files):
             folder_stats[folder_path]['lines'] += (lines or 0)
             folder_stats[folder_path]['files'] += 1
 
-    return folder_stats
+    # Filter out redundant parent folders that have identical statistics to one of their children.
+    # This prevents clutter when a project has a single file in a deep nested directory structure.
+    final_stats = {}
+    sorted_paths = sorted(folder_stats.keys(), key=len, reverse=True)
+
+    for path in sorted_paths:
+        stats_val = folder_stats[path]
+        is_redundant = False
+
+        # Check if any subfolder already in final_stats has the same statistics
+        path_p = Path(path)
+        for other_path in final_stats:
+            other_p = Path(other_path)
+            try:
+                if other_p.is_relative_to(path_p):
+                    if stats_val == final_stats[other_path]:
+                        is_redundant = True
+                        break
+            except (ValueError, AttributeError):
+                # Fallback for Python < 3.9 if needed, though we require 3.10
+                if other_path.startswith(path + "/"):
+                    if stats_val == final_stats[other_path]:
+                        is_redundant = True
+                        break
+
+        if not is_redundant:
+            final_stats[path] = stats_val
+
+    return final_stats
 
 
 def _get_summary_top_items(stats, items, is_folder=False):
