@@ -55,7 +55,7 @@ def test_csv_verify(tmp_path, capsys):
     (src_dir / "match.txt").write_text("match", encoding="utf-8")
     (src_dir / "mismatch.txt").write_text("original", encoding="utf-8")
 
-    # Generate CSV with metadata
+    # Generate CSV with information
     csv_content = (
         "path,size_bytes,tokens,tokens_is_approx,lines,language,sha256,content,modified\n"
         "match.txt,5,1,False,1,text,,match,\n"

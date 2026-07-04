@@ -4,7 +4,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 
 ## Key Features
 *   **Find files in many folders:** Scan many folders at once. Use Git to find files and follow the `.gitignore` rules automatically.
-*   **Filtering:** Skip folders, files, or specific names using patterns. You can also filter by language, file content (using regular expressions), or Git changes.
+*   **Filtering:** Skip folders, files, or specific names using patterns. You can also filter by language, file content (using patterns), or Git changes.
 *   **Duplicate Removal:** Skip duplicate files by path or content.
 *   **Include Groups:** Group specific files to always include, even if you skip others.
 *   **Pairing:** Combine related files (such as source and header pairs) into their own individual output files.
@@ -12,7 +12,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   **Sorting:** Sort files by `name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`.
 *   **Limiting:** Stop processing once you reach a file, token, size, or line limit.
 *   **Flexible Outputs:** Save results to the terminal, a file (JSON, XML, JSONL, CSV, or Markdown), or copy them to the system clipboard.
-*   **AI Context Integration:** Automatically include environment metadata (Python version, OS, Git status) and presets for AI models.
+*   **AI Context Integration:** Automatically include environment information (Python version, OS, Git status) and presets for AI models.
 
 ## Common Flags
 *   `--config`: Use a custom configuration file (YAML). The tool automatically searches for `sourcecombine.yml`, `sourcecombine.yaml`, `config.yml`, or `config.yaml` in the current folder.
@@ -34,7 +34,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--remove-comments`: Remove both single-line and multi-line comments based on the detected language.
 *   `--remove-single-line-comments`: Remove only single-line comments based on the detected language.
 *   `--mirror`: Recreate the input directory structure in the output folder, applying all filtering and processing rules to each file individually.
-*   `--no-content`: Skip the actual file content in the output, while preserving templates, metadata, and structured components like the Table of Contents and Tree View.
+*   `--no-content`: Skip the actual file content in the output, while preserving templates, information, and structured components like the Table of Contents and Tree View.
 *   `--apply-in-place`: Save processed changes back to the original source files.
 *   `--create-backups`: Create `.bak` copies of original files when using `--apply-in-place`.
 
@@ -46,7 +46,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--delete-backups`: Remove all `.bak` files from the folders.
 *   `--list-languages`: Show all supported language identifiers and exit.
 *   `--list-placeholders`: Show all supported template placeholders and exit.
-*   `--project-info`: Show detected project metadata and Git information for the current project.
+*   `--project-info`: Show detected project information and Git status for the current project.
 *   `--show-config`: Display the final configuration being used and exit.
 *   `--export-config`: Save the final combined configuration to a YAML file and exit.
 *   `--system-info`: Show environment details (Python version, OS, and other system details).
@@ -55,7 +55,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--version`: Show the application version and exit.
 
 ## Prerequisites
-*   **Python 3.10 or newer:** Use this version or newer for modern Python features.
+*   **Python 3.10 or newer:** The tool requires this version or newer to run.
 
 ### Standard Dependencies
 The tool installs these automatically when you follow the installation steps:
@@ -146,7 +146,7 @@ Used in `header_template` and `footer_template`:
 *   `{{FILE_AUTHOR_DATE}}`: Last commit date of the file according to Git.
 *   `{{FILE_LOG}}`: Subject of the last commit for the file according to Git.
 *   `{{GIT_STATUS}}`: Summary of project changes (for example, "2 modified, 1 added").
-*   `{{OS}}`, `{{PYTHON_VERSION}}`, `{{PLATFORM}}`, `{{ARCH}}`: System and environment metadata.
+*   `{{OS}}`, `{{PYTHON_VERSION}}`, `{{PLATFORM}}`, `{{ARCH}}`: System and environment information.
 *   `{{ENV:VAR_NAME}}`: Value of an environment variable.
 *   `{{SIZE_PERCENT}}`, `{{TOKEN_PERCENT}}`, `{{LINE_PERCENT}}`: Percentage of the total project.
 *   `{{FILE_URL}}`: Direct web link to the specific file and commit.
@@ -165,7 +165,7 @@ Used in `global_header_template`, `global_footer_template`, and other project-wi
 *   `{{TOTAL_TOKENS}}`: Total number of tokens.
 *   `{{TOTAL_LINES}}`: Total number of lines.
 *   `{{DATE}}`, `{{TIME}}`, `{{DATETIME}}`: Current date and time.
-*   `{{OS}}`, `{{PYTHON_VERSION}}`, `{{PLATFORM}}`, `{{ARCH}}`: System and environment metadata.
+*   `{{OS}}`, `{{PYTHON_VERSION}}`, `{{PLATFORM}}`, `{{ARCH}}`: System and environment information.
 *   `{{ENV:VAR_NAME}}`: Value of an environment variable.
 *   `{{GIT_STATUS}}`: Summary of project changes (for example, "2 modified, 1 added").
 *   `{{GIT_REMOTE_URL}}`: The repository's origin remote URL.

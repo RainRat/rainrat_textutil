@@ -56,7 +56,7 @@ def test_no_content_json_format(temp_project, tmp_path):
 
     assert len(data) == 2
     for entry in data:
-        # Metadata should be present
+        # Information should be present
         assert 'path' in entry
         assert 'tokens' in entry
         assert 'size_bytes' in entry
@@ -106,5 +106,5 @@ def test_no_content_csv_format(temp_project, tmp_path):
         assert row['path'] in ('file1.py', 'file2.txt')
         # content field should be empty string
         assert row['content'] == ""
-        # Metadata should still be present
+        # Information should still be present
         assert int(row['size_bytes']) > 0

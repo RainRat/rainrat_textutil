@@ -1,16 +1,16 @@
 import sourcecombine
 
-def test_resolve_metadata_placeholders_empty_template():
+def test_resolve_information_placeholders_empty_template():
     """Target line 475 of sourcecombine.py: early return if not template."""
     replacements = {}
-    sourcecombine._resolve_metadata_placeholders("", replacements, {})
+    sourcecombine._resolve_information_placeholders("", replacements, {})
     assert replacements == {}
 
-    sourcecombine._resolve_metadata_placeholders(None, replacements, {})
+    sourcecombine._resolve_information_placeholders(None, replacements, {})
     assert replacements == {}
 
 def test_placeholder_none_rendering():
-    """Verify that None values in metadata are rendered as empty strings."""
+    """Verify that None values in information are rendered as empty strings."""
     git_info = {
         'git_branch': 'main',
         'git_status': None, # explicitly None
@@ -19,7 +19,7 @@ def test_placeholder_none_rendering():
     replacements = {}
     # Use a template that includes the placeholder to trigger resolution
     template = "Status: {{GIT_STATUS}}"
-    sourcecombine._resolve_metadata_placeholders(template, replacements, git_info)
+    sourcecombine._resolve_information_placeholders(template, replacements, git_info)
 
     # Before the fix, replacements['{{GIT_STATUS}}'] will be None
     # and _render_single_pass will render it as "None"

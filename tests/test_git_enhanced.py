@@ -59,8 +59,8 @@ def test_collect_git_diff_files_unstaged(tmp_path):
             cwd=root, capture_output=True, text=True, check=True
         )
 
-def test_git_metadata_placeholders():
-    """Test that Git metadata placeholders are correctly rendered."""
+def test_git_information_placeholders():
+    """Test that Git information placeholders are correctly rendered."""
     stats = {
         'total_files': 1,
         'total_size_bytes': 100,

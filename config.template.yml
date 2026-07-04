@@ -120,7 +120,7 @@ output:
   mirror: false
 
   # If true, skip the actual file content in the output, while keeping
-  # templates, metadata, and structured components.
+  # templates, information, and structured components.
   skip_content: false
 
   # Template written before each file's content.
@@ -163,7 +163,7 @@ output:
 
 # --- Project Information ---
 project:
-  # Manual overrides for project metadata used in templates and reports.
+  # Manual overrides for project information used in templates and reports.
   # If omit or set to null, the tool tries to find them in manifest files
   # such as package.json, pyproject.toml, Cargo.toml, composer.json, pom.xml,
   # go.mod, *.gemspec, mix.exs, Package.swift, .csproj, .fsproj, .vbproj,
@@ -226,10 +226,10 @@ filters:
   # If true, skip files that appear to contain binary data (for example, executables, images).
   skip_binary: false
 
-  # Only include files whose content matches this regular expression.
+  # Only include files whose content matches this pattern.
   grep: ""
 
-  # Skip files whose content matches this regular expression.
+  # Skip files whose content matches this pattern.
   exclude_grep: ""
 
   # --- Inclusion Groups ---
@@ -294,12 +294,12 @@ processing:
   # If true, removes only the *first* C-style block comment if it's at the top of the file.
   # This runs *first* and also strips leading whitespace after the comment.
   remove_initial_c_style_comment: false
-  line_regex_replacements: []      # Regular expression rules to find and replace content.
+  line_regex_replacements: []      # Pattern rules to find and replace content.
   # Example line rule (contiguous matching lines are replaced by a single entry):
   # line_regex_replacements:
   #   - pattern: '^\s*\w+\(0x[0-9a-fA-F]+,\s*0x[0-9a-fA-F]+\),\s*$'
   #     replacement: '<data removed>'
-  regex_replacements: []           # Global search-and-replace rules using regular expressions.
+  regex_replacements: []           # Global search-and-replace rules using patterns.
   # Example rule:
   # regex_replacements:
   #   - pattern: '^\s*//\s*TODO:.*$'

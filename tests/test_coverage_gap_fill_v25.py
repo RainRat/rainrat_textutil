@@ -160,7 +160,7 @@ def test_extract_summary_json_template(tmp_path):
         called_summary_path = mock_write.call_args[0][1]
         assert called_summary_path == "summary_TestProj.json"
 
-def test_print_execution_summary_extra_metadata_and_deleted_status(capsys):
+def test_print_execution_summary_extra_information_and_deleted_status(capsys):
     """Cover sourcecombine.py lines 5594, 5596, 5869."""
     from sourcecombine import _print_execution_summary
 

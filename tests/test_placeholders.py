@@ -2,7 +2,7 @@ import sys; import os; from pathlib import Path; sys.path.insert(0, os.fspath(Pa
 
 from sourcecombine import find_and_combine_files
 
-def test_file_metadata_placeholders(tmp_path):
+def test_file_information_placeholders(tmp_path):
     """Test that all file-level placeholders are correctly replaced."""
     root = tmp_path / "project"
     root.mkdir()
@@ -71,7 +71,7 @@ def test_footer_token_consistency(tmp_path):
     assert h_tokens == f_tokens
     assert int(h_tokens) > 0
 
-def test_global_metadata_placeholders(tmp_path):
+def test_global_information_placeholders(tmp_path):
     """Test that all global-level placeholders are correctly replaced."""
     root = tmp_path / "project"
     root.mkdir()

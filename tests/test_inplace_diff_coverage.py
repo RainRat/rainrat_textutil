@@ -1,7 +1,7 @@
 import sys
 from sourcecombine import main
 
-def test_inplace_diff_during_metadata_pass(tmp_path, monkeypatch, capsys):
+def test_inplace_diff_during_information_pass(tmp_path, monkeypatch, capsys):
     # Setup test environment
     project_dir = tmp_path / "project"
     project_dir.mkdir()
@@ -20,7 +20,7 @@ processing:
       replacement: 'new'
 output:
   show_diff: true
-  sort_by: 'size'  # This triggers the metadata pass
+  sort_by: 'size'  # This triggers the information pass
   file: {(tmp_path / "combined.txt").as_posix()}
 """, encoding="utf-8")
 

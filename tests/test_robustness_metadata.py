@@ -18,11 +18,11 @@ approx content
     """
     stats = sourcecombine.extract_files(content, tmp_path, dry_run=True)
 
-    # Verify metadata was parsed and flagged as approx
+    # Verify information was parsed and flagged as approx
     assert stats['total_size_bytes'] == 1024
     assert stats['token_count_is_approx'] is True
 
-def test_extract_files_sorting_by_modified_from_metadata(tmp_path):
+def test_extract_files_sorting_by_modified_from_information(tmp_path):
     # Two files in XML with explicit modified times.
     # file1.txt is newer (2024), file2.txt is older (2023).
     content = """

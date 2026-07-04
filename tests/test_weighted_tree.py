@@ -12,15 +12,15 @@ def test_generate_tree_string_weighted_folders():
         root / "tests" / "test_main.py",
     ]
 
-    # Metadata with size and tokens
-    metadata = {
+    # Information with size and tokens
+    information = {
         root / "README.md": {'size': 1024, 'tokens': 250},
         root / "src" / "main.py": {'size': 2048, 'tokens': 500},
         root / "src" / "utils.py": {'size': 512, 'tokens': 125},
         root / "tests" / "test_main.py": {'size': 1024, 'tokens': 250},
     }
 
-    result = _generate_tree_string(paths, root, 'text', metadata=metadata)
+    result = _generate_tree_string(paths, root, 'text', information=information)
 
     # Check root - total: 4 files, 4608 bytes (4.50 KB), 1125 tokens
     # We check parts of the string since ANSI codes are now present
@@ -55,13 +55,13 @@ def test_generate_tree_string_weighted_folders_no_tokens():
         root / "sub" / "b.txt",
     ]
 
-    # Metadata with only size
-    metadata = {
+    # Information with only size
+    information = {
         root / "a.txt": {'size': 100},
         root / "sub" / "b.txt": {'size': 200},
     }
 
-    result = _generate_tree_string(paths, root, 'text', metadata=metadata)
+    result = _generate_tree_string(paths, root, 'text', information=information)
 
     # Check root
     assert "root" in result

@@ -8,7 +8,7 @@ def test_dir(tmp_path):
     d.mkdir()
     return d
 
-def test_path_deduplication(test_dir):
+def test_path_duplicate_removal(test_dir):
     # Setup files
     file1 = test_dir / "file1.txt"
     file1.write_text("content1")
@@ -37,7 +37,7 @@ def test_path_deduplication(test_dir):
     assert stats['total_files'] == 2
     assert stats['filter_reasons'].get('duplicate_path') == 1
 
-def test_content_deduplication(test_dir):
+def test_content_duplicate_removal(test_dir):
     # Setup files with identical content
     file1 = test_dir / "file1.txt"
     file1.write_text("duplicate content")
@@ -64,7 +64,7 @@ def test_content_deduplication(test_dir):
     assert stats['total_files'] == 2
     assert stats['filter_reasons'].get('duplicate_content') == 1
 
-def test_extraction_deduplication(test_dir):
+def test_extraction_duplicate_removal(test_dir):
     # Setup combined content with duplicate files
     combined_content = """--- file1.txt ---
 duplicate content

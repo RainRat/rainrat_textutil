@@ -3,8 +3,8 @@ import sys; import os; from pathlib import Path; sys.path.insert(0, os.fspath(Pa
 import json
 from sourcecombine import extract_files
 
-def test_extract_metadata_json(tmp_path):
-    """Test that extraction from JSON preserves metadata."""
+def test_extract_information_json(tmp_path):
+    """Test that extraction from JSON preserves information."""
     data = [
         {
             "path": "test.py",
@@ -25,8 +25,8 @@ def test_extract_metadata_json(tmp_path):
     assert stats['total_lines'] == 1
     assert stats['top_files'][0][:4] == (5, 14, "test.py", None)
 
-def test_extract_metadata_xml(tmp_path):
-    """Test that extraction from XML preserves metadata."""
+def test_extract_information_xml(tmp_path):
+    """Test that extraction from XML preserves information."""
     content = """
 <repository>
 <file path="test.py" tokens="5" size="14 B" lines="1">
@@ -87,8 +87,8 @@ def test_extract_token_estimation(tmp_path):
     # Since tiktoken is installed in this environment, it shouldn't be approx if it works,
     # but we'll accept either as long as it's > 0.
 
-def test_extract_tree_with_metadata(tmp_path, capsys):
-    """Test that the tree view during extraction includes metadata."""
+def test_extract_tree_with_information(tmp_path, capsys):
+    """Test that the tree view during extraction includes information."""
     data = [
         {"path": "dir/file.py", "content": "print('hi')", "tokens": 10, "size_bytes": 10, "lines": 1}
     ]

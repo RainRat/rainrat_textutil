@@ -3,7 +3,7 @@ import subprocess
 import sys
 from unittest.mock import MagicMock, patch
 from sourcecombine import (
-    _format_metadata_summary,
+    _format_information_summary,
     _get_git_info,
     _generate_project_overview,
     _print_execution_summary,
@@ -13,15 +13,15 @@ from sourcecombine import (
 from argparse import Namespace
 from pathlib import Path
 
-def test_format_metadata_summary_gaps():
+def test_format_information_summary_gaps():
     # line 395: both status and summary
-    assert _format_metadata_summary({'status': 'M', 'files': 1}) == " [M]  (1 file)"
+    assert _format_information_summary({'status': 'M', 'files': 1}) == " [M]  (1 file)"
 
     # line 397: status only
-    assert _format_metadata_summary({'status': 'A'}) == " [A]"
+    assert _format_information_summary({'status': 'A'}) == " [A]"
 
     # line 400: neither
-    assert _format_metadata_summary({}) == ""
+    assert _format_information_summary({}) == ""
 
 def test_get_git_info_status_parsing_gaps():
     mock_status = (

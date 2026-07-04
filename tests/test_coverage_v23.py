@@ -14,44 +14,44 @@ sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 import sourcecombine
 import utils
 
-def test_format_metadata_summary_colors():
-    """Cover _format_metadata_summary lines 383-390, 407-412: colored status and summary combinations."""
-    from sourcecombine import _format_metadata_summary, C_GREEN, C_YELLOW, C_RED, C_RESET
+def test_format_information_summary_colors():
+    """Cover _format_information_summary lines 383-390, 407-412: colored status and summary combinations."""
+    from sourcecombine import _format_information_summary, C_GREEN, C_YELLOW, C_RED, C_RESET
 
     with patch("sys.stdout.isatty", return_value=True), \
          patch("sys.stderr.isatty", return_value=True), \
          patch.dict(os.environ, {}, clear=True):
 
-        # _format_metadata_summary returns with a leading space
+        # _format_information_summary returns with a leading space
         # A, ?? -> Green
-        assert f" \x1b[32m[A]\x1b[0m" in _format_metadata_summary({'status': 'A'}, colored=True)
-        assert f" \x1b[32m[??]\x1b[0m" in _format_metadata_summary({'status': '??'}, colored=True)
+        assert f" \x1b[32m[A]\x1b[0m" in _format_information_summary({'status': 'A'}, colored=True)
+        assert f" \x1b[32m[??]\x1b[0m" in _format_information_summary({'status': '??'}, colored=True)
 
         # M, R -> Yellow
-        assert f" \x1b[33m[M]\x1b[0m" in _format_metadata_summary({'status': 'M'}, colored=True)
-        assert f" \x1b[33m[R]\x1b[0m" in _format_metadata_summary({'status': 'R'}, colored=True)
+        assert f" \x1b[33m[M]\x1b[0m" in _format_information_summary({'status': 'M'}, colored=True)
+        assert f" \x1b[33m[R]\x1b[0m" in _format_information_summary({'status': 'R'}, colored=True)
 
         # D -> Red
-        assert f" \x1b[31m[D]\x1b[0m" in _format_metadata_summary({'status': 'D'}, colored=True)
+        assert f" \x1b[31m[D]\x1b[0m" in _format_information_summary({'status': 'D'}, colored=True)
 
         # Other -> Default
-        assert " [X]" in _format_metadata_summary({'status': 'X'}, colored=True)
-        assert "\x1b[32m" not in _format_metadata_summary({'status': 'X'}, colored=True)
+        assert " [X]" in _format_information_summary({'status': 'X'}, colored=True)
+        assert "\x1b[32m" not in _format_information_summary({'status': 'X'}, colored=True)
 
     # Test colored=False with status (covers line 392)
-    assert " [M]" in _format_metadata_summary({'status': 'M'}, colored=False)
+    assert " [M]" in _format_information_summary({'status': 'M'}, colored=False)
 
     # Combinations (407-412)
     # status + summary
-    res = _format_metadata_summary({'status': 'M', 'lines': 10}, colored=True)
+    res = _format_information_summary({'status': 'M', 'lines': 10}, colored=True)
     assert "[M]" in res and "10 lines" in res
     # summary only
-    res = _format_metadata_summary({'lines': 10}, colored=True)
+    res = _format_information_summary({'lines': 10}, colored=True)
     assert "[M]" not in res and "10 lines" in res
 
-def test_format_metadata_summary_more_parts():
-    """Cover _format_metadata_summary lines 392-403: size, tokens, and plurals."""
-    from sourcecombine import _format_metadata_summary
+def test_format_information_summary_more_parts():
+    """Cover _format_information_summary lines 392-403: size, tokens, and plurals."""
+    from sourcecombine import _format_information_summary
 
     meta = {
         'files': 2,
@@ -59,7 +59,7 @@ def test_format_metadata_summary_more_parts():
         'lines': 100,
         'tokens': 50
     }
-    res = _format_metadata_summary(meta)
+    res = _format_information_summary(meta)
     assert "2 files" in res
     assert "1.00 KB" in res
     assert "100 lines" in res
@@ -71,15 +71,15 @@ def test_format_metadata_summary_more_parts():
         'lines': 1,
         'tokens': 1
     }
-    res = _format_metadata_summary(meta)
+    res = _format_information_summary(meta)
     assert "1 file" in res
     assert "1 line" in res
     assert "1 token" in res
 
-def test_format_metadata_summary_empty():
-    """Cover _format_metadata_summary line 412: empty meta."""
-    from sourcecombine import _format_metadata_summary
-    assert _format_metadata_summary({}) == ""
+def test_format_information_summary_empty():
+    """Cover _format_information_summary line 412: empty meta."""
+    from sourcecombine import _format_information_summary
+    assert _format_information_summary({}) == ""
 
 def test_main_list_languages(capsys):
     """Cover main lines 3924-3925: --list-languages branch."""
