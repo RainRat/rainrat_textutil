@@ -121,6 +121,13 @@ def _print_diff(old_text, new_text, filename):
         sys.stderr.write("\n")
 
 
+def _get_sha256_hash(data: str | bytes) -> str:
+    """Return the SHA-256 hash of the provided data."""
+    if isinstance(data, str):
+        data = data.encode('utf-8', errors='replace')
+    return hashlib.sha256(data).hexdigest()
+
+
 def _convert_to_json_friendly(obj):
     """Recursively convert objects (such as Path) to JSON-compatible types."""
     if isinstance(obj, dict):
@@ -627,7 +634,7 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
             replacements["{{HASH}}"] = sha256
         else:
             replacements["{{HASH}}"] = (
-                hashlib.sha256(content.encode('utf-8', errors='replace')).hexdigest()
+                _get_sha256_hash(content)
                 if content is not None
                 else ""
             )
@@ -1979,10 +1986,6 @@ class FileProcessor:
                 git_info=self.git_info, file_path=file_path, language=language, sha256=sha256
             ))
 
-    def get_content_hash(self, content):
-        """Return the SHA-256 hash of the content."""
-        return hashlib.sha256(content.encode('utf-8', errors='replace')).hexdigest()
-
     def _backup_file(self, file_path):
         """Create a ``.bak`` backup for ``file_path`` when backups are enabled.
 
@@ -2053,7 +2056,7 @@ class FileProcessor:
                 "tokens_is_approx": is_approx,
                 "lines": line_count,
                 "language": language or utils.get_language_tag(relative_path, content=content, overrides=self.custom_languages),
-                "sha256": sha256 or self.get_content_hash(content),
+                "sha256": sha256 or _get_sha256_hash(content),
             }
             if self.output_format != "manifest" and not self.skip_content:
                 entry["content"] = content
@@ -2076,7 +2079,7 @@ class FileProcessor:
                 "tokens_is_approx": is_approx,
                 "lines": line_count,
                 "language": language or utils.get_language_tag(relative_path, content=content, overrides=self.custom_languages),
-                "sha256": sha256 or self.get_content_hash(content),
+                "sha256": sha256 or _get_sha256_hash(content),
                 "content": content if not self.skip_content else "",
                 "modified": modified if modified is not None else "",
             }
@@ -2135,7 +2138,7 @@ class FileProcessor:
         # Estimate tokens on the final processed content
         token_count, is_approx = utils.estimate_tokens(processed_content)
         line_count = utils.count_lines(processed_content)
-        sha256 = self.get_content_hash(processed_content)
+        sha256 = _get_sha256_hash(processed_content)
 
         if not self.dry_run or outfile is not None:
             self._emit_entry(
@@ -2207,7 +2210,7 @@ class FileProcessor:
 
         token_count, is_approx = utils.estimate_tokens(rendered)
         line_count = utils.count_lines(rendered)
-        sha256 = self.get_content_hash(rendered)
+        sha256 = _get_sha256_hash(rendered)
 
         self._emit_entry(
             outfile,
@@ -3370,7 +3373,7 @@ def find_and_combine_files(
 
                     # Content-based deduplication
                     if filter_opts.get('unique'):
-                        content_hash = processor.get_content_hash(processed)
+                        content_hash = _get_sha256_hash(processed)
                         if content_hash in processor.seen_hashes:
                             logging.debug("Skipping duplicate content: %s", rel_p_str)
                             stats['filter_reasons']['duplicate_content'] = stats['filter_reasons'].get('duplicate_content', 0) + 1
@@ -5381,7 +5384,7 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
         expected_sha = meta.get('sha256')
         if expected_sha:
             try:
-                actual_sha = hashlib.sha256(target_path.read_bytes()).hexdigest()
+                actual_sha = _get_sha256_hash(target_path.read_bytes())
                 if actual_sha == expected_sha:
                     print(f"  {C_GREEN}[OK]{C_RESET}      {rel_path_str} {C_DIM}(hash match){C_RESET}")
                     matches += 1
@@ -5565,15 +5568,15 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
 
     # Content-based deduplication for extraction
     if filter_opts.get('unique'):
-        processor = FileProcessor(config, {}, dry_run=True)
+        seen_hashes = set()
         unique_files = []
         for path_str, file_content, meta in filtered_files:
-            content_hash = processor.get_content_hash(file_content)
-            if content_hash in processor.seen_hashes:
+            content_hash = _get_sha256_hash(file_content)
+            if content_hash in seen_hashes:
                 logging.debug("Skipping duplicate content in extraction: %s", path_str)
                 stats['filter_reasons']['duplicate_content'] = stats['filter_reasons'].get('duplicate_content', 0) + 1
                 continue
-            processor.seen_hashes.add(content_hash)
+            seen_hashes.add(content_hash)
             unique_files.append((path_str, file_content, meta))
         filtered_files = unique_files
 
