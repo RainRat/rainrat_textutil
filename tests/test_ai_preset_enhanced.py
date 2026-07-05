@@ -98,7 +98,8 @@ def test_ai_preset_enables_git_context():
                 show_config=False,
                 export_config=None,
                 system_info=False,
-                project_info=False
+                project_info=False,
+                analyze=False
             )
 
             # Use a dummy find_and_combine_files to prevent actual execution

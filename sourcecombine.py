@@ -2639,6 +2639,68 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
                 metrics = f"({f_percent:>5.1f}% • {w_percent:>5.1f}%)"
                 lines.append(f"    {lang:<10} {' • '.join(parts)} {metrics} {bar}")
 
+    # Extension Breakdown
+    ext_stats = stats.get('files_by_extension', {})
+    if ext_stats:
+        tokens_by_ext = stats.get('tokens_by_extension', {})
+        lines_by_ext = stats.get('lines_by_extension', {})
+        size_by_ext = stats.get('size_by_extension', {})
+        has_ext_tokens = any(v > 0 for v in tokens_by_ext.values())
+        has_ext_lines = any(v > 0 for v in lines_by_ext.values())
+
+        if has_ext_tokens:
+            total_weight = total_tokens
+            weight_by_ext = tokens_by_ext
+            weight_label = "% Tokens"
+        elif has_ext_lines:
+            total_weight = total_lines
+            weight_by_ext = lines_by_ext
+            weight_label = "% Lines"
+        else:
+            total_weight = total_size_bytes
+            weight_by_ext = size_by_ext
+            weight_label = "% Size"
+
+        sorted_exts = sorted(
+            ext_stats.items(),
+            key=lambda item: (-weight_by_ext.get(item[0], 0), -item[1], item[0])
+        )
+
+        if output_format == 'markdown':
+            lines.append("\n## Extensions")
+            md_header = "| Extension | Count"
+            md_divider = "| :--- | :---"
+            if has_ext_lines:
+                md_header += " | Lines"
+                md_divider += " | :---"
+            md_header += f" | % Files | {weight_label} |"
+            md_divider += " | :--- | :--- |"
+            lines.append(md_header)
+            lines.append(md_divider)
+
+            for ext, count in sorted_exts:
+                f_percent = (count / total_files * 100) if total_files > 0 else 0
+                w_percent = (weight_by_ext.get(ext, 0) / total_weight * 100) if total_weight > 0 else 0
+                row = f"| `{ext}` | {count:,}"
+                if has_ext_lines: row += f" | {lines_by_ext.get(ext, 0):,}"
+                row += f" | {f_percent:.1f}% | {w_percent:.1f}% |"
+                lines.append(row)
+        else:
+            lines.append("\n  Extensions:")
+            for ext, count in sorted_exts:
+                f_percent = (count / total_files * 100) if total_files > 0 else 0
+                w_percent = (weight_by_ext.get(ext, 0) / total_weight * 100) if total_weight > 0 else 0
+                l_lines = lines_by_ext.get(ext, 0)
+
+                # ASCII bar
+                bar = f"[{_make_ascii_bar(w_percent)}]"
+
+                parts = [f"{count:>5,} files"]
+                if has_ext_lines: parts.append(f"{l_lines:>8,} lines")
+
+                metrics = f"({f_percent:>5.1f}% • {w_percent:>5.1f}%)"
+                lines.append(f"    {ext:<10} {' • '.join(parts)} {metrics} {bar}")
+
     if output_format == 'markdown':
         lines.append("\n---")
     else:
@@ -4370,6 +4432,11 @@ def main():
         help="Show detected project information and Git status for the current project.",
     )
     utility_group.add_argument(
+        "--analyze",
+        action="store_true",
+        help="Perform a deep project analysis (metadata, statistics, and language/extension breakdown) without generating output.",
+    )
+    utility_group.add_argument(
         "--version",
         "-V",
         action="version",
@@ -4400,6 +4467,12 @@ def main():
             if importlib.util.find_spec("pyperclip"):
                 args.clipboard = True
                 logging.debug("AI preset: Automatically enabled the system clipboard.")
+
+    if args.analyze:
+        args.dry_run = True
+        args.estimate_tokens = True
+        args.overview = True
+        args.tree = True
 
     # Configure logging *immediately* based on -v.
     # This ensures logging is set up *before* load_and_validate_config (which logs)
@@ -6829,6 +6902,163 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             lang_label = d['lang']
             display_lang = _truncate_path(lang_label, lang_width)
             row_parts.append(f"{C_BOLD}{display_lang}{C_RESET}")
+
+            print(f"    {' '.join(row_parts)}", file=sys.stderr)
+
+    # Extensions List
+    files_by_ext = stats.get('files_by_extension')
+    if files_by_ext:
+        tokens_by_ext = stats.get('tokens_by_extension', {})
+        lines_by_ext = stats.get('lines_by_extension', {})
+        size_by_ext = stats.get('size_by_extension', {})
+        has_ext_tokens = any(v > 0 for v in tokens_by_ext.values())
+        has_ext_lines = any(v > 0 for v in lines_by_ext.values())
+
+        if has_ext_tokens:
+            total_weight = stats.get('total_tokens', 0)
+            weight_by_ext = tokens_by_ext
+            title = "Extensions (by tokens)"
+        elif has_ext_lines:
+            total_weight = stats.get('total_lines', 0)
+            weight_by_ext = lines_by_ext
+            title = "Extensions (by lines)"
+        else:
+            total_weight = stats.get('total_size_bytes', 0)
+            weight_by_ext = size_by_ext
+            title = "Extensions (by size)"
+
+        primary_metric = _get_primary_metric(has_ext_tokens, has_ext_lines)
+
+        # Calculate dynamic overhead for extension width
+        # Indentation (4) + Primary (13) + % (7)
+        overhead = 4 + 13 + 7
+        # Secondary Metrics (13 each)
+        if show_secondary:
+            if has_ext_tokens and primary_metric != 'tokens': overhead += 13
+            if has_ext_lines and primary_metric != 'lines': overhead += 13
+            if primary_metric != 'size': overhead += 13
+        # Distribution (13)
+        if show_dist: overhead += 13
+        # Files (%) (16)
+        overhead += 16
+        # Status Spacer (7)
+        if any_has_status: overhead += 7
+        # Language metadata spacer (12)
+        if show_lang_col: overhead += 12
+
+        ext_width = max(20, term_width - overhead)
+
+        # Build dynamic header
+        header_parts = []
+        # Secondary metrics first
+        if show_secondary:
+            if has_ext_tokens and primary_metric != 'tokens':
+                header_parts.append(_format_header('TOKENS', 'tokens', primary_metric))
+            if has_ext_lines and primary_metric != 'lines':
+                header_parts.append(_format_header('LINES', 'lines', primary_metric))
+            if primary_metric != 'size':
+                header_parts.append(_format_header('SIZE', 'size', primary_metric))
+
+        # Primary metric last before %
+        if has_ext_tokens and primary_metric == 'tokens':
+            header_parts.append(_format_header('TOKENS', 'tokens', primary_metric))
+        elif has_ext_lines and primary_metric == 'lines':
+            header_parts.append(_format_header('LINES', 'lines', primary_metric))
+        elif primary_metric == 'size':
+            header_parts.append(_format_header('SIZE', 'size', primary_metric))
+
+        header_parts.append(f"{'%':>6}")
+        if show_dist: header_parts.append(f"{'DISTRIBUTION':<12}")
+
+        header_parts.append(f"{'FILES (%)':>15}")
+        if any_has_status: header_parts.append(f"{' ': <6}") # Spacer to match largest files
+        if show_lang_col: header_parts.append(f"{' ': <11}") # Language spacer
+        header_parts.append("EXTENSION")
+        header = f"    {C_DIM}{' '.join(header_parts)}{C_RESET}"
+
+        # Sort by weight desc, then count desc, then alpha
+        sorted_exts = sorted(
+            files_by_ext.items(),
+            key=lambda item: (-weight_by_ext.get(item[0], 0), -item[1], item[0])
+        )
+
+        display_items = []
+        top_10 = sorted_exts[:10]
+        others = sorted_exts[10:]
+
+        for ext, count in top_10:
+            display_items.append({
+                'ext': ext,
+                'count': count,
+                'weight': weight_by_ext.get(ext, 0),
+                'tokens': tokens_by_ext.get(ext, 0),
+                'lines': lines_by_ext.get(ext, 0),
+                'size': size_by_ext.get(ext, 0)
+            })
+
+        if others:
+            display_items.append({
+                'ext': '(others)',
+                'count': sum(c for e, c in others),
+                'weight': sum(weight_by_ext.get(e, 0) for e, c in others),
+                'tokens': sum(tokens_by_ext.get(e, 0) for e, c in others),
+                'lines': sum(lines_by_ext.get(e, 0) for e, c in others),
+                'size': sum(size_by_ext.get(e, 0) for e, c in others)
+            })
+
+        print(f"\n  {C_BOLD}{C_CYAN}{title}{C_RESET}", file=sys.stderr)
+        print(header, file=sys.stderr)
+
+        for d in display_items:
+            count = d['count']
+            weight = d['weight']
+            f_percent = (count / total_included * 100) if total_included > 0 else 0
+            w_percent = (weight / total_weight * 100) if total_weight > 0 else 0
+            bar = _make_ascii_bar(w_percent, colored=True)
+
+            size_str = utils.format_size(d['size'])
+            s_val, s_unit = _split_unit(size_str)
+            size_padding = " " * max(0, 12 - len(s_val) - len(s_unit))
+
+            # Row Metrics (TOKENS, LINES, SIZE, %, DISTRIBUTION) - Vertical alignment with Largest Files
+            row_parts = []
+            # Secondary metrics first
+            if show_secondary:
+                if has_ext_tokens and primary_metric != 'tokens':
+                    token_str = format_tokens(d['tokens'], is_approx)
+                    row_parts.append(f"{C_DIM}{token_str:>12}{C_RESET}")
+                if has_ext_lines and primary_metric != 'lines':
+                    row_parts.append(f"{C_DIM}{d['lines']:12,}{C_RESET}")
+                if primary_metric != 'size':
+                    row_parts.append(f"{size_padding}{C_DIM}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}")
+
+            # Primary metric last
+            if has_ext_tokens and primary_metric == 'tokens':
+                token_str = format_tokens(d['tokens'], is_approx)
+                row_parts.append(f"{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET}")
+            elif has_ext_lines and primary_metric == 'lines':
+                row_parts.append(f"{C_BOLD}{C_CYAN}{d['lines']:12,}{C_RESET}")
+            elif primary_metric == 'size':
+                row_parts.append(f"{size_padding}{C_BOLD}{C_CYAN}{s_val}{C_RESET}{C_DIM}{s_unit}{C_RESET}")
+
+            row_parts.append(f"{C_BOLD}{C_CYAN}{w_percent:>5.1f}{C_RESET}{C_DIM}%{C_RESET}")
+
+            if show_dist:
+                row_parts.append(f"{C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}")
+
+            # Consolidated Files (%)
+            f_val = f"{count:,}"
+            f_p_val = f"({f_percent:>5.1f}%)"
+            row_parts.append(f"{C_DIM}{f_val:>6} {f_p_val}{C_RESET}")
+
+            if any_has_status:
+                row_parts.append(" " * 6) # Spacer to match largest files
+            if show_lang_col:
+                row_parts.append(" " * 11) # Language spacer
+
+            ext_label = d['ext']
+            display_ext = _truncate_path(ext_label, ext_width)
+            row_parts.append(f"{C_BOLD}{display_ext}{C_RESET}")
 
             print(f"    {' '.join(row_parts)}", file=sys.stderr)
 
