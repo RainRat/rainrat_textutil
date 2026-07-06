@@ -4232,6 +4232,11 @@ def main():
         help="Show a visual folder tree of all included files with details and exit.",
     )
     display_group.add_argument(
+        "--analyze",
+        action="store_true",
+        help="Shortcut to perform project analysis without generating output (enables --dry-run, --estimate-tokens, --overview, and --tree).",
+    )
+    display_group.add_argument(
         "--diff",
         action="store_true",
         help="Show a colored diff of changes (when using --output, --apply-in-place, --extract, or --verify).",
@@ -4400,6 +4405,13 @@ def main():
             if importlib.util.find_spec("pyperclip"):
                 args.clipboard = True
                 logging.debug("AI preset: Automatically enabled the system clipboard.")
+
+    # Handle the Analyze preset
+    if getattr(args, 'analyze', False):
+        args.dry_run = True
+        args.estimate_tokens = True
+        args.overview = True
+        args.tree = True
 
     # Configure logging *immediately* based on -v.
     # This ensures logging is set up *before* load_and_validate_config (which logs)

@@ -30,6 +30,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--project-description TEXT`: Override the project description.
 *   `--project-license NAME`: Override the project license.
 *   `--project-url URL`: Override the project URL.
+*   `--analyze`: Shortcut to perform project analysis without generating output (enables `--dry-run`, `--estimate-tokens`, `--overview`, and `--tree`).
 *   `--dry-run` (`-d`): Show what would happen without making any changes.
 *   `--remove-comments`: Remove both single-line and multi-line comments based on the detected language.
 *   `--remove-single-line-comments`: Remove only single-line comments based on the detected language.
