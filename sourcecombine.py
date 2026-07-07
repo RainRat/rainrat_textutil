@@ -4214,6 +4214,11 @@ def main():
     # Display & Preview Group
     display_group = parser.add_argument_group("Display & Preview")
     display_group.add_argument(
+        "--analyze",
+        action="store_true",
+        help="Perform project analysis (dry-run, estimate tokens, overview, and tree) without writing files.",
+    )
+    display_group.add_argument(
         "--estimate-tokens",
         "-e",
         action="store_true",
@@ -4400,6 +4405,14 @@ def main():
             if importlib.util.find_spec("pyperclip"):
                 args.clipboard = True
                 logging.debug("AI preset: Automatically enabled the system clipboard.")
+
+    # Handle the analyze convenience preset
+    if getattr(args, 'analyze', False):
+        args.dry_run = True
+        args.estimate_tokens = True
+        args.overview = True
+        args.include_tree = True
+        args.tree = True
 
     # Configure logging *immediately* based on -v.
     # This ensures logging is set up *before* load_and_validate_config (which logs)

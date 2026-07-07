@@ -30,6 +30,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--project-description TEXT`: Override the project description.
 *   `--project-license NAME`: Override the project license.
 *   `--project-url URL`: Override the project URL.
+*   `--analyze`: Perform project analysis (dry-run, estimate tokens, project overview, and tree view) without generating output files.
 *   `--dry-run` (`-d`): Show what would happen without making any changes.
 *   `--remove-comments`: Remove both single-line and multi-line comments based on the detected language.
 *   `--remove-single-line-comments`: Remove only single-line comments based on the detected language.
@@ -49,6 +50,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--project-info`: Show detected project metadata and Git information for the current project.
 *   `--show-config`: Display the final configuration being used and exit.
 *   `--export-config`: Save the final combined configuration to a YAML file and exit.
+*   `--analyze`: (Alias for analysis preset) Perform project analysis (dry-run, estimate tokens, project overview, and tree view) without generating output files.
 *   `--system-info`: Show environment details (Python version, OS, and other system details).
 *   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without actually writing them to disk.
 *   `--clean`: (Alias for `--delete-backups`) Remove all `.bak` backup files from the current directory and its subfolders.
