@@ -187,17 +187,17 @@ def test_cli_extract_file_hit_1727(temp_cwd):
     assert excinfo.value.code == 0
     assert (output_dir / "test.txt").read_text(encoding="utf-8") == "hello"
 
-def test_generate_tree_string_metadata_gap_850(temp_cwd):
+def test_generate_tree_string_information_gap_850(temp_cwd):
     """Test gap at line 850 in _generate_tree_string."""
     # Use relative path to avoid OS portability issues with absolute paths
     root = Path("app_root").resolve()
     f1 = root / "f1.txt"
     paths = [f1]
 
-    # Metadata has something but NOT for f1.txt
-    metadata = {root / "other.txt": {'size': 100}}
+    # Information has something but NOT for f1.txt
+    information = {root / "other.txt": {'size': 100}}
 
-    res = _generate_tree_string(paths, root, metadata=metadata)
+    res = _generate_tree_string(paths, root, information=information)
     assert "f1.txt" in res
 
 def test_find_and_combine_files_size_placeholder_approx_1326(temp_cwd, monkeypatch):

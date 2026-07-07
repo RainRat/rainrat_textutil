@@ -21,7 +21,7 @@ def test_generate_toc_text():
         (Path("/root/src/utils.py"), Path("/root")),
         (Path("/root/README.md"), Path("/root")),
     ]
-    metadata = {
+    information = {
         Path("/root/src/main.py"): {'size': 1024, 'tokens': 256},
         Path("/root/README.md"): {'size': 512}
     }
@@ -34,14 +34,14 @@ def test_generate_toc_text():
         "\n--------------------\n"
     )
 
-    assert _generate_table_of_contents(files, 'text', metadata=metadata) == expected
+    assert _generate_table_of_contents(files, 'text', information=information) == expected
 
 def test_generate_toc_markdown():
     files = [
         (Path("/root/src/main.py"), Path("/root")),
         (Path("/root/Hello World.md"), Path("/root")),
     ]
-    metadata = {
+    information = {
         Path("/root/src/main.py"): {'size': 1024, 'tokens': 256},
         Path("/root/Hello World.md"): {'size': 512}
     }
@@ -52,7 +52,7 @@ def test_generate_toc_markdown():
         "- [Hello World.md](#hello-worldmd) (512.00 B)\n"
     )
 
-    assert _generate_table_of_contents(files, 'markdown', metadata=metadata) == expected
+    assert _generate_table_of_contents(files, 'markdown', information=information) == expected
 
 def test_toc_integration_text(tmp_path, toc_config, caplog):
     # Setup files

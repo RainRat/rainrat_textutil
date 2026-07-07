@@ -50,7 +50,7 @@ def test_extract_with_replace(tmp_path):
     extracted_file = tmp_path / "secret.txt"
     assert extracted_file.read_text() == "My secret key is: REDACTED"
 
-def test_extract_metadata_update_after_processing(tmp_path):
+def test_extract_information_update_after_processing(tmp_path):
     """Test that stats are updated correctly if processing changes content."""
     original_content = "Hello World"
     data = [{"path": "test.txt", "content": original_content}]

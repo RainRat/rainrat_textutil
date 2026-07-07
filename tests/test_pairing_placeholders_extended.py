@@ -21,7 +21,7 @@ def test_render_paired_filename_extended():
         "date": "2023-10-27"
     }
 
-    # Mock _resolve_metadata_placeholders to avoid full Git/system call if possible,
+    # Mock _resolve_information_placeholders to avoid full Git/system call if possible,
     # but it's already implemented to use the stats dict.
 
     rendered = sourcecombine._render_paired_filename(

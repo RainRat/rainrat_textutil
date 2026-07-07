@@ -71,7 +71,7 @@ approx content
     assert stats['token_count_is_approx'] is True
 
 def test_extract_xml_with_decimal_meta(tmp_path):
-    """Verify that decimal metadata in XML (if any) is handled by safe int conversion."""
+    """Verify that decimal information in XML (if any) is handled by safe int conversion."""
     content = """
 <repository>
 <file path="decimal.txt" tokens="123.45">

@@ -7,10 +7,10 @@ import sourcecombine
 
 class TestAnsiLeak(unittest.TestCase):
     def test_generate_tree_string_ansi_leak_in_markdown(self):
-        # Setup paths and metadata
+        # Setup paths and information
         root_path = Path("root")
         paths = [root_path / "file1.txt"]
-        metadata = {
+        information = {
             root_path / "file1.txt": {"size": 1024, "tokens": 256, "lines": 50}
         }
 
@@ -22,7 +22,7 @@ class TestAnsiLeak(unittest.TestCase):
 
                 # Generate tree string in Markdown format
                 tree_output = sourcecombine._generate_tree_string(
-                    paths, root_path, output_format="markdown", metadata=metadata
+                    paths, root_path, output_format="markdown", information=information
                 )
 
                 # ANSI escape code pattern
@@ -36,10 +36,10 @@ class TestAnsiLeak(unittest.TestCase):
                 self.assertFalse(has_ansi, "Markdown output should not contain ANSI escape codes")
 
     def test_generate_tree_string_ansi_present_in_text(self):
-        # Setup paths and metadata
+        # Setup paths and information
         root_path = Path("root")
         paths = [root_path / "file1.txt"]
-        metadata = {
+        information = {
             root_path / "file1.txt": {"size": 1024, "tokens": 256, "lines": 50}
         }
 
@@ -51,7 +51,7 @@ class TestAnsiLeak(unittest.TestCase):
 
                 # Generate tree string in text format
                 tree_output = sourcecombine._generate_tree_string(
-                    paths, root_path, output_format="text", metadata=metadata
+                    paths, root_path, output_format="text", information=information
                 )
 
                 # ANSI escape code pattern

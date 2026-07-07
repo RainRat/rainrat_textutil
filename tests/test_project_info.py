@@ -6,7 +6,7 @@ import pytest
 from sourcecombine import main
 
 def test_project_info_basic(tmp_path, capsys, monkeypatch, mocker):
-    """Test that --project-info displays basic project metadata."""
+    """Test that --project-info displays basic project information."""
     project_dir = tmp_path / "my_project"
     project_dir.mkdir()
 

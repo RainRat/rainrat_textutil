@@ -122,7 +122,7 @@ print("Hello from file 2")
     assert (output_dir / "folder/file2.py").read_text(encoding="utf-8").strip() == 'print("Hello from file 2")'
 
 def test_extract_flexible_markdown(tmp_path):
-    """Test extraction from Markdown with different header levels and metadata."""
+    """Test extraction from Markdown with different header levels and information."""
     output_dir = tmp_path / "extracted"
 
     content = """# Project Export

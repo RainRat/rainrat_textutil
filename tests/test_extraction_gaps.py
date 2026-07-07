@@ -34,8 +34,8 @@ good content
     assert stats['total_files'] == 1
     assert "Skipping malformed XML file entry" in caplog.text
 
-def test_parse_combined_content_json_none_metadata():
-    """Test that _parse_combined_content handles None values for metadata in JSON."""
+def test_parse_combined_content_json_none_information():
+    """Test that _parse_combined_content handles None values for information in JSON."""
     content = json.dumps([{
         "path": "test.txt",
         "content": "hello",
@@ -51,10 +51,10 @@ def test_parse_combined_content_json_none_metadata():
     assert meta['size'] is None
     assert meta['lines'] is None
 
-def test_extract_files_with_none_metadata(tmp_path):
-    """Test that extract_files handles None values for metadata without TypeError."""
+def test_extract_files_with_none_information(tmp_path):
+    """Test that extract_files handles None values for information without TypeError."""
     output_dir = tmp_path / "extracted"
-    # JSON content with explicit None values for metadata
+    # JSON content with explicit None values for information
     content = json.dumps([{
         "path": "test.txt",
         "content": "hello",

@@ -120,7 +120,7 @@ output:
   mirror: false
 
   # If true, skip the actual file content in the output, while keeping
-  # templates, metadata, and structured components.
+  # templates, information, and structured components.
   skip_content: false
 
   # Template written before each file's content.
@@ -163,7 +163,7 @@ output:
 
 # --- Project Information ---
 project:
-  # Manual overrides for project metadata used in templates and reports.
+  # Manual overrides for project information used in templates and reports.
   # If omit or set to null, the tool tries to find them in manifest files
   # such as package.json, pyproject.toml, Cargo.toml, composer.json, pom.xml,
   # go.mod, *.gemspec, mix.exs, Package.swift, .csproj, .fsproj, .vbproj,
