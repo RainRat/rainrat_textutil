@@ -24,6 +24,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--limit` (`-L`): Stop processing once you reach this file limit.
 *   `--unique` (`-u`): Skip duplicate files by path or content (duplicate removal).
 *   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, skipping binary files, removing duplicates, and automatically including Git context like logs and diffs). This also copies to the system clipboard if you do not specify an output.
+*   `--analyze`: Perform a comprehensive project analysis (token counts, line counts, language breakdown, and folder tree) without generating output files.
 *   `--strip-components N`: Remove N leading components from file paths during extraction or verification.
 *   `--project-name NAME`: Override the project name used in templates and reports.
 *   `--project-version VERSION`: Override the project version.
@@ -51,6 +52,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--export-config`: Save the final combined configuration to a YAML file and exit.
 *   `--system-info`: Show environment details (Python version, OS, and other system details).
 *   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without actually writing them to disk.
+*   `--analyze`: Perform a comprehensive project analysis without generating output files. Shortcut for `--dry-run --estimate-tokens --overview --include-tree --tree`.
 *   `--clean`: (Alias for `--delete-backups`) Remove all `.bak` backup files from the current directory and its subfolders.
 *   `--version`: Show the application version and exit.
 
