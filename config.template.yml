@@ -64,6 +64,12 @@ search:
   #   VERSION: text
   custom_languages: {}
 
+  # Add one or more ignore files containing glob patterns to skip.
+  # The patterns are merged with the exclusion rules.
+  # If a file named '.sourcecombineignore' exists in the current folder,
+  # it is automatically used even if not listed here.
+  ignore_files: []
+
 # --- Output Configuration ---
 output:
   # Output format (text, json, jsonl, markdown, xml, manifest, csv). Defaults to text.

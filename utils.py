@@ -214,6 +214,7 @@ DEFAULT_CONFIG = {
         'exclude_languages': [],
         'exclude_extensions': [],
         'custom_languages': {},
+        'ignore_files': [],
     },
     'filters': {
         'unique': False,
@@ -235,6 +236,7 @@ DEFAULT_CONFIG = {
                 '*.pyc', '*.pyo', '*.pyd',
                 '.DS_Store', 'Thumbs.db',
                 '.coverage', '.tox', '.nox',
+                '.sourcecombineignore',
             ],
             'folders': [
                 '.git', '.svn', '.hg', '.cvs',
@@ -415,6 +417,29 @@ def read_file_best_effort(file_path: str | Path) -> tuple[str, str]:
     except OSError:
         logging.warning("Could not read %s.", file_path)
         return "", 'utf-8'
+
+
+def parse_ignore_file(file_path: str | Path) -> list[str]:
+    """Read an ignore file and return a list of non-empty patterns.
+
+    Supports '#' for comments and skips empty lines.
+    """
+    path = Path(file_path)
+    if not path.is_file():
+        return []
+
+    patterns = []
+    try:
+        content, _ = read_file_best_effort(path)
+        for line in content.splitlines():
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            patterns.append(line)
+    except Exception as e:
+        logging.warning("Could not read ignore file '%s': %s", file_path, e)
+
+    return patterns
 
 
 def read_url_best_effort(url: str, timeout: int = 15) -> tuple[str, str]:
@@ -744,6 +769,7 @@ def _validate_search_section(config):
         'search.exclude_languages',
         list_label="a list of languages",
     )
+    _normalize_string_list(search.get('ignore_files'), 'search.ignore_files')
 
     custom_langs = search.get('custom_languages')
     if custom_langs is not None:

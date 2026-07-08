@@ -19,6 +19,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--output` (`-o`): Save results to a file or folder instead of the terminal. Supports template placeholders (for example, `{{PROJECT_NAME}}_{{DATE}}.txt`).
 *   `--clipboard` (`-c`): Copy the combined output to the system clipboard.
 *   `--git-files` (`-G`): Use Git to find files and follow the `.gitignore` rules automatically.
+*   `--ignore-file PATH`: Add an ignore file containing glob patterns to skip. Default is `.sourcecombineignore`.
 *   `--extension` (`--ext`): Include only files with these extensions (for example, `py`, `js`).
 *   `--exclude-extension` (`--exclude-ext`): Skip files with these extensions (for example, `log`, `tmp`).
 *   `--limit` (`-L`): Stop processing once you reach this file limit.
