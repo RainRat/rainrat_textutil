@@ -588,6 +588,7 @@ def _resolve_information_placeholders(template, replacements, data):
     replacements["{{PROJECT_VERSION}}"] = data.get('project_version', '')
     replacements["{{PROJECT_DESCRIPTION}}"] = data.get('project_description', '')
     replacements["{{PROJECT_LICENSE}}"] = data.get('project_license', '')
+    replacements["{{MANIFEST_SOURCE}}"] = data.get('manifest_source', '')
     replacements["{{DATE}}"] = data.get('date', '')
     replacements["{{TIME}}"] = data.get('time', '')
     replacements["{{DATETIME}}"] = data.get('datetime', '')
@@ -4588,6 +4589,7 @@ def main():
                     ("{{PROJECT_VERSION}}", "Version of the project."),
                     ("{{PROJECT_DESCRIPTION}}", "Short description of the project."),
                     ("{{PROJECT_LICENSE}}", "License identifier of the project."),
+                    ("{{MANIFEST_SOURCE}}", "The manifest file from which project information was extracted."),
                     ("{{FILE_COUNT}}", "Total number of files included."),
                     ("{{TOTAL_SIZE}}", "Total size of all files."),
                     ("{{TOTAL_TOKENS}}", "Total number of tokens."),
@@ -6143,6 +6145,7 @@ def print_placeholders():
             ("{{PROJECT_VERSION}}", "Version of the project."),
             ("{{PROJECT_DESCRIPTION}}", "Short description of the project."),
             ("{{PROJECT_LICENSE}}", "License identifier of the project."),
+            ("{{MANIFEST_SOURCE}}", "The manifest file from which project information was extracted."),
             ("{{FILE_COUNT}}", "Total number of files included."),
             ("{{TOTAL_SIZE}}", "Total size of all files."),
             ("{{TOTAL_TOKENS}}", "Total number of tokens."),

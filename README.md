@@ -154,6 +154,7 @@ Used in `header_template` and `footer_template`:
 *   `{{FILE_URL}}`: Direct web link to the specific file and commit.
 *   `{{FILE_DIFF}}`: Changes specific to the current file (requires `--include-diff` flag).
 *   `{{FILE_STATUS}}`: Git status of the current file (for example, `M`, `A`, `??`).
+*   `{{MANIFEST_SOURCE}}`: The manifest file from which project information was extracted (for example, `package.json`).
 *   `{{PROJECT_URL}}`: Web URL to the repository home (supports GitHub, GitLab, Bitbucket).
 
 ### Project Information Placeholders
@@ -162,6 +163,7 @@ Used in `global_header_template`, `global_footer_template`, and other project-wi
 *   `{{PROJECT_VERSION}}`: Version of the project (automatically detected from project manifests).
 *   `{{PROJECT_DESCRIPTION}}`: Short description of the project (automatically detected from project manifests).
 *   `{{PROJECT_LICENSE}}`: License identifier of the project (automatically detected from project manifests or LICENSE files).
+*   `{{MANIFEST_SOURCE}}`: The manifest file from which project information was extracted (for example, `package.json`).
 *   `{{FILE_COUNT}}`: Total number of files included.
 *   `{{TOTAL_SIZE}}`: Total size of all files.
 *   `{{TOTAL_TOKENS}}`: Total number of tokens.
