@@ -10,8 +10,8 @@ sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 import sourcecombine
 import utils
 
-def test_project_metadata_overrides(tmp_path, capsys):
-    """Test manual project metadata overrides via CLI and config."""
+def test_project_information_overrides(tmp_path, capsys):
+    """Test manual project information overrides via CLI and config."""
     # Create a dummy project structure
     project_dir = tmp_path / "my_project"
     project_dir.mkdir()

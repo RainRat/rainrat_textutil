@@ -6,14 +6,14 @@ import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 from sourcecombine import (
-    _format_metadata_summary,
+    _format_information_summary,
     verify_files,
     _print_execution_summary,
     C_GREEN, C_YELLOW, C_RED, C_RESET
 )
 
-def test_format_metadata_summary_colored_status():
-    """Test _format_metadata_summary with colored=True for various statuses."""
+def test_format_information_summary_colored_status():
+    """Test _format_information_summary with colored=True for various statuses."""
     with patch('sys.stderr.isatty', return_value=True), \
          patch('sys.stdout.isatty', return_value=True), \
          patch.dict(os.environ, {}, clear=False):
@@ -22,32 +22,32 @@ def test_format_metadata_summary_colored_status():
 
         # Test 'A' (Added)
         meta_a = {'status': 'A'}
-        summary_a = _format_metadata_summary(meta_a, colored=True)
+        summary_a = _format_information_summary(meta_a, colored=True)
         assert "\033[32m[A]\033[0m" in summary_a
 
         # Test '??' (Untracked)
         meta_u = {'status': '??'}
-        summary_u = _format_metadata_summary(meta_u, colored=True)
+        summary_u = _format_information_summary(meta_u, colored=True)
         assert "\033[32m[??]\033[0m" in summary_u
 
         # Test 'M' (Modified)
         meta_m = {'status': 'M'}
-        summary_m = _format_metadata_summary(meta_m, colored=True)
+        summary_m = _format_information_summary(meta_m, colored=True)
         assert "\033[33m[M]\033[0m" in summary_m
 
         # Test 'R' (Renamed)
         meta_r = {'status': 'R'}
-        summary_r = _format_metadata_summary(meta_r, colored=True)
+        summary_r = _format_information_summary(meta_r, colored=True)
         assert "\033[33m[R]\033[0m" in summary_r
 
         # Test 'D' (Deleted)
         meta_d = {'status': 'D'}
-        summary_d = _format_metadata_summary(meta_d, colored=True)
+        summary_d = _format_information_summary(meta_d, colored=True)
         assert "\033[31m[D]\033[0m" in summary_d
 
         # Test unknown status
         meta_x = {'status': 'X'}
-        summary_x = _format_metadata_summary(meta_x, colored=True)
+        summary_x = _format_information_summary(meta_x, colored=True)
         assert "[X]" in summary_x
         # It should NOT have color codes if it's unknown
         assert "\033[" not in summary_x

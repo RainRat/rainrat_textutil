@@ -1,21 +1,21 @@
 from pathlib import Path
 from unittest.mock import MagicMock
 from sourcecombine import (
-    _resolve_metadata_placeholders,
+    _resolve_information_placeholders,
     collect_file_paths,
     filter_file_paths,
     _pair_files
 )
 
-def test_resolve_metadata_placeholders_with_empty_template():
+def test_resolve_information_placeholders_with_empty_template():
     replacements = {}
-    _resolve_metadata_placeholders("", replacements, {})
+    _resolve_information_placeholders("", replacements, {})
     assert replacements == {}
 
-def test_resolve_metadata_placeholders_preserves_existing_keys():
+def test_resolve_information_placeholders_preserves_existing_keys():
     replacements = {"{{GIT_BRANCH}}": "already_set"}
     data = {"git_branch": "new_branch"}
-    _resolve_metadata_placeholders("{{GIT_BRANCH}}", replacements, data)
+    _resolve_information_placeholders("{{GIT_BRANCH}}", replacements, data)
     assert replacements["{{GIT_BRANCH}}"] == "already_set"
 
 def test_collect_file_paths_for_single_file_updates_progress(tmp_path):

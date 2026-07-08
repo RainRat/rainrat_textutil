@@ -480,7 +480,7 @@ def _get_summary_top_items(stats, items, is_folder=False):
     return sorted_items, title, total_weight, has_tokens, has_lines
 
 
-def _format_metadata_summary(meta: Mapping[str, Any], colored: bool = False) -> str:
+def _format_information_summary(meta: Mapping[str, Any], colored: bool = False) -> str:
     """Return file or folder details in an easy-to-read format."""
     parts = []
 
@@ -572,10 +572,10 @@ def _render_single_pass(template, replacements):
     )
 
 
-def _resolve_metadata_placeholders(template, replacements, data):
+def _resolve_information_placeholders(template, replacements, data):
     """Resolve project, system, datetime, and environment placeholders.
 
-    This consolidates common metadata logic used in both file-level and
+    This consolidates common information logic used in both file-level and
     global templates.
     """
     if not template:
@@ -687,7 +687,7 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
     replacements["{{LINE_PERCENT}}"] = _calc_percent(lines, global_lines)
 
     # Project, System, Datetime, and Git replacements
-    _resolve_metadata_placeholders(template, replacements, git_info)
+    _resolve_information_placeholders(template, replacements, git_info)
 
     if git_info:
         replacements["{{FILE_DIFF}}"] = git_info.get('file_diffs', {}).get(raw_filename, '')
@@ -748,7 +748,7 @@ def _render_global_template(template, stats):
     }
 
     # Project, System, Datetime, and Git replacements
-    _resolve_metadata_placeholders(template, replacements, stats)
+    _resolve_information_placeholders(template, replacements, stats)
 
     return _render_single_pass(template, replacements)
 
@@ -1533,7 +1533,7 @@ def _render_paired_filename(
     }
 
     # Project, System, Datetime, and Git replacements
-    _resolve_metadata_placeholders(template, replacements, stats)
+    _resolve_information_placeholders(template, replacements, stats)
 
     # Validate that all {{...}} placeholders in the template are known
     for match in re.finditer(r"{{([A-Za-z0-9_:]+)}}", template):
@@ -1927,7 +1927,7 @@ def _populate_project_stats(stats, root_folder, config):
 
 
 def _apply_project_overrides(config, args):
-    """Apply project metadata CLI overrides to the configuration."""
+    """Apply project information CLI overrides to the configuration."""
     project_conf = config.setdefault('project', {})
     if project_conf is None:
         project_conf = config['project'] = {}
@@ -2263,7 +2263,7 @@ class FileProcessor:
         return token_count, is_approx, line_count
 
 
-def _generate_tree_string(paths, root_path, output_format='text', include_header=True, metadata=None):
+def _generate_tree_string(paths, root_path, output_format='text', include_header=True, information=None):
     """Generate a visual folder tree of file paths."""
     # Convert to relative paths
     try:
@@ -2272,7 +2272,7 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
         # Fallback if any path is not relative to root (should ideally not happen)
         rel_paths = paths
 
-    # Map relative paths back to original paths for metadata lookup
+    # Map relative paths back to original paths for information lookup
     rel_to_orig = {p_rel: p_orig for p_rel, p_orig in zip(rel_paths, paths)}
 
     # Build the tree dictionary
@@ -2287,19 +2287,19 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
             current = current[part]
 
     # Pre-calculate folder-level statistics
-    folder_metadata = {}
-    if metadata:
+    folder_information = {}
+    if information:
         for rel_p, orig_p in rel_to_orig.items():
-            file_meta = metadata.get(orig_p)
+            file_meta = information.get(orig_p)
             if not file_meta:
                 continue
             for parent in rel_p.parents:
-                if parent not in folder_metadata:
-                    folder_metadata[parent] = {'size': 0, 'tokens': 0, 'lines': 0, 'files': 0}
-                folder_metadata[parent]['size'] += (file_meta.get('size') or 0)
-                folder_metadata[parent]['tokens'] += (file_meta.get('tokens') or 0)
-                folder_metadata[parent]['lines'] += (file_meta.get('lines') or 0)
-                folder_metadata[parent]['files'] += 1
+                if parent not in folder_information:
+                    folder_information[parent] = {'size': 0, 'tokens': 0, 'lines': 0, 'files': 0}
+                folder_information[parent]['size'] += (file_meta.get('size') or 0)
+                folder_information[parent]['tokens'] += (file_meta.get('tokens') or 0)
+                folder_information[parent]['lines'] += (file_meta.get('lines') or 0)
+                folder_information[parent]['files'] += 1
 
     lines = []
     if include_header:
@@ -2325,18 +2325,18 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
             children = node[item]
 
             meta_str = ""
-            if metadata:
+            if information:
                 is_text = (output_format == 'text')
                 if children:
                     # It's a folder - show totals
-                    if current_rel_path in folder_metadata:
-                        meta_str = f"{dim}{_format_metadata_summary(folder_metadata[current_rel_path], colored=is_text)}{reset}"
+                    if current_rel_path in folder_information:
+                        meta_str = f"{dim}{_format_information_summary(folder_information[current_rel_path], colored=is_text)}{reset}"
                 elif current_rel_path in rel_to_orig:
                     # It's a file - show individual stats
                     orig_path = rel_to_orig[current_rel_path]
-                    file_meta = metadata.get(orig_path)
+                    file_meta = information.get(orig_path)
                     if file_meta:
-                        meta_str = f"{dim}{_format_metadata_summary(file_meta, colored=is_text)}{reset}"
+                        meta_str = f"{dim}{_format_information_summary(file_meta, colored=is_text)}{reset}"
 
             style = folder_style if children else file_style
             suffix = f"{dim}/{reset}" if children else ""
@@ -2349,9 +2349,9 @@ def _generate_tree_string(paths, root_path, output_format='text', include_header
 
     # Add the root folder name first
     root_meta_str = ""
-    if metadata and Path('.') in folder_metadata:
+    if information and Path('.') in folder_information:
         is_text = (output_format == 'text')
-        root_meta_str = f"{dim}{_format_metadata_summary(folder_metadata[Path('.')], colored=is_text)}{reset}"
+        root_meta_str = f"{dim}{_format_information_summary(folder_information[Path('.')], colored=is_text)}{reset}"
 
     lines.append(f"{folder_style}{root_path.name or str(root_path)}{dim}/{reset}{root_meta_str}")
     _add_node(tree)
@@ -2678,7 +2678,7 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
     return "\n".join(lines)
 
 
-def _generate_table_of_contents(files, output_format='text', metadata=None):
+def _generate_table_of_contents(files, output_format='text', information=None):
     """Generate a Table of Contents string for the provided files.
 
     files: List of (Path, Path) tuples representing (file_path, root_path).
@@ -2695,8 +2695,8 @@ def _generate_table_of_contents(files, output_format='text', metadata=None):
             posix_rel_path = rel_path.as_posix()
 
             meta_str = ""
-            if metadata and file_path in metadata:
-                meta_str = _format_metadata_summary(metadata[file_path], colored=(output_format == 'text'))
+            if information and file_path in information:
+                meta_str = _format_information_summary(information[file_path], colored=(output_format == 'text'))
 
             # Create a basic anchor link.
             slug = re.sub(r'[^a-z0-9 _-]', '', posix_rel_path.lower()).replace(' ', '-')
@@ -2713,8 +2713,8 @@ def _generate_table_of_contents(files, output_format='text', metadata=None):
             rel_path = _get_rel_path(file_path, root_path)
 
             meta_str = ""
-            if metadata and file_path in metadata:
-                meta_str = f"{dim}{_format_metadata_summary(metadata[file_path], colored=True)}{reset}"
+            if information and file_path in information:
+                meta_str = f"{dim}{_format_information_summary(information[file_path], colored=True)}{reset}"
 
             toc_lines.append(f"{dim}- {reset}{rel_path.as_posix()}{meta_str}")
         toc_lines.append("\n" + "-" * 20 + "\n")
@@ -2761,7 +2761,7 @@ def find_and_combine_files(
         'filter_reasons': {},
     }
 
-    # Gather project metadata for templates
+    # Gather project information for templates
     first_root = "."
     if config.get('search', {}).get('root_folders'):
         first_root = config['search']['root_folders'][0]
@@ -2788,7 +2788,7 @@ def find_and_combine_files(
 
     stats['resolved_output_path'] = output_path
 
-    # Ensure project metadata is also in git_info for FileProcessor when Git is not present
+    # Ensure project information is also in git_info for FileProcessor when Git is not present
     git_info = config.get('git_info', {})
     git_info.update({
         'project_name': stats.get('project_name', 'Project'),
@@ -2916,7 +2916,7 @@ def find_and_combine_files(
         dry_run=processor_dry_run,
         estimate_tokens=estimate_tokens,
         output_format=output_format,
-        git_info=stats  # stats already contains git_branch and other metadata
+        git_info=stats  # stats already contains git_branch and other information
     )
 
     total_excluded_folders = 0
@@ -2931,8 +2931,8 @@ def find_and_combine_files(
     all_size_excluded = set()
     # For path-based deduplication
     seen_paths = set()
-    # Metadata for Table of Contents and Tree: {Path: {'size': int, 'tokens': int, 'mtime': float, 'depth': int}}
-    file_metadata = {}
+    # Information for Table of Contents and Tree: {Path: {'size': int, 'tokens': int, 'mtime': float, 'depth': int}}
+    file_information = {}
 
     with outfile_ctx as outfile:
         global_header = output_opts.get('global_header_template')
@@ -3070,7 +3070,7 @@ def find_and_combine_files(
                 for p in paths_to_list:
                     _update_file_stats(stats, p)
 
-                view_metadata = {}
+                view_information = {}
                 for p in paths_to_list:
                     f_size = p.stat().st_size if p.exists() else 0
                     tokens = 0
@@ -3090,11 +3090,11 @@ def find_and_combine_files(
                     rel_p_str = _get_rel_path(p, root_path).as_posix()
                     status = stats.get('file_statuses', {}).get(rel_p_str)
                     lang = utils.get_language_tag(p, content=content if estimate_tokens else None, overrides=processor.custom_languages)
-                    view_metadata[p] = {'size': f_size, 'tokens': tokens, 'lines': lines, 'status': status, 'language': lang}
+                    view_information[p] = {'size': f_size, 'tokens': tokens, 'lines': lines, 'status': status, 'language': lang}
                     stats['top_files'].append((tokens, f_size, rel_p_str, status, lines, lang))
 
                 if tree_view:
-                    print(_generate_tree_string(paths_to_list, root_path, include_header=False, metadata=view_metadata))
+                    print(_generate_tree_string(paths_to_list, root_path, include_header=False, information=view_information))
                 else:
                     for p in paths_to_list:
                         # Print relative path if possible for cleaner output
@@ -3157,7 +3157,7 @@ def find_and_combine_files(
 
         # End of root_folder loop
 
-        # Metadata and Sorting Pass
+        # Information and Sorting Pass
         sort_by = output_opts.get('sort_by', 'name')
         sort_reverse = output_opts.get('sort_reverse', False)
 
@@ -3170,20 +3170,20 @@ def find_and_combine_files(
         has_new_placeholders = any(p in header_template for p in new_placeholders) or \
                                any(p in footer_template for p in new_placeholders)
 
-        needs_metadata = bool(
+        needs_information = bool(
             output_opts.get('include_tree')
             or output_opts.get('table_of_contents')
             or output_opts.get('project_overview')
             or has_new_placeholders
         )
 
-        # We need metadata for sorting (except name), token limit, size limit, Table of Contents/Tree, or global placeholders
+        # We need information for sorting (except name), token limit, size limit, Table of Contents/Tree, or global placeholders
         global_placeholders = ["{{FILE_COUNT}}", "{{TOTAL_SIZE}}", "{{TOTAL_TOKENS}}", "{{TOTAL_LINES}}"]
         has_global_placeholders = (global_header and any(p in global_header for p in global_placeholders)) or \
                                   (global_footer and any(p in global_footer for p in global_placeholders))
 
         needs_full_pass = (sort_by not in ('name',) or max_total_tokens > 0 or max_total_size > 0 or max_total_lines > 0 or
-                           needs_metadata or has_global_placeholders or estimate_tokens or filter_opts.get('unique'))
+                           needs_information or has_global_placeholders or estimate_tokens or filter_opts.get('unique'))
 
         # Global Sort
         if pairing_enabled:
@@ -3232,7 +3232,7 @@ def find_and_combine_files(
                             val = rel_p.as_posix()
                         return (val, rel_p.as_posix())
                     all_combined_items.sort(key=get_single_sort_key, reverse=sort_reverse)
-                # Note: 'tokens' and 'lines' sort when combining many files into one is handled inside the metadata pass below
+                # Note: 'tokens' and 'lines' sort when combining many files into one is handled inside the information pass below
 
         # Apply file limit after global sorting
         max_files = filter_opts.get('max_files', 0)
@@ -3420,14 +3420,14 @@ def find_and_combine_files(
                 # Store content details for Table of Contents/Tree
                 rel_p_str = rel_p.as_posix()
                 status = stats.get('file_statuses', {}).get(rel_p_str)
-                file_metadata[file_path] = {
+                file_information[file_path] = {
                     'size': file_size,
                     'tokens': content_tokens,
                     'lines': content_lines,
                     'status': status,
                     'language': utils.get_language_tag(file_path, content=processed, overrides=processor.custom_languages)
                 }
-                lang = file_metadata[file_path]['language']
+                lang = file_information[file_path]['language']
                 stats['top_files'].append((content_tokens, file_size, rel_p_str, status, content_lines, lang))
 
                 # Account for header/footer templates in the limit
@@ -3507,7 +3507,7 @@ def find_and_combine_files(
             stats['lines_by_language'] = {}
             for item in all_combined_items:
                 file_p = item[0]
-                meta = file_metadata.get(file_p, {})
+                meta = file_information.get(file_p, {})
                 _update_file_stats(stats, file_p, size=meta.get('size'))
                 _update_token_stats(stats, file_p, meta.get('tokens'))
                 _update_line_stats(stats, file_p, meta.get('lines'))
@@ -3565,7 +3565,7 @@ def find_and_combine_files(
                     lines = utils.count_lines(rendered_h)
                     _update_stats_metrics(stats, tokens, lines, is_approx)
 
-            # Write global header after metadata pass to ensure placeholders are filled
+            # Write global header after information pass to ensure placeholders are filled
             if global_header and not dry_run and not estimate_tokens and output_format in ('text', 'markdown', 'xml'):
                 outfile.write(_render_global_template(global_header, stats))
 
@@ -3610,7 +3610,7 @@ def find_and_combine_files(
 
                     for root_path, paths in root_to_paths.items():
                         tree_content = _generate_tree_string(
-                            paths, root_path, output_format, include_header=False, metadata=file_metadata
+                            paths, root_path, output_format, include_header=False, information=file_information
                         )
                         if not dry_run or estimate_tokens:
                             token_count, is_approx = utils.estimate_tokens(tree_content)
@@ -3624,7 +3624,7 @@ def find_and_combine_files(
 
             if output_opts.get('table_of_contents') and output_format in ('text', 'markdown'):
                 toc_files = [(item[0], item[1]) for item in all_combined_items]
-                toc_content = _generate_table_of_contents(toc_files, output_format, metadata=file_metadata)
+                toc_content = _generate_table_of_contents(toc_files, output_format, information=file_information)
 
                 if not dry_run or estimate_tokens:
                     token_count, is_approx = utils.estimate_tokens(toc_content)
@@ -4219,7 +4219,7 @@ def main():
     output_group.add_argument(
         "--no-content",
         action="store_true",
-        help="Skip the actual file content in the output, while keeping templates and metadata. (Supported in all formats).",
+        help="Skip the actual file content in the output, while keeping templates and information. (Supported in all formats).",
     )
 
     # Pairing Options Group
@@ -4499,7 +4499,7 @@ def main():
         sys.exit(0)
 
     if getattr(args, 'project_info', None) is True:
-        # We need to load and validate config first to get root folders and metadata overrides
+        # We need to load and validate config first to get root folders and information overrides
         targets = args.targets
         config_path = args.config
         remaining_targets = []
@@ -5547,7 +5547,7 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
                 missing += 1
             continue
 
-        # Priority 1: Check SHA-256 if available in metadata
+        # Priority 1: Check SHA-256 if available in information
         expected_sha = meta.get('sha256')
         if expected_sha:
             try:
@@ -5690,7 +5690,7 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         logging.error("Could not find any files to extract in any of the sources.")
         sys.exit(1)
 
-    # Gather project metadata for templates
+    # Gather project information for templates
     _populate_project_stats(stats, output_folder, config)
 
     stats['total_discovered'] = len(files_to_create)
@@ -5712,7 +5712,7 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
             processed_content = utils.process_content(file_content, processing_opts, language=lang)
             if processed_content != file_content:
                 file_content = processed_content
-                # Clear metrics metadata as it's no longer accurate for the processed content
+                # Clear metrics information as it's no longer accurate for the processed content
                 meta.pop('size', None)
                 meta.pop('tokens', None)
                 meta.pop('lines', None)
@@ -5747,7 +5747,7 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
             unique_files.append((path_str, file_content, meta))
         filtered_files = unique_files
 
-    # Initial metadata calculation needed for sorting and limits
+    # Initial information calculation needed for sorting and limits
     for path_str, file_content, meta in filtered_files:
         if meta.get('size') is None:
             meta['size'] = len(file_content.encode('utf-8'))
@@ -5874,7 +5874,7 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
 
     if tree_view:
         tree_paths = [Path(source_name) / p for p, _, _ in files_to_create]
-        metadata_lookup = {
+        information_lookup = {
             Path(source_name) / p: {
                 'size': m['size'],
                 'tokens': m.get('tokens', 0),
@@ -5883,7 +5883,7 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
             }
             for p, c, m in files_to_create
         }
-        print(_generate_tree_string(tree_paths, Path(source_name), include_header=False, metadata=metadata_lookup))
+        print(_generate_tree_string(tree_paths, Path(source_name), include_header=False, information=information_lookup))
         return stats
 
     logging.info("Found %d files to extract from %s", len(files_to_create), source_name)
@@ -6883,7 +6883,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         overhead += 16
         # Status Spacer (7)
         if any_has_status: overhead += 7
-        # Language metadata spacer (12)
+        # Language information spacer (12)
         if show_lang_col: overhead += 12
 
         lang_width = max(20, term_width - overhead)

@@ -85,12 +85,12 @@ def test_line_count_in_summary(capsys, tmp_path):
     assert "Total Lines:" in captured.err
     assert "123" in captured.err
 
-def test_line_count_in_metadata_summary():
-    """Test the metadata summary helper includes lines."""
-    from sourcecombine import _format_metadata_summary
+def test_line_count_in_information_summary():
+    """Test the information summary helper includes lines."""
+    from sourcecombine import _format_information_summary
 
     meta = {'files': 2, 'size': 1024, 'lines': 50, 'tokens': 100}
-    summary = _format_metadata_summary(meta)
+    summary = _format_information_summary(meta)
 
     assert "2 files" in summary
     assert "1.00 KB" in summary
@@ -99,10 +99,10 @@ def test_line_count_in_metadata_summary():
 
     # Test singular
     meta_singular = {'lines': 1}
-    summary_singular = _format_metadata_summary(meta_singular)
+    summary_singular = _format_information_summary(meta_singular)
     assert "1 line" in summary_singular
 
     # Test singular file
     meta_file = {'files': 1}
-    summary_file = _format_metadata_summary(meta_file)
+    summary_file = _format_information_summary(meta_file)
     assert "1 file" in summary_file
