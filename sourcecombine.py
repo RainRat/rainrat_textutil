@@ -4267,6 +4267,14 @@ def main():
         action="store_true",
         help="Show a colored diff of changes (when using --output, --apply-in-place, --extract, or --verify).",
     )
+    display_group.add_argument(
+        "--analyze",
+        action="store_true",
+        help=(
+            "Perform a comprehensive project analysis without generating output files. "
+            "Shortcut for --dry-run --estimate-tokens --overview --include-tree --tree."
+        ),
+    )
 
     # Processing Group
     processing_group = parser.add_argument_group("Processing")
@@ -4408,6 +4416,14 @@ def main():
         help="Show the tool's version and exit.",
     )
     args = parser.parse_args()
+
+    # Handle the analyze preset option
+    if getattr(args, 'analyze', False):
+        args.dry_run = True
+        args.estimate_tokens = True
+        args.overview = True
+        args.include_tree = True
+        args.tree = True
 
     # Handle the AI preset option by enabling several other options
     if args.ai:
