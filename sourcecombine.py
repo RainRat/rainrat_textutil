@@ -2734,6 +2734,27 @@ def find_and_combine_files(
     explicit_files=None,
 ):
     """Find, filter, and combine files based on the settings."""
+
+    search_opts = config.get('search', {})
+    filter_opts = config.get('filters', {})
+    output_opts = config.get('output', {})
+
+    # Load ignore patterns from files
+    ignore_files = list(search_opts.get('ignore_files') or [])
+    # Auto-detect default ignore file in current directory if not already specified
+    default_ignore = ".sourcecombineignore"
+    if default_ignore not in ignore_files and Path(default_ignore).is_file():
+        ignore_files.append(default_ignore)
+
+    if ignore_files:
+        exclusions = filter_opts.setdefault('exclusions', {})
+        filenames = exclusions.setdefault('filenames', [])
+        for ignore_file in ignore_files:
+            patterns = utils.parse_ignore_file(ignore_file)
+            if patterns:
+                filenames.extend(patterns)
+                logging.debug("Loaded %d patterns from ignore file: %s", len(patterns), ignore_file)
+
     stats = {
         'total_discovered': 0,
         'total_files': 0,
@@ -4051,6 +4072,12 @@ def main():
         metavar=("EXTENSION", "LANGUAGE"),
         help="Manually map a file extension or filename to a specific language (for example, '.mjml' 'html'). Can be used multiple times.",
     )
+    filtering_group.add_argument(
+        "--ignore-file",
+        action="append",
+        metavar="PATH",
+        help="Add an ignore file containing glob patterns to skip. Default is '.sourcecombineignore'. Can be used multiple times.",
+    )
 
     # Sorting & Limiting Group
     sorting_group = parser.add_argument_group("Sorting & Limiting")
@@ -4819,6 +4846,13 @@ def main():
         for pattern, lang in args.map_lang:
             custom_langs[pattern.lower()] = lang.lower()
         logging.debug("Added terminal language mappings: %s", args.map_lang)
+
+    if getattr(args, 'ignore_file', None):
+        search = config.setdefault('search', {})
+        if search.get('ignore_files') is None:
+            search['ignore_files'] = []
+        search['ignore_files'].extend(args.ignore_file)
+        logging.debug("Added terminal ignore files: %s", args.ignore_file)
 
     search = config.get('search') or {}
 
