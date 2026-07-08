@@ -4123,7 +4123,7 @@ def main():
         "--json",
         "-j",
         action="store_true",
-        help="Shortcut for '--format json'.",
+        help="Shortcut for '--format json'. Also enables JSON output for utility commands.",
     )
     output_group.add_argument(
         "--jsonl",
@@ -4330,12 +4330,12 @@ def main():
     utility_group.add_argument(
         "--list-languages",
         action="store_true",
-        help="Show a list of all supported language identifiers and exit.",
+        help="Show a list of all supported language identifiers and exit. Use --json for machine-readable output.",
     )
     utility_group.add_argument(
         "--list-placeholders",
         action="store_true",
-        help="Show all supported template placeholders and exit.",
+        help="Show all supported template placeholders and exit. Use --json for machine-readable output.",
     )
     utility_group.add_argument(
         "--extract",
@@ -4378,7 +4378,7 @@ def main():
     utility_group.add_argument(
         "--show-config",
         action="store_true",
-        help="Show the final combined configuration (including defaults, files, and options) and exit.",
+        help="Show the final combined configuration (including defaults, files, and options) and exit. Use --json for machine-readable output.",
     )
     utility_group.add_argument(
         "--export-config",
@@ -4390,12 +4390,12 @@ def main():
     utility_group.add_argument(
         "--system-info",
         action="store_true",
-        help="Show details about the system and environment.",
+        help="Show details about the system and environment. Use --json for machine-readable output.",
     )
     utility_group.add_argument(
         "--project-info",
         action="store_true",
-        help="Show detected project information and Git status for the current project.",
+        help="Show detected project information and Git status for the current project. Use --json for machine-readable output.",
     )
     utility_group.add_argument(
         "--version",
@@ -4442,6 +4442,17 @@ def main():
         root_logger.addHandler(handler)
         root_logger.setLevel(prelim_level)
 
+    # Disable logging to stderr if we are outputting JSON to stdout,
+    # to keep stdout clean for piping.
+    if getattr(args, 'json', False) and (
+        args.system_info or
+        args.list_languages or
+        args.list_placeholders or
+        getattr(args, 'project_info', False) or
+        args.show_config
+    ):
+        root_logger.setLevel(logging.ERROR)
+
 
 
     if args.files_from and args.init:
@@ -4449,7 +4460,39 @@ def main():
         sys.exit(1)
 
     if args.system_info:
-        print_system_info()
+        if getattr(args, 'json', False):
+            # Same info as print_system_info
+            deps = [
+                ("tiktoken", "Accurate token counting"),
+                ("pyperclip", "Clipboard support"),
+                ("tqdm", "Progress bars"),
+                ("yaml", "Configuration support (PyYAML)"),
+                ("charset_normalizer", "Encoding detection"),
+            ]
+            dep_info = {}
+            for dep_name, purpose in deps:
+                spec = importlib.util.find_spec(dep_name)
+                dep_info[dep_name] = {
+                    "installed": spec is not None,
+                    "purpose": purpose
+                }
+
+            config_file = Path("sourcecombine.yml")
+            output = {
+                "version": __version__,
+                "python": sys.version.split()[0],
+                "platform": platform.platform(),
+                "executable": sys.executable,
+                "current_folder": str(Path.cwd()),
+                "local_config": {
+                    "found": config_file.exists(),
+                    "path": str(config_file.resolve()) if config_file.exists() else None
+                },
+                "dependencies": dep_info
+            }
+            print(json.dumps(output, indent=2))
+        else:
+            print_system_info()
         sys.exit(0)
 
     if getattr(args, 'project_info', None) is True:
@@ -4492,15 +4535,108 @@ def main():
         _populate_project_stats(stats, root, config)
         git_info = _get_git_info(root, log_count=config['output'].get('git_log_count', 0), include_diff=config['output'].get('include_diff', False))
         stats.update(git_info)
-        print_project_info(stats)
+
+        if getattr(args, 'json', False):
+            print(json.dumps(_convert_to_json_friendly(stats), indent=2))
+        else:
+            print_project_info(stats)
         sys.exit(0)
 
     if args.list_placeholders:
-        print_placeholders()
+        if getattr(args, 'json', False):
+            # Same categories as print_placeholders
+            categories = {
+                "File-Level Placeholders": [
+                    ("{{FILENAME}}", "Full relative path to the file."),
+                    ("{{EXT}}", "File extension (for example, 'py')."),
+                    ("{{STEM}}", "Filename without extension (for example, 'main')."),
+                    ("{{DIR}}", "Folder path containing the file."),
+                    ("{{DIR_SLUG}}", "A version of the folder path safe for use in filenames."),
+                    ("{{LANG}}", "Detected language tag (for example, 'python', 'cpp')."),
+                    ("{{SIZE}}", "Human-readable file size."),
+                    ("{{TOKENS}}", "Number of tokens in the file."),
+                    ("{{LINE_COUNT}}", "Number of lines in the file."),
+                    ("{{MODIFIED}}", "Last modified date and time."),
+                    ("{{HASH}}", "SHA-256 hash of the file content."),
+                    ("{{INDEX}}", "The current file's position in the list (1, 2, 3...)."),
+                    ("{{TOTAL}}", "The total number of files being processed."),
+                    ("{{SIZE_PERCENT}}", "Percentage of the total project size."),
+                    ("{{TOKEN_PERCENT}}", "Percentage of the total project tokens."),
+                    ("{{LINE_PERCENT}}", "Percentage of the total project lines."),
+                ],
+                "Project Information (Global) Placeholders": [
+                    ("{{PROJECT_NAME}}", "Name of the project."),
+                    ("{{PROJECT_VERSION}}", "Version of the project."),
+                    ("{{PROJECT_DESCRIPTION}}", "Short description of the project."),
+                    ("{{PROJECT_LICENSE}}", "License identifier of the project."),
+                    ("{{FILE_COUNT}}", "Total number of files included."),
+                    ("{{TOTAL_SIZE}}", "Total size of all files."),
+                    ("{{TOTAL_TOKENS}}", "Total number of tokens."),
+                    ("{{TOTAL_LINES}}", "Total number of lines."),
+                    ("{{DATE}}", "Current date (YYYY-MM-DD)."),
+                    ("{{TIME}}", "Current time (HH:MM:SS)."),
+                    ("{{DATETIME}}", "Current date and time."),
+                ],
+                "Git Placeholders": [
+                    ("{{GIT_BRANCH}}", "Current branch name."),
+                    ("{{GIT_COMMIT}}", "Full commit hash."),
+                    ("{{GIT_COMMIT_SHORT}}", "Short commit hash (7 characters)."),
+                    ("{{GIT_AUTHOR}}", "Author of the latest commit."),
+                    ("{{GIT_AUTHOR_DATE}}", "Date of the latest commit."),
+                    ("{{GIT_TAG}}", "Latest Git tag."),
+                    ("{{GIT_STATUS}}", "Summary of project changes."),
+                    ("{{GIT_LOG}}", "Recent commit messages."),
+                    ("{{GIT_DIFF}}", "Project-wide changes."),
+                    ("{{FILE_DIFF}}", "Changes specific to the current file (File-level only)."),
+                    ("{{GIT_REMOTE_URL}}", "The repository's origin remote URL."),
+                    ("{{PROJECT_URL}}", "Web URL to the repository home."),
+                    ("{{FILE_URL}}", "Direct web link to the specific file and commit (File-level only)."),
+                    ("{{FILE_AUTHOR}}", "Last author of the file (File-level only)."),
+                    ("{{FILE_AUTHOR_DATE}}", "Last commit date of the file (File-level only)."),
+                    ("{{FILE_LOG}}", "Subject of the last commit for the file (File-level only)."),
+                    ("{{FILE_STATUS}}", "Git status of the file (for example, 'M', 'A', '??') (File-level only)."),
+                ],
+                "System & Environment Placeholders": [
+                    ("{{OS}}", "Operating system name."),
+                    ("{{PYTHON_VERSION}}", "Python version."),
+                    ("{{PLATFORM}}", "Detailed platform information."),
+                    ("{{ARCH}}", "CPU architecture."),
+                    ("{{ENV:VAR_NAME}}", "Value of an environment variable."),
+                ],
+                "Pairing-Specific Placeholders": [
+                    ("{{STEM}}", "Base filename shared by the pair."),
+                    ("{{SOURCE_EXT}}", "Extension of the source file (for example, '.cpp')."),
+                    ("{{HEADER_EXT}}", "Extension of the header file (for example, '.h')."),
+                    ("{{DIR}}", "Folder path containing the pair."),
+                    ("{{DIR_SLUG}}", "A version of the folder path safe for use in filenames."),
+                    ("{{LANG}}", "Detected language of the pair."),
+                    ("{{INDEX}}", "The current pair's position in the list."),
+                    ("{{TOTAL}}", "The total number of pairs being processed."),
+                    ("Note:", "All project, system, and Git placeholders are also supported."),
+                ]
+            }
+            output = {cat: {p: desc for p, desc in fields} for cat, fields in categories.items()}
+            print(json.dumps(output, indent=2))
+        else:
+            print_placeholders()
         sys.exit(0)
 
     if args.list_languages:
-        print_languages()
+        if getattr(args, 'json', False):
+            # Group extensions and filenames by language tag
+            lang_groups = {}
+            for ext, lang in utils.EXTENSION_TO_LANG.items():
+                lang_groups.setdefault(lang, []).append(ext)
+            for name, lang in utils.FILENAME_TO_LANG.items():
+                lang_groups.setdefault(lang, []).append(name)
+
+            output = {
+                "languages": {tag: sorted(items) for tag, items in lang_groups.items()},
+                "total": len(lang_groups)
+            }
+            print(json.dumps(output, indent=2))
+        else:
+            print_languages()
         sys.exit(0)
 
     if args.init:
@@ -4953,8 +5089,11 @@ def main():
     output_conf['format'] = args.format
 
     if args.show_config:
-        logging.info("Final merged configuration:")
-        if utils.yaml:
+        if not getattr(args, 'json', False):
+            logging.info("Final merged configuration:")
+        if getattr(args, 'json', False):
+            print(json.dumps(_convert_to_json_friendly(config), indent=2))
+        elif utils.yaml:
             utils.yaml.dump(_convert_to_json_friendly(config), sys.stdout, sort_keys=False)
         else:
             json.dump(_convert_to_json_friendly(config), sys.stdout, indent=2)

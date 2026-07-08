@@ -87,6 +87,7 @@ def test_main_list_languages(capsys):
 
     args = MagicMock()
     args.list_languages = True
+    args.json = False
     args.targets = ["."]
     # Minimum attributes to avoid AttributeError in main()
     args.config = None
@@ -119,6 +120,7 @@ def test_main_list_placeholders(capsys):
 
     args = MagicMock()
     args.list_placeholders = True
+    args.json = False
     args.targets = ["."]
     args.config = None
     args.files_from = None
