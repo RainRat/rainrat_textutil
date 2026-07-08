@@ -1855,6 +1855,21 @@ def _get_stat_lang(file_path, stats):
     return utils.get_language_tag(file_path, overrides=stats.get('custom_languages'))
 
 
+def _update_distribution_stats(stats, file_path, value, metric_name, ext=None, lang=None):
+    """Update extension and language distribution stats for a given metric."""
+    if f"{metric_name}_by_extension" in stats:
+        if ext is None:
+            ext = _get_stat_ext(file_path)
+        stats[f"{metric_name}_by_extension"][ext] = stats[f"{metric_name}_by_extension"].get(ext, 0) + value
+
+    if f"{metric_name}_by_language" in stats:
+        if lang is None:
+            lang = _get_stat_lang(file_path, stats)
+        stats[f"{metric_name}_by_language"][lang] = stats[f"{metric_name}_by_language"].get(lang, 0) + value
+
+    return ext, lang
+
+
 def _update_file_stats(stats, file_path, size=None):
     stats['total_files'] += 1
     if size is None:
@@ -1864,39 +1879,18 @@ def _update_file_stats(stats, file_path, size=None):
             size = 0
     stats['total_size_bytes'] += size
 
-    ext = _get_stat_ext(file_path)
-    if 'files_by_extension' in stats:
-        stats['files_by_extension'][ext] = stats['files_by_extension'].get(ext, 0) + 1
-        if 'size_by_extension' in stats:
-            stats['size_by_extension'][ext] = stats['size_by_extension'].get(ext, 0) + size
-
-    if 'files_by_language' in stats:
-        lang = _get_stat_lang(file_path, stats)
-        stats['files_by_language'][lang] = stats['files_by_language'].get(lang, 0) + 1
-        if 'size_by_language' in stats:
-            stats['size_by_language'][lang] = stats['size_by_language'].get(lang, 0) + size
+    ext, lang = _update_distribution_stats(stats, file_path, 1, 'files')
+    _update_distribution_stats(stats, file_path, size, 'size', ext=ext, lang=lang)
 
 
 def _update_token_stats(stats, file_path, tokens):
     if tokens:
-        ext = _get_stat_ext(file_path)
-        if 'tokens_by_extension' in stats:
-            stats['tokens_by_extension'][ext] = stats['tokens_by_extension'].get(ext, 0) + tokens
-
-        if 'tokens_by_language' in stats:
-            lang = _get_stat_lang(file_path, stats)
-            stats['tokens_by_language'][lang] = stats['tokens_by_language'].get(lang, 0) + tokens
+        _update_distribution_stats(stats, file_path, tokens, 'tokens')
 
 
 def _update_line_stats(stats, file_path, lines):
     if lines:
-        ext = _get_stat_ext(file_path)
-        if 'lines_by_extension' in stats:
-            stats['lines_by_extension'][ext] = stats['lines_by_extension'].get(ext, 0) + lines
-
-        if 'lines_by_language' in stats:
-            lang = _get_stat_lang(file_path, stats)
-            stats['lines_by_language'][lang] = stats['lines_by_language'].get(lang, 0) + lines
+        _update_distribution_stats(stats, file_path, lines, 'lines')
 
 
 def _update_stats_metrics(stats, tokens, lines, is_approx):
