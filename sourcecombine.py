@@ -4264,6 +4264,7 @@ def main():
     )
     display_group.add_argument(
         "--analyze",
+        "-A",
         action="store_true",
         help=(
             "Perform a comprehensive project analysis without generating output files. "
@@ -4400,6 +4401,7 @@ def main():
     )
     utility_group.add_argument(
         "--project-info",
+        "-I",
         action="store_true",
         help="Show detected project information and Git status for the current project. Use --json for machine-readable output.",
     )
