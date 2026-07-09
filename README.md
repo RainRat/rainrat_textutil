@@ -170,6 +170,9 @@ Used in `global_header_template`, `global_footer_template`, and other project-wi
 *   `{{TOTAL_TOKENS}}`: Total number of tokens.
 *   `{{TOTAL_LINES}}`: Total number of lines.
 *   `{{DATE}}`, `{{TIME}}`, `{{DATETIME}}`: Current date and time.
+*   `{{TOC}}`, `{{TABLE_OF_CONTENTS}}`: Table of contents.
+*   `{{TREE}}`, `{{PROJECT_STRUCTURE}}`: Visual folder tree.
+*   `{{OVERVIEW}}`, `{{PROJECT_OVERVIEW}}`: Project overview summary.
 *   `{{OS}}`, `{{PYTHON_VERSION}}`, `{{PLATFORM}}`, `{{ARCH}}`: System and environment information.
 *   `{{ENV:VAR_NAME}}`: Value of an environment variable.
 *   `{{GIT_STATUS}}`: Summary of project changes (for example, "2 modified, 1 added").
