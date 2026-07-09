@@ -6377,6 +6377,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     is_approx = stats.get('token_count_is_approx', False)
 
     parts = []
+    if total_included > 0:
+        file_word_hint = _plural(total_included, "file")
+        parts.append(f"{C_BOLD}{C_CYAN}{total_included:,}{C_RESET} {C_DIM}{file_word_hint}{C_RESET}")
     if token_count > 0:
         token_word = _plural(token_count, "token")
         parts.append(f"{C_BOLD}{C_CYAN}{'~' if is_approx else ''}{token_count:,}{C_RESET} {C_DIM}{token_word}{C_RESET}")
