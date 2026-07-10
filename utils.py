@@ -281,6 +281,7 @@ DEFAULT_CONFIG = {
         'name': None,
         'version': None,
         'description': None,
+        'author': None,
         'license': None,
         'url': None,
     },
@@ -945,7 +946,7 @@ def _validate_project_section(config):
     if not isinstance(project, dict):
         raise InvalidConfigError("'project' section must be a dictionary.")
 
-    fields = ['name', 'version', 'description', 'license', 'url']
+    fields = ['name', 'version', 'description', 'author', 'license', 'url']
     for field in fields:
         val = project.get(field)
         if val is not None and not isinstance(val, str):
@@ -1562,6 +1563,19 @@ def _parse_json_manifest(manifest_path: Path, identity: dict) -> bool:
                     identity["project_url"] = str(repo['url'])
                 elif isinstance(repo, str):
                     identity["project_url"] = repo
+
+            author_data = data.get('author') or data.get('authors')
+            if author_data:
+                if isinstance(author_data, list) and author_data:
+                    author = author_data[0]
+                else:
+                    author = author_data
+
+                if isinstance(author, dict):
+                    identity["project_author"] = str(author.get('name') or author.get('author') or '')
+                else:
+                    identity["project_author"] = str(author)
+
             return True
     except Exception:
         pass
@@ -1569,11 +1583,12 @@ def _parse_json_manifest(manifest_path: Path, identity: dict) -> bool:
 
 
 def get_project_identity(root_folder: str | Path) -> dict:
-    """Detect project information (name, version, description, license) from manifest files."""
+    """Detect project information (name, version, description, license, author) from manifest files."""
     identity = {
         "project_name": "Project",
         "project_version": "",
         "project_description": "",
+        "project_author": "",
         "project_license": "",
         "project_url": "",
         "manifest_source": None
@@ -1633,6 +1648,10 @@ def get_project_identity(root_folder: str | Path) -> dict:
                         m = re.search(r'<PackageProjectUrl>(.*?)</PackageProjectUrl>', content)
                         if m:
                             identity["project_url"] = m.group(1)
+
+                        m = re.search(r'<Authors?>(.*?)</Authors?>', content)
+                        if m:
+                            identity["project_author"] = m.group(1)
 
                     identity["manifest_source"] = target_file.name
                     manifest_found = True
@@ -1694,6 +1713,10 @@ def get_project_identity(root_folder: str | Path) -> dict:
                         if m:
                             identity["project_url"] = m.group(1)
 
+                        m = re.search(r':authors?\s+"([^"]+)"', content)
+                        if m:
+                            identity["project_author"] = m.group(1)
+
                     identity["manifest_source"] = "project.clj"
                     manifest_found = True
                 except Exception:
@@ -1721,6 +1744,9 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     m = re.search(r'\.homepage\s*=\s*["\']([^"\']+)["\']', content)
                     if m:
                         identity["project_url"] = m.group(1)
+                    m = re.search(r'\.authors?\s*=\s*.*["\']([^"\']+)["\']', content)
+                    if m:
+                        identity["project_author"] = m.group(1)
                     identity["manifest_source"] = target_file.name
                     manifest_found = True
                 except Exception:
@@ -1792,6 +1818,15 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     if match:
                         identity["project_url"] = match.group(1)
 
+                    # Author
+                    match = re.search(r'^authors?\s*=\s*\[.*?name\s*=\s*["\']([^"\']+)["\']', content, re.DOTALL | re.MULTILINE)
+                    if not match:
+                        match = re.search(r'^authors?\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
+                    if not match:
+                        match = re.search(r'\[project\][^\[]*authors?\s*=\s*\[.*?name\s*=\s*["\']([^"\']+)["\']', content, re.DOTALL)
+                    if match:
+                        identity["project_author"] = match.group(1)
+
                     identity["manifest_source"] = "pyproject.toml"
                     manifest_found = True
                 except Exception:
@@ -1828,6 +1863,14 @@ def get_project_identity(root_folder: str | Path) -> dict:
                             m = re.search(r'^repository\s*=\s*["\']([^"\']+)["\']', pkg_content, re.MULTILINE)
                             if m:
                                 identity["project_url"] = m.group(1)
+
+                        m = re.search(r'^authors?\s*=\s*\[(.*?)\]', pkg_content, re.MULTILINE)
+                        if m:
+                            # Authors is a list, pick the first one and clean quotes
+                            author_list = m.group(1).split(',')
+                            if author_list:
+                                identity["project_author"] = author_list[0].strip().strip('"').strip("'")
+
                     identity["manifest_source"] = "Cargo.toml"
                     manifest_found = True
                 except Exception:
@@ -1859,6 +1902,12 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     m = re.search(r'<license>.*?<name>(.*?)</name>', content, re.DOTALL)
                     if m:
                         identity["project_license"] = m.group(1)
+
+                    # Author/Developers
+                    m = re.search(r'<developer>.*?<name>(.*?)</name>', content, re.DOTALL)
+                    if m:
+                        identity["project_author"] = m.group(1)
+
                     m = re.search(r'<url>(.*?)</url>', content)
                     if m:
                         identity["project_url"] = m.group(1)
@@ -1903,6 +1952,11 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     m = re.search(r'\.homepage\s*=\s*["\']([^"\']+)["\']', content)
                     if m:
                         identity["project_url"] = m.group(1)
+
+                    m = re.search(r'\.authors?\s*=\s*.*["\']([^"\']+)["\']', content)
+                    if m:
+                        identity["project_author"] = m.group(1)
+
                     identity["manifest_source"] = target_file.name
                     manifest_found = True
                 except Exception:
@@ -1969,6 +2023,11 @@ def get_project_identity(root_folder: str | Path) -> dict:
                         if h_match:
                             identity["project_url"] = h_match.group(1)
 
+                        # Author (custom but common convention in some templates)
+                        a_match = re.search(r'AUTHOR\s+["\']([^"\']+)["\']', content, re.IGNORECASE)
+                        if a_match:
+                            identity["project_author"] = a_match.group(1)
+
                         identity["manifest_source"] = "CMakeLists.txt"
                         manifest_found = True
                 except Exception:
@@ -1986,6 +2045,9 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     m = re.search(r'^version\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
                     if m:
                         identity["project_version"] = m.group(1)
+                    m = re.search(r'^authors?\s*=\s*\[(.*?)\]', content, re.MULTILINE)
+                    if m:
+                        identity["project_author"] = m.group(1).strip().strip('"').strip("'")
                     identity["manifest_source"] = "Project.toml"
                     manifest_found = True
                 except Exception:
@@ -2013,6 +2075,8 @@ def get_project_identity(root_folder: str | Path) -> dict:
                             identity["project_description"] = str(data['description'])
                         if data.get('license'):
                             identity["project_license"] = str(data['license'])
+                        if data.get('author'):
+                            identity["project_author"] = str(data['author'])
 
                         identity["manifest_source"] = deno_manifest.name
                         manifest_found = True
@@ -2055,6 +2119,9 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     m = re.search(r'^description:\s*(.+)$', content, re.MULTILINE)
                     if m:
                         identity["project_description"] = m.group(1).strip()
+                    m = re.search(r'^authors?:\s*(.+)$', content, re.MULTILINE)
+                    if m:
+                        identity["project_author"] = m.group(1).strip()
                     m = re.search(r'^homepage:\s*(.+)$', content, re.MULTILINE)
                     if m:
                         identity["project_url"] = m.group(1).strip()

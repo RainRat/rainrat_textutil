@@ -30,6 +30,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--project-name NAME`: Override the project name used in templates and reports.
 *   `--project-version VERSION`: Override the project version.
 *   `--project-description TEXT`: Override the project description.
+*   `--project-author NAME`: Override the project author.
 *   `--project-license NAME`: Override the project license.
 *   `--project-url URL`: Override the project URL.
 *   `--dry-run` (`-d`): Show what would happen without making any changes.
@@ -163,6 +164,7 @@ Used in `global_header_template`, `global_footer_template`, and other project-wi
 *   `{{PROJECT_NAME}}`: Name of the project (detected from `package.json`, `pyproject.toml`, `Cargo.toml`, `composer.json`, `pom.xml`, `go.mod`, `*.gemspec`, `mix.exs`, `Package.swift`, `.csproj`, `.fsproj`, `.vbproj`, `.sln`, `settings.gradle`, `project.clj`, `.podspec`, `.xcodeproj`, `CMakeLists.txt`, `Project.toml`, `deno.json`, `deno.jsonc`, `build.zig.zon`, `pubspec.yaml`, `README.md`, or folder name).
 *   `{{PROJECT_VERSION}}`: Version of the project (automatically detected from project manifests).
 *   `{{PROJECT_DESCRIPTION}}`: Short description of the project (automatically detected from project manifests).
+*   `{{PROJECT_AUTHOR}}`: Author of the project (automatically detected from project manifests).
 *   `{{PROJECT_LICENSE}}`: License identifier of the project (automatically detected from project manifests or LICENSE files).
 *   `{{MANIFEST_SOURCE}}`: The manifest file from which project information was extracted (for example, `package.json`).
 *   `{{FILE_COUNT}}`: Total number of files included.

@@ -178,6 +178,7 @@ project:
   name: null
   version: null
   description: null
+  author: null
   license: null
   url: null
 
