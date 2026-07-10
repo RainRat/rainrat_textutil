@@ -58,10 +58,10 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--version`: Show the application version and exit.
 
 ## Prerequisites
-*   **Python 3.10 or newer:** Use this version or newer for modern Python features.
+*   **Python 3.10 or newer:** The tool requires this version or newer to run.
 
 ### Standard Dependencies
-The tool installs these automatically when you follow the installation steps:
+These install automatically:
 *   **PyYAML:** Loads and validates configuration files.
 *   **charset-normalizer:** Detects character encodings in files.
 *   **tqdm:** Displays progress bars during scanning and processing.
@@ -92,7 +92,6 @@ The tool installs these automatically when you follow the installation steps:
     ```bash
     python sourcecombine.py --init
     ```
-    This command creates a `sourcecombine.yml` file with default settings to help you get started.
 
 For more details, use `python sourcecombine.py --help` or check `config.template.yml`.
 
