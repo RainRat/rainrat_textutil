@@ -3996,6 +3996,7 @@ def main():
     )
     filtering_group.add_argument(
         "--files-from",
+        "-F",
         metavar="PATH",
         help="Read a list of files from a text file (use '-' for the terminal). This skips looking for files in folders.",
     )
@@ -4187,6 +4188,7 @@ def main():
     )
     output_group.add_argument(
         "--overview",
+        "-O",
         action="store_true",
         help="Add a project overview summary with statistics and language breakdown to the start of the output (only when combining many files into one).",
     )
@@ -4240,6 +4242,7 @@ def main():
     )
     output_group.add_argument(
         "--no-content",
+        "-N",
         action="store_true",
         help="Skip the actual file content in the output, while keeping templates and information. (Supported in all formats).",
     )
@@ -4248,6 +4251,7 @@ def main():
     pairing_group = parser.add_argument_group("Pairing Options")
     pairing_group.add_argument(
         "--pair",
+        "-P",
         nargs=2,
         action="append",
         metavar=("SOURCE_EXT", "HEADER_EXT"),

@@ -15,7 +15,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   **AI Context Integration:** Automatically include environment information (Python version, OS, Git status) and presets for AI models.
 
 ## Common Flags
-*   `--config`: Use a custom configuration file (YAML). The tool automatically searches for `sourcecombine.yml`, `sourcecombine.yaml`, `config.yml`, or `config.yaml` in the current folder.
+*   `--config` (`-k`): Use a custom configuration file (YAML). The tool automatically searches for `sourcecombine.yml`, `sourcecombine.yaml`, `config.yml`, or `config.yaml` in the current folder.
 *   `--output` (`-o`): Save results to a file or folder instead of the terminal. Supports template placeholders (for example, `{{PROJECT_NAME}}_{{DATE}}.txt`).
 *   `--clipboard` (`-c`): Copy the combined output to the system clipboard.
 *   `--git-files` (`-G`): Use Git to find files and follow the `.gitignore` rules automatically.
@@ -25,7 +25,8 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--limit` (`-L`): Stop processing once you reach this file limit.
 *   `--unique` (`-u`): Skip duplicate files by path or content (duplicate removal).
 *   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, skipping binary files, removing duplicates, and automatically including Git context like logs and diffs). This also copies to the system clipboard if you do not specify an output.
-*   `--analyze`: Perform a comprehensive project analysis (token counts, line counts, language breakdown, and folder tree) without generating output files.
+*   `--analyze` (`-A`): Perform a comprehensive project analysis (token counts, line counts, language breakdown, and folder tree) without generating output files.
+*   `--files-from` (`-F`): Read a list of files from a text file instead of searching folders.
 *   `--strip-components N`: Remove N leading components from file paths during extraction or verification.
 *   `--project-name NAME`: Override the project name used in templates and reports.
 *   `--project-version VERSION`: Override the project version.
@@ -36,13 +37,15 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--remove-comments`: Remove both single-line and multi-line comments based on the detected language.
 *   `--remove-single-line-comments`: Remove only single-line comments based on the detected language.
 *   `--mirror`: Recreate the input directory structure in the output folder, applying all filtering and processing rules to each file individually.
-*   `--no-content`: Skip the actual file content in the output, while preserving templates, information, and structured components like the Table of Contents and Tree View.
+*   `--no-content` (`-N`): Skip the actual file content in the output, while preserving templates, information, and structured components like the Table of Contents and Tree View.
+*   `--overview` (`-O`): Add a project overview summary with statistics and language breakdown.
 *   `--apply-in-place`: Save processed changes back to the original source files.
 *   `--create-backups`: Create `.bak` copies of original files when using `--apply-in-place`.
 
 ### Utility Commands
 *   `--init`: Create a basic `sourcecombine.yml` configuration file to get started.
 *   `--extract`: Rebuild original files and folders from combined outputs (JSON, XML, JSONL, CSV, or Markdown). You can read from files, folders, remote URLs (http/https), the terminal, or clipboard. Without an input file, it searches for `combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`.
+*   `--pair` (`-P`): Enable file pairing by matching source and header extensions (for example, `.cpp` `.h`).
 *   `--verify`: Verify that files on disk match the content or hashes in combined files or manifests. You can read from files, folders, remote URLs (http/https), the terminal, or clipboard. Without an input file, the tool searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`). For example: `python sourcecombine.py --verify combined_files.json`.
 *   `--restore`: Undo changes made by `--apply-in-place` using `.bak` backup files.
 *   `--delete-backups`: Remove all `.bak` files from the folders.
