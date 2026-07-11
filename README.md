@@ -58,7 +58,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--version`: Show the application version and exit.
 
 ## Prerequisites
-*   **Python 3.10 or newer:** Use this version or newer for modern Python features.
+*   **Python 3.10 or newer:** The tool requires this version or newer to run.
 
 ### Standard Dependencies
 The tool installs these automatically when you follow the installation steps:
