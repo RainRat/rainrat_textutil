@@ -43,6 +43,22 @@ def test_shortcuts():
     combined_output = result.stdout + result.stderr
     assert "WARNING: Output shortened due to: token limit" in combined_output
 
+    # Test -O for overview
+    result = subprocess.run([sys.executable, "sourcecombine.py", test_dir, "-O", "-o", "-"], capture_output=True, text=True)
+    assert "Project Overview:" in result.stdout
+
+    # Test -N for no-content
+    with open(os.path.join(test_dir, "content.txt"), "w") as f: f.write("SHOULD_NOT_SEE_THIS")
+    result = subprocess.run([sys.executable, "sourcecombine.py", test_dir, "-N", "-o", "-"], capture_output=True, text=True)
+    assert "SHOULD_NOT_SEE_THIS" not in result.stdout
+    assert "content.txt" in result.stdout  # Header should still be there
+
+    # Test -R for remove-comments
+    with open(os.path.join(test_dir, "comment.py"), "w") as f: f.write("# COMMENT_TO_REMOVE\nprint(1)")
+    result = subprocess.run([sys.executable, "sourcecombine.py", test_dir, "-R", "-o", "-"], capture_output=True, text=True)
+    assert "COMMENT_TO_REMOVE" not in result.stdout
+    assert "print(1)" in result.stdout
+
     # Cleanup
     shutil.rmtree(test_dir)
 
