@@ -4187,6 +4187,7 @@ def main():
     )
     output_group.add_argument(
         "--overview",
+        "-O",
         action="store_true",
         help="Add a project overview summary with statistics and language breakdown to the start of the output (only when combining many files into one).",
     )

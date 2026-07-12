@@ -43,6 +43,10 @@ def test_shortcuts():
     combined_output = result.stdout + result.stderr
     assert "WARNING: Output shortened due to: token limit" in combined_output
 
+    # Test -O for overview
+    result = subprocess.run([sys.executable, "sourcecombine.py", test_dir, "-O", "-o", "-"], capture_output=True, text=True)
+    assert "Project Overview:" in result.stdout or "Project Overview:" in result.stderr
+
     # Cleanup
     shutil.rmtree(test_dir)
 
