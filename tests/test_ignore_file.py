@@ -81,3 +81,27 @@ def test_ignore_file_manual_cli(tmp_path):
     # Verify filtering
     assert "keep.py" in content
     assert "custom_skip.txt" not in content
+
+def test_parse_ignore_file_non_existent():
+    """Test parse_ignore_file with a non-existent path."""
+    assert utils.parse_ignore_file("non_existent_file") == []
+
+def test_parse_ignore_file_skips_comments_and_empty_lines(tmp_path):
+    """Test that parse_ignore_file skips comments and empty lines."""
+    ignore_file = tmp_path / "test.ignore"
+    ignore_file.write_text("  \n# comment\npattern1\n  # another comment\n  pattern2  \n", encoding="utf-8")
+
+    patterns = utils.parse_ignore_file(ignore_file)
+    assert patterns == ["pattern1", "pattern2"]
+
+def test_parse_ignore_file_exception_handling(tmp_path, caplog):
+    """Test parse_ignore_file exception handling during reading."""
+    ignore_file = tmp_path / "locked.ignore"
+    ignore_file.touch()
+
+    from unittest.mock import patch
+    with patch("utils.read_file_best_effort", side_effect=Exception("Read error")):
+        patterns = utils.parse_ignore_file(ignore_file)
+        assert patterns == []
+        assert "Could not read ignore file" in caplog.text
+        assert "Read error" in caplog.text
