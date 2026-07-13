@@ -8,7 +8,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   **Duplicate Removal:** Skip duplicate files by path or content.
 *   **Include Groups:** Group specific files to always include, even if you skip others.
 *   **Pairing:** Combine related files (such as source and header pairs) into their own individual output files.
-*   **File Extraction:** Rebuild the original files and folders from combined files (such as JSON, XML, JSONL, CSV, or Markdown). The tool supports filtering, sorting, and processing rules. Batch process multiple files, entire folders, or remote URLs (http/https). Without an input file, the tool automatically searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`).
+*   **File Extraction:** Rebuild the original files and folders from combined files (such as JSON, XML, JSONL, CSV, Markdown, or Text). The tool supports filtering, sorting, and processing rules. Batch process multiple files, entire folders, or remote URLs (http/https). Without an input file, the tool automatically searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`).
 *   **Sorting:** Sort files by `name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`.
 *   **Limiting:** Stop processing once you reach a file, token, size, or line limit.
 *   **Flexible Outputs:** Save results to the terminal, a file (JSON, XML, JSONL, CSV, or Markdown), or copy them to the system clipboard.
@@ -42,7 +42,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 
 ### Utility Commands
 *   `--init`: Create a basic `sourcecombine.yml` configuration file to get started.
-*   `--extract`: Rebuild original files and folders from combined outputs (JSON, XML, JSONL, CSV, or Markdown). You can read from files, folders, remote URLs (http/https), the terminal, or clipboard. Without an input file, it searches for `combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`.
+*   `--extract`: Rebuild original files and folders from combined outputs (JSON, XML, JSONL, CSV, Markdown, or Text). You can read from files, folders, remote URLs (http/https), the terminal, or clipboard. Without an input file, it searches for `combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`.
 *   `--verify`: Verify that files on disk match the content or hashes in combined files or manifests. You can read from files, folders, remote URLs (http/https), the terminal, or clipboard. Without an input file, the tool searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`). For example: `python sourcecombine.py --verify combined_files.json`.
 *   `--restore`: Undo changes made by `--apply-in-place` using `.bak` backup files.
 *   `--delete-backups`: Remove all `.bak` files from the folders.
@@ -58,10 +58,10 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--version`: Show the application version and exit.
 
 ## Prerequisites
-*   **Python 3.10 or newer:** Use this version or newer for modern Python features.
+*   **Python 3.10 or newer:** The tool requires this version or newer to run.
 
 ### Standard Dependencies
-The tool installs these automatically when you follow the installation steps:
+These install automatically:
 *   **PyYAML:** Loads and validates configuration files.
 *   **charset-normalizer:** Detects character encodings in files.
 *   **tqdm:** Displays progress bars during scanning and processing.
@@ -92,7 +92,6 @@ The tool installs these automatically when you follow the installation steps:
     ```bash
     python sourcecombine.py --init
     ```
-    This command creates a `sourcecombine.yml` file with default settings to help you get started.
 
 For more details, use `python sourcecombine.py --help` or check `config.template.yml`.
 
@@ -110,7 +109,7 @@ python sourcecombine.py src/ --language python --language javascript --output pr
 ```
 
 ### File Extraction
-Rebuild the original project structure from a combined Markdown file:
+Rebuild the original project structure from a combined Markdown or Text file:
 ```bash
 python sourcecombine.py --extract combined_files.md --output restored_project/
 ```
