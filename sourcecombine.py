@@ -1845,12 +1845,6 @@ def _process_paired_files(
                 _print_diff(old_content, pair_buffer.getvalue(), out_file.as_posix())
 
 
-def _get_stat_ext(file_path):
-    """Return the normalized extension or '.no_extension' for stats tracking."""
-    ext = file_path.suffix.lower() if hasattr(file_path, 'suffix') else Path(file_path).suffix.lower()
-    return ext or '.no_extension'
-
-
 def _get_stat_lang(file_path, stats):
     """Return the programming language tag for stats tracking."""
     return utils.get_language_tag(file_path, overrides=stats.get('custom_languages'))
@@ -1860,7 +1854,7 @@ def _update_distribution_stats(stats, file_path, value, metric_name, ext=None, l
     """Update extension and language distribution stats for a given metric."""
     if f"{metric_name}_by_extension" in stats:
         if ext is None:
-            ext = _get_stat_ext(file_path)
+            ext = (file_path.suffix.lower() if hasattr(file_path, 'suffix') else Path(file_path).suffix.lower()) or '.no_extension'
         stats[f"{metric_name}_by_extension"][ext] = stats[f"{metric_name}_by_extension"].get(ext, 0) + value
 
     if f"{metric_name}_by_language" in stats:
