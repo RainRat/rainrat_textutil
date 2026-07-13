@@ -280,6 +280,7 @@ DEFAULT_CONFIG = {
     'project': {
         'name': None,
         'version': None,
+        'author': None,
         'description': None,
         'license': None,
         'url': None,
@@ -945,7 +946,7 @@ def _validate_project_section(config):
     if not isinstance(project, dict):
         raise InvalidConfigError("'project' section must be a dictionary.")
 
-    fields = ['name', 'version', 'description', 'license', 'url']
+    fields = ['name', 'version', 'author', 'description', 'license', 'url']
     for field in fields:
         val = project.get(field)
         if val is not None and not isinstance(val, str):
@@ -1539,6 +1540,38 @@ def parse_size_value(value: str) -> int:
     return int(number * units[unit])
 
 
+def _format_author(author_data: Any) -> str | None:
+    """Normalize author information into a single string.
+
+    Handles strings, dictionaries (name, email, url), and lists.
+    """
+    if not author_data:
+        return None
+
+    if isinstance(author_data, str):
+        return author_data.strip()
+
+    if isinstance(author_data, dict):
+        name = author_data.get('name', '').strip()
+        email = author_data.get('email', '').strip()
+        url = author_data.get('url', '').strip() or author_data.get('homepage', '').strip()
+
+        parts = []
+        if name:
+            parts.append(name)
+        if email:
+            parts.append(f"<{email}>")
+        if url:
+            parts.append(f"({url})")
+        return " ".join(parts) if parts else None
+
+    if isinstance(author_data, list):
+        authors = [_format_author(a) for a in author_data]
+        return ", ".join([a for a in authors if a]) or None
+
+    return str(author_data).strip()
+
+
 def _parse_json_manifest(manifest_path: Path, identity: dict) -> bool:
     """Read a JSON manifest and update identity; return True if successful."""
     if not manifest_path.is_file():
@@ -1550,6 +1583,12 @@ def _parse_json_manifest(manifest_path: Path, identity: dict) -> bool:
                 identity["project_name"] = str(data['name'])
             if data.get('version'):
                 identity["project_version"] = str(data['version'])
+            if data.get('author'):
+                identity["project_author"] = _format_author(data['author'])
+            elif data.get('authors'):
+                identity["project_author"] = _format_author(data['authors'])
+            elif data.get('contributors'):
+                identity["project_author"] = _format_author(data['contributors'])
             if data.get('description'):
                 identity["project_description"] = str(data['description'])
             if data.get('license'):
@@ -1569,10 +1608,11 @@ def _parse_json_manifest(manifest_path: Path, identity: dict) -> bool:
 
 
 def get_project_identity(root_folder: str | Path) -> dict:
-    """Detect project information (name, version, description, license) from manifest files."""
+    """Detect project information (name, version, author, description, license) from manifest files."""
     identity = {
         "project_name": "Project",
         "project_version": "",
+        "project_author": "",
         "project_description": "",
         "project_license": "",
         "project_url": "",
@@ -1621,6 +1661,10 @@ def get_project_identity(root_folder: str | Path) -> dict:
                         m = re.search(r'<Version>(.*?)</Version>', content)
                         if m:
                             identity["project_version"] = m.group(1)
+
+                        m = re.search(r'<Authors>(.*?)</Authors>', content)
+                        if m:
+                            identity["project_author"] = m.group(1)
 
                         m = re.search(r'<Description>(.*?)</Description>', content)
                         if m:
@@ -1712,6 +1756,9 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     m = re.search(r'\.version\s*=\s*["\']([^"\']+)["\']', content)
                     if m:
                         identity["project_version"] = m.group(1)
+                    m = re.search(r'\.author(?:s)?\s*=\s*(.*)$', content, re.MULTILINE)
+                    if m:
+                        identity["project_author"] = m.group(1).strip().strip(',').strip('"').strip("'")
                     m = re.search(r'\.summary\s*=\s*["\']([^"\']+)["\']', content)
                     if m:
                         identity["project_description"] = m.group(1)
@@ -1758,6 +1805,11 @@ def get_project_identity(root_folder: str | Path) -> dict:
                         )
                     if match:
                         identity["project_version"] = match.group(1)
+
+                    # Author (simplified regex for pyproject.toml)
+                    match = re.search(r'authors\s*=\s*\[\s*\{\s*name\s*=\s*["\']([^"\']+)["\']', content)
+                    if match:
+                        identity["project_author"] = match.group(1)
 
                     # Description
                     match = re.search(r'^description\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
@@ -1813,6 +1865,9 @@ def get_project_identity(root_folder: str | Path) -> dict:
                         m = re.search(r'^version\s*=\s*["\']([^"\']+)["\']', pkg_content, re.MULTILINE)
                         if m:
                             identity["project_version"] = m.group(1)
+                        m = re.search(r'^authors\s*=\s*\[(.*?)\]', pkg_content, re.MULTILINE | re.DOTALL)
+                        if m:
+                            identity["project_author"] = m.group(1).strip().strip('"').strip("'")
                         m = re.search(
                             r'^description\s*=\s*["\']([^"\']+)["\']', pkg_content, re.MULTILINE
                         )
@@ -1852,6 +1907,10 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     m = re.search(r'<version>(.*?)</version>', content)
                     if m:
                         identity["project_version"] = m.group(1)
+                    # Try to find developers/developer/name
+                    m = re.search(r'<developer>.*?<name>(.*?)</name>', content, re.DOTALL)
+                    if m:
+                        identity["project_author"] = m.group(1)
                     m = re.search(r'<description>(.*?)</description>', content)
                     if m:
                         identity["project_description"] = m.group(1)
@@ -1894,6 +1953,9 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     m = re.search(r'\.version\s*=\s*["\']([^"\']+)["\']', content)
                     if m:
                         identity["project_version"] = m.group(1)
+                    m = re.search(r'\.author(?:s)?\s*=\s*(.*)$', content, re.MULTILINE)
+                    if m:
+                        identity["project_author"] = m.group(1).strip().strip(',').strip('"').strip("'")
                     m = re.search(r'\.description\s*=\s*["\']([^"\']+)["\']', content)
                     if m:
                         identity["project_description"] = m.group(1)
@@ -1920,6 +1982,9 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     m = re.search(r'version:\s*["\']([^"\']+)["\']', content)
                     if m:
                         identity["project_version"] = m.group(1)
+                    m = re.search(r'maintainers:\s*\[(.*?)\]', content, re.MULTILINE | re.DOTALL)
+                    if m:
+                        identity["project_author"] = m.group(1).strip().strip('"').strip("'")
                     m = re.search(r'homepage_url:\s*["\']([^"\']+)["\']', content)
                     if m:
                         identity["project_url"] = m.group(1)
@@ -1986,6 +2051,9 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     m = re.search(r'^version\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
                     if m:
                         identity["project_version"] = m.group(1)
+                    m = re.search(r'^authors\s*=\s*\[(.*?)\]', content, re.MULTILINE | re.DOTALL)
+                    if m:
+                        identity["project_author"] = m.group(1).strip().strip('"').strip("'")
                     identity["manifest_source"] = "Project.toml"
                     manifest_found = True
                 except Exception:
@@ -2052,6 +2120,13 @@ def get_project_identity(root_folder: str | Path) -> dict:
                     m = re.search(r'^version:\s*(.+)$', content, re.MULTILINE)
                     if m:
                         identity["project_version"] = m.group(1).strip()
+                    m = re.search(r'^author:\s*(.+)$', content, re.MULTILINE)
+                    if m:
+                        identity["project_author"] = m.group(1).strip()
+                    elif not identity["project_author"]:
+                        m = re.search(r'^authors:\s*(.+)$', content, re.MULTILINE)
+                        if m:
+                            identity["project_author"] = m.group(1).strip()
                     m = re.search(r'^description:\s*(.+)$', content, re.MULTILINE)
                     if m:
                         identity["project_description"] = m.group(1).strip()
@@ -2101,25 +2176,36 @@ def get_project_identity(root_folder: str | Path) -> dict:
                 except Exception:
                     pass
 
-        # 11. Fallback: Search for LICENSE or COPYING files if license is still missing
-        if not identity.get("project_license"):
+        # 11. Fallback: Search for LICENSE or COPYING files if license or author is still missing
+        if not identity.get("project_license") or not identity.get("project_author"):
             license_files = ["LICENSE", "LICENSE.txt", "COPYING", "COPYING.txt", "LICENSE.md"]
             for f_name in license_files:
                 license_file = root_path / f_name
                 if license_file.is_file():
                     try:
                         content = license_file.read_text(encoding='utf-8').strip()
-                        if content:
-                            # Try to extract license type from the first line (for example, "MIT License" or "Apache License")
+                        if not content:
+                            continue
+
+                        # Extract license if missing
+                        if not identity.get("project_license"):
                             first_line = content.split('\n')[0].strip()
-                            # Clean up common prefixes
                             license_name = re.sub(r'^(The\s+)?(MIT|Apache|GPL|BSD|ISC|Mozilla|Unlicense|Zlib)\s+License.*$', r'\2', first_line, flags=re.IGNORECASE)
                             if license_name != first_line:
                                 identity["project_license"] = license_name
-                            elif len(first_line) < 50:  # If it's a short line, assume it's the license name
+                            elif len(first_line) < 50:
                                 identity["project_license"] = first_line
                             else:
                                 identity["project_license"] = f_name
+
+                        # Extract author if missing (look for Copyright lines)
+                        if not identity.get("project_author"):
+                            # Match "Copyright (c) 2023 Name" or "Copyright 2023 Name"
+                            copy_match = re.search(r'Copyright\s+(?:\(c\)\s+)?(?:\d{4}-)?\d{4}\s+(.+)$', content, re.MULTILINE | re.IGNORECASE)
+                            if copy_match:
+                                identity["project_author"] = copy_match.group(1).strip()
+
+                        if identity.get("project_license") and identity.get("project_author"):
                             break
                     except Exception:
                         pass

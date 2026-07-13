@@ -586,6 +586,7 @@ def _resolve_information_placeholders(template, replacements, data):
     # Project-level replacements
     replacements["{{PROJECT_NAME}}"] = data.get('project_name', 'Project')
     replacements["{{PROJECT_VERSION}}"] = data.get('project_version', '')
+    replacements["{{PROJECT_AUTHOR}}"] = data.get('project_author', '')
     replacements["{{PROJECT_DESCRIPTION}}"] = data.get('project_description', '')
     replacements["{{PROJECT_LICENSE}}"] = data.get('project_license', '')
     replacements["{{MANIFEST_SOURCE}}"] = data.get('manifest_source', '')
@@ -1913,6 +1914,8 @@ def _populate_project_stats(stats, root_folder, config):
         stats['project_name'] = project_meta['name']
     if project_meta.get('version'):
         stats['project_version'] = project_meta['version']
+    if project_meta.get('author'):
+        stats['project_author'] = project_meta['author']
     if project_meta.get('description'):
         stats['project_description'] = project_meta['description']
     if project_meta.get('license'):
@@ -1931,6 +1934,8 @@ def _apply_project_overrides(config, args):
         project_conf['name'] = args.project_name
     if getattr(args, 'project_version', None) is not None:
         project_conf['version'] = args.project_version
+    if getattr(args, 'project_author', None) is not None:
+        project_conf['author'] = args.project_author
     if getattr(args, 'project_description', None) is not None:
         project_conf['description'] = args.project_description
     if getattr(args, 'project_license', None) is not None:
@@ -2387,6 +2392,8 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
         lines.append(f"- **Project:** {project_name}")
         if stats.get('project_version'):
             lines.append(f"- **Version:** {stats['project_version']}")
+        if stats.get('project_author'):
+            lines.append(f"- **Author:** {stats['project_author']}")
         if stats.get('project_license'):
             lines.append(f"- **License:** {stats['project_license']}")
         if stats.get('project_url'):
@@ -2427,6 +2434,8 @@ def _generate_project_overview(stats, output_format='text', processing_opts=None
         lines.append(f"  Project:      {project_name}")
         if stats.get('project_version'):
             lines.append(f"  Version:      {stats['project_version']}")
+        if stats.get('project_author'):
+            lines.append(f"  Author:       {stats['project_author']}")
         if stats.get('project_license'):
             lines.append(f"  License:      {stats['project_license']}")
         if stats.get('project_url'):
@@ -3870,6 +3879,11 @@ def main():
         help="Override the project version used in templates and reports.",
     )
     project_group.add_argument(
+        "--project-author",
+        metavar="NAME",
+        help="Override the project author.",
+    )
+    project_group.add_argument(
         "--project-description",
         metavar="TEXT",
         help="Override the project description used in templates and reports.",
@@ -4610,6 +4624,7 @@ def main():
                 "Project Information (Global) Placeholders": [
                     ("{{PROJECT_NAME}}", "Name of the project."),
                     ("{{PROJECT_VERSION}}", "Version of the project."),
+                    ("{{PROJECT_AUTHOR}}", "Author of the project."),
                     ("{{PROJECT_DESCRIPTION}}", "Short description of the project."),
                     ("{{PROJECT_LICENSE}}", "License identifier of the project."),
                     ("{{MANIFEST_SOURCE}}", "The manifest file from which project information was extracted."),
@@ -6173,6 +6188,7 @@ def print_placeholders():
         "Project Information (Global) Placeholders": [
             ("{{PROJECT_NAME}}", "Name of the project."),
             ("{{PROJECT_VERSION}}", "Version of the project."),
+            ("{{PROJECT_AUTHOR}}", "Author of the project."),
             ("{{PROJECT_DESCRIPTION}}", "Short description of the project."),
             ("{{PROJECT_LICENSE}}", "License identifier of the project."),
             ("{{MANIFEST_SOURCE}}", "The manifest file from which project information was extracted."),
@@ -6277,6 +6293,7 @@ def print_project_info(stats):
         "Project Information": [
             ("Name", stats.get('project_name')),
             ("Version", stats.get('project_version')),
+            ("Author", stats.get('project_author')),
             ("Description", stats.get('project_description')),
             ("License", stats.get('project_license')),
             ("URL", stats.get('project_url')),
