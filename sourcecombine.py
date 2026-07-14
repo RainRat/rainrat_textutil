@@ -722,7 +722,7 @@ def _render_template(template, relative_path, size=None, tokens=None, lines=None
     return _render_single_pass(template, replacements)
 
 
-def _render_global_template(template, stats):
+def _render_global_template(template, stats, toc=None, tree=None, overview=None):
     """Replace placeholders in a global template with project information.
 
     The placeholders include FILE_COUNT, TOTAL_SIZE, TOTAL_TOKENS, and TOTAL_LINES,
@@ -746,6 +746,12 @@ def _render_global_template(template, stats):
         "{{TOTAL_SIZE}}": total_size,
         "{{TOTAL_TOKENS}}": token_str,
         "{{TOTAL_LINES}}": f"{total_lines:,}",
+        "{{TOC}}": toc or "",
+        "{{TABLE_OF_CONTENTS}}": toc or "",
+        "{{TREE}}": tree or "",
+        "{{PROJECT_STRUCTURE}}": tree or "",
+        "{{OVERVIEW}}": overview or "",
+        "{{PROJECT_OVERVIEW}}": overview or "",
     }
 
     # Project, System, Datetime, and Git replacements
@@ -3194,7 +3200,8 @@ def find_and_combine_files(
         )
 
         # We need information for sorting (except name), token limit, size limit, Table of Contents/Tree, or global placeholders
-        global_placeholders = ["{{FILE_COUNT}}", "{{TOTAL_SIZE}}", "{{TOTAL_TOKENS}}", "{{TOTAL_LINES}}"]
+        layout_placeholders = ["{{TOC}}", "{{TABLE_OF_CONTENTS}}", "{{TREE}}", "{{PROJECT_STRUCTURE}}", "{{OVERVIEW}}", "{{PROJECT_OVERVIEW}}"]
+        global_placeholders = ["{{FILE_COUNT}}", "{{TOTAL_SIZE}}", "{{TOTAL_TOKENS}}", "{{TOTAL_LINES}}"] + layout_placeholders
         has_global_placeholders = (global_header and any(p in global_header for p in global_placeholders)) or \
                                   (global_footer and any(p in global_footer for p in global_placeholders))
 
@@ -3573,30 +3580,22 @@ def find_and_combine_files(
 
         # Process items (including Global Header, Table of Contents, Tree, and Footer) when combining many files into one
         if not pairing_enabled and not list_files and not tree_view:
-            # Update global header tokens if they will be included in the output or estimation
-            if (not dry_run or estimate_tokens) and output_format in ('text', 'markdown', 'xml'):
-                if global_header:
-                    rendered_h = _render_global_template(global_header, stats)
-                    tokens, is_approx = utils.estimate_tokens(rendered_h)
-                    lines = utils.count_lines(rendered_h)
-                    _update_stats_metrics(stats, tokens, lines, is_approx)
+            # Pre-generate layout components if placeholders are present
+            toc_content = ""
+            tree_content_final = ""
+            overview_content = ""
 
-            # Write global header after information pass to ensure placeholders are filled
-            if global_header and not dry_run and not estimate_tokens and output_format in ('text', 'markdown', 'xml'):
-                outfile.write(_render_global_template(global_header, stats))
+            placeholders_to_check = ["{{TOC}}", "{{TABLE_OF_CONTENTS}}", "{{TREE}}", "{{PROJECT_STRUCTURE}}", "{{OVERVIEW}}", "{{PROJECT_OVERVIEW}}"]
+            combined_templates = (global_header or "") + (global_footer or "")
+            needs_toc = any(p in combined_templates for p in ["{{TOC}}", "{{TABLE_OF_CONTENTS}}"])
+            needs_tree = any(p in combined_templates for p in ["{{TREE}}", "{{PROJECT_STRUCTURE}}"])
+            needs_overview = any(p in combined_templates for p in ["{{OVERVIEW}}", "{{PROJECT_OVERVIEW}}"])
 
-            if output_opts.get('project_overview') and output_format in ('text', 'markdown'):
-                overview_content = _generate_project_overview(
-                    stats, output_format, processing_opts=config.get('processing')
-                )
-                if not dry_run or estimate_tokens:
-                    token_count, is_approx = utils.estimate_tokens(overview_content)
-                    line_count = utils.count_lines(overview_content)
-                    _update_stats_metrics(stats, token_count, line_count, is_approx)
-                if not dry_run and not estimate_tokens:
-                    outfile.write(overview_content + "\n")
+            if (needs_toc or output_opts.get('table_of_contents')) and output_format in ('text', 'markdown'):
+                toc_files = [(item[0], item[1]) for item in all_combined_items]
+                toc_content = _generate_table_of_contents(toc_files, output_format, information=file_information)
 
-            if output_opts.get('include_tree') and output_format in ('text', 'markdown'):
+            if (needs_tree or output_opts.get('include_tree')) and output_format in ('text', 'markdown'):
                 root_to_paths = {}
                 for item in all_combined_items:
                     file_path, root_path = item[0], item[1]
@@ -3605,7 +3604,6 @@ def find_and_combine_files(
                     root_to_paths[root_path].append(file_path)
 
                 if root_to_paths:
-                    # Write the section header once
                     tree_header = ""
                     tree_footer = ""
                     if output_format == 'markdown':
@@ -3615,33 +3613,54 @@ def find_and_combine_files(
                         tree_header = "Project Structure:\n"
                         tree_footer = "-" * 20 + "\n\n"
 
-                    if not dry_run or estimate_tokens:
-                        stats['total_tokens'] += utils.estimate_tokens(tree_header)[0]
-                        stats['total_tokens'] += utils.estimate_tokens(tree_footer)[0]
-                        stats['total_lines'] += utils.count_lines(tree_header)
-                        stats['total_lines'] += utils.count_lines(tree_footer)
-
-                    if not dry_run and not estimate_tokens:
-                        outfile.write(tree_header)
-
+                    tree_parts = [tree_header]
                     for root_path, paths in root_to_paths.items():
-                        tree_content = _generate_tree_string(
+                        tree_parts.append(_generate_tree_string(
                             paths, root_path, output_format, include_header=False, information=file_information
-                        )
-                        if not dry_run or estimate_tokens:
-                            token_count, is_approx = utils.estimate_tokens(tree_content)
-                            line_count = utils.count_lines(tree_content)
-                            _update_stats_metrics(stats, token_count, line_count, is_approx)
-                        if not dry_run and not estimate_tokens:
-                            outfile.write(tree_content + "\n")
+                        ) + "\n")
+                    tree_parts.append(tree_footer)
+                    tree_content_final = "".join(tree_parts)
 
+            if (needs_overview or output_opts.get('project_overview')) and output_format in ('text', 'markdown'):
+                overview_content = _generate_project_overview(
+                    stats, output_format, processing_opts=config.get('processing')
+                )
+
+            # Update global header tokens if they will be included in the output or estimation
+            if (not dry_run or estimate_tokens) and output_format in ('text', 'markdown', 'xml'):
+                if global_header:
+                    rendered_h = _render_global_template(global_header, stats, toc=toc_content, tree=tree_content_final, overview=overview_content)
+                    tokens, is_approx = utils.estimate_tokens(rendered_h)
+                    lines = utils.count_lines(rendered_h)
+                    _update_stats_metrics(stats, tokens, lines, is_approx)
+
+            # Write global header after information pass to ensure placeholders are filled
+            if global_header and not dry_run and not estimate_tokens and output_format in ('text', 'markdown', 'xml'):
+                outfile.write(_render_global_template(global_header, stats, toc=toc_content, tree=tree_content_final, overview=overview_content))
+
+            # Determine if layout components were already included in the header to avoid duplication
+            header_has_overview = global_header and any(p in global_header for p in ["{{OVERVIEW}}", "{{PROJECT_OVERVIEW}}"])
+            header_has_tree = global_header and any(p in global_header for p in ["{{TREE}}", "{{PROJECT_STRUCTURE}}"])
+            header_has_toc = global_header and any(p in global_header for p in ["{{TOC}}", "{{TABLE_OF_CONTENTS}}"])
+
+            if output_opts.get('project_overview') and output_format in ('text', 'markdown') and not header_has_overview:
+                if not dry_run or estimate_tokens:
+                    token_count, is_approx = utils.estimate_tokens(overview_content)
+                    line_count = utils.count_lines(overview_content)
+                    _update_stats_metrics(stats, token_count, line_count, is_approx)
+                if not dry_run and not estimate_tokens:
+                    outfile.write(overview_content + "\n")
+
+            if output_opts.get('include_tree') and output_format in ('text', 'markdown') and not header_has_tree:
+                if tree_content_final:
+                    if not dry_run or estimate_tokens:
+                        token_count, is_approx = utils.estimate_tokens(tree_content_final)
+                        line_count = utils.count_lines(tree_content_final)
+                        _update_stats_metrics(stats, token_count, line_count, is_approx)
                     if not dry_run and not estimate_tokens:
-                        outfile.write(tree_footer)
+                        outfile.write(tree_content_final)
 
-            if output_opts.get('table_of_contents') and output_format in ('text', 'markdown'):
-                toc_files = [(item[0], item[1]) for item in all_combined_items]
-                toc_content = _generate_table_of_contents(toc_files, output_format, information=file_information)
-
+            if output_opts.get('table_of_contents') and output_format in ('text', 'markdown') and not header_has_toc:
                 if not dry_run or estimate_tokens:
                     token_count, is_approx = utils.estimate_tokens(toc_content)
                     line_count = utils.count_lines(toc_content)
@@ -3745,13 +3764,13 @@ def find_and_combine_files(
         # Process global footer and update stats
         if not pairing_enabled and not list_files and not tree_view and global_footer and output_format in ('text', 'markdown', 'xml'):
             if not dry_run or estimate_tokens:
-                rendered_f = _render_global_template(global_footer, stats)
+                rendered_f = _render_global_template(global_footer, stats, toc=toc_content, tree=tree_content_final, overview=overview_content)
                 tokens, is_approx = utils.estimate_tokens(rendered_f)
                 lines = utils.count_lines(rendered_f)
                 _update_stats_metrics(stats, tokens, lines, is_approx)
 
             if not dry_run and not estimate_tokens:
-                outfile.write(_render_global_template(global_footer, stats))
+                outfile.write(_render_global_template(global_footer, stats, toc=toc_content, tree=tree_content_final, overview=overview_content))
 
         if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and output_format in ('json', 'manifest'):
             outfile.write(']')
@@ -4620,6 +4639,9 @@ def main():
                     ("{{DATE}}", "Current date (YYYY-MM-DD)."),
                     ("{{TIME}}", "Current time (HH:MM:SS)."),
                     ("{{DATETIME}}", "Current date and time."),
+                    ("{{TOC}}", "Table of contents (Global only)."),
+                    ("{{TREE}}", "Visual folder tree (Global only)."),
+                    ("{{OVERVIEW}}", "Project overview summary (Global only)."),
                 ],
                 "Git Placeholders": [
                     ("{{GIT_BRANCH}}", "Current branch name."),
@@ -6183,6 +6205,9 @@ def print_placeholders():
             ("{{DATE}}", "Current date (YYYY-MM-DD)."),
             ("{{TIME}}", "Current time (HH:MM:SS)."),
             ("{{DATETIME}}", "Current date and time."),
+            ("{{TOC}}", "Table of contents (Global only)."),
+            ("{{TREE}}", "Visual folder tree (Global only)."),
+            ("{{OVERVIEW}}", "Project overview summary (Global only)."),
         ],
         "Git Placeholders": [
             ("{{GIT_BRANCH}}", "Current branch name."),
