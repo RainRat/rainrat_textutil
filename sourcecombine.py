@@ -4194,6 +4194,7 @@ def main():
     )
     output_group.add_argument(
         "--overview",
+        "-O",
         action="store_true",
         help="Add a project overview summary with statistics and language breakdown to the start of the output (only when combining many files into one).",
     )
@@ -4247,6 +4248,7 @@ def main():
     )
     output_group.add_argument(
         "--no-content",
+        "-N",
         action="store_true",
         help="Skip the actual file content in the output, while keeping templates and information. (Supported in all formats).",
     )
@@ -4326,6 +4328,7 @@ def main():
     )
     processing_group.add_argument(
         "--remove-comments",
+        "-R",
         action="store_true",
         help="Remove both single-line and multi-line comments based on the detected language.",
     )
