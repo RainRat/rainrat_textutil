@@ -24,6 +24,7 @@ def test_apply_project_overrides_with_none_config():
     args = MagicMock()
     args.project_name = "Override Name"
     args.project_version = None
+    args.project_author = None
     args.project_description = None
     args.project_license = None
     args.project_url = None
