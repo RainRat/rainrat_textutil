@@ -419,17 +419,10 @@ def _get_folder_stats(top_files):
         path_p = Path(path)
         for other_path in final_stats:
             other_p = Path(other_path)
-            try:
-                if other_p.is_relative_to(path_p):
-                    if stats_val == final_stats[other_path]:
-                        is_redundant = True
-                        break
-            except (ValueError, AttributeError):
-                # Fallback for Python < 3.9 if needed, though we require 3.10
-                if other_path.startswith(path + "/"):
-                    if stats_val == final_stats[other_path]:
-                        is_redundant = True
-                        break
+            if other_p.is_relative_to(path_p):
+                if stats_val == final_stats[other_path]:
+                    is_redundant = True
+                    break
 
         if not is_redundant:
             final_stats[path] = stats_val
