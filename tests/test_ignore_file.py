@@ -81,3 +81,35 @@ def test_ignore_file_manual_cli(tmp_path):
     # Verify filtering
     assert "keep.py" in content
     assert "custom_skip.txt" not in content
+
+def test_parse_ignore_file_non_existent():
+    """Test parse_ignore_file with a non-existent file path."""
+    assert utils.parse_ignore_file("non_existent_file.txt") == []
+
+def test_parse_ignore_file_with_comments_and_empty_lines(tmp_path):
+    """Test parse_ignore_file skips comments and empty lines."""
+    ignore_file = tmp_path / ".ignore"
+    ignore_file.write_text("# Comment\n\n  \npattern1\n  # Nested comment\npattern2  ", encoding='utf-8')
+
+    patterns = utils.parse_ignore_file(ignore_file)
+    assert patterns == ["pattern1", "pattern2"]
+
+def test_parse_ignore_file_exception(monkeypatch, caplog, tmp_path):
+    """Test parse_ignore_file handling an exception during read."""
+    import logging
+
+    def mock_read_file_best_effort(path):
+        raise RuntimeError("Mocked read error")
+
+    # We need to mock it in utils since parse_ignore_file calls it
+    monkeypatch.setattr(utils, "read_file_best_effort", mock_read_file_best_effort)
+
+    # Create a dummy file so is_file() passes
+    dummy = tmp_path / "dummy_ignore"
+    dummy.touch()
+
+    caplog.set_level(logging.WARNING)
+    patterns = utils.parse_ignore_file(dummy)
+    assert patterns == []
+    assert "Could not read ignore file" in caplog.text
+    assert "Mocked read error" in caplog.text
