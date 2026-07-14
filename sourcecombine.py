@@ -4387,7 +4387,7 @@ def main():
         "--extract",
         action="store_true",
         help=(
-            "Rebuild original files and folders from combined outputs (JSON, XML, Markdown, etc.). "
+            "Rebuild original files and folders from combined outputs (JSON, XML, JSONL, CSV, Markdown, or Text). "
             "Supports filtering, sorting, and processing."
         ),
     )
