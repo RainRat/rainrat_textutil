@@ -5471,7 +5471,7 @@ def _parse_combined_content(content, source_name="combined file"):
         for file_node in root.iter('file'):
             try:
                 path = file_node.get('path')
-                file_content = file_node.text
+                file_content = file_node.text or ""
                 if path:
                     # XML extraction often has extra newlines due to templates
                     if file_content and file_content.startswith('\n') and file_content.endswith('\n'):
@@ -5777,22 +5777,23 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
     for path_str, file_content, meta in files_to_create:
         rel_path = PurePath(path_str)
 
-        # Automatically remove line numbers unless requested otherwise
-        if not keep_line_numbers:
-            file_content = utils.remove_line_numbers(file_content)
+        if file_content is not None:
+            # Automatically remove line numbers unless requested otherwise
+            if not keep_line_numbers:
+                file_content = utils.remove_line_numbers(file_content)
 
-        # Apply processing rules if any are configured
-        processing_opts = config.get('processing', {})
-        if processing_opts:
-            lang = utils.get_language_tag(rel_path, content=file_content, overrides=config.get('search', {}).get('custom_languages'))
-            processed_content = utils.process_content(file_content, processing_opts, language=lang)
-            if processed_content != file_content:
-                file_content = processed_content
-                # Clear metrics information as it's no longer accurate for the processed content
-                meta.pop('size', None)
-                meta.pop('tokens', None)
-                meta.pop('lines', None)
-                meta.pop('is_approx', None)
+            # Apply processing rules if any are configured
+            processing_opts = config.get('processing', {})
+            if processing_opts:
+                lang = utils.get_language_tag(rel_path, content=file_content, overrides=config.get('search', {}).get('custom_languages'))
+                processed_content = utils.process_content(file_content, processing_opts, language=lang)
+                if processed_content != file_content:
+                    file_content = processed_content
+                    # Clear metrics information as it's no longer accurate for the processed content
+                    meta.pop('size', None)
+                    meta.pop('tokens', None)
+                    meta.pop('lines', None)
+                    meta.pop('is_approx', None)
 
         include, reason = should_include(
             None,
@@ -5826,13 +5827,13 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
     # Initial information calculation needed for sorting and limits
     for path_str, file_content, meta in filtered_files:
         if meta.get('size') is None:
-            meta['size'] = len(file_content.encode('utf-8'))
+            meta['size'] = len(file_content.encode('utf-8')) if file_content is not None else 0
         if meta.get('lines') is None:
-            meta['lines'] = utils.count_lines(file_content)
+            meta['lines'] = utils.count_lines(file_content) if file_content is not None else 0
 
     # Token Estimation Pass (needed before global limits if sorting by tokens or requested)
     if estimate_tokens or sort_by == 'tokens' or stats['max_total_tokens'] > 0:
-        needs_estimation = [f for f in filtered_files if f[2].get('tokens') is None]
+        needs_estimation = [f for f in filtered_files if f[1] is not None and f[2].get('tokens') is None]
         if needs_estimation:
             est_bar = _progress_bar(
                 needs_estimation,
@@ -5979,6 +5980,11 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
 
     for rel_path_str, file_content, meta in extraction_bar:
         extraction_bar.set_description(f"Extracting {_truncate_path(rel_path_str, 40)}")
+
+        if file_content is None:
+            logging.info("Skipping extraction for file without content: %s", rel_path_str)
+            continue
+
         # Security check: prevent path traversal and absolute paths across platforms.
         try:
             # We use joinpath and resolve to catch traversal and absolute path attempts.
