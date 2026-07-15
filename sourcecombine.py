@@ -6370,7 +6370,7 @@ def _print_limit_usage_bar(label, current, maximum, label_width, is_size=False):
     else:
         detail = f"({current:,} • {maximum:,})"
 
-    print(f"    {C_BOLD}{label:<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_DIM}{percent:>6.1f}%{C_RESET} {C_DIM}{detail}{C_RESET}", file=sys.stderr)
+    print(f"    {C_DIM}{label:<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_DIM}{percent:>6.1f}%{C_RESET} {C_DIM}{detail}{C_RESET}", file=sys.stderr)
 
 
 def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None, duration=None, source_desc=None, mirror_enabled=False):
@@ -6588,7 +6588,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     has_skipped_folders = excluded_folders > 0
     has_any_skips = has_skipped_files or has_skipped_folders
 
-    found_label_style = C_DIM if not has_any_skips else C_BOLD
+    found_label_style = C_DIM
     found_value_style = C_DIM if not has_any_skips else f"{C_BOLD}{C_CYAN}"
  
     found_unit = f" {_plural(total_discovered, 'file')}"
@@ -6600,12 +6600,12 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
         # Files tree branches
         included_unit = f" {_plural(total_included, 'file')}"
-        print(f"    {C_DIM}├── {C_RESET}{C_BOLD}{'Included:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_GREEN}{total_included:12,}{C_RESET}{C_DIM}{included_unit:<8}{C_RESET} {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{included_percent:>6.1f}{C_RESET}{C_DIM}%){C_RESET}", file=sys.stderr)
+        print(f"    {C_DIM}├── {C_RESET}{C_DIM}{'Included:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_GREEN}{total_included:12,}{C_RESET}{C_DIM}{included_unit:<8}{C_RESET} {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{included_percent:>6.1f}{C_RESET}{C_DIM}%){C_RESET}", file=sys.stderr)
 
         if has_skipped_files:
             skipped_connector = "├── " if has_skipped_folders else "└── "
             skipped_unit = f" {_plural(total_filtered, 'file')}"
-            print(f"    {C_DIM}{skipped_connector}{C_RESET}{C_BOLD}{'Skipped:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_YELLOW}{total_filtered:12,}{C_RESET}{C_DIM}{skipped_unit:<8}{C_RESET} {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{skipped_percent:>6.1f}{C_RESET}{C_DIM}%){C_RESET}", file=sys.stderr)
+            print(f"    {C_DIM}{skipped_connector}{C_RESET}{C_DIM}{'Skipped:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_YELLOW}{total_filtered:12,}{C_RESET}{C_DIM}{skipped_unit:<8}{C_RESET} {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{skipped_percent:>6.1f}{C_RESET}{C_DIM}%){C_RESET}", file=sys.stderr)
 
             # Detailed breakdown of filtering reasons
             relevant_reasons = [(r, c) for r, c in stats.get('filter_reasons', {}).items() if r != 'excluded_folder' and c > 0]
@@ -6619,11 +6619,11 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                     display_reason = (reason.replace('_', ' ').capitalize() + ":")
                     reason_percent = (count / total_filtered * 100) if total_filtered > 0 else 0
                     reason_unit = f" {_plural(count, 'file')}"
-                    print(f"    {C_DIM}{outer_skipped_indent}{connector}{C_RESET}{C_BOLD}{display_reason:<{label_width - 8}}{C_RESET}{C_BOLD}{C_CYAN}{count:12,}{C_RESET}{C_DIM}{reason_unit:<8}{C_RESET} {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{reason_percent:>6.1f}{C_RESET}{C_DIM}%){C_RESET}", file=sys.stderr)
+                    print(f"    {C_DIM}{outer_skipped_indent}{connector}{C_RESET}{C_DIM}{display_reason:<{label_width - 8}}{C_RESET}{C_BOLD}{C_CYAN}{count:12,}{C_RESET}{C_DIM}{reason_unit:<8}{C_RESET} {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{reason_percent:>6.1f}{C_RESET}{C_DIM}%){C_RESET}", file=sys.stderr)
 
         if has_skipped_folders:
             folder_unit = f" {_plural(excluded_folders, 'folder')}"
-            print(f"    {C_DIM}└── {C_RESET}{C_BOLD}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_CYAN}{excluded_folders:12,}{C_RESET}{C_DIM}{folder_unit:<8}{C_RESET}", file=sys.stderr)
+            print(f"    {C_DIM}└── {C_RESET}{C_DIM}{'Skipped Folders:':<{label_width - 4}}{C_RESET}{C_BOLD}{C_CYAN}{excluded_folders:12,}{C_RESET}{C_DIM}{folder_unit:<8}{C_RESET}", file=sys.stderr)
 
     # Performance Section
     # Check if any limits were active
@@ -6642,14 +6642,14 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         if bps > 0:
             s_val, s_unit = _split_unit(utils.format_size(bps))
             size_throughput = f" {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{s_val:>12}{C_RESET} {C_DIM}{s_unit.strip() + '/s':<10}){C_RESET}"
-        print(f"    {C_BOLD}{'Total Size:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{val:>12}{C_RESET}{C_DIM}{unit:<8}{C_RESET}{size_throughput}", file=sys.stderr)
+        print(f"    {C_DIM}{'Total Size:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{val:>12}{C_RESET}{C_DIM}{unit:<8}{C_RESET}{size_throughput}", file=sys.stderr)
 
         if total_lines > 0:
             lines_throughput = ""
             if lps > 0:
                 lines_throughput = f" {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{lps:>12,.0f}{C_RESET} {C_DIM}{'lines/s':<10}){C_RESET}"
             unit_label = f" {line_word}"
-            print(f"    {C_BOLD}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET}{C_DIM}{unit_label:<8}{C_RESET}{lines_throughput}", file=sys.stderr)
+            print(f"    {C_DIM}{'Total Lines:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{total_lines:12,}{C_RESET}{C_DIM}{unit_label:<8}{C_RESET}{lines_throughput}", file=sys.stderr)
 
         # Token Counts
         # Show token counts if tokens were estimated
@@ -6661,7 +6661,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
                 tokens_throughput = f" {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{tps:>12,.0f}{C_RESET} {C_DIM}{'tokens/s':<10}){C_RESET}"
             unit_label = f" {token_word}"
             print(
-                f"    {C_BOLD}{'Total Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET}{C_DIM}{unit_label:<8}{C_RESET}{tokens_throughput}",
+                f"    {C_DIM}{'Total Tokens:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{token_str:>12}{C_RESET}{C_DIM}{unit_label:<8}{C_RESET}{tokens_throughput}",
                 file=sys.stderr,
             )
             if is_approx:
@@ -6672,7 +6672,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
         if duration is not None:
             fps = total_discovered / duration if duration > 0 else 0
-            print(f"    {C_BOLD}{'Duration:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{duration:12.2f}{C_RESET}{C_DIM}{' s':<8}{C_RESET} {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{fps:>12,.1f}{C_RESET} {C_DIM}{'files/s':<10}){C_RESET}", file=sys.stderr)
+            print(f"    {C_DIM}{'Duration:':<{label_width}}{C_RESET}{C_BOLD}{C_CYAN}{duration:12.2f}{C_RESET}{C_DIM}{' s':<8}{C_RESET} {C_DIM}({C_RESET}{C_BOLD}{C_CYAN}{fps:>12,.1f}{C_RESET} {C_DIM}{'files/s':<10}){C_RESET}", file=sys.stderr)
 
         _print_limit_usage_bar('File Limit Usage:', total_included, stats.get('max_files', 0), label_width)
         _print_limit_usage_bar('Token Limit Usage:', token_count, stats.get('max_total_tokens', 0), label_width)
