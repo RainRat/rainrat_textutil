@@ -4419,7 +4419,7 @@ def main():
         help=(
             "Verify that files on disk match the content or hashes in combined files or manifests. "
             "Read from files, folders, remote URLs, the terminal, or the clipboard. "
-            "Searches for standard defaults if no input is provided."
+            "Searches for standard defaults if no input is provided. Use --json for machine-readable output."
         ),
     )
     utility_group.add_argument(
@@ -5301,7 +5301,7 @@ def main():
                 sys.exit(1)
 
         if args.verify:
-            verify_files(
+            results = verify_files(
                 sources,
                 root_folder=".",
                 config=config,
@@ -5309,7 +5309,10 @@ def main():
                 repair=args.repair,
                 dry_run=args.dry_run,
                 strip_components=args.strip_components,
+                quiet=getattr(args, 'json', False),
             )
+            if getattr(args, 'json', False):
+                print(json.dumps(results, indent=2))
             sys.exit(0)
 
         output_folder = args.output or "."
@@ -5557,7 +5560,7 @@ def _parse_combined_content(content, source_name="combined file"):
     return files_found
 
 
-def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=False, dry_run=False, strip_components=0):
+def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=False, dry_run=False, strip_components=0, quiet=False):
     """Verify that files on disk match the manifest or combined file."""
     root_folder = Path(root_folder)
     if config is None:
@@ -5574,8 +5577,9 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
         logging.error("No files found to verify in any of the sources.")
         sys.exit(1)
 
-    title = "Repair Report" if repair else "Verification Report"
-    print(f"\n{C_BOLD}=== {title} ==={C_RESET}")
+    if not quiet:
+        title = "Repair Report" if repair else "Verification Report"
+        print(f"\n{C_BOLD}=== {title} ==={C_RESET}")
 
     matches = 0
     mismatches = 0
@@ -5605,7 +5609,8 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
         if not target_path.exists():
             if repair and expected_content is not None:
                 if dry_run:
-                    print(f"  {C_CYAN}[REPAIR]{C_RESET}  {rel_path_str} {C_DIM}(would create missing file){C_RESET}")
+                    if not quiet:
+                        print(f"  {C_CYAN}[REPAIR]{C_RESET}  {rel_path_str} {C_DIM}(would create missing file){C_RESET}")
                     repaired += 1
                 else:
                     try:
@@ -5613,13 +5618,16 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
                         target_path.write_text(expected_content, encoding='utf-8')
                         if meta.get('modified') is not None:
                             os.utime(target_path, (meta['modified'], meta['modified']))
-                        print(f"  {C_GREEN}[REPAIRED]{C_RESET} {rel_path_str} {C_DIM}(created missing file){C_RESET}")
+                        if not quiet:
+                            print(f"  {C_GREEN}[REPAIRED]{C_RESET} {rel_path_str} {C_DIM}(created missing file){C_RESET}")
                         repaired += 1
                     except OSError as e:
-                        print(f"  {C_RED}[ERROR]{C_RESET}    {rel_path_str} {C_DIM}(failed to repair: {e}){C_RESET}")
+                        if not quiet:
+                            print(f"  {C_RED}[ERROR]{C_RESET}    {rel_path_str} {C_DIM}(failed to repair: {e}){C_RESET}")
                         missing += 1
             else:
-                print(f"  {C_RED}[MISSING]{C_RESET} {rel_path_str}")
+                if not quiet:
+                    print(f"  {C_RED}[MISSING]{C_RESET} {rel_path_str}")
                 missing += 1
             continue
 
@@ -5629,31 +5637,37 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
             try:
                 actual_sha = _get_sha256_hash(target_path.read_bytes())
                 if actual_sha == expected_sha:
-                    print(f"  {C_GREEN}[OK]{C_RESET}      {rel_path_str} {C_DIM}(hash match){C_RESET}")
+                    if not quiet:
+                        print(f"  {C_GREEN}[OK]{C_RESET}      {rel_path_str} {C_DIM}(hash match){C_RESET}")
                     matches += 1
                 else:
                     if repair and expected_content is not None:
                         if dry_run:
-                            print(f"  {C_CYAN}[REPAIR]{C_RESET}  {rel_path_str} {C_DIM}(would fix hash mismatch){C_RESET}")
+                            if not quiet:
+                                print(f"  {C_CYAN}[REPAIR]{C_RESET}  {rel_path_str} {C_DIM}(would fix hash mismatch){C_RESET}")
                             repaired += 1
                         else:
                             try:
                                 target_path.write_text(expected_content, encoding='utf-8')
                                 if meta.get('modified') is not None:
                                     os.utime(target_path, (meta['modified'], meta['modified']))
-                                print(f"  {C_GREEN}[REPAIRED]{C_RESET} {rel_path_str} {C_DIM}(fixed hash mismatch){C_RESET}")
+                                if not quiet:
+                                    print(f"  {C_GREEN}[REPAIRED]{C_RESET} {rel_path_str} {C_DIM}(fixed hash mismatch){C_RESET}")
                                 repaired += 1
                             except OSError as e:
-                                print(f"  {C_RED}[ERROR]{C_RESET}    {rel_path_str} {C_DIM}(failed to repair: {e}){C_RESET}")
+                                if not quiet:
+                                    print(f"  {C_RED}[ERROR]{C_RESET}    {rel_path_str} {C_DIM}(failed to repair: {e}){C_RESET}")
                                 mismatches += 1
                     else:
-                        print(f"  {C_RED}[MISMATCH]{C_RESET} {rel_path_str} {C_DIM}(hash mismatch){C_RESET}")
+                        if not quiet:
+                            print(f"  {C_RED}[MISMATCH]{C_RESET} {rel_path_str} {C_DIM}(hash mismatch){C_RESET}")
                         mismatches += 1
                         if show_diff and expected_content is not None:
                             actual_content, _ = read_file_best_effort(target_path)
                             _print_diff(actual_content, expected_content, rel_path_str)
             except OSError as e:
-                print(f"  {C_RED}[ERROR]{C_RESET}    {rel_path_str} {C_DIM}({e}){C_RESET}")
+                if not quiet:
+                    print(f"  {C_RED}[ERROR]{C_RESET}    {rel_path_str} {C_DIM}({e}){C_RESET}")
                 mismatches += 1
             continue
 
@@ -5662,41 +5676,48 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
             actual_content, _ = read_file_best_effort(target_path)
             # Normalize line endings for content comparison to be robust across OS
             if actual_content.replace('\r\n', '\n') == expected_content.replace('\r\n', '\n'):
-                print(f"  {C_GREEN}[OK]{C_RESET}      {rel_path_str} {C_DIM}(content match){C_RESET}")
+                if not quiet:
+                    print(f"  {C_GREEN}[OK]{C_RESET}      {rel_path_str} {C_DIM}(content match){C_RESET}")
                 matches += 1
             else:
                 if repair:
                     if dry_run:
-                        print(f"  {C_CYAN}[REPAIR]{C_RESET}  {rel_path_str} {C_DIM}(would fix content mismatch){C_RESET}")
+                        if not quiet:
+                            print(f"  {C_CYAN}[REPAIR]{C_RESET}  {rel_path_str} {C_DIM}(would fix content mismatch){C_RESET}")
                         repaired += 1
                     else:
                         try:
                             target_path.write_text(expected_content, encoding='utf-8')
                             if meta.get('modified') is not None:
                                 os.utime(target_path, (meta['modified'], meta['modified']))
-                            print(f"  {C_GREEN}[REPAIRED]{C_RESET} {rel_path_str} {C_DIM}(fixed content mismatch){C_RESET}")
+                            if not quiet:
+                                print(f"  {C_GREEN}[REPAIRED]{C_RESET} {rel_path_str} {C_DIM}(fixed content mismatch){C_RESET}")
                             repaired += 1
                         except OSError as e:
-                            print(f"  {C_RED}[ERROR]{C_RESET}    {rel_path_str} {C_DIM}(failed to repair: {e}){C_RESET}")
+                            if not quiet:
+                                print(f"  {C_RED}[ERROR]{C_RESET}    {rel_path_str} {C_DIM}(failed to repair: {e}){C_RESET}")
                             mismatches += 1
                 else:
-                    print(f"  {C_RED}[MISMATCH]{C_RESET} {rel_path_str} {C_DIM}(content mismatch){C_RESET}")
+                    if not quiet:
+                        print(f"  {C_RED}[MISMATCH]{C_RESET} {rel_path_str} {C_DIM}(content mismatch){C_RESET}")
                     mismatches += 1
                     if show_diff:
                         _print_diff(actual_content, expected_content, rel_path_str)
             continue
 
-        print(f"  {C_YELLOW}[SKIPPED]{C_RESET}  {rel_path_str} {C_DIM}(no hash or content to verify against){C_RESET}")
+        if not quiet:
+            print(f"  {C_YELLOW}[SKIPPED]{C_RESET}  {rel_path_str} {C_DIM}(no hash or content to verify against){C_RESET}")
 
-    print(f"\n{C_BOLD}Summary:{C_RESET}")
-    print(f"  Matches:    {C_GREEN if matches == total else C_RESET}{matches}/{total}{C_RESET}")
-    if repaired:
-        print(f"  Repaired:   {C_GREEN}{repaired}{C_RESET}")
-    if mismatches:
-        print(f"  Mismatches: {C_RED}{mismatches}{C_RESET}")
-    if missing:
-        print(f"  Missing:    {C_RED}{missing}{C_RESET}")
-    print(f"{C_BOLD}{'=' * 27}{C_RESET}\n")
+    if not quiet:
+        print(f"\n{C_BOLD}Summary:{C_RESET}")
+        print(f"  Matches:    {C_GREEN if matches == total else C_RESET}{matches}/{total}{C_RESET}")
+        if repaired:
+            print(f"  Repaired:   {C_GREEN}{repaired}{C_RESET}")
+        if mismatches:
+            print(f"  Mismatches: {C_RED}{mismatches}{C_RESET}")
+        if missing:
+            print(f"  Missing:    {C_RED}{missing}{C_RESET}")
+        print(f"{C_BOLD}{'=' * 27}{C_RESET}\n")
 
     return {
         'matches': matches,
