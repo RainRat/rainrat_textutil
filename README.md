@@ -3,16 +3,16 @@
 SourceCombine is a tool for the terminal that helps you find, filter, and combine text files into a single file or folder. It supports many formats such as JSON, XML, Markdown, and CSV. It is helpful for preparing code context for AI models or managing large groups of files.
 
 ## Key Features
-*   **Find files in many folders:** Scan many folders at once. Use Git to find files and follow the `.gitignore` rules automatically.
-*   **Filtering:** Skip folders, files, or specific names using patterns. You can also filter by language, file content (using regular expressions), or Git changes.
-*   **Duplicate Removal:** Skip duplicate files by path or content.
-*   **Include Groups:** Group specific files to always include, even if you skip others.
-*   **Pairing:** Combine related files (such as source and header pairs) into their own individual output files.
-*   **File Extraction:** Rebuild the original files and folders from combined files (such as Text, JSON, XML, JSONL, CSV, or Markdown). The tool supports filtering, sorting, and processing rules. Batch process multiple files, entire folders, or remote URLs (http/https). Without an input file, the tool automatically searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`).
-*   **Sorting:** Sort files by `name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`.
-*   **Limiting:** Stop processing once you reach a file, token, size, or line limit.
-*   **Flexible Outputs:** Save results to the terminal, a file (JSON, XML, JSONL, CSV, or Markdown), or copy them to the system clipboard.
-*   **AI Context Integration:** Automatically include environment information (Python version, OS, Git status) and presets for AI models.
+*   **Scan Folders:** Search multiple folders at once. Use Git to find files and follow `.gitignore` rules.
+*   **Filter Content:** Skip folders and files by name, extension, language, content, or Git changes.
+*   **Remove Duplicates:** Skip duplicate files by path or content.
+*   **Include Groups:** Keep specific files regardless of other filters.
+*   **Pair Files:** Link related files (like `.cpp` and `.h`) into single output files.
+*   **Restore Files:** Rebuild original files and folders from combined Text, JSON, JSONL, XML, CSV, or Markdown. Supports filtering, remote URLs, and auto-detecting defaults.
+*   **Sort Results:** Organize files by name, size, date, tokens, lines, depth, or language.
+*   **Apply Limits:** Stop processing when reaching file, token, size, or line limits.
+*   **Choose Output:** Save to the terminal, a file, or the system clipboard.
+*   **AI Integration:** Include system info and Git context automatically with the `--ai` preset.
 
 ## Common Flags
 *   `--config` (`-k`): Use a custom configuration file (YAML). The tool automatically searches for `sourcecombine.yml`, `sourcecombine.yaml`, `config.yml`, or `config.yaml` in the current folder.
