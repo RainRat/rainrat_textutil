@@ -5778,12 +5778,12 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         rel_path = PurePath(path_str)
 
         # Automatically remove line numbers unless requested otherwise
-        if not keep_line_numbers:
+        if not keep_line_numbers and file_content is not None:
             file_content = utils.remove_line_numbers(file_content)
 
         # Apply processing rules if any are configured
         processing_opts = config.get('processing', {})
-        if processing_opts:
+        if processing_opts and file_content is not None:
             lang = utils.get_language_tag(rel_path, content=file_content, overrides=config.get('search', {}).get('custom_languages'))
             processed_content = utils.process_content(file_content, processing_opts, language=lang)
             if processed_content != file_content:
@@ -5814,8 +5814,8 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         seen_hashes = set()
         unique_files = []
         for path_str, file_content, meta in filtered_files:
-            content_hash = _get_sha256_hash(file_content)
-            if content_hash in seen_hashes:
+            content_hash = _get_sha256_hash(file_content) if file_content is not None else None
+            if content_hash and content_hash in seen_hashes:
                 logging.debug("Skipping duplicate content in extraction: %s", path_str)
                 stats['filter_reasons']['duplicate_content'] = stats['filter_reasons'].get('duplicate_content', 0) + 1
                 continue
@@ -5826,9 +5826,9 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
     # Initial information calculation needed for sorting and limits
     for path_str, file_content, meta in filtered_files:
         if meta.get('size') is None:
-            meta['size'] = len(file_content.encode('utf-8'))
+            meta['size'] = len(file_content.encode('utf-8')) if file_content is not None else 0
         if meta.get('lines') is None:
-            meta['lines'] = utils.count_lines(file_content)
+            meta['lines'] = utils.count_lines(file_content) if file_content is not None else 0
 
     # Token Estimation Pass (needed before global limits if sorting by tokens or requested)
     if estimate_tokens or sort_by == 'tokens' or stats['max_total_tokens'] > 0:
@@ -5845,7 +5845,7 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
             running_size = 0
             for path_str, file_content, meta in est_bar:
                 est_bar.set_description(f"Estimating {_truncate_path(path_str, 40)}")
-                tokens, is_approx = utils.estimate_tokens(file_content)
+                tokens, is_approx = utils.estimate_tokens(file_content) if file_content is not None else (0, False)
                 meta['tokens'] = tokens
                 meta['is_approx'] = is_approx
                 running_tokens += tokens
@@ -6011,22 +6011,25 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
             logging.warning("Skipping invalid path: %s", rel_path_str)
             continue
 
-        if show_diff and target_path.exists():
+        if show_diff and target_path.exists() and file_content is not None:
             old_content, _ = read_file_best_effort(target_path)
             _print_diff(old_content, file_content, rel_path_str)
 
         if dry_run:
             logging.info("[DRY RUN] Would create: %s", target_path)
         else:
-            try:
-                target_path.parent.mkdir(parents=True, exist_ok=True)
-                target_path.write_text(file_content, encoding='utf-8')
-                if meta.get('modified') is not None:
-                    os.utime(target_path, (meta['modified'], meta['modified']))
-                logging.info("Extracted: %s", target_path)
-                extracted_count += 1
-            except OSError as e:
-                logging.error("Failed to write %s: %s", target_path, e)
+            if file_content is not None:
+                try:
+                    target_path.parent.mkdir(parents=True, exist_ok=True)
+                    target_path.write_text(file_content, encoding='utf-8')
+                    if meta.get('modified') is not None:
+                        os.utime(target_path, (meta['modified'], meta['modified']))
+                    logging.info("Extracted: %s", target_path)
+                    extracted_count += 1
+                except OSError as e:
+                    logging.error("Failed to write %s: %s", target_path, e)
+            else:
+                logging.debug("Skipping file creation for %s: No content provided.", rel_path_str)
 
             running_size += (_to_int_or_none(meta.get('size')) or 0)
             running_lines += (_to_int_or_none(meta.get('lines')) or 0)
