@@ -4419,6 +4419,7 @@ def main():
         help=(
             "Verify that files on disk match the content or hashes in combined files or manifests. "
             "Read from files, folders, remote URLs, the terminal, or the clipboard. "
+            "Supports filtering and custom target directories via --output. "
             "Searches for standard defaults if no input is provided."
         ),
     )
@@ -5303,7 +5304,7 @@ def main():
         if args.verify:
             verify_files(
                 sources,
-                root_folder=".",
+                root_folder=args.output or ".",
                 config=config,
                 show_diff=config.get('output', {}).get('show_diff', False),
                 repair=args.repair,
@@ -5573,6 +5574,23 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
     if not files_to_verify:
         logging.error("No files found to verify in any of the sources.")
         sys.exit(1)
+
+    # Apply configuration filters using should_include
+    filter_opts = config.get('filters', {})
+    search_opts = config.get('search', {})
+    filtered_files = []
+    for rel_path_str, expected_content, meta in files_to_verify:
+        rel_path = PurePath(rel_path_str)
+        include = should_include(
+            None,
+            rel_path,
+            filter_opts,
+            search_opts,
+            virtual_content=expected_content,
+        )
+        if include:
+            filtered_files.append((rel_path_str, expected_content, meta))
+    files_to_verify = filtered_files
 
     title = "Repair Report" if repair else "Verification Report"
     print(f"\n{C_BOLD}=== {title} ==={C_RESET}")
