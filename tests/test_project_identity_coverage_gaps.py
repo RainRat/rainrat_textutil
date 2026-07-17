@@ -157,3 +157,71 @@ def test_get_project_identity_manifest_exception_handling(tmp_path):
 
         identity = get_project_identity(tmp_path)
         assert identity["project_name"] == tmp_path.name
+
+
+def test_format_author_falsy_and_unsupported_types():
+    from utils import _format_author
+    assert _format_author(None) == ""
+    assert _format_author("") == ""
+    assert _format_author(12345) == "12345"
+
+
+def test_get_project_identity_dotnet_csproj_authors(tmp_path):
+    csproj = tmp_path / "test.csproj"
+    csproj.write_text('<Project><PropertyGroup><Authors>Jane Doe</Authors></PropertyGroup></Project>', encoding='utf-8')
+    identity = get_project_identity(tmp_path)
+    assert identity["project_author"] == "Jane Doe"
+
+
+def test_get_project_identity_cocoapods_podspec_authors(tmp_path):
+    podspec = tmp_path / "My.podspec"
+    podspec.write_text('s.name = "MyPod"\ns.authors = "Cocoa Pod Author"', encoding='utf-8')
+    identity = get_project_identity(tmp_path)
+    assert identity["project_author"] == "Cocoa Pod Author"
+
+
+def test_get_project_identity_maven_pom_developers(tmp_path):
+    pom = tmp_path / "pom.xml"
+    pom.write_text('<project><developers><developer><name>Maven Author</name></developer></developers></project>', encoding='utf-8')
+    identity = get_project_identity(tmp_path)
+    assert identity["project_author"] == "Maven Author"
+
+
+def test_get_project_identity_ruby_gemspec_authors_list(tmp_path):
+    gemspec = tmp_path / "test.gemspec"
+    gemspec.write_text('Gem::Specification.new do |s| s.name = "my-gem"; s.authors = ["Gem Author A", "Gem Author B"] end', encoding='utf-8')
+    identity = get_project_identity(tmp_path)
+    assert identity["project_author"] == "Gem Author A, Gem Author B"
+
+
+def test_get_project_identity_deno_json_authors(tmp_path):
+    deno_file = tmp_path / "deno.json"
+    data = {
+        "name": "my-deno-app",
+        "author": {"name": "Deno Author", "email": "deno@example.com"}
+    }
+    deno_file.write_text(json.dumps(data), encoding='utf-8')
+    identity = get_project_identity(tmp_path)
+    assert identity["project_author"] == "Deno Author <deno@example.com>"
+
+    data2 = {
+        "name": "my-deno-app-2",
+        "authors": ["Deno Author 1", "Deno Author 2"]
+    }
+    deno_file.write_text(json.dumps(data2), encoding='utf-8')
+    identity = get_project_identity(tmp_path)
+    assert identity["project_author"] == "Deno Author 1, Deno Author 2"
+
+
+def test_get_project_identity_flutter_pubspec_authors(tmp_path):
+    pubspec = tmp_path / "pubspec.yaml"
+    pubspec.write_text('name: my_flutter_app\nauthors: [Pubspec Author 1, Pubspec Author 2]', encoding='utf-8')
+    identity = get_project_identity(tmp_path)
+    assert identity["project_author"] == "Pubspec Author 1, Pubspec Author 2"
+
+
+def test_get_project_identity_license_fallback_empty_file(tmp_path):
+    license_file = tmp_path / "LICENSE"
+    license_file.write_text("   \n   ", encoding='utf-8')
+    identity = get_project_identity(tmp_path)
+    assert not identity.get("project_license")
