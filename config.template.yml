@@ -8,7 +8,7 @@ search:
   # Paths to scan for files.
   # Replace with one or more folders on the system.
   root_folders:
-    - '/path/to/project'
+    - '.'
 
   # Limit folder scanning to this depth (for example, 1 for root files only).
   # Use 0 for no limit.

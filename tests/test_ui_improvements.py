@@ -134,3 +134,23 @@ def test_trailing_slash_with_format(temp_cwd, mock_argv):
             args, _ = mock_combine.call_args
             expected_path = os.path.join("markdown_dir", "combined_files.md")
             assert args[1] == expected_path
+
+def test_init_workflow_succeeds_out_of_the_box(temp_cwd, mock_argv, caplog):
+    """Verify that after running --init, running the tool succeeds out-of-the-box."""
+    with mock_argv(['--init']):
+        with pytest.raises(SystemExit) as excinfo:
+            main()
+        assert excinfo.value.code == 0
+
+    assert (temp_cwd / "sourcecombine.yml").exists()
+
+    dummy_file = temp_cwd / "dummy.txt"
+    dummy_file.write_text("Hello World", encoding="utf-8")
+
+    caplog.clear()
+    with mock_argv(['--dry-run']):
+        main()
+
+    warning_msgs = [record.message for record in caplog.records if record.levelname == "WARNING"]
+    for msg in warning_msgs:
+        assert "/path/to/project" not in msg
