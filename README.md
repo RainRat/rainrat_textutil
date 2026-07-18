@@ -77,7 +77,24 @@ The tool installs these automatically when you follow the installation steps:
     git clone https://github.com/RainRat/rainrat_textutil.git
     cd rainrat_textutil
     ```
-2.  **Install Dependencies:**
+2.  **Set Up a Virtual Environment (Recommended):**
+    Create and activate a virtual environment to keep your project dependencies isolated:
+    *   **macOS / Linux:**
+        ```bash
+        python3 -m venv .venv
+        source .venv/bin/activate
+        ```
+    *   **Windows (Command Prompt):**
+        ```cmd
+        python -m venv .venv
+        .venv\Scripts\activate.bat
+        ```
+    *   **Windows (PowerShell):**
+        ```powershell
+        python -m venv .venv
+        .venv\Scripts\Activate.ps1
+        ```
+3.  **Install Dependencies:**
     ```bash
     pip install -r requirements.txt
     ```
@@ -85,11 +102,11 @@ The tool installs these automatically when you follow the installation steps:
     ```bash
     pip install tiktoken
     ```
-3.  **Run the Tool:**
+4.  **Run the Tool:**
     ```bash
     python sourcecombine.py src/ --output combined.txt
     ```
-4.  **Create a Config (Optional):**
+5.  **Create a Config (Optional):**
     ```bash
     python sourcecombine.py --init
     ```
