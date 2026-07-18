@@ -5605,7 +5605,7 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
         if not target_path.exists():
             if repair and expected_content is not None:
                 if dry_run:
-                    print(f"  {C_CYAN}[REPAIR]{C_RESET}  {rel_path_str} {C_DIM}(would create missing file){C_RESET}")
+                    print(f"  {C_CYAN}{'[REPAIR]':<10}{C_RESET}  {rel_path_str} {C_DIM}(would create missing file){C_RESET}")
                     repaired += 1
                 else:
                     try:
@@ -5613,13 +5613,13 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
                         target_path.write_text(expected_content, encoding='utf-8')
                         if meta.get('modified') is not None:
                             os.utime(target_path, (meta['modified'], meta['modified']))
-                        print(f"  {C_GREEN}[REPAIRED]{C_RESET} {rel_path_str} {C_DIM}(created missing file){C_RESET}")
+                        print(f"  {C_GREEN}{'[REPAIRED]':<10}{C_RESET}  {rel_path_str} {C_DIM}(created missing file){C_RESET}")
                         repaired += 1
                     except OSError as e:
-                        print(f"  {C_RED}[ERROR]{C_RESET}    {rel_path_str} {C_DIM}(failed to repair: {e}){C_RESET}")
+                        print(f"  {C_RED}{'[ERROR]':<10}{C_RESET}  {rel_path_str} {C_DIM}(failed to repair: {e}){C_RESET}")
                         missing += 1
             else:
-                print(f"  {C_RED}[MISSING]{C_RESET} {rel_path_str}")
+                print(f"  {C_RED}{'[MISSING]':<10}{C_RESET}  {rel_path_str}")
                 missing += 1
             continue
 
@@ -5629,31 +5629,31 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
             try:
                 actual_sha = _get_sha256_hash(target_path.read_bytes())
                 if actual_sha == expected_sha:
-                    print(f"  {C_GREEN}[OK]{C_RESET}      {rel_path_str} {C_DIM}(hash match){C_RESET}")
+                    print(f"  {C_GREEN}{'[OK]':<10}{C_RESET}  {rel_path_str} {C_DIM}(hash match){C_RESET}")
                     matches += 1
                 else:
                     if repair and expected_content is not None:
                         if dry_run:
-                            print(f"  {C_CYAN}[REPAIR]{C_RESET}  {rel_path_str} {C_DIM}(would fix hash mismatch){C_RESET}")
+                            print(f"  {C_CYAN}{'[REPAIR]':<10}{C_RESET}  {rel_path_str} {C_DIM}(would fix hash mismatch){C_RESET}")
                             repaired += 1
                         else:
                             try:
                                 target_path.write_text(expected_content, encoding='utf-8')
                                 if meta.get('modified') is not None:
                                     os.utime(target_path, (meta['modified'], meta['modified']))
-                                print(f"  {C_GREEN}[REPAIRED]{C_RESET} {rel_path_str} {C_DIM}(fixed hash mismatch){C_RESET}")
+                                print(f"  {C_GREEN}{'[REPAIRED]':<10}{C_RESET}  {rel_path_str} {C_DIM}(fixed hash mismatch){C_RESET}")
                                 repaired += 1
                             except OSError as e:
-                                print(f"  {C_RED}[ERROR]{C_RESET}    {rel_path_str} {C_DIM}(failed to repair: {e}){C_RESET}")
+                                print(f"  {C_RED}{'[ERROR]':<10}{C_RESET}  {rel_path_str} {C_DIM}(failed to repair: {e}){C_RESET}")
                                 mismatches += 1
                     else:
-                        print(f"  {C_RED}[MISMATCH]{C_RESET} {rel_path_str} {C_DIM}(hash mismatch){C_RESET}")
+                        print(f"  {C_RED}{'[MISMATCH]':<10}{C_RESET}  {rel_path_str} {C_DIM}(hash mismatch){C_RESET}")
                         mismatches += 1
                         if show_diff and expected_content is not None:
                             actual_content, _ = read_file_best_effort(target_path)
                             _print_diff(actual_content, expected_content, rel_path_str)
             except OSError as e:
-                print(f"  {C_RED}[ERROR]{C_RESET}    {rel_path_str} {C_DIM}({e}){C_RESET}")
+                print(f"  {C_RED}{'[ERROR]':<10}{C_RESET}  {rel_path_str} {C_DIM}({e}){C_RESET}")
                 mismatches += 1
             continue
 
@@ -5662,31 +5662,31 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
             actual_content, _ = read_file_best_effort(target_path)
             # Normalize line endings for content comparison to be robust across OS
             if actual_content.replace('\r\n', '\n') == expected_content.replace('\r\n', '\n'):
-                print(f"  {C_GREEN}[OK]{C_RESET}      {rel_path_str} {C_DIM}(content match){C_RESET}")
+                print(f"  {C_GREEN}{'[OK]':<10}{C_RESET}  {rel_path_str} {C_DIM}(content match){C_RESET}")
                 matches += 1
             else:
                 if repair:
                     if dry_run:
-                        print(f"  {C_CYAN}[REPAIR]{C_RESET}  {rel_path_str} {C_DIM}(would fix content mismatch){C_RESET}")
+                        print(f"  {C_CYAN}{'[REPAIR]':<10}{C_RESET}  {rel_path_str} {C_DIM}(would fix content mismatch){C_RESET}")
                         repaired += 1
                     else:
                         try:
                             target_path.write_text(expected_content, encoding='utf-8')
                             if meta.get('modified') is not None:
                                 os.utime(target_path, (meta['modified'], meta['modified']))
-                            print(f"  {C_GREEN}[REPAIRED]{C_RESET} {rel_path_str} {C_DIM}(fixed content mismatch){C_RESET}")
+                            print(f"  {C_GREEN}{'[REPAIRED]':<10}{C_RESET}  {rel_path_str} {C_DIM}(fixed content mismatch){C_RESET}")
                             repaired += 1
                         except OSError as e:
-                            print(f"  {C_RED}[ERROR]{C_RESET}    {rel_path_str} {C_DIM}(failed to repair: {e}){C_RESET}")
+                            print(f"  {C_RED}{'[ERROR]':<10}{C_RESET}  {rel_path_str} {C_DIM}(failed to repair: {e}){C_RESET}")
                             mismatches += 1
                 else:
-                    print(f"  {C_RED}[MISMATCH]{C_RESET} {rel_path_str} {C_DIM}(content mismatch){C_RESET}")
+                    print(f"  {C_RED}{'[MISMATCH]':<10}{C_RESET}  {rel_path_str} {C_DIM}(content mismatch){C_RESET}")
                     mismatches += 1
                     if show_diff:
                         _print_diff(actual_content, expected_content, rel_path_str)
             continue
 
-        print(f"  {C_YELLOW}[SKIPPED]{C_RESET}  {rel_path_str} {C_DIM}(no hash or content to verify against){C_RESET}")
+        print(f"  {C_YELLOW}{'[SKIPPED]':<10}{C_RESET}  {rel_path_str} {C_DIM}(no hash or content to verify against){C_RESET}")
 
     print(f"\n{C_BOLD}Summary:{C_RESET}")
     print(f"  Matches:    {C_GREEN if matches == total else C_RESET}{matches}/{total}{C_RESET}")

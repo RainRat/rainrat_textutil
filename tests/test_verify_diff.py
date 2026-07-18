@@ -20,7 +20,7 @@ def test_verify_files_with_diff(tmp_path, capsys, monkeypatch):
     verify_files(sources, root_folder=root, show_diff=True)
 
     captured = capsys.readouterr()
-    assert "[MISMATCH] test.txt (content mismatch)" in captured.out
+    assert "[MISMATCH]  test.txt (content mismatch)" in captured.out
     assert "--- a/test.txt" in captured.err
     assert "+++ b/test.txt" in captured.err
     assert "-actual content" in captured.err
@@ -52,6 +52,6 @@ def test_verify_cli_diff(tmp_path, capsys, monkeypatch):
     assert exc.value.code == 0
 
     captured = capsys.readouterr()
-    assert "[MISMATCH] test.txt (content mismatch)" in captured.out
+    assert "[MISMATCH]  test.txt (content mismatch)" in captured.out
     assert "--- a/test.txt" in captured.err
     assert "+expected content" in captured.err
