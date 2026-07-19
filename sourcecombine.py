@@ -4453,12 +4453,8 @@ def main():
         help=(
             "Verify that files on disk match the content or hashes in combined files or manifests. "
             "Read from files, folders, remote URLs, the terminal, or the clipboard. "
-<<<<<<< HEAD
             "Supports filtering and custom target directories via --output. "
-            "Searches for standard defaults if no input is provided."
-=======
             "Searches for standard defaults if no input is provided. Use --json for machine-readable output."
->>>>>>> origin/feat-verify-json-format-7046370652828286219
         ),
     )
     utility_group.add_argument(
