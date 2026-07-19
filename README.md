@@ -117,7 +117,7 @@ python sourcecombine.py --extract combined_files.md --output restored_project/
 ```
 
 ### AI Model Context
-Prepare a comprehensive project context for AI models. This preset includes a Table of Contents, folder tree, project overview, line numbers, and automatically copies to the system clipboard:
+Prepare a full project context for AI models. This preset uses Markdown format and includes a Table of Contents, folder tree, project overview, line numbers, and Git context (logs and diffs). It also removes duplicates and skips binary files. If you do not specify an output file, the tool copies the result to the system clipboard:
 ```bash
 python sourcecombine.py src/ --ai
 ```
