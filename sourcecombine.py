@@ -3798,6 +3798,40 @@ def find_and_combine_files(
     return stats
 
 
+class AnsiString(str):
+    """A string subclass that reports length without ANSI escape codes."""
+
+    def __len__(self):
+        return len(_ANSI_ESCAPE.sub('', self))
+
+
+class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
+    """Custom help formatter to provide rich terminal coloring and visual hierarchy."""
+
+    def start_section(self, heading):
+        if heading:
+            heading = f"{C_BOLD}{C_CYAN}{heading}{C_RESET}"
+        super().start_section(heading)
+
+    def _format_action_invocation(self, action):
+        if not action.option_strings:
+            default = self._get_default_metavar_for_optional(action)
+            args_string = self._format_args(action, default)
+            return AnsiString(f"{C_BOLD}{args_string}{C_RESET}")
+        else:
+            parts = []
+            if action.nargs == 0:
+                for option_string in action.option_strings:
+                    parts.append(f"{C_BOLD}{option_string}{C_RESET}")
+            else:
+                default = self._get_default_metavar_for_optional(action)
+                args_string = self._format_args(action, default)
+                dim_args = f"{C_DIM}{args_string}{C_RESET}" if args_string else ""
+                for option_string in action.option_strings:
+                    parts.append(f"{C_BOLD}{option_string}{C_RESET} {dim_args}")
+            return AnsiString(', '.join(parts))
+
+
 def main():
     """Main function to parse arguments and run the tool."""
     start_time = time.perf_counter()
@@ -3807,7 +3841,7 @@ def main():
             "from a project into one file (or folder). Use it to give better context to AI "
             "models, generate documentation, or save work."
         ),
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+        formatter_class=ColoredHelpFormatter,
         epilog=textwrap.dedent("""
             Examples:
               # Combine files in the current folder into 'combined_files.txt'
