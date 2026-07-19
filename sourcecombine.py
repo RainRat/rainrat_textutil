@@ -4721,7 +4721,10 @@ def main():
         if template_path.exists():
             try:
                 shutil.copy2(template_path, target_config)
-                logging.info("Created default configuration at %s", target_config.resolve())
+                logging.info(
+                    "Created default configuration at %s. You can now customize it or run 'sourcecombine' directly.",
+                    target_config.resolve()
+                )
             except OSError as exc:
                 logging.error("Could not copy the template file: %s", exc)
                 sys.exit(1)
@@ -4734,7 +4737,10 @@ def main():
                         utils.yaml.dump(utils.DEFAULT_CONFIG, f, sort_keys=False)
                     else:
                         logging.warning("PyYAML not found; creating an empty configuration.")
-                logging.info("Created a simple configuration at %s", target_config.resolve())
+                logging.info(
+                    "Created a simple configuration at %s. You can now customize it or run 'sourcecombine' directly.",
+                    target_config.resolve()
+                )
             except OSError as exc:
                 logging.error("Could not write the configuration file: %s", exc)
                 sys.exit(1)
