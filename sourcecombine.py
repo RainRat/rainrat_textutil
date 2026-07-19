@@ -6415,9 +6415,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         parts = s.split(' ', 1)
         return (parts[0], f" {parts[1]}") if len(parts) == 2 else (s, "")
 
-    def _get_metric_style(metric_name, primary_metric):
-        return f"{C_BOLD}{C_CYAN}" if metric_name == primary_metric else C_DIM
-
     def _format_header(label, metric_name, primary_metric, width=12):
         h = f"{label:>{width}}"
         return f"{C_BOLD}{h}{C_RESET}{C_DIM}" if metric_name == primary_metric else h
