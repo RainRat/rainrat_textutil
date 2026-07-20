@@ -147,6 +147,38 @@ Combine related files (such as `.cpp` and `.h` pairs) into their own individual 
 python sourcecombine.py src/ --pair .cpp .h --output combined_src/
 ```
 
+### Ignoring Files and Folders
+Exclude files or folders from the combination process. To do this, create an ignore file named `.sourcecombineignore` in your project's root folder.
+
+Add one pattern per line. The tool matches these glob patterns against file paths:
+```text
+# Ignore all log files
+*.log
+
+# Ignore node_modules folder
+node_modules/
+
+# Ignore a specific file
+secrets.json
+```
+The tool automatically reads `.sourcecombineignore` if it exists in the current folder. You can also specify a custom ignore file using the `--ignore-file` flag:
+```bash
+python sourcecombine.py src/ --ignore-file custom_ignore.txt
+```
+
+### Verifying Combined Files
+Verify that files on your computer match the content or SHA-256 hashes inside a combined file. This is useful for making sure your codebase is in sync.
+
+To verify files against a combined JSON file:
+```bash
+python sourcecombine.py --verify combined_files.json
+```
+
+To output the verification report in a machine-readable JSON format:
+```bash
+python sourcecombine.py --verify combined_files.json --json
+```
+
 ## Template Customization
 You can customize the output by using templates in the configuration file. Templates support placeholders that are replaced with actual data when the tool runs. Both file-level and global templates support all project-level and Git placeholders.
 
