@@ -3906,6 +3906,11 @@ def main():
         action="store_true",
         help="Show detailed status messages to help find and fix problems.",
     )
+    core_group.add_argument(
+        "--no-recursive",
+        action="store_true",
+        help="Do not search subfolders recursively (only scan target folder's top-level files).",
+    )
 
     # Project Information Group
     project_group = parser.add_argument_group("Project Information")
@@ -5016,6 +5021,9 @@ def main():
 
     if args.max_depth is not None:
         config['search']['max_depth'] = args.max_depth
+
+    if getattr(args, 'no_recursive', False):
+        config['search']['recursive'] = False
 
     if args.grep:
         config['filters']['grep'] = args.grep
