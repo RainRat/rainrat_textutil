@@ -210,6 +210,7 @@ DEFAULT_CONFIG = {
         'git_diff_ref': None,
         'git_staged': False,
         'git_unstaged': False,
+        'recursive': True,
         'allowed_languages': [],
         'exclude_languages': [],
         'exclude_extensions': [],
@@ -752,6 +753,7 @@ def _validate_search_section(config):
 
     _validate_bool(search, 'git_staged', 'search')
     _validate_bool(search, 'git_unstaged', 'search')
+    _validate_bool(search, 'recursive', 'search')
 
     root_folders = search.get('root_folders')
     if root_folders is not None and not isinstance(root_folders, list):
