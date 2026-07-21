@@ -129,6 +129,10 @@ output:
   # templates, information, and structured components.
   skip_content: false
 
+  # If true, wrap each file's code block in collapsible HTML <details> and <summary> tags
+  # when using the 'markdown' output format.
+  collapsible: false
+
   # Template written before each file's content.
   # Placeholders: {{FILENAME}}, {{EXT}}, {{STEM}}, {{DIR}}, {{DIR_SLUG}}, {{SIZE}}, {{TOKENS}}, {{LINE_COUNT}}, {{MODIFIED}}, {{LANG}}, {{HASH}}, {{INDEX}}, {{TOTAL}}, {{GIT_BRANCH}}, {{GIT_COMMIT}}, {{GIT_COMMIT_SHORT}}, {{GIT_TAG}}, {{GIT_AUTHOR}}, {{GIT_AUTHOR_DATE}}, {{GIT_STATUS}}, {{GIT_DIFF}}, {{FILE_AUTHOR}}, {{FILE_AUTHOR_DATE}}, {{FILE_LOG}}, {{FILE_DIFF}}, {{FILE_STATUS}}, {{FILE_URL}}, {{GIT_LOG}}, {{GIT_REMOTE_URL}}, {{PROJECT_URL}}, {{SIZE_PERCENT}}, {{TOKEN_PERCENT}}, {{LINE_PERCENT}}, {{PROJECT_NAME}}, {{PROJECT_VERSION}}, {{PROJECT_AUTHOR}}, {{PROJECT_DESCRIPTION}}, {{PROJECT_LICENSE}}, {{MANIFEST_SOURCE}}, {{DATE}}, {{TIME}}, {{DATETIME}}, {{OS}}, {{PYTHON_VERSION}}, {{PLATFORM}}, {{ARCH}}, {{ENV:VAR_NAME}}.
   # Set to null or an empty text to omit the header.

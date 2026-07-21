@@ -276,6 +276,7 @@ DEFAULT_CONFIG = {
         'include_diff': False,
         'mirror': False,
         'skip_content': False,
+        'collapsible': False,
     },
     'project': {
         'name': None,
@@ -1004,6 +1005,7 @@ def _validate_output_section(config):
     _validate_bool(output_conf, 'include_diff', 'output')
     _validate_bool(output_conf, 'mirror', 'output')
     _validate_bool(output_conf, 'skip_content', 'output')
+    _validate_bool(output_conf, 'collapsible', 'output')
 
 
 def apply_line_regex_replacements(text, rules):

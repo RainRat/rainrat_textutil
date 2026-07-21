@@ -2848,6 +2848,9 @@ def find_and_combine_files(
     if output_format in ('json', 'jsonl', 'manifest', 'csv') and pairing_enabled:
         raise utils.InvalidConfigError(f"You cannot use {output_format.upper()} format when pairing files.")
 
+    if output_opts.get('collapsible') and output_format != 'markdown':
+        raise utils.InvalidConfigError("Collapsible mode can only be used with the 'markdown' format.")
+
     if mirror_enabled:
         # Default to no headers/footers for mirror mode unless explicitly overridden
         default_header = utils.DEFAULT_CONFIG['output']['header_template']
@@ -2868,10 +2871,16 @@ def find_and_combine_files(
 
         # If current matches default (or is None/empty/missing), override with Markdown defaults
         if not current_header or current_header == default_header:
-            output_opts['header_template'] = "## {{FILENAME}}\n\n```{{LANG}}\n"
+            if output_opts.get('collapsible'):
+                output_opts['header_template'] = "<details>\n<summary>{{FILENAME}}</summary>\n\n```{{LANG}}\n"
+            else:
+                output_opts['header_template'] = "## {{FILENAME}}\n\n```{{LANG}}\n"
 
         if not current_footer or current_footer == default_footer:
-            output_opts['footer_template'] = "\n```\n\n"
+            if output_opts.get('collapsible'):
+                output_opts['footer_template'] = "\n```\n\n</details>\n\n"
+            else:
+                output_opts['footer_template'] = "\n```\n\n"
 
     # Apply default XML templates if requested and not overridden
     if output_format == 'xml':
@@ -4300,6 +4309,11 @@ def main():
         action="store_true",
         help="Skip the actual file content in the output, while keeping templates and information. (Supported in all formats).",
     )
+    output_group.add_argument(
+        "--collapsible",
+        action="store_true",
+        help="Wrap each file's code block in collapsible HTML <details> and <summary> tags (only works with 'markdown' format).",
+    )
 
     # Pairing Options Group
     pairing_group = parser.add_argument_group("Pairing Options")
@@ -5077,6 +5091,9 @@ def main():
     if getattr(args, 'no_content', False):
         output_conf['skip_content'] = True
 
+    if getattr(args, 'collapsible', False):
+        output_conf['collapsible'] = True
+
     if args.line_numbers:
         output_conf['add_line_numbers'] = True
 
@@ -5586,13 +5603,27 @@ def _parse_combined_content(content, source_name="combined file"):
     # 4. Try Markdown
     code_block_pattern = re.compile(r'^```(?:\S+)?\n([\s\S]*?)\n^```', re.MULTILINE)
     header_pattern = re.compile(r'^#{2,3}\s+(.+?)\s*$', re.MULTILINE)
+    summary_pattern = re.compile(r'<summary>\s*(.+?)\s*</summary>', re.IGNORECASE)
 
     last_pos = 0
     for cb_match in code_block_pattern.finditer(content):
         search_space = content[last_pos:cb_match.start()]
         h_matches = list(header_pattern.finditer(search_space))
-        if h_matches:
-            path = h_matches[-1].group(1).strip()
+        s_matches = list(summary_pattern.finditer(search_space))
+
+        best_match = None
+        if h_matches and s_matches:
+            if h_matches[-1].start() > s_matches[-1].start():
+                best_match = h_matches[-1]
+            else:
+                best_match = s_matches[-1]
+        elif h_matches:
+            best_match = h_matches[-1]
+        elif s_matches:
+            best_match = s_matches[-1]
+
+        if best_match:
+            path = best_match.group(1).strip()
             file_content = cb_match.group(1)
             files_found.append((path, file_content, {}))
         last_pos = cb_match.end()
