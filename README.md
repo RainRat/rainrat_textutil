@@ -147,6 +147,56 @@ Combine related files (such as `.cpp` and `.h` pairs) into their own individual 
 python sourcecombine.py src/ --pair .cpp .h --output combined_src/
 ```
 
+### File Verification
+Check if the files on your computer match the files inside a combined output or manifest. This is useful for verifying backups or checking for changes.
+
+To verify files against a combined JSON file:
+```bash
+python sourcecombine.py --verify combined_files.json
+```
+
+If the combined file is in a different folder, or if you want to verify against a different target directory, use the `--output` option to specify the path:
+```bash
+python sourcecombine.py --verify combined_files.json --output target_folder/
+```
+
+To see a detailed comparison of any differences (a diff), add the `--diff` flag:
+```bash
+python sourcecombine.py --verify combined_files.json --diff
+```
+
+For machine-readable output that you can use in scripts, add the `--json` flag:
+```bash
+python sourcecombine.py --verify combined_files.json --json
+```
+
+## Ignoring Files and Folders
+You can tell the tool to skip specific files or folders. By default, the tool automatically looks for a file named `.sourcecombineignore` in the current folder.
+
+### Custom Ignore File
+If you want to use a different ignore file, use the `--ignore-file` option:
+```bash
+python sourcecombine.py --ignore-file custom_ignore.txt
+```
+
+### Ignore File Format
+The ignore file uses simple search patterns (glob patterns). Write one pattern per line. You can use the `#` character to add comments.
+
+Here is an example `.sourcecombineignore` file:
+```text
+# Ignore all log files
+*.log
+
+# Ignore temporary files
+*.tmp
+*.bak
+
+# Ignore specific folders
+node_modules/
+build/
+dist/
+```
+
 ## Template Customization
 You can customize the output by using templates in the configuration file. Templates support placeholders that are replaced with actual data when the tool runs. Both file-level and global templates support all project-level and Git placeholders.
 
