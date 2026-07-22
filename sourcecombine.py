@@ -3879,13 +3879,13 @@ def main():
         "targets",
         nargs="*",
         metavar="TARGET",
-        help="Folders or files to search. If empty, the tool searches the current folder. If the first target is a YAML file (.yml or .yaml), the tool uses it as the configuration.",
+        help="Folders or files to search. If empty, the tool searches the current folder. If the first target is a YAML or JSON file (.yml, .yaml, or .json), the tool uses it as the configuration.",
     )
     core_group.add_argument(
         "--config",
         "-k",
         metavar="PATH",
-        help="Use a specific configuration file. This stops the tool from trying to find one automatically in the target list.",
+        help="Use a specific configuration file (YAML or JSON). This stops the tool from trying to find one automatically in the target list.",
     )
     core_group.add_argument(
         "--output",
@@ -4478,7 +4478,7 @@ def main():
         nargs="?",
         const="sourcecombine.yml",
         metavar="FILENAME",
-        help="Save the final configuration to a YAML file (defaults to 'sourcecombine.yml') and exit.",
+        help="Save the final configuration to a YAML or JSON file (defaults to 'sourcecombine.yml') and exit.",
     )
     utility_group.add_argument(
         "--system-info",
@@ -4605,14 +4605,14 @@ def main():
         remaining_targets = []
         if targets:
             first = targets[0]
-            if (not config_path and not args.extract and
-                first.lower().endswith(('.yml', '.yaml')) and not Path(first).is_dir()):
+            if (not config_path and not args.extract and not getattr(args, 'verify', False) and
+                first.lower().endswith(('.yml', '.yaml', '.json')) and not Path(first).is_dir()):
                 config_path = first
                 remaining_targets = targets[1:]
             else:
                 remaining_targets = targets
         if not config_path and not remaining_targets:
-            defaults = ['sourcecombine.yml', 'sourcecombine.yaml', 'config.yml', 'config.yaml']
+            defaults = ['sourcecombine.yml', 'sourcecombine.yaml', 'config.yml', 'config.yaml', 'sourcecombine.json', 'config.json']
             for d in defaults:
                 if Path(d).is_file():
                     config_path = d
@@ -4792,8 +4792,8 @@ def main():
         # Auto-detect config only if --config wasn't used and we aren't extracting.
         # This keeps the behavior consistent for simple cases while adding
         # explicit control for advanced ones.
-        if (not config_path and not args.extract and
-            first.lower().endswith(('.yml', '.yaml')) and not Path(first).is_dir()):
+        if (not config_path and not args.extract and not getattr(args, 'verify', False) and
+            first.lower().endswith(('.yml', '.yaml', '.json')) and not Path(first).is_dir()):
             config_path = first
             remaining_targets = targets[1:]
         else:
@@ -4805,7 +4805,7 @@ def main():
 
     if not config_path and not remaining_targets:
         # Case 1: No positional targets. Use auto-finding
-        defaults = ['sourcecombine.yml', 'sourcecombine.yaml', 'config.yml', 'config.yaml']
+        defaults = ['sourcecombine.yml', 'sourcecombine.yaml', 'config.yml', 'config.yaml', 'sourcecombine.json', 'config.json']
         for d in defaults:
             if Path(d).is_file():
                 config_path = d
@@ -5222,7 +5222,7 @@ def main():
 
     if args.export_config:
         try:
-            utils.save_yaml_config(args.export_config, _convert_to_json_friendly(config))
+            utils.save_config(args.export_config, _convert_to_json_friendly(config))
             logging.info("Configuration exported to %s", Path(args.export_config).resolve())
         except (OSError, utils.InvalidConfigError) as exc:
             logging.error("Could not export configuration: %s", exc)

@@ -1085,20 +1085,83 @@ def validate_config(
     _validate_project_section(config)
 
 
+def load_json_config(config_file_path):
+    """Load a JSON configuration file."""
+    logging.info("Loading configuration from: %s", config_file_path)
+    try:
+        with open(config_file_path, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+            if config is None:
+                raise InvalidConfigError("Configuration file is empty or invalid.")
+            return config
+    except FileNotFoundError as e:
+        raise ConfigNotFoundError(
+            f"Configuration file not found at '{config_file_path}'."
+        ) from e
+    except json.JSONDecodeError as e:
+        raise InvalidConfigError(
+            f"Error parsing JSON file at line {e.lineno}, column {e.colno}: {e.msg}"
+        ) from e
+    except OSError as e:
+        raise InvalidConfigError(f"Could not read configuration file: {e}") from e
+
+
+def load_config(config_file_path):
+    """Load a JSON or YAML configuration file depending on extension/content."""
+    path = Path(config_file_path)
+    suffix = path.suffix.lower()
+
+    if suffix == '.json':
+        return load_json_config(config_file_path)
+
+    if yaml is None:
+        try:
+            return load_json_config(config_file_path)
+        except Exception:
+            return load_yaml_config(config_file_path)
+
+    try:
+        with open(config_file_path, 'r', encoding='utf-8') as f:
+            content = f.read(100).strip()
+            if content.startswith('{'):
+                return load_json_config(config_file_path)
+    except Exception:
+        pass
+
+    return load_yaml_config(config_file_path)
+
+
+def save_config(config_file_path, config):
+    """Save a configuration to a JSON or YAML file depending on extension/availability."""
+    path = Path(config_file_path)
+    suffix = path.suffix.lower()
+
+    if suffix == '.json' or yaml is None:
+        logging.info("Saving configuration to: %s", config_file_path)
+        try:
+            with open(config_file_path, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2)
+                f.write('\n')
+        except OSError as e:
+            raise InvalidConfigError(f"Could not write configuration file: {e}") from e
+    else:
+        save_yaml_config(config_file_path, config)
+
+
 def load_and_validate_config(
     config_file_path: str | Path,
     required_keys: Sequence[str] | None = None,
     defaults: Mapping[str, Any] = DEFAULT_CONFIG,
     nested_required: Mapping[str, Sequence[str]] | None = None,
 ) -> dict:
-    """Load a YAML config file and enforce required keys and defaults.
+    """Load a JSON or YAML config file and enforce required keys and defaults.
 
     ``defaults`` may contain nested dictionaries, which are merged recursively
     into the loaded configuration. The canonical defaults are provided by
     ``DEFAULT_CONFIG`` but may be overridden or extended via the ``defaults``
     parameter.
     """
-    config = load_yaml_config(config_file_path)
+    config = load_config(config_file_path)
     validate_config(
         config,
         required_keys=required_keys,
