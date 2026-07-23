@@ -1990,6 +1990,21 @@ class FileProcessor:
 
         escape_func = xml_escape if self.output_format == 'xml' else None
 
+        is_markdown_collapsible = (self.output_format == 'markdown' and self.output_opts.get('collapsible'))
+
+        if is_markdown_collapsible:
+            summary_parts = []
+            if lines is not None and lines > 0:
+                summary_parts.append(f"{lines:,} {_plural(lines, 'line')}")
+            if size is not None:
+                summary_parts.append(utils.format_size(size))
+            if tokens is not None and tokens > 0:
+                summary_parts.append(f"{tokens:,} {_plural(tokens, 'token')}")
+
+            summary_details = f" ({' • '.join(summary_parts)})" if summary_parts else ""
+            summary_line = f"<details><summary><b>{relative_path.as_posix()}</b>{summary_details}</summary>\n\n"
+            outfile.write(summary_line)
+
         if self.output_format not in ("json", "jsonl", "manifest", "csv"):
             outfile.write(_render_template(
                 header_template, relative_path, size=size, tokens=tokens, lines=lines,
@@ -2007,6 +2022,9 @@ class FileProcessor:
                 global_size=global_size, global_tokens=global_tokens, global_lines=global_lines,
                 git_info=self.git_info, file_path=file_path, language=language, sha256=sha256
             ))
+
+        if is_markdown_collapsible:
+            outfile.write("\n</details>\n")
 
     def _backup_file(self, file_path):
         """Create a ``.bak`` backup for ``file_path`` when backups are enabled.
@@ -4300,6 +4318,11 @@ def main():
         action="store_true",
         help="Skip the actual file content in the output, while keeping templates and information. (Supported in all formats).",
     )
+    output_group.add_argument(
+        "--collapsible",
+        action="store_true",
+        help="Wrap each file's markdown code block in collapsible HTML <details> and <summary> tags.",
+    )
 
     # Pairing Options Group
     pairing_group = parser.add_argument_group("Pairing Options")
@@ -5077,6 +5100,9 @@ def main():
     if getattr(args, 'no_content', False):
         output_conf['skip_content'] = True
 
+    if getattr(args, 'collapsible', False):
+        output_conf['collapsible'] = True
+
     if args.line_numbers:
         output_conf['add_line_numbers'] = True
 
@@ -5584,6 +5610,33 @@ def _parse_combined_content(content, source_name="combined file"):
         return files_found
 
     # 4. Try Markdown
+    collapsible_pattern = re.compile(
+        r'<details>\s*<summary>(.*?)</summary>([\s\S]*?)</details>',
+        re.IGNORECASE | re.MULTILINE
+    )
+    for match in collapsible_pattern.finditer(content):
+        summary_content, block_content = match.groups()
+        # Find the path inside <b>...</b>, or fallback to text content inside <summary>
+        path_match = re.search(r'<b>\s*([^<]+?)\s*</b>', summary_content)
+        if path_match:
+            path = path_match.group(1)
+        else:
+            path = re.sub(r'<[^>]+>', '', summary_content).strip()
+            # If there is parenthesis or details, strip them
+            if ' (' in path:
+                path = path.split(' (')[0].strip()
+
+        # Find if there is a code block inside
+        cb_match = re.search(r'```(?:\S+)?\n([\s\S]*?)\n^```', block_content, re.MULTILINE)
+        if cb_match:
+            file_content = cb_match.group(1)
+        else:
+            file_content = block_content.strip()
+        files_found.append((path.strip(), file_content, {}))
+
+    if files_found:
+        return files_found
+
     code_block_pattern = re.compile(r'^```(?:\S+)?\n([\s\S]*?)\n^```', re.MULTILINE)
     header_pattern = re.compile(r'^#{2,3}\s+(.+?)\s*$', re.MULTILINE)
 

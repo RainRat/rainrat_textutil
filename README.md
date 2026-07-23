@@ -12,6 +12,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   **Sort Results:** Organize files by name, size, date, tokens, lines, depth, or language.
 *   **Apply Limits:** Stop processing when reaching file, token, size, or line limits.
 *   **Choose Output:** Save to the terminal, a file, or the system clipboard.
+*   **Collapsible Blocks:** Wrap each file's markdown block in a collapsible HTML `<details>` and `<summary>` element.
 *   **AI Integration:** Include system info and Git context automatically with the `--ai` preset.
 
 ## Common Flags
@@ -38,6 +39,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--remove-single-line-comments`: Remove only single-line comments based on the detected language.
 *   `--mirror`: Recreate the input directory structure in the output folder, applying all filtering and processing rules to each file individually.
 *   `--no-content` (`-N`): Skip the actual file content in the output, while preserving templates, information, and structured components like the Table of Contents and Tree View.
+*   `--collapsible`: Wrap each file's markdown code block in collapsible HTML `<details>` and `<summary>` tags.
 *   `--apply-in-place`: Save processed changes back to the original source files.
 *   `--create-backups`: Create `.bak` copies of original files when using `--apply-in-place`.
 
@@ -145,6 +147,12 @@ python sourcecombine.py src/ --ai
 Combine related files (such as `.cpp` and `.h` pairs) into their own individual combined files in a separate folder:
 ```bash
 python sourcecombine.py src/ --pair .cpp .h --output combined_src/
+```
+
+### Collapsible Markdown
+Combine files into collapsible Markdown blocks, perfect for reducing clutter when sharing large code bases with AI models:
+```bash
+python sourcecombine.py src/ --format markdown --collapsible --output project_context.md
 ```
 
 ## Template Customization
