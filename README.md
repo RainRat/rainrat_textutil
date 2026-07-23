@@ -148,7 +148,7 @@ python sourcecombine.py src/ --pair .cpp .h --output combined_src/
 ```
 
 ## Template Customization
-You can customize the output by using templates in the configuration file. Templates support placeholders that are replaced with actual data when the tool runs. Both file-level and global templates support all project-level and Git placeholders.
+You can customize the output by using templates in the configuration file. Templates support placeholders that the tool replaces with actual data when it runs. Both file-level and global templates support all project-level and Git placeholders.
 
 ### File-Level Placeholders
 Used in `header_template` and `footer_template`:
@@ -163,7 +163,7 @@ Used in `header_template` and `footer_template`:
 *   `{{LINE_COUNT}}`: Number of lines in the file.
 *   `{{HASH}}`: SHA-256 hash of the file content.
 *   `{{INDEX}}`: The current file's position in the list (1, 2, 3...).
-*   `{{TOTAL}}`: The total number of files being processed.
+*   `{{TOTAL}}`: The total number of files the tool processes.
 *   `{{MODIFIED}}`: Last modified date and time.
 *   `{{FILE_AUTHOR}}`: Last author of the file according to Git.
 *   `{{FILE_AUTHOR_DATE}}`: Last commit date of the file according to Git.
@@ -175,18 +175,18 @@ Used in `header_template` and `footer_template`:
 *   `{{FILE_URL}}`: Direct web link to the specific file and commit.
 *   `{{FILE_DIFF}}`: Changes specific to the current file (requires `--include-diff` flag).
 *   `{{FILE_STATUS}}`: Git status of the current file (for example, `M`, `A`, `??`).
-*   `{{MANIFEST_SOURCE}}`: The manifest file from which project information was extracted (for example, `package.json`).
+*   `{{MANIFEST_SOURCE}}`: The manifest file where the tool found the project details (for example, `package.json`).
 *   `{{PROJECT_URL}}`: Web URL to the repository home (supports GitHub, GitLab, Bitbucket).
 
 ### Project Information Placeholders
 Used in `global_header_template`, `global_footer_template`, and other project-wide settings:
-*   `{{PROJECT_NAME}}`: Name of the project (detected from `package.json`, `pyproject.toml`, `Cargo.toml`, `composer.json`, `pom.xml`, `go.mod`, `*.gemspec`, `mix.exs`, `Package.swift`, `.csproj`, `.fsproj`, `.vbproj`, `.sln`, `settings.gradle`, `project.clj`, `.podspec`, `.xcodeproj`, `CMakeLists.txt`, `Project.toml`, `deno.json`, `deno.jsonc`, `build.zig.zon`, `pubspec.yaml`, `README.md`, or folder name).
-*   `{{PROJECT_VERSION}}`: Version of the project (automatically detected from project manifests).
-*   `{{PROJECT_AUTHOR}}`: Author of the project (automatically detected from project manifests or LICENSE files).
-*   `{{PROJECT_DESCRIPTION}}`: Short description of the project (automatically detected from project manifests).
-*   `{{PROJECT_LICENSE}}`: License identifier of the project (automatically detected from project manifests or LICENSE files).
-*   `{{MANIFEST_SOURCE}}`: The manifest file from which project information was extracted (for example, `package.json`).
-*   `{{FILE_COUNT}}`: Total number of files included.
+*   `{{PROJECT_NAME}}`: Name of the project (which the tool automatically finds in `package.json`, `pyproject.toml`, `Cargo.toml`, `composer.json`, `pom.xml`, `go.mod`, `*.gemspec`, `mix.exs`, `Package.swift`, `.csproj`, `.fsproj`, `.vbproj`, `.sln`, `settings.gradle`, `project.clj`, `.podspec`, `.xcodeproj`, `CMakeLists.txt`, `Project.toml`, `deno.json`, `deno.jsonc`, `build.zig.zon`, `pubspec.yaml`, `README.md`, or folder name).
+*   `{{PROJECT_VERSION}}`: Version of the project (which the tool automatically finds in project manifests).
+*   `{{PROJECT_AUTHOR}}`: Author of the project (which the tool automatically finds in project manifests or LICENSE files).
+*   `{{PROJECT_DESCRIPTION}}`: Short description of the project (which the tool automatically finds in project manifests).
+*   `{{PROJECT_LICENSE}}`: License identifier of the project (which the tool automatically finds in project manifests or LICENSE files).
+*   `{{MANIFEST_SOURCE}}`: The manifest file where the tool found the project details (for example, `package.json`).
+*   `{{FILE_COUNT}}`: Total number of files the tool includes.
 *   `{{TOTAL_SIZE}}`: Total size of all files.
 *   `{{TOTAL_TOKENS}}`: Total number of tokens.
 *   `{{TOTAL_LINES}}`: Total number of lines.
@@ -213,12 +213,12 @@ These require a Git repository to function:
 
 ### Pairing Placeholders
 Used in `paired_filename_template`. Supports all project-level, system, and Git placeholders, plus:
-*   `{{STEM}}`: Base filename shared by the pair.
+*   `{{STEM}}`: Base filename that both files in the pair share.
 *   `{{SOURCE_EXT}}`: Extension of the source file (for example, `.cpp`).
 *   `{{HEADER_EXT}}`: Extension of the header file (for example, `.h`).
 *   `{{DIR}}`: Folder path containing the pair.
 *   `{{DIR_SLUG}}`: A version of the folder path safe for use in filenames.
-*   `{{LANG}}`: Detected language tag of the pair (for example, `cpp`).
+*   `{{LANG}}`: The language tag the tool detects for the pair (for example, `cpp`).
 *   `{{INDEX}}`: The current pair's position in the list (1, 2, 3...).
-*   `{{TOTAL}}`: The total number of pairs being processed.
+*   `{{TOTAL}}`: The total number of pairs the tool processes.
 
