@@ -5636,7 +5636,7 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
 
     title = "Repair Report" if repair else "Verification Report"
     if not json_format:
-        print(f"\n{C_BOLD}=== {title} ==={C_RESET}")
+        print(f"\n{C_BOLD}{C_CYAN}=== {title.upper()} ==={C_RESET}")
     json_results = []
 
     matches = 0
@@ -5645,158 +5645,191 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
     repaired = 0
     total = len(files_to_verify)
 
-    for rel_path_str, expected_content, meta in files_to_verify:
-        # Safety check: prevent path traversal (similar to extract_files)
-        try:
-            requested_path = Path(rel_path_str)
+    show_progress = not json_format and _progress_enabled(dry_run)
+    verification_bar = _progress_bar(
+        files_to_verify,
+        desc="Repairing files" if repair else "Verifying files",
+        unit="file",
+        enabled=show_progress
+    )
 
-            if strip_components > 0:
-                parts = requested_path.parts
-                if len(parts) <= strip_components:
-                    logging.warning("Skipping path with fewer than %d components: %s", strip_components, rel_path_str)
-                    continue
-                requested_path = Path(*parts[strip_components:])
-            if requested_path.is_absolute() or PurePosixPath(rel_path_str).is_absolute() or PureWindowsPath(rel_path_str).is_absolute() or '..' in requested_path.parts or ':' in rel_path_str:
-                logging.warning("Skipping unsafe path: %s", rel_path_str)
-                continue
-            target_path = (root_folder / requested_path).resolve()
-        except (ValueError, OSError):
-            logging.warning("Skipping invalid path: %s", rel_path_str)
-            continue
-
-        if not target_path.exists():
-            if repair and expected_content is not None:
-                if dry_run:
-                    if json_format:
-                        json_results.append({"path": rel_path_str, "status": "REPAIR", "detail": "would create missing file"})
-                    else:
-                        print(f"  {C_CYAN}{'[REPAIR]':<10}{C_RESET}  {rel_path_str} {C_DIM}(would create missing file){C_RESET}")
-                    repaired += 1
-                else:
-                    try:
-                        target_path.parent.mkdir(parents=True, exist_ok=True)
-                        target_path.write_text(expected_content, encoding='utf-8')
-                        if meta.get('modified') is not None:
-                            os.utime(target_path, (meta['modified'], meta['modified']))
-                        if json_format:
-                            json_results.append({"path": rel_path_str, "status": "REPAIRED", "detail": "created missing file"})
-                        else:
-                            print(f"  {C_GREEN}{'[REPAIRED]':<10}{C_RESET}  {rel_path_str} {C_DIM}(created missing file){C_RESET}")
-                        repaired += 1
-                    except OSError as e:
-                        if json_format:
-                            json_results.append({"path": rel_path_str, "status": "ERROR", "detail": f"failed to repair: {e}"})
-                        else:
-                            print(f"  {C_RED}{'[ERROR]':<10}{C_RESET}  {rel_path_str} {C_DIM}(failed to repair: {e}){C_RESET}")
-                        missing += 1
+    def _write_msg(msg):
+        if not json_format:
+            if show_progress and hasattr(verification_bar, "write"):
+                verification_bar.write(msg, file=sys.stdout)
             else:
-                if json_format:
-                    json_results.append({"path": rel_path_str, "status": "MISSING", "detail": "missing file"})
-                else:
-                    print(f"  {C_RED}{'[MISSING]':<10}{C_RESET}  {rel_path_str}")
-                missing += 1
-            continue
+                print(msg)
 
-        # Priority 1: Check SHA-256 if available in information
-        expected_sha = meta.get('sha256')
-        if expected_sha:
+    def _update_stats(matches_inc=0, mismatches_inc=0, missing_inc=0, repaired_inc=0):
+        nonlocal matches, mismatches, missing, repaired
+        matches += matches_inc
+        mismatches += mismatches_inc
+        missing += missing_inc
+        repaired += repaired_inc
+        if show_progress:
+            verification_bar.set_postfix(
+                ok=matches,
+                mismatch=mismatches,
+                missing=missing,
+                repaired=repaired
+            )
+
+    try:
+        for rel_path_str, expected_content, meta in verification_bar:
+            # Safety check: prevent path traversal (similar to extract_files)
             try:
-                actual_sha = _get_sha256_hash(target_path.read_bytes())
-                if actual_sha == expected_sha:
-                    if json_format:
-                        json_results.append({"path": rel_path_str, "status": "OK", "detail": "hash match"})
+                requested_path = Path(rel_path_str)
+
+                if strip_components > 0:
+                    parts = requested_path.parts
+                    if len(parts) <= strip_components:
+                        logging.warning("Skipping path with fewer than %d components: %s", strip_components, rel_path_str)
+                        continue
+                    requested_path = Path(*parts[strip_components:])
+                if requested_path.is_absolute() or PurePosixPath(rel_path_str).is_absolute() or PureWindowsPath(rel_path_str).is_absolute() or '..' in requested_path.parts or ':' in rel_path_str:
+                    logging.warning("Skipping unsafe path: %s", rel_path_str)
+                    continue
+                target_path = (root_folder / requested_path).resolve()
+            except (ValueError, OSError):
+                logging.warning("Skipping invalid path: %s", rel_path_str)
+                continue
+
+            if not target_path.exists():
+                if repair and expected_content is not None:
+                    if dry_run:
+                        if json_format:
+                            json_results.append({"path": rel_path_str, "status": "REPAIR", "detail": "would create missing file"})
+                        else:
+                            _write_msg(f"  {C_CYAN}{'[REPAIR]':<10}{C_RESET}  {rel_path_str} {C_DIM}(would create missing file){C_RESET}")
+                        _update_stats(repaired_inc=1)
                     else:
-                        print(f"  {C_GREEN}{'[OK]':<10}{C_RESET}  {rel_path_str} {C_DIM}(hash match){C_RESET}")
-                    matches += 1
+                        try:
+                            target_path.parent.mkdir(parents=True, exist_ok=True)
+                            target_path.write_text(expected_content, encoding='utf-8')
+                            if meta.get('modified') is not None:
+                                os.utime(target_path, (meta['modified'], meta['modified']))
+                            if json_format:
+                                json_results.append({"path": rel_path_str, "status": "REPAIRED", "detail": "created missing file"})
+                            else:
+                                _write_msg(f"  {C_GREEN}{'[REPAIRED]':<10}{C_RESET}  {rel_path_str} {C_DIM}(created missing file){C_RESET}")
+                            _update_stats(repaired_inc=1)
+                        except OSError as e:
+                            if json_format:
+                                json_results.append({"path": rel_path_str, "status": "ERROR", "detail": f"failed to repair: {e}"})
+                            else:
+                                _write_msg(f"  {C_RED}{'[ERROR]':<10}{C_RESET}  {rel_path_str} {C_DIM}(failed to repair: {e}){C_RESET}")
+                            _update_stats(missing_inc=1)
                 else:
-                    if repair and expected_content is not None:
+                    if json_format:
+                        json_results.append({"path": rel_path_str, "status": "MISSING", "detail": "missing file"})
+                    else:
+                        _write_msg(f"  {C_RED}{'[MISSING]':<10}{C_RESET}  {rel_path_str}")
+                    _update_stats(missing_inc=1)
+                continue
+
+            # Priority 1: Check SHA-256 if available in information
+            expected_sha = meta.get('sha256')
+            if expected_sha:
+                try:
+                    actual_sha = _get_sha256_hash(target_path.read_bytes())
+                    if actual_sha == expected_sha:
+                        if json_format:
+                            json_results.append({"path": rel_path_str, "status": "OK", "detail": "hash match"})
+                        else:
+                            _write_msg(f"  {C_GREEN}{'[OK]':<10}{C_RESET}  {rel_path_str} {C_DIM}(hash match){C_RESET}")
+                        _update_stats(matches_inc=1)
+                    else:
+                        if repair and expected_content is not None:
+                            if dry_run:
+                                if json_format:
+                                    json_results.append({"path": rel_path_str, "status": "REPAIR", "detail": "would fix hash mismatch"})
+                                else:
+                                    _write_msg(f"  {C_CYAN}{'[REPAIR]':<10}{C_RESET}  {rel_path_str} {C_DIM}(would fix hash mismatch){C_RESET}")
+                                _update_stats(repaired_inc=1)
+                            else:
+                                try:
+                                    target_path.write_text(expected_content, encoding='utf-8')
+                                    if meta.get('modified') is not None:
+                                        os.utime(target_path, (meta['modified'], meta['modified']))
+                                    if json_format:
+                                        json_results.append({"path": rel_path_str, "status": "REPAIRED", "detail": "fixed hash mismatch"})
+                                    else:
+                                        _write_msg(f"  {C_GREEN}{'[REPAIRED]':<10}{C_RESET}  {rel_path_str} {C_DIM}(fixed hash mismatch){C_RESET}")
+                                    _update_stats(repaired_inc=1)
+                                except OSError as e:
+                                    if json_format:
+                                        json_results.append({"path": rel_path_str, "status": "ERROR", "detail": f"failed to repair: {e}"})
+                                    else:
+                                        _write_msg(f"  {C_RED}{'[ERROR]':<10}{C_RESET}  {rel_path_str} {C_DIM}(failed to repair: {e}){C_RESET}")
+                                    _update_stats(mismatches_inc=1)
+                        else:
+                            if json_format:
+                                json_results.append({"path": rel_path_str, "status": "MISMATCH", "detail": "hash mismatch"})
+                            else:
+                                _write_msg(f"  {C_RED}{'[MISMATCH]':<10}{C_RESET}  {rel_path_str} {C_DIM}(hash mismatch){C_RESET}")
+                            _update_stats(mismatches_inc=1)
+                            if show_diff and expected_content is not None:
+                                actual_content, _ = read_file_best_effort(target_path)
+                                _print_diff(actual_content, expected_content, rel_path_str)
+                except OSError as e:
+                    if json_format:
+                        json_results.append({"path": rel_path_str, "status": "ERROR", "detail": str(e)})
+                    else:
+                        _write_msg(f"  {C_RED}{'[ERROR]':<10}{C_RESET}  {rel_path_str} {C_DIM}({e}){C_RESET}")
+                    _update_stats(mismatches_inc=1)
+                continue
+
+            # Priority 2: Check content if available
+            if expected_content is not None:
+                actual_content, _ = read_file_best_effort(target_path)
+                # Normalize line endings for content comparison to be robust across OS
+                if actual_content.replace('\r\n', '\n') == expected_content.replace('\r\n', '\n'):
+                    if json_format:
+                        json_results.append({"path": rel_path_str, "status": "OK", "detail": "content match"})
+                    else:
+                        _write_msg(f"  {C_GREEN}{'[OK]':<10}{C_RESET}  {rel_path_str} {C_DIM}(content match){C_RESET}")
+                    _update_stats(matches_inc=1)
+                else:
+                    if repair:
                         if dry_run:
                             if json_format:
-                                json_results.append({"path": rel_path_str, "status": "REPAIR", "detail": "would fix hash mismatch"})
+                                json_results.append({"path": rel_path_str, "status": "REPAIR", "detail": "would fix content mismatch"})
                             else:
-                                print(f"  {C_CYAN}{'[REPAIR]':<10}{C_RESET}  {rel_path_str} {C_DIM}(would fix hash mismatch){C_RESET}")
-                            repaired += 1
+                                _write_msg(f"  {C_CYAN}{'[REPAIR]':<10}{C_RESET}  {rel_path_str} {C_DIM}(would fix content mismatch){C_RESET}")
+                            _update_stats(repaired_inc=1)
                         else:
                             try:
                                 target_path.write_text(expected_content, encoding='utf-8')
                                 if meta.get('modified') is not None:
                                     os.utime(target_path, (meta['modified'], meta['modified']))
                                 if json_format:
-                                    json_results.append({"path": rel_path_str, "status": "REPAIRED", "detail": "fixed hash mismatch"})
+                                    json_results.append({"path": rel_path_str, "status": "REPAIRED", "detail": "fixed content mismatch"})
                                 else:
-                                    print(f"  {C_GREEN}{'[REPAIRED]':<10}{C_RESET}  {rel_path_str} {C_DIM}(fixed hash mismatch){C_RESET}")
-                                repaired += 1
+                                    _write_msg(f"  {C_GREEN}{'[REPAIRED]':<10}{C_RESET}  {rel_path_str} {C_DIM}(fixed content mismatch){C_RESET}")
+                                _update_stats(repaired_inc=1)
                             except OSError as e:
                                 if json_format:
                                     json_results.append({"path": rel_path_str, "status": "ERROR", "detail": f"failed to repair: {e}"})
                                 else:
-                                    print(f"  {C_RED}{'[ERROR]':<10}{C_RESET}  {rel_path_str} {C_DIM}(failed to repair: {e}){C_RESET}")
-                                mismatches += 1
+                                    _write_msg(f"  {C_RED}{'[ERROR]':<10}{C_RESET}  {rel_path_str} {C_DIM}(failed to repair: {e}){C_RESET}")
+                                mismatches_inc = 1
+                                _update_stats(mismatches_inc=1)
                     else:
                         if json_format:
-                            json_results.append({"path": rel_path_str, "status": "MISMATCH", "detail": "hash mismatch"})
+                            json_results.append({"path": rel_path_str, "status": "MISMATCH", "detail": "content mismatch"})
                         else:
-                            print(f"  {C_RED}{'[MISMATCH]':<10}{C_RESET}  {rel_path_str} {C_DIM}(hash mismatch){C_RESET}")
-                        mismatches += 1
-                        if show_diff and expected_content is not None:
-                            actual_content, _ = read_file_best_effort(target_path)
+                            _write_msg(f"  {C_RED}{'[MISMATCH]':<10}{C_RESET}  {rel_path_str} {C_DIM}(content mismatch){C_RESET}")
+                        _update_stats(mismatches_inc=1)
+                        if show_diff:
                             _print_diff(actual_content, expected_content, rel_path_str)
-            except OSError as e:
-                if json_format:
-                    json_results.append({"path": rel_path_str, "status": "ERROR", "detail": str(e)})
-                else:
-                    print(f"  {C_RED}{'[ERROR]':<10}{C_RESET}  {rel_path_str} {C_DIM}({e}){C_RESET}")
-                mismatches += 1
-            continue
+                continue
 
-        # Priority 2: Check content if available
-        if expected_content is not None:
-            actual_content, _ = read_file_best_effort(target_path)
-            # Normalize line endings for content comparison to be robust across OS
-            if actual_content.replace('\r\n', '\n') == expected_content.replace('\r\n', '\n'):
-                if json_format:
-                    json_results.append({"path": rel_path_str, "status": "OK", "detail": "content match"})
-                else:
-                    print(f"  {C_GREEN}{'[OK]':<10}{C_RESET}  {rel_path_str} {C_DIM}(content match){C_RESET}")
-                matches += 1
+            if json_format:
+                json_results.append({"path": rel_path_str, "status": "SKIPPED", "detail": "no hash or content to verify against"})
             else:
-                if repair:
-                    if dry_run:
-                        if json_format:
-                            json_results.append({"path": rel_path_str, "status": "REPAIR", "detail": "would fix content mismatch"})
-                        else:
-                            print(f"  {C_CYAN}{'[REPAIR]':<10}{C_RESET}  {rel_path_str} {C_DIM}(would fix content mismatch){C_RESET}")
-                        repaired += 1
-                    else:
-                        try:
-                            target_path.write_text(expected_content, encoding='utf-8')
-                            if meta.get('modified') is not None:
-                                os.utime(target_path, (meta['modified'], meta['modified']))
-                            if json_format:
-                                json_results.append({"path": rel_path_str, "status": "REPAIRED", "detail": "fixed content mismatch"})
-                            else:
-                                print(f"  {C_GREEN}{'[REPAIRED]':<10}{C_RESET}  {rel_path_str} {C_DIM}(fixed content mismatch){C_RESET}")
-                            repaired += 1
-                        except OSError as e:
-                            if json_format:
-                                json_results.append({"path": rel_path_str, "status": "ERROR", "detail": f"failed to repair: {e}"})
-                            else:
-                                print(f"  {C_RED}{'[ERROR]':<10}{C_RESET}  {rel_path_str} {C_DIM}(failed to repair: {e}){C_RESET}")
-                            mismatches += 1
-                else:
-                    if json_format:
-                        json_results.append({"path": rel_path_str, "status": "MISMATCH", "detail": "content mismatch"})
-                    else:
-                        print(f"  {C_RED}{'[MISMATCH]':<10}{C_RESET}  {rel_path_str} {C_DIM}(content mismatch){C_RESET}")
-                    mismatches += 1
-                    if show_diff:
-                        _print_diff(actual_content, expected_content, rel_path_str)
-            continue
-
-        if json_format:
-            json_results.append({"path": rel_path_str, "status": "SKIPPED", "detail": "no hash or content to verify against"})
-        else:
-            print(f"  {C_YELLOW}{'[SKIPPED]':<10}{C_RESET}  {rel_path_str} {C_DIM}(no hash or content to verify against){C_RESET}")
+                _write_msg(f"  {C_YELLOW}{'[SKIPPED]':<10}{C_RESET}  {rel_path_str} {C_DIM}(no hash or content to verify against){C_RESET}")
+    finally:
+        verification_bar.close()
 
     if json_format:
         output = {
@@ -5820,7 +5853,7 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
             print(f"  Mismatches: {C_RED}{mismatches}{C_RESET}")
         if missing:
             print(f"  Missing:    {C_RED}{missing}{C_RESET}")
-        print(f"{C_BOLD}{'=' * 27}{C_RESET}\n")
+        print(f"{C_BOLD}{C_CYAN}{'=' * 27}{C_RESET}\n")
 
     return {
         'matches': matches,
