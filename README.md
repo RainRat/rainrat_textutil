@@ -135,6 +135,18 @@ Rebuild the original project structure from a combined Markdown file:
 python sourcecombine.py --extract combined_files.md --output restored_project/
 ```
 
+### File Verification and Repair
+Verify that files on your computer match the contents or hashes stored inside a combined file or manifest. You can also automatically fix any missing or modified files if the combined file contains the original content:
+
+*   **Verify files:**
+    ```bash
+    python sourcecombine.py --verify combined_files.json
+    ```
+*   **Verify and automatically repair any differences:**
+    ```bash
+    python sourcecombine.py --verify combined_files.json --repair
+    ```
+
 ### AI Model Context
 Prepare a full project context for AI models. This preset uses Markdown format and includes a Table of Contents, folder tree, project overview, line numbers, and Git context (logs and diffs). It also removes duplicates and skips binary files. If you do not specify an output file, the tool copies the result to the system clipboard:
 ```bash
