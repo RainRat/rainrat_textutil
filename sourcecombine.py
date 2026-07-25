@@ -1737,7 +1737,7 @@ def _process_paired_files(
                     for path in paths:
                         rel_p_str = _get_rel_path(path, root_path).as_posix()
                         status = stats.get('file_statuses', {}).get(rel_p_str)
-                        lang = _get_stat_lang(path, stats)
+                        lang = utils.get_language_tag(path, overrides=stats.get('custom_languages'))
                         stats['top_files'].append((0, path.stat().st_size if path.exists() else 0, rel_p_str, status, 0, lang))
                 continue
 
@@ -1779,7 +1779,7 @@ def _process_paired_files(
                     _update_line_stats(stats, primary_path, line_count)
                     rel_p_str = _get_rel_path(primary_path, root_path).as_posix()
                     status = stats.get('file_statuses', {}).get(rel_p_str)
-                    lang = _get_stat_lang(primary_path, stats)
+                    lang = utils.get_language_tag(primary_path, overrides=stats.get('custom_languages'))
                     stats['top_files'].append((token_count, f_size, rel_p_str, status, line_count, lang))
 
                 running_tokens += token_count
@@ -1826,7 +1826,7 @@ def _process_paired_files(
                         _update_line_stats(stats, file_path, line_count)
                         rel_p_str = _get_rel_path(file_path, root_path).as_posix()
                         status = stats.get('file_statuses', {}).get(rel_p_str)
-                        lang = _get_stat_lang(file_path, stats)
+                        lang = utils.get_language_tag(file_path, overrides=stats.get('custom_languages'))
                         stats['top_files'].append((token_count, f_size, rel_p_str, status, line_count, lang))
 
                     running_tokens += token_count
@@ -1845,11 +1845,6 @@ def _process_paired_files(
                 _print_diff(old_content, pair_buffer.getvalue(), out_file.as_posix())
 
 
-def _get_stat_lang(file_path, stats):
-    """Return the programming language tag for stats tracking."""
-    return utils.get_language_tag(file_path, overrides=stats.get('custom_languages'))
-
-
 def _update_distribution_stats(stats, file_path, value, metric_name, ext=None, lang=None):
     """Update extension and language distribution stats for a given metric."""
     if f"{metric_name}_by_extension" in stats:
@@ -1860,7 +1855,7 @@ def _update_distribution_stats(stats, file_path, value, metric_name, ext=None, l
 
     if f"{metric_name}_by_language" in stats:
         if lang is None:
-            lang = _get_stat_lang(file_path, stats)
+            lang = utils.get_language_tag(file_path, overrides=stats.get('custom_languages'))
         stats[f"{metric_name}_by_language"][lang] = stats[f"{metric_name}_by_language"].get(lang, 0) + value
 
     return ext, lang
@@ -3747,7 +3742,7 @@ def find_and_combine_files(
                 if not token_limit_pass_performed:
                     rel_p_str = _get_rel_path(file_path, root_path).as_posix()
                     status = stats.get('file_statuses', {}).get(rel_p_str)
-                    lang = _get_stat_lang(file_path, stats)
+                    lang = utils.get_language_tag(file_path, overrides=stats.get('custom_languages'))
                     stats['top_files'].append((token_count, f_size, rel_p_str, status, line_count, lang))
 
                 running_tokens += token_count
