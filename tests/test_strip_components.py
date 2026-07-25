@@ -102,3 +102,20 @@ def test_strip_components_too_many(temp_cwd, mock_argv, caplog):
 
     assert "Skipping path with fewer than 2 components: file.txt" in caplog.text
     assert not (output_dir / "file.txt").exists()
+
+
+def test_verify_strip_components_too_many(temp_cwd, mock_argv, caplog):
+    caplog.set_level(logging.WARNING)
+    manifest = [
+        {"path": "file.txt", "content": "content", "size_bytes": 7}
+    ]
+    manifest_file = temp_cwd / "combined.json"
+    manifest_file.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with mock_argv(['--verify', str(manifest_file), '--strip-components', '2']):
+        with patch('sys.exit') as mock_exit:
+            main()
+            if mock_exit.called:
+                assert mock_exit.call_args[0][0] == 0
+
+    assert "Skipping path with fewer than 2 components: file.txt" in caplog.text

@@ -35,3 +35,26 @@ def test_mirror_mode_unsupported_format_jsonl(tmp_path, base_config):
 def test_mirror_mode_unsupported_format_manifest(tmp_path, base_config):
     with pytest.raises(utils.InvalidConfigError, match="Mirror mode does not support MANIFEST format."):
         find_and_combine_files(base_config, str(tmp_path / "out"), output_format='manifest')
+
+
+def test_mirror_mode_cli_no_output(tmp_path):
+    import sys
+    import yaml
+    from unittest.mock import patch
+    from sourcecombine import main
+
+    config_file = tmp_path / "config.yml"
+    config_data = {
+        "output": {
+            "mirror": True,
+            "file": "",
+            "folder": ""
+        }
+    }
+    with open(config_file, "w") as f:
+        yaml.safe_dump(config_data, f)
+
+    test_args = ["sourcecombine.py", str(config_file), str(tmp_path)]
+    with patch.object(sys, 'argv', test_args):
+        with pytest.raises(utils.InvalidConfigError, match="You must set an output folder for mirror mode."):
+            main()
