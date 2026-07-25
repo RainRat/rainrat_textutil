@@ -147,6 +147,27 @@ Combine related files (such as `.cpp` and `.h` pairs) into their own individual 
 python sourcecombine.py src/ --pair .cpp .h --output combined_src/
 ```
 
+### File Verification and Repair
+Check if the files on your disk match the contents or SHA-256 hashes inside a combined file or manifest. You can also automatically fix any missing or mismatched files.
+
+**Verify files against a combined file or manifest:**
+```bash
+python sourcecombine.py --verify combined_files.json
+```
+This command checks each file on your disk. It reports whether the file is identical (`[OK]`), missing (`[MISSING]`), or different (`[MISMATCH]`).
+
+**Automatically restore missing or modified files:**
+```bash
+python sourcecombine.py --verify combined_files.json --repair
+```
+This command checks the files and automatically writes the correct content for any missing or mismatched files.
+
+**Perform a dry-run check without making any actual changes to your files:**
+```bash
+python sourcecombine.py --verify combined_files.json --repair --dry-run
+```
+This shows you what the tool would repair, without writing anything to disk.
+
 ## Template Customization
 You can customize the output by using templates in the configuration file. Templates support placeholders that are replaced with actual data when the tool runs. Both file-level and global templates support all project-level and Git placeholders.
 
