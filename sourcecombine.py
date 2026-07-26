@@ -4605,14 +4605,21 @@ def main():
         remaining_targets = []
         if targets:
             first = targets[0]
-            if (not config_path and not args.extract and
-                first.lower().endswith(('.yml', '.yaml')) and not Path(first).is_dir()):
+            is_config_ext = first.lower().endswith(('.yml', '.yaml')) or (
+                first.lower().endswith('.json') and not args.extract and not getattr(args, 'verify', False)
+            )
+            if not config_path and is_config_ext and not Path(first).is_dir():
                 config_path = first
                 remaining_targets = targets[1:]
             else:
                 remaining_targets = targets
         if not config_path and not remaining_targets:
-            defaults = ['sourcecombine.yml', 'sourcecombine.yaml', 'config.yml', 'config.yaml']
+            defaults = [
+                'sourcecombine.yml', 'sourcecombine.yaml',
+                'sourcecombine.json',
+                'config.yml', 'config.yaml',
+                'config.json'
+            ]
             for d in defaults:
                 if Path(d).is_file():
                     config_path = d
@@ -4792,8 +4799,10 @@ def main():
         # Auto-detect config only if --config wasn't used and we aren't extracting.
         # This keeps the behavior consistent for simple cases while adding
         # explicit control for advanced ones.
-        if (not config_path and not args.extract and
-            first.lower().endswith(('.yml', '.yaml')) and not Path(first).is_dir()):
+        is_config_ext = first.lower().endswith(('.yml', '.yaml')) or (
+            first.lower().endswith('.json') and not args.extract and not getattr(args, 'verify', False)
+        )
+        if not config_path and is_config_ext and not Path(first).is_dir():
             config_path = first
             remaining_targets = targets[1:]
         else:
@@ -4805,7 +4814,12 @@ def main():
 
     if not config_path and not remaining_targets:
         # Case 1: No positional targets. Use auto-finding
-        defaults = ['sourcecombine.yml', 'sourcecombine.yaml', 'config.yml', 'config.yaml']
+        defaults = [
+            'sourcecombine.yml', 'sourcecombine.yaml',
+            'sourcecombine.json',
+            'config.yml', 'config.yaml',
+            'config.json'
+        ]
         for d in defaults:
             if Path(d).is_file():
                 config_path = d

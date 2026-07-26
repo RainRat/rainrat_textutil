@@ -305,7 +305,25 @@ class InvalidConfigError(Exception):
 
 
 def load_yaml_config(config_file_path):
-    """Load a YAML configuration file."""
+    """Load a YAML or JSON configuration file."""
+    path = Path(config_file_path)
+    is_json = path.suffix.lower() == '.json'
+
+    if is_json:
+        logging.info("Loading JSON configuration from: %s", config_file_path)
+        try:
+            with open(config_file_path, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+                if config is None:
+                    raise InvalidConfigError("Configuration file is empty or invalid.")
+                return config
+        except FileNotFoundError as e:
+            raise ConfigNotFoundError(
+                f"Configuration file not found at '{config_file_path}'."
+            ) from e
+        except json.JSONDecodeError as e:
+            raise InvalidConfigError(f"Error parsing JSON file: {e}") from e
+
     if yaml is None:
         raise InvalidConfigError(
             "The 'PyYAML' library is required to load YAML configurations. "
@@ -346,7 +364,19 @@ def load_yaml_config(config_file_path):
 
 
 def save_yaml_config(config_file_path, config):
-    """Save a dictionary to a YAML configuration file."""
+    """Save a dictionary to a YAML or JSON configuration file."""
+    path = Path(config_file_path)
+    is_json = path.suffix.lower() == '.json'
+
+    if is_json:
+        logging.info("Saving JSON configuration to: %s", config_file_path)
+        try:
+            with open(config_file_path, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2)
+            return
+        except OSError as e:
+            raise InvalidConfigError(f"Could not write configuration file: {e}") from e
+
     if yaml is None:
         raise InvalidConfigError(
             "The 'PyYAML' library is required to save YAML configurations. "
