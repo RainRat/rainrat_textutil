@@ -4883,16 +4883,21 @@ def main():
         if args.exclude_file:
             filenames = exclusions['filenames']
             for pattern in args.exclude_file:
-                # Validate/sanitize the pattern
-                sanitized = utils.validate_glob_pattern(pattern, context="--exclude-file")
-                filenames.append(sanitized)
+                for p in pattern.split(','):
+                    p = p.strip()
+                    if p:
+                        sanitized = utils.validate_glob_pattern(p, context="--exclude-file")
+                        filenames.append(sanitized)
             logging.debug("Added terminal file exclusions: %s", args.exclude_file)
 
         if args.exclude_folder:
             folders = exclusions['folders']
             for pattern in args.exclude_folder:
-                sanitized = utils.validate_glob_pattern(pattern, context="--exclude-folder")
-                folders.append(sanitized)
+                for p in pattern.split(','):
+                    p = p.strip()
+                    if p:
+                        sanitized = utils.validate_glob_pattern(p, context="--exclude-folder")
+                        folders.append(sanitized)
             logging.debug("Added terminal folder exclusions: %s", args.exclude_folder)
 
     # Inject terminal inclusions into config
@@ -4901,9 +4906,15 @@ def main():
         groups = filters['inclusion_groups']
 
         # Create a unique group for terminal inclusions and enable it
+        cli_includes = []
+        for pattern in args.include:
+            for p in pattern.split(','):
+                p = p.strip()
+                if p:
+                    cli_includes.append(utils.validate_glob_pattern(p, context="--include"))
         groups['_cli_includes'] = {
             'enabled': True,
-            'filenames': [utils.validate_glob_pattern(p, context="--include") for p in args.include]
+            'filenames': cli_includes
         }
         logging.debug("Added terminal file inclusions: %s", args.include)
 
@@ -4919,7 +4930,11 @@ def main():
         search = config.setdefault('search', {})
         if search.get('ignore_files') is None:
             search['ignore_files'] = []
-        search['ignore_files'].extend(args.ignore_file)
+        for path in args.ignore_file:
+            for p in path.split(','):
+                p = p.strip()
+                if p:
+                    search['ignore_files'].append(p)
         logging.debug("Added terminal ignore files: %s", args.ignore_file)
 
     search = config.get('search') or {}
@@ -4928,26 +4943,42 @@ def main():
     if cli_extensions:
         if not isinstance(search.get('allowed_extensions'), list):
             search['allowed_extensions'] = []
-        search['allowed_extensions'].extend(cli_extensions)
+        for ext in cli_extensions:
+            for e in ext.split(','):
+                e = e.strip()
+                if e:
+                    search['allowed_extensions'].append(e)
         logging.debug("Added terminal extension inclusions: %s", cli_extensions)
 
     cli_exclude_extensions = getattr(args, 'exclude_extension', [])
     if cli_exclude_extensions:
         if not isinstance(search.get('exclude_extensions'), list):
             search['exclude_extensions'] = []
-        search['exclude_extensions'].extend(cli_exclude_extensions)
+        for ext in cli_exclude_extensions:
+            for e in ext.split(','):
+                e = e.strip()
+                if e:
+                    search['exclude_extensions'].append(e)
         logging.debug("Added terminal extension exclusions: %s", cli_exclude_extensions)
 
     if args.language:
         if not isinstance(search.get('allowed_languages'), list):
             search['allowed_languages'] = []
-        search['allowed_languages'].extend(args.language)
+        for lang in args.language:
+            for l in lang.split(','):
+                l = l.strip()
+                if l:
+                    search['allowed_languages'].append(l)
         logging.debug("Added terminal language inclusions: %s", args.language)
 
     if args.exclude_language:
         if not isinstance(search.get('exclude_languages'), list):
             search['exclude_languages'] = []
-        search['exclude_languages'].extend(args.exclude_language)
+        for lang in args.exclude_language:
+            for l in lang.split(','):
+                l = l.strip()
+                if l:
+                    search['exclude_languages'].append(l)
         logging.debug("Added terminal language exclusions: %s", args.exclude_language)
 
     pairing_conf = config.get('pairing') or {}
@@ -5163,6 +5194,67 @@ def main():
         args.format = "xml"
     elif getattr(args, 'csv', False):
         args.format = "csv"
+
+    # Re-validate and normalize extensions/languages after CLI arguments injection
+    search = config.setdefault('search', {})
+
+    allowed_exts = search.get('allowed_extensions') or []
+    eff_allowed = []
+    for ext in allowed_exts:
+        if not isinstance(ext, str):
+            continue
+        ext_lower = ext.lower()
+        if not ext_lower.startswith('.'):
+            eff_allowed.append('.' + ext_lower)
+        else:
+            eff_allowed.append(ext_lower)
+    search['effective_allowed_extensions'] = tuple(eff_allowed)
+
+    exclude_exts = search.get('exclude_extensions') or []
+    eff_exclude = []
+    for ext in exclude_exts:
+        if not isinstance(ext, str):
+            continue
+        ext_lower = ext.lower()
+        if not ext_lower.startswith('.'):
+            eff_exclude.append('.' + ext_lower)
+        else:
+            eff_exclude.append(ext_lower)
+    search['effective_exclude_extensions'] = tuple(eff_exclude)
+
+    pairing_conf = config.get('pairing') or {}
+    if pairing_conf.get('enabled'):
+        source_exts = pairing_conf.get('source_extensions') or []
+        header_exts = pairing_conf.get('header_extensions') or []
+
+        eff_pair = []
+        for ext in list(source_exts) + list(header_exts):
+            if not isinstance(ext, str):
+                continue
+            ext_lower = ext.lower()
+            if not ext_lower.startswith('.'):
+                eff_pair.append('.' + ext_lower)
+            else:
+                eff_pair.append(ext_lower)
+
+        if pairing_conf.get('include_mismatched'):
+            search['effective_allowed_extensions'] = ()
+        else:
+            search['effective_allowed_extensions'] = tuple(eff_pair)
+        search['effective_exclude_extensions'] = ()
+
+    if search.get('allowed_languages') is not None:
+        search['allowed_languages'] = [l.lower() for l in search['allowed_languages'] if isinstance(l, str)]
+    if search.get('exclude_languages') is not None:
+        search['exclude_languages'] = [l.lower() for l in search['exclude_languages'] if isinstance(l, str)]
+
+    custom_langs = search.get('custom_languages')
+    if isinstance(custom_langs, dict):
+        normalized_custom = {}
+        for k, v in custom_langs.items():
+            if isinstance(k, str) and isinstance(v, str):
+                normalized_custom[k.lower()] = v.lower()
+        search['custom_languages'] = normalized_custom
 
     explicit_files = None
     if args.files_from:
