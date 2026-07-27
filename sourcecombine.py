@@ -4564,6 +4564,11 @@ def main():
         args.include_tree = True
         args.tree = True
 
+    # Handle the repair option by automatically enabling verification if not in extract mode
+    if getattr(args, 'repair', False) is True:
+        if getattr(args, 'extract', False) is not True:
+            args.verify = True
+
     # Handle the AI preset option by enabling several other options
     if args.ai:
         args.markdown = True
