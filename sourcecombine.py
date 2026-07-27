@@ -4463,13 +4463,19 @@ def main():
     )
     utility_group.add_argument(
         "--list-languages",
-        action="store_true",
-        help="Show a list of all supported language identifiers and exit. Use --json for machine-readable output.",
+        nargs="?",
+        const=True,
+        default=False,
+        metavar="QUERY",
+        help="Show supported languages (optionally filtered by QUERY) and exit. Use --json for machine-readable output.",
     )
     utility_group.add_argument(
         "--list-placeholders",
-        action="store_true",
-        help="Show all supported template placeholders and exit. Use --json for machine-readable output.",
+        nargs="?",
+        const=True,
+        default=False,
+        metavar="QUERY",
+        help="Show supported template placeholders (optionally filtered by QUERY) and exit. Use --json for machine-readable output.",
     )
     utility_group.add_argument(
         "--extract",
@@ -4712,6 +4718,7 @@ def main():
         sys.exit(0)
 
     if args.list_placeholders:
+        query = args.list_placeholders if isinstance(args.list_placeholders, str) else None
         if getattr(args, 'json', False):
             # Same categories as print_placeholders
             categories = {
@@ -4789,13 +4796,24 @@ def main():
                     ("Note:", "All project, system, and Git placeholders are also supported."),
                 ]
             }
+            if query:
+                query_lower = query.lower()
+                categories = {
+                    cat: [
+                        (p, desc) for p, desc in fields
+                        if query_lower in p.lower() or query_lower in desc.lower()
+                    ]
+                    for cat, fields in categories.items()
+                }
+                categories = {cat: fields for cat, fields in categories.items() if fields}
             output = {cat: {p: desc for p, desc in fields} for cat, fields in categories.items()}
             print(json.dumps(output, indent=2))
         else:
-            print_placeholders()
+            print_placeholders(query=query)
         sys.exit(0)
 
     if args.list_languages:
+        query = args.list_languages if isinstance(args.list_languages, str) else None
         if getattr(args, 'json', False):
             # Group extensions and filenames by language tag
             lang_groups = {}
@@ -4804,13 +4822,20 @@ def main():
             for name, lang in utils.FILENAME_TO_LANG.items():
                 lang_groups.setdefault(lang, []).append(name)
 
+            if query:
+                query_lower = query.lower()
+                lang_groups = {
+                    tag: items for tag, items in lang_groups.items()
+                    if query_lower in tag.lower() or any(query_lower in item.lower() for item in items)
+                }
+
             output = {
                 "languages": {tag: sorted(items) for tag, items in lang_groups.items()},
                 "total": len(lang_groups)
             }
             print(json.dumps(output, indent=2))
         else:
-            print_languages()
+            print_languages(query=query)
         sys.exit(0)
 
     if args.init:
@@ -6444,9 +6469,16 @@ def print_system_info():
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
 
-def print_placeholders():
-    """Print all supported template placeholders and their descriptions."""
-    print(f"\n{C_BOLD}{C_CYAN}=== TEMPLATE PLACEHOLDERS ==={C_RESET}")
+def print_placeholders(query=None):
+    """Print all supported template placeholders and their descriptions, optionally filtered by a query."""
+    if query:
+        query_lower = query.lower()
+        title_suffix = f" (FILTERED BY '{query}')"
+    else:
+        query_lower = None
+        title_suffix = ""
+
+    print(f"\n{C_BOLD}{C_CYAN}=== TEMPLATE PLACEHOLDERS{title_suffix} ==={C_RESET}")
 
     categories = {
         "File-Level Placeholders": [
@@ -6527,16 +6559,29 @@ def print_placeholders():
     placeholder_width = 25
 
     for category, placeholders in categories.items():
-        print(f"\n  {C_BOLD}{category}{C_RESET}")
+        filtered_placeholders = []
         for placeholder, description in placeholders:
-            print(f"    {C_BOLD}{C_CYAN}{placeholder:<{placeholder_width}}{C_RESET} {C_DIM}{description}{C_RESET}")
+            if not query_lower or query_lower in placeholder.lower() or query_lower in description.lower():
+                filtered_placeholders.append((placeholder, description))
+
+        if filtered_placeholders:
+            print(f"\n  {C_BOLD}{category}{C_RESET}")
+            for placeholder, description in filtered_placeholders:
+                print(f"    {C_BOLD}{C_CYAN}{placeholder:<{placeholder_width}}{C_RESET} {C_DIM}{description}{C_RESET}")
 
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
 
-def print_languages():
-    """Print all supported language identifiers and their mappings."""
-    print(f"\n{C_BOLD}{C_CYAN}=== SUPPORTED LANGUAGES ==={C_RESET}")
+def print_languages(query=None):
+    """Print all supported language identifiers and their mappings, optionally filtered by a query."""
+    if query:
+        query_lower = query.lower()
+        title_suffix = f" (FILTERED BY '{query}')"
+    else:
+        query_lower = None
+        title_suffix = ""
+
+    print(f"\n{C_BOLD}{C_CYAN}=== SUPPORTED LANGUAGES{title_suffix} ==={C_RESET}")
 
     # Group extensions and filenames by language tag
     lang_groups = {}
@@ -6547,6 +6592,12 @@ def print_languages():
 
     # Format the output as a table
     lang_tags = sorted(lang_groups.keys())
+    if query_lower:
+        lang_tags = [
+            tag for tag in lang_tags
+            if query_lower in tag.lower() or any(query_lower in item.lower() for item in lang_groups[tag])
+        ]
+
     tag_width = 15
     desc_width = max(40, shutil.get_terminal_size((80, 20)).columns - tag_width - 6)
 
