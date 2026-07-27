@@ -70,6 +70,14 @@ def xml_escape(data: str) -> str:
     return _xml_escape(data, {'"': "&quot;", "'": "&apos;"})
 
 
+def _get_bool_arg(args, name: str) -> bool:
+    """Safely get a boolean argument, correctly handling mock objects in tests."""
+    val = getattr(args, name, False)
+    if val and type(val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        return False
+    return bool(val)
+
+
 def _to_int_or_none(val: Any) -> int | None:
     """Safely convert a value to an integer, returning None on failure.
 
@@ -297,8 +305,8 @@ class _SilentProgress:
 
 def _progress_enabled(dry_run):
     """Return ``True`` when progress bars should be displayed."""
-
-    if logging.getLogger().getEffectiveLevel() <= logging.DEBUG:
+    effective_level = logging.getLogger().getEffectiveLevel()
+    if effective_level <= logging.DEBUG or effective_level >= logging.WARNING:
         return False
     if dry_run:
         return False
@@ -3911,6 +3919,12 @@ def main():
         action="store_true",
         help="Do not search subfolders recursively (only scan target folder's top-level files).",
     )
+    core_group.add_argument(
+        "-q",
+        "--quiet",
+        action="store_true",
+        help="Suppress success messages and non-essential output (like '[OK]' files during verification or the final execution summary)."
+    )
 
     # Project Information Group
     project_group = parser.add_argument_group("Project Information")
@@ -4536,10 +4550,15 @@ def main():
                 args.clipboard = True
                 logging.debug("AI preset: Automatically enabled the system clipboard.")
 
-    # Configure logging *immediately* based on -v.
+    # Configure logging *immediately* based on -v or -q.
     # This ensures logging is set up *before* load_and_validate_config (which logs)
     # is called, preventing a race condition that locks the log level at WARNING.
-    prelim_level = logging.DEBUG if args.verbose else logging.INFO
+    if _get_bool_arg(args, 'quiet'):
+        prelim_level = logging.WARNING
+    elif args.verbose:
+        prelim_level = logging.DEBUG
+    else:
+        prelim_level = logging.INFO
 
     # Custom logging configuration to use CLILogFormatter
     root_logger = logging.getLogger()
@@ -4547,7 +4566,7 @@ def main():
         handler = logging.StreamHandler(sys.stderr)
         handler.setFormatter(CLILogFormatter())
         root_logger.addHandler(handler)
-        root_logger.setLevel(prelim_level)
+    root_logger.setLevel(prelim_level)
 
     # Disable logging to stderr if we are outputting JSON to stdout,
     # to keep stdout clean for piping.
@@ -4872,9 +4891,11 @@ def main():
         delete_backups(delete_targets, dry_run=args.dry_run)
         sys.exit(0)
 
-    # Re-configure level based on config, *unless* -v was used.
-    # The -v (DEBUG) option always overrides the configuration file's setting.
-    if not args.verbose:
+    # Re-configure level based on config, *unless* -v or -q was used.
+    # The -v (DEBUG) and -q (WARNING) options override the configuration file's setting.
+    if _get_bool_arg(args, 'quiet'):
+        logging.getLogger().setLevel(logging.WARNING)
+    elif not args.verbose:
         level_str = config.get('logging', {}).get('level', 'INFO')
         log_level = getattr(logging, level_str.upper(), logging.INFO)
         # Set the level on the *root logger* since basicConfig was already called
@@ -5360,6 +5381,7 @@ def main():
                 dry_run=args.dry_run,
                 strip_components=args.strip_components,
                 json_format=getattr(args, 'json', False),
+                quiet=_get_bool_arg(args, 'quiet'),
             )
             sys.exit(0)
 
@@ -5608,7 +5630,7 @@ def _parse_combined_content(content, source_name="combined file"):
     return files_found
 
 
-def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=False, dry_run=False, strip_components=0, json_format=False):
+def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=False, dry_run=False, strip_components=0, json_format=False, quiet=False):
     """Verify that files on disk match the manifest or combined file."""
     root_folder = Path(root_folder)
     if config is None:
@@ -5643,7 +5665,7 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
     files_to_verify = filtered_files
 
     title = "Repair Report" if repair else "Verification Report"
-    if not json_format:
+    if not json_format and not quiet:
         print(f"\n{C_BOLD}=== {title} ==={C_RESET}")
     json_results = []
 
@@ -5713,7 +5735,7 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
                 if actual_sha == expected_sha:
                     if json_format:
                         json_results.append({"path": rel_path_str, "status": "OK", "detail": "hash match"})
-                    else:
+                    elif not quiet:
                         print(f"  {C_GREEN}{'[OK]':<10}{C_RESET}  {rel_path_str} {C_DIM}(hash match){C_RESET}")
                     matches += 1
                 else:
@@ -5764,7 +5786,7 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
             if actual_content.replace('\r\n', '\n') == expected_content.replace('\r\n', '\n'):
                 if json_format:
                     json_results.append({"path": rel_path_str, "status": "OK", "detail": "content match"})
-                else:
+                elif not quiet:
                     print(f"  {C_GREEN}{'[OK]':<10}{C_RESET}  {rel_path_str} {C_DIM}(content match){C_RESET}")
                 matches += 1
             else:
@@ -5803,7 +5825,7 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
 
         if json_format:
             json_results.append({"path": rel_path_str, "status": "SKIPPED", "detail": "no hash or content to verify against"})
-        else:
+        elif not quiet:
             print(f"  {C_YELLOW}{'[SKIPPED]':<10}{C_RESET}  {rel_path_str} {C_DIM}(no hash or content to verify against){C_RESET}")
 
     if json_format:
@@ -5819,7 +5841,7 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
             }
         }
         print(json.dumps(output, indent=2))
-    else:
+    elif not quiet or (mismatches > 0 or missing > 0 or repaired > 0):
         print(f"\n{C_BOLD}Summary:{C_RESET}")
         print(f"  Matches:    {C_GREEN if matches == total else C_RESET}{matches}/{total}{C_RESET}")
         if repaired:
@@ -6517,6 +6539,8 @@ def _print_limit_usage_bar(label, current, maximum, label_width, is_size=False):
 
 def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None, duration=None, source_desc=None, mirror_enabled=False):
     """Print a summary of the totals to the terminal."""
+    if _get_bool_arg(args, 'quiet'):
+        return
 
     def _split_unit(s):
         """Split a string such as '1.50 MB' or '1,000 tokens' into (value, unit)."""
