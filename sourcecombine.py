@@ -4519,6 +4519,19 @@ def main():
     )
     args = parser.parse_args()
 
+    # Configure logging *immediately* based on -v.
+    # This ensures logging is set up *before* any presets or config load,
+    # preventing a race condition that locks the log level or uses unformatted logs.
+    prelim_level = logging.DEBUG if args.verbose else logging.INFO
+
+    # Custom logging configuration to use CLILogFormatter
+    root_logger = logging.getLogger()
+    if not root_logger.handlers:
+        handler = logging.StreamHandler(sys.stderr)
+        handler.setFormatter(CLILogFormatter())
+        root_logger.addHandler(handler)
+        root_logger.setLevel(prelim_level)
+
     # Handle the analyze preset option
     if getattr(args, 'analyze', False):
         args.dry_run = True
@@ -4549,6 +4562,12 @@ def main():
             if importlib.util.find_spec("pyperclip"):
                 args.clipboard = True
                 logging.debug("AI preset: Automatically enabled the system clipboard.")
+            else:
+                logging.warning(
+                    "The 'pyperclip' library is not installed. AI preset cannot automatically "
+                    "copy to the clipboard. Output will be saved to a file instead. "
+                    "To enable clipboard support, run: pip install pyperclip"
+                )
 
     # Configure logging *immediately* based on -v or -q.
     # This ensures logging is set up *before* load_and_validate_config (which logs)
