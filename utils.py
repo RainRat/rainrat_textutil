@@ -926,7 +926,10 @@ def _validate_pairing_section(config):
 
         source_exts = tuple(e.lower() for e in (source_ext_list or []))
         header_exts = tuple(e.lower() for e in (header_ext_list or []))
-        effective_allowed_extensions = source_exts + header_exts
+        if pairing_conf.get('include_mismatched'):
+            effective_allowed_extensions = ()
+        else:
+            effective_allowed_extensions = source_exts + header_exts
         effective_exclude_extensions = ()
     else:
         effective_allowed_extensions = tuple(
