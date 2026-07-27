@@ -149,3 +149,220 @@ def test_verify_cli_integration_with_json_flag(tmp_path, capsys):
     assert data["files"][0]["path"] == "file1.txt"
     assert data["files"][0]["status"] == "OK"
     assert data["files"][0]["detail"] == "content match"
+
+
+def test_verify_files_json_create_missing_os_error(tmp_path, capsys):
+    root = tmp_path / "project"
+    root.mkdir()
+    manifest = [
+        {"path": "file1.txt", "content": "hello world"}
+    ]
+    manifest_file = tmp_path / "manifest.json"
+    manifest_file.write_text(json.dumps(manifest), encoding="utf-8")
+    sources = [("manifest.json", manifest_file.read_text(encoding="utf-8"))]
+
+    with patch("pathlib.Path.write_text", side_effect=OSError("permission denied")):
+        verify_files(sources, root_folder=root, repair=True, dry_run=False, json_format=True)
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert data["files"][0]["status"] == "ERROR"
+    assert "failed to repair" in data["files"][0]["detail"]
+
+
+def test_verify_files_json_hash_mismatch_dry_run(tmp_path, capsys):
+    root = tmp_path / "project"
+    root.mkdir()
+    file1 = root / "file1.txt"
+    file1.write_text("wrong content", encoding="utf-8")
+    sha1 = hashlib.sha256(b"hello world").hexdigest()
+
+    manifest = [
+        {"path": "file1.txt", "sha256": sha1, "content": "hello world"}
+    ]
+    manifest_file = tmp_path / "manifest.json"
+    manifest_file.write_text(json.dumps(manifest), encoding="utf-8")
+    sources = [("manifest.json", manifest_file.read_text(encoding="utf-8"))]
+
+    verify_files(sources, root_folder=root, repair=True, dry_run=True, json_format=True)
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert data["files"][0]["status"] == "REPAIR"
+    assert data["files"][0]["detail"] == "would fix hash mismatch"
+
+
+def test_verify_files_json_hash_mismatch_repair_real(tmp_path, capsys):
+    root = tmp_path / "project"
+    root.mkdir()
+    file1 = root / "file1.txt"
+    file1.write_text("wrong content", encoding="utf-8")
+    sha1 = hashlib.sha256(b"hello world").hexdigest()
+
+    manifest = [
+        {"path": "file1.txt", "sha256": sha1, "content": "hello world"}
+    ]
+    manifest_file = tmp_path / "manifest.json"
+    manifest_file.write_text(json.dumps(manifest), encoding="utf-8")
+    sources = [("manifest.json", manifest_file.read_text(encoding="utf-8"))]
+
+    verify_files(sources, root_folder=root, repair=True, dry_run=False, json_format=True)
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert data["files"][0]["status"] == "REPAIRED"
+    assert data["files"][0]["detail"] == "fixed hash mismatch"
+    assert file1.read_text(encoding="utf-8") == "hello world"
+
+
+def test_verify_files_json_hash_mismatch_repair_os_error(tmp_path, capsys):
+    root = tmp_path / "project"
+    root.mkdir()
+    file1 = root / "file1.txt"
+    file1.write_text("wrong content", encoding="utf-8")
+    sha1 = hashlib.sha256(b"hello world").hexdigest()
+
+    manifest = [
+        {"path": "file1.txt", "sha256": sha1, "content": "hello world"}
+    ]
+    manifest_file = tmp_path / "manifest.json"
+    manifest_file.write_text(json.dumps(manifest), encoding="utf-8")
+    sources = [("manifest.json", manifest_file.read_text(encoding="utf-8"))]
+
+    with patch("pathlib.Path.write_text", side_effect=OSError("write failure")):
+        verify_files(sources, root_folder=root, repair=True, dry_run=False, json_format=True)
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert data["files"][0]["status"] == "ERROR"
+    assert "failed to repair" in data["files"][0]["detail"]
+
+
+def test_verify_files_json_hash_read_os_error(tmp_path, capsys):
+    root = tmp_path / "project"
+    root.mkdir()
+    file1 = root / "file1.txt"
+    file1.write_text("wrong content", encoding="utf-8")
+    sha1 = hashlib.sha256(b"hello world").hexdigest()
+
+    manifest = [
+        {"path": "file1.txt", "sha256": sha1, "content": "hello world"}
+    ]
+    manifest_file = tmp_path / "manifest.json"
+    manifest_file.write_text(json.dumps(manifest), encoding="utf-8")
+    sources = [("manifest.json", manifest_file.read_text(encoding="utf-8"))]
+
+    with patch("pathlib.Path.read_bytes", side_effect=OSError("permission denied")):
+        verify_files(sources, root_folder=root, json_format=True)
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert data["files"][0]["status"] == "ERROR"
+    assert "permission denied" in data["files"][0]["detail"]
+
+
+def test_verify_files_json_content_mismatch_dry_run(tmp_path, capsys):
+    root = tmp_path / "project"
+    root.mkdir()
+    file1 = root / "file1.txt"
+    file1.write_text("wrong content", encoding="utf-8")
+
+    manifest = [
+        {"path": "file1.txt", "content": "hello world"}
+    ]
+    manifest_file = tmp_path / "manifest.json"
+    manifest_file.write_text(json.dumps(manifest), encoding="utf-8")
+    sources = [("manifest.json", manifest_file.read_text(encoding="utf-8"))]
+
+    verify_files(sources, root_folder=root, repair=True, dry_run=True, json_format=True)
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert data["files"][0]["status"] == "REPAIR"
+    assert data["files"][0]["detail"] == "would fix content mismatch"
+
+
+def test_verify_files_json_content_mismatch_repair_real(tmp_path, capsys):
+    root = tmp_path / "project"
+    root.mkdir()
+    file1 = root / "file1.txt"
+    file1.write_text("wrong content", encoding="utf-8")
+
+    manifest = [
+        {"path": "file1.txt", "content": "hello world"}
+    ]
+    manifest_file = tmp_path / "manifest.json"
+    manifest_file.write_text(json.dumps(manifest), encoding="utf-8")
+    sources = [("manifest.json", manifest_file.read_text(encoding="utf-8"))]
+
+    verify_files(sources, root_folder=root, repair=True, dry_run=False, json_format=True)
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert data["files"][0]["status"] == "REPAIRED"
+    assert data["files"][0]["detail"] == "fixed content mismatch"
+    assert file1.read_text(encoding="utf-8") == "hello world"
+
+
+def test_verify_files_json_content_mismatch_repair_os_error(tmp_path, capsys):
+    root = tmp_path / "project"
+    root.mkdir()
+    file1 = root / "file1.txt"
+    file1.write_text("wrong content", encoding="utf-8")
+
+    manifest = [
+        {"path": "file1.txt", "content": "hello world"}
+    ]
+    manifest_file = tmp_path / "manifest.json"
+    manifest_file.write_text(json.dumps(manifest), encoding="utf-8")
+    sources = [("manifest.json", manifest_file.read_text(encoding="utf-8"))]
+
+    with patch("pathlib.Path.write_text", side_effect=OSError("write failure")):
+        verify_files(sources, root_folder=root, repair=True, dry_run=False, json_format=True)
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert data["files"][0]["status"] == "ERROR"
+    assert "failed to repair" in data["files"][0]["detail"]
+
+
+def test_verify_files_json_content_mismatch_no_repair(tmp_path, capsys):
+    root = tmp_path / "project"
+    root.mkdir()
+    file1 = root / "file1.txt"
+    file1.write_text("wrong content", encoding="utf-8")
+
+    manifest = [
+        {"path": "file1.txt", "content": "hello world"}
+    ]
+    manifest_file = tmp_path / "manifest.json"
+    manifest_file.write_text(json.dumps(manifest), encoding="utf-8")
+    sources = [("manifest.json", manifest_file.read_text(encoding="utf-8"))]
+
+    verify_files(sources, root_folder=root, json_format=True)
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert data["files"][0]["status"] == "MISMATCH"
+    assert data["files"][0]["detail"] == "content mismatch"
+
+
+def test_verify_files_json_skipped_no_hash_or_content(tmp_path, capsys):
+    root = tmp_path / "project"
+    root.mkdir()
+    file1 = root / "file1.txt"
+    file1.write_text("some content", encoding="utf-8")
+
+    manifest = [
+        {"path": "file1.txt"}
+    ]
+    manifest_file = tmp_path / "manifest.json"
+    manifest_file.write_text(json.dumps(manifest), encoding="utf-8")
+    sources = [("manifest.json", manifest_file.read_text(encoding="utf-8"))]
+
+    verify_files(sources, root_folder=root, json_format=True)
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert data["files"][0]["status"] == "SKIPPED"
+    assert data["files"][0]["detail"] == "no hash or content to verify against"
