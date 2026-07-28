@@ -2029,26 +2029,6 @@ class FileProcessor:
         if is_markdown_collapsible:
             outfile.write("\n</details>\n")
 
-    def _backup_file(self, file_path):
-        """Create a ``.bak`` backup for ``file_path`` when backups are enabled.
-
-        The backup is an exact copy of the original file and keeps its
-        details (such as the date it was changed). If ``create_backups`` is ``False``
-        no action is taken. Failures to copy raise ``utils.InvalidConfigError`` so the
-        tool stops before overwriting code.
-        """
-
-        if not self.create_backups:
-            return
-
-        backup_path = Path(f"{file_path}.bak")
-        try:
-            shutil.copy2(file_path, backup_path)
-        except OSError as exc:
-            raise utils.InvalidConfigError(
-                f"Failed to create backup for '{file_path}': {exc}"
-            ) from exc
-
     def _apply_inplace_if_needed(self, file_path, root_path, content, processed_content, encoding, dry_run=None, estimate_tokens=None):
         """Apply in-place updates and print diffs if configured."""
         if dry_run is None:
@@ -2064,7 +2044,14 @@ class FileProcessor:
 
         if not estimate_tokens and not dry_run:
             logging.info("Updating in place: %s (encoding: %s)", file_path, encoding)
-            self._backup_file(file_path)
+            if self.create_backups:
+                backup_path = Path(f"{file_path}.bak")
+                try:
+                    shutil.copy2(file_path, backup_path)
+                except OSError as exc:
+                    raise utils.InvalidConfigError(
+                        f"Failed to create backup for '{file_path}': {exc}"
+                    ) from exc
             file_path.write_text(processed_content, encoding=encoding, newline='')
 
     def _emit_entry(
