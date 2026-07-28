@@ -438,6 +438,10 @@ def _get_folder_stats(top_files):
     return final_stats
 
 
+def _get_primary_metric(t, l):
+    return 'tokens' if t else ('lines' if l else 'size')
+
+
 def _get_summary_top_items(stats, items, is_folder=False):
     """Select the best metric (tokens, lines, or size) and return top 5 items.
 
@@ -6408,25 +6412,22 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
             logging.warning("Skipping invalid path: %s", rel_path_str)
             continue
 
-        if show_diff and target_path.exists() and file_content is not None:
+        if show_diff and target_path.exists():
             old_content, _ = read_file_best_effort(target_path)
             _print_diff(old_content, file_content, rel_path_str)
 
         if dry_run:
             logging.info("[DRY RUN] Would create: %s", target_path)
         else:
-            if file_content is not None:
-                try:
-                    target_path.parent.mkdir(parents=True, exist_ok=True)
-                    target_path.write_text(file_content, encoding='utf-8')
-                    if meta.get('modified') is not None:
-                        os.utime(target_path, (meta['modified'], meta['modified']))
-                    logging.info("Extracted: %s", target_path)
-                    extracted_count += 1
-                except OSError as e:
-                    logging.error("Failed to write %s: %s", target_path, e)
-            else:
-                logging.debug("Skipping file creation for %s: No content provided.", rel_path_str)
+            try:
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+                target_path.write_text(file_content, encoding='utf-8')
+                if meta.get('modified') is not None:
+                    os.utime(target_path, (meta['modified'], meta['modified']))
+                logging.info("Extracted: %s", target_path)
+                extracted_count += 1
+            except OSError as e:
+                logging.error("Failed to write %s: %s", target_path, e)
 
             running_size += (_to_int_or_none(meta.get('size')) or 0)
             running_lines += (_to_int_or_none(meta.get('lines')) or 0)
@@ -6812,9 +6813,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     def _format_header(label, metric_name, primary_metric, width=12):
         h = f"{label:>{width}}"
         return f"{C_BOLD}{h}{C_RESET}{C_DIM}" if metric_name == primary_metric else h
-
-    def _get_primary_metric(t, l):
-        return 'tokens' if t else ('lines' if l else 'size')
 
     # Determine available width for layout and truncation
     term_width = 80
