@@ -170,6 +170,98 @@ Check if your files on disk match the content or SHA-256 hashes stored in a comb
    python sourcecombine.py --repair combined_files.json
    ```
 
+## Configuration Guide
+You can configure SourceCombine using a configuration file instead of passing many options via the command line.
+
+### Configuration Auto-Discovery
+When you run SourceCombine, it automatically searches for these configuration files in your current folder (in order of priority):
+1. `sourcecombine.yml` or `sourcecombine.yaml`
+2. `sourcecombine.json`
+3. `config.yml` or `config.yaml`
+4. `config.json`
+
+If the tool finds one of these files, it loads your settings automatically. You can also specify a custom configuration file using the `--config` or `-k` flag:
+```bash
+python sourcecombine.py --config my_custom_config.yml
+```
+
+### YAML Configuration Example
+Here is a simple and clean YAML configuration file (`sourcecombine.yml`). This configuration defines search rules, filters out build/environment folders, and configures the output file:
+
+```yaml
+# --- Search Parameters ---
+search:
+  # Search recursively through subfolders (true or false).
+  recursive: true
+  # Only include files with these extensions. Leave empty to include all.
+  allowed_extensions:
+    - '.py'
+    - '.js'
+
+# --- File Filtering ---
+filters:
+  # Skip duplicate files by path or content.
+  unique: true
+  # Skip binary files automatically.
+  skip_binary: true
+  # Exclude specific files and folders.
+  exclusions:
+    filenames:
+      - '*.log'
+      - '*.tmp'
+    folders:
+      - '.git'
+      - 'node_modules'
+      - 'venv'
+
+# --- Output Settings ---
+output:
+  # Output file path.
+  file: 'combined_files.txt'
+  # Add a Table of Contents to the start of the output.
+  table_of_contents: true
+  # Add a visual folder tree to the start of the output.
+  include_tree: true
+  # Add a project overview summary.
+  project_overview: true
+```
+
+### JSON Configuration Example (No PyYAML Required)
+If you do not have `PyYAML` installed, or if you prefer JSON, you can use a JSON configuration file (`sourcecombine.json`). It works immediately using Python's standard library:
+
+```json
+{
+  "search": {
+    "recursive": true,
+    "allowed_extensions": [
+      ".py",
+      ".js"
+    ]
+  },
+  "filters": {
+    "unique": true,
+    "skip_binary": true,
+    "exclusions": {
+      "filenames": [
+        "*.log",
+        "*.tmp"
+      ],
+      "folders": [
+        ".git",
+        "node_modules",
+        "venv"
+      ]
+    }
+  },
+  "output": {
+    "file": "combined_files.txt",
+    "table_of_contents": true,
+    "include_tree": true,
+    "project_overview": true
+  }
+}
+```
+
 ## Template Customization
 You can customize the output by using templates in the configuration file. Templates support placeholders that are replaced with actual data when the tool runs. Both file-level and global templates support all project-level and Git placeholders.
 
