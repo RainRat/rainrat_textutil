@@ -114,3 +114,25 @@ def test_cli_integration_with_collapsible_flag(tmp_path, monkeypatch, capsys):
     combined_content = output_file.read_text(encoding="utf-8")
     assert "<details><summary><b>a.py</b>" in combined_content
     assert "</details>" in combined_content
+
+
+def test_extract_collapsible_markdown_fallback_path(tmp_path):
+    combined_content = """<details><summary>libs/my_file.py (5 lines)</summary>
+
+## libs/my_file.py
+
+```python
+def test_fallback():
+    pass
+```
+
+</details>
+"""
+    sources = [("combined.md", combined_content)]
+    out_dir = tmp_path / "restored"
+
+    extract_files(sources, str(out_dir))
+
+    restored_file = out_dir / "libs" / "my_file.py"
+    assert restored_file.is_file()
+    assert restored_file.read_text(encoding="utf-8").strip() == "def test_fallback():\n    pass"
