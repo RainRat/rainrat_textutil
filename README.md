@@ -16,7 +16,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   **AI Integration:** Include system info and Git context automatically with the `--ai` preset.
 
 ## Common Flags
-*   `--config` (`-k`): Use a custom configuration file (YAML). The tool automatically searches for `sourcecombine.yml`, `sourcecombine.yaml`, `config.yml`, or `config.yaml` in the current folder.
+*   `--config` (`-k`): Use a custom configuration file (YAML or JSON). The tool automatically searches for `sourcecombine.yml`, `sourcecombine.yaml`, `sourcecombine.json`, `config.yml`, `config.yaml`, or `config.json` in the current folder.
 *   `--output` (`-o`): Save results to a file or folder instead of the terminal. Supports template placeholders (for example, `{{PROJECT_NAME}}_{{DATE}}.txt`).
 *   `--clipboard` (`-c`): Copy the combined output to the system clipboard.
 *   `--git-files` (`-G`): Use Git to find files and follow the `.gitignore` rules automatically.
@@ -115,6 +115,8 @@ The tool installs these automatically when you follow the installation steps:
     python sourcecombine.py --init
     ```
     This command creates a `sourcecombine.yml` file with default settings to help you get started.
+
+    *(Note)* If you do not have the `PyYAML` library installed, you can also use JSON configurations (such as `sourcecombine.json` or `config.json`). They work immediately using Python's standard library.
 
 For more details, use `python sourcecombine.py --help` or check `config.template.yml`.
 
