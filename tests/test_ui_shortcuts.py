@@ -43,6 +43,32 @@ def test_shortcuts():
     combined_output = result.stdout + result.stderr
     assert "WARNING: Output shortened due to: token limit" in combined_output
 
+    # Test -y for verification (using a manifest file)
+    manifest_data = [
+        {
+            "path": "a.txt",
+            "content": "a",
+            "size_bytes": 1
+        }
+    ]
+    import json
+    manifest_path = os.path.join(test_dir, "manifest.json")
+    with open(manifest_path, "w") as f:
+        json.dump(manifest_data, f)
+
+    # Test -y shortcut for verification
+    # We point output to test_dir where a.txt exists and matches the manifest
+    result = subprocess.run([sys.executable, "sourcecombine.py", "-y", manifest_path, "--output", test_dir], capture_output=True, text=True)
+    assert "[OK]" in result.stdout or "[OK]" in result.stderr or "Matches:" in result.stdout
+
+    # Test -P shortcut for repair
+    # Remove a.txt and use -P to repair/restore it
+    os.remove(os.path.join(test_dir, "a.txt"))
+    result = subprocess.run([sys.executable, "sourcecombine.py", "-P", manifest_path, "--output", test_dir], capture_output=True, text=True)
+    assert os.path.exists(os.path.join(test_dir, "a.txt"))
+    with open(os.path.join(test_dir, "a.txt"), "r") as f:
+        assert f.read() == "a"
+
     # Cleanup
     shutil.rmtree(test_dir)
 

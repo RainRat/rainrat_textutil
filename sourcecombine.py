@@ -3890,7 +3890,10 @@ def main():
               python sourcecombine.py --extract combined_files.txt
 
               # Verify files against a combined manifest
-              python sourcecombine.py --verify combined_files.json
+              python sourcecombine.py -y combined_files.json
+
+              # Automatically repair mismatched or missing files
+              python sourcecombine.py -P combined_files.json
         """),
     )
 
@@ -4492,6 +4495,7 @@ def main():
     )
     utility_group.add_argument(
         "--verify",
+        "-y",
         action="store_true",
         help=(
             "Verify that files on disk match the content or hashes in combined files or manifests. "
@@ -4502,6 +4506,7 @@ def main():
     )
     utility_group.add_argument(
         "--repair",
+        "-P",
         action="store_true",
         help="Automatically fix mismatched or missing files when verifying (requires source content).",
     )
