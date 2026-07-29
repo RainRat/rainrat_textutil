@@ -154,3 +154,54 @@ def test_init_workflow_succeeds_out_of_the_box(temp_cwd, mock_argv, caplog):
     warning_msgs = [record.message for record in caplog.records if record.levelname == "WARNING"]
     for msg in warning_msgs:
         assert "/path/to/project" not in msg
+
+def test_config_auto_discovery_with_targets(temp_cwd, mock_argv):
+    """Verify that configuration file is auto-discovered even with targets."""
+    config_file = temp_cwd / "sourcecombine.yml"
+    config_data = {
+        'output': {'file': 'my_special_combined.txt'}
+    }
+    with open(config_file, 'w') as f:
+        yaml.dump(config_data, f)
+
+    # We provide a targets list, which would previously skip auto-finding
+    target_dir = temp_cwd / "some_src"
+    target_dir.mkdir()
+
+    with mock_argv([str(target_dir), '--dry-run']):
+        with patch('sourcecombine.find_and_combine_files') as mock_combine:
+            mock_combine.return_value = {}
+            main()
+
+            assert mock_combine.called
+            args, _ = mock_combine.call_args
+            # The output path should be resolved based on the config file name
+            assert os.path.basename(args[1]) == 'my_special_combined.txt'
+            # The config passed to find_and_combine_files should have 'my_special_combined.txt'
+            assert args[0]['output']['file'] == 'my_special_combined.txt'
+
+def test_project_info_config_auto_discovery_with_targets(temp_cwd, mock_argv):
+    """Verify project-info auto-discovers configuration even with targets."""
+    config_file = temp_cwd / "sourcecombine.yml"
+    config_data = {
+        'project': {
+            'name': 'MySuperProject',
+            'version': '9.9.9'
+        }
+    }
+    with open(config_file, 'w') as f:
+        yaml.dump(config_data, f)
+
+    target_dir = temp_cwd / "some_src"
+    target_dir.mkdir()
+
+    # We mock _populate_project_stats or print_project_info or get_git_info
+    with mock_argv(['--project-info', str(target_dir)]):
+        with patch('sourcecombine.print_project_info') as mock_print:
+            with pytest.raises(SystemExit) as excinfo:
+                main()
+            assert excinfo.value.code == 0
+            assert mock_print.called
+            stats = mock_print.call_args[0][0]
+            assert stats.get('project_name') == 'MySuperProject'
+            assert stats.get('project_version') == '9.9.9'

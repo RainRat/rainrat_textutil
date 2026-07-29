@@ -4685,7 +4685,7 @@ def main():
                 remaining_targets = targets[1:]
             else:
                 remaining_targets = targets
-        if not config_path and not remaining_targets:
+        if not config_path:
             defaults = [
                 'sourcecombine.yml', 'sourcecombine.yaml',
                 'sourcecombine.json',
@@ -4903,8 +4903,8 @@ def main():
     # because we can fall back to the current folder later.
     nested_required = {}
 
-    if not config_path and not remaining_targets:
-        # Case 1: No positional targets. Use auto-finding
+    if not config_path:
+        # Case 1: Auto-find configuration file from defaults
         defaults = [
             'sourcecombine.yml', 'sourcecombine.yaml',
             'sourcecombine.json',
