@@ -69,6 +69,14 @@ The tool installs these automatically when you follow the installation steps:
 *   **charset-normalizer:** Detects character encodings in files.
 *   **tqdm:** Displays progress bars during scanning and processing.
 *   **pyperclip:** Copies output directly to the system clipboard.
+    *   *Note for Linux users:* To use clipboard features (such as with the `--ai` preset or the `--clipboard` flag), you must install `xclip` or `xsel` on your system. For example, run:
+        ```bash
+        sudo apt-get install xclip
+        ```
+        or
+        ```bash
+        sudo dnf install xclip
+        ```
 
 ### Optional Dependencies
 *   **tiktoken:** Provides accurate token counting. Without it, the tool uses a character-based estimate (1 token is approximately 4 characters).
@@ -107,8 +115,13 @@ The tool installs these automatically when you follow the installation steps:
     pip install tiktoken
     ```
 4.  **Run the Tool:**
+    To combine the tool's own files as a quick test:
     ```bash
-    python sourcecombine.py src/ --output combined.txt
+    python sourcecombine.py . --output combined.txt
+    ```
+    To combine files in your own project folder, replace `.` with your folder path:
+    ```bash
+    python sourcecombine.py /path/to/your/project/ --output combined.txt
     ```
 5.  **Create a Config (Optional):**
     ```bash
