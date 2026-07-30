@@ -277,3 +277,76 @@ def test_main_system_info_exit_behavior():
                 main()
             assert exc.value.code == 0
             mock_info.assert_called_once()
+
+def test_init_creates_json_config(temp_cwd, mock_argv, caplog):
+    """Test --init creates pretty-printed JSON when given a .json file."""
+    caplog.set_level(logging.INFO)
+
+    with mock_argv(['--init', 'my_config.json']):
+        with pytest.raises(SystemExit) as excinfo:
+            main()
+
+    assert excinfo.value.code == 0
+    config_file = temp_cwd / "my_config.json"
+    assert config_file.exists()
+    import json
+    data = json.loads(config_file.read_text(encoding="utf-8"))
+    assert "search" in data
+    assert "Created default configuration" in caplog.text
+
+
+def test_init_creates_config_in_directory(temp_cwd, mock_argv, caplog):
+    """Test --init creates sourcecombine.yml inside directory when directory is supplied."""
+    caplog.set_level(logging.INFO)
+
+    custom_dir = temp_cwd / "custom_dir"
+    custom_dir.mkdir()
+
+    with mock_argv(['--init', str(custom_dir)]):
+        with pytest.raises(SystemExit) as excinfo:
+            main()
+
+    assert excinfo.value.code == 0
+    assert (custom_dir / "sourcecombine.yml").exists()
+    assert "Created default configuration" in caplog.text
+
+
+def test_init_creates_directory_and_json_config(temp_cwd, mock_argv, caplog):
+    """Test --init creates target parent directories and config."""
+    caplog.set_level(logging.INFO)
+
+    target_file = temp_cwd / "new_sub_dir" / "nested" / "config.json"
+
+    with mock_argv(['--init', str(target_file)]):
+        with pytest.raises(SystemExit) as excinfo:
+            main()
+
+    assert excinfo.value.code == 0
+    assert target_file.exists()
+    assert "Created default configuration" in caplog.text
+
+
+def test_init_fails_to_create_directory(temp_cwd, mock_argv, caplog):
+    """Test handling of directory creation error during --init."""
+    caplog.set_level(logging.ERROR)
+
+    with patch('pathlib.Path.mkdir', side_effect=OSError("Permission denied")):
+        with mock_argv(['--init', 'some_dir/config.json']):
+            with pytest.raises(SystemExit) as excinfo:
+                main()
+
+    assert excinfo.value.code == 1
+    assert "Could not create target directory" in caplog.text
+
+
+def test_init_json_write_error(temp_cwd, mock_argv, caplog):
+    """Test handling of write error during JSON configuration initialization."""
+    caplog.set_level(logging.ERROR)
+
+    with patch('builtins.open', side_effect=OSError("Disk full")):
+        with mock_argv(['--init', 'config.json']):
+            with pytest.raises(SystemExit) as excinfo:
+                main()
+
+    assert excinfo.value.code == 1
+    assert "Could not write the JSON configuration file" in caplog.text
