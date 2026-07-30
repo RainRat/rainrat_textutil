@@ -6415,18 +6415,15 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         if dry_run:
             logging.info("[DRY RUN] Would create: %s", target_path)
         else:
-            if file_content is not None:
-                try:
-                    target_path.parent.mkdir(parents=True, exist_ok=True)
-                    target_path.write_text(file_content, encoding='utf-8')
-                    if meta.get('modified') is not None:
-                        os.utime(target_path, (meta['modified'], meta['modified']))
-                    logging.info("Extracted: %s", target_path)
-                    extracted_count += 1
-                except OSError as e:
-                    logging.error("Failed to write %s: %s", target_path, e)
-            else:
-                logging.debug("Skipping file creation for %s: No content provided.", rel_path_str)
+            try:
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+                target_path.write_text(file_content, encoding='utf-8')
+                if meta.get('modified') is not None:
+                    os.utime(target_path, (meta['modified'], meta['modified']))
+                logging.info("Extracted: %s", target_path)
+                extracted_count += 1
+            except OSError as e:
+                logging.error("Failed to write %s: %s", target_path, e)
 
             running_size += (_to_int_or_none(meta.get('size')) or 0)
             running_lines += (_to_int_or_none(meta.get('lines')) or 0)
@@ -6799,6 +6796,11 @@ def _print_limit_usage_bar(label, current, maximum, label_width, is_size=False):
     print(f"    {C_DIM}{label:<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_DIM}{percent:>6.1f}%{C_RESET} {C_DIM}{detail}{C_RESET}", file=sys.stderr)
 
 
+def _get_primary_metric(t, l):
+    """Get primary metric name based on whether tokens/lines are present."""
+    return 'tokens' if t else ('lines' if l else 'size')
+
+
 def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None, duration=None, source_desc=None, mirror_enabled=False):
     """Print a summary of the totals to the terminal."""
     if _get_bool_arg(args, 'quiet'):
@@ -6812,9 +6814,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     def _format_header(label, metric_name, primary_metric, width=12):
         h = f"{label:>{width}}"
         return f"{C_BOLD}{h}{C_RESET}{C_DIM}" if metric_name == primary_metric else h
-
-    def _get_primary_metric(t, l):
-        return 'tokens' if t else ('lines' if l else 'size')
 
     # Determine available width for layout and truncation
     term_width = 80
