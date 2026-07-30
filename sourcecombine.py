@@ -78,6 +78,16 @@ def _get_bool_arg(args, name: str) -> bool:
     return bool(val)
 
 
+def _get_list_backups_arg(args):
+    """Safely get the list_backups argument, returning None if it's a mock object or unset."""
+    val = getattr(args, 'list_backups', None)
+    if val is None or val is False:
+        return None
+    if type(val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        return None
+    return val
+
+
 def _to_int_or_none(val: Any) -> int | None:
     """Safely convert a value to an integer, returning None on failure.
 
@@ -4512,6 +4522,13 @@ def main():
         help="Remove all '.bak' files from target folders. Use this to clean up after '--apply-in-place'.",
     )
     utility_group.add_argument(
+        "--list-backups",
+        nargs="?",
+        const=True,
+        metavar="QUERY",
+        help="List all active '.bak' backup files (optionally filtered by QUERY) and exit. Use --json for machine-readable output.",
+    )
+    utility_group.add_argument(
         "--show-config",
         action="store_true",
         help="Show the final combined configuration (including defaults, files, and options) and exit. Use --json for machine-readable output.",
@@ -4624,7 +4641,8 @@ def main():
         args.list_placeholders or
         getattr(args, 'project_info', False) or
         args.show_config or
-        args.verify
+        args.verify or
+        _get_list_backups_arg(args) is not None
     ):
         root_logger.setLevel(logging.ERROR)
 
@@ -4970,6 +4988,14 @@ def main():
         # Use the finalized root folders for deletion
         delete_targets = config.get('search', {}).get('root_folders', ["."])
         delete_backups(delete_targets, dry_run=args.dry_run)
+        sys.exit(0)
+
+    list_backups_val = _get_list_backups_arg(args)
+    if list_backups_val is not None:
+        # Use the finalized root folders for backup listing
+        list_targets = config.get('search', {}).get('root_folders', ["."])
+        query = list_backups_val if isinstance(list_backups_val, str) else None
+        list_backups(list_targets, query=query, json_format=getattr(args, 'json', False))
         sys.exit(0)
 
     # Re-configure level based on config, *unless* -v or -q was used.
@@ -6492,6 +6518,93 @@ def restore_backups(targets, dry_run=False):
         logging.info("No files were restored.")
 
     return restored_count, error_count
+
+
+def list_backups(targets, query=None, json_format=False):
+    """Scan targets recursively for .bak files and list them, optionally filtered by query."""
+    if not targets:
+        targets = ["."]
+
+    all_backups = []
+
+    for target in targets:
+        root_path = Path(target)
+        if not root_path.exists():
+            logging.warning("Target folder not found: %s", target)
+            continue
+
+        if root_path.is_file():
+            backup_files = []
+            if root_path.suffix == ".bak":
+                backup_files = [root_path]
+            elif Path(f"{root_path}.bak").is_file():
+                backup_files = [Path(f"{root_path}.bak")]
+        else:
+            backup_files = sorted(root_path.rglob("*.bak"))
+
+        for backup_path in backup_files:
+            original_path = backup_path.with_suffix("")
+            rel_backup_path = _get_rel_path(backup_path, root_path)
+            rel_original_path = _get_rel_path(original_path, root_path)
+
+            # Optional filter by query
+            if query:
+                query_lower = query.lower()
+                if (query_lower not in rel_backup_path.as_posix().lower() and
+                        query_lower not in rel_original_path.as_posix().lower()):
+                    continue
+
+            try:
+                stat_info = backup_path.stat()
+                size = stat_info.st_size
+                mtime = stat_info.st_mtime
+                mtime_str = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')
+            except OSError as e:
+                logging.error("Failed to read stats for %s: %s", rel_backup_path, e)
+                continue
+
+            all_backups.append({
+                "backup_path": rel_backup_path.as_posix(),
+                "original_path": rel_original_path.as_posix(),
+                "absolute_backup_path": str(backup_path.resolve()),
+                "absolute_original_path": str(original_path.resolve()),
+                "size": size,
+                "size_formatted": utils.format_size(size),
+                "modified": mtime_str,
+                "timestamp": mtime
+            })
+
+    if json_format:
+        output = {
+            "backups": all_backups,
+            "total": len(all_backups)
+        }
+        print(json.dumps(output, indent=2))
+        return len(all_backups)
+
+    if not all_backups:
+        if query:
+            logging.info("No backup files (.bak) matched query '%s' in %s.", query, ", ".join(targets))
+        else:
+            logging.info("No backup files (.bak) found in %s.", ", ".join(targets))
+        return 0
+
+    header = f"{C_BOLD}{C_CYAN}ACTIVE BACKUP FILES{C_RESET}"
+    logging.info("=== %s ===", header)
+
+    max_orig_len = max(len(b["original_path"]) for b in all_backups)
+    max_orig_len = max(max_orig_len, 13)  # length of "Original File"
+
+    max_size_len = max(len(b["size_formatted"]) for b in all_backups)
+    max_size_len = max(max_size_len, 4)  # length of "Size"
+
+    print(f"{C_BOLD}{'Original File':<{max_orig_len}}   {'Size':<{max_size_len}}   {'Backup Modified'}{C_RESET}")
+    print(f"{'-' * max_orig_len}   {'-' * max_size_len}   {'-' * 19}")
+    for b in all_backups:
+        print(f"{b['original_path']:<{max_orig_len}}   {b['size_formatted']:<{max_size_len}}   {b['modified']}")
+
+    logging.info("Total backup files: %d", len(all_backups))
+    return len(all_backups)
 
 
 def delete_backups(targets, dry_run=False):

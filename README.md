@@ -49,6 +49,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--verify`: Verify that files on disk match the content or hashes in combined files or manifests. You can read from files, folders, remote URLs (http/https), the terminal, or clipboard. Without an input file, the tool searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`). For example: `python sourcecombine.py --verify combined_files.json`. Use `--json` for machine-readable output.
 *   `--restore`: Undo changes made by `--apply-in-place` using `.bak` backup files.
 *   `--delete-backups`: Remove all `.bak` files from the folders.
+*   `--list-backups`: Show a list of all active `.bak` backup files (optionally filtered by a QUERY substring) and exit. Use `--json` for machine-readable output.
 *   `--list-languages`: Show all supported language identifiers and exit. Use `--json` for machine-readable output.
 *   `--list-placeholders`: Show all supported template placeholders and exit. Use `--json` for machine-readable output.
 *   `--project-info` (`-I`): Show detected project information and Git information for the current project. Use `--json` for machine-readable output.
