@@ -92,6 +92,20 @@ def _to_int_or_none(val: Any) -> int | None:
         return None
 
 
+def _normalize_extension_list_v2(ext_list) -> list[str]:
+    """Normalize a list of file extensions."""
+    eff = []
+    for ext in (ext_list or []):
+        if not isinstance(ext, str):
+            continue
+        ext_lower = ext.lower()
+        if not ext_lower.startswith('.'):
+            eff.append('.' + ext_lower)
+        else:
+            eff.append(ext_lower)
+    return eff
+
+
 def _plural(count: int, singular: str, plural_form: str | None = None) -> str:
     """Return the singular or plural form of a word based on the count."""
     if count == 1:
@@ -5312,43 +5326,17 @@ def main():
     search = config.setdefault('search', {})
 
     allowed_exts = search.get('allowed_extensions') or []
-    eff_allowed = []
-    for ext in allowed_exts:
-        if not isinstance(ext, str):
-            continue
-        ext_lower = ext.lower()
-        if not ext_lower.startswith('.'):
-            eff_allowed.append('.' + ext_lower)
-        else:
-            eff_allowed.append(ext_lower)
-    search['effective_allowed_extensions'] = tuple(eff_allowed)
+    search['effective_allowed_extensions'] = tuple(_normalize_extension_list_v2(allowed_exts))
 
     exclude_exts = search.get('exclude_extensions') or []
-    eff_exclude = []
-    for ext in exclude_exts:
-        if not isinstance(ext, str):
-            continue
-        ext_lower = ext.lower()
-        if not ext_lower.startswith('.'):
-            eff_exclude.append('.' + ext_lower)
-        else:
-            eff_exclude.append(ext_lower)
-    search['effective_exclude_extensions'] = tuple(eff_exclude)
+    search['effective_exclude_extensions'] = tuple(_normalize_extension_list_v2(exclude_exts))
 
     pairing_conf = config.get('pairing') or {}
     if pairing_conf.get('enabled'):
         source_exts = pairing_conf.get('source_extensions') or []
         header_exts = pairing_conf.get('header_extensions') or []
 
-        eff_pair = []
-        for ext in list(source_exts) + list(header_exts):
-            if not isinstance(ext, str):
-                continue
-            ext_lower = ext.lower()
-            if not ext_lower.startswith('.'):
-                eff_pair.append('.' + ext_lower)
-            else:
-                eff_pair.append(ext_lower)
+        eff_pair = _normalize_extension_list_v2(list(source_exts) + list(header_exts))
 
         if pairing_conf.get('include_mismatched'):
             search['effective_allowed_extensions'] = ()
