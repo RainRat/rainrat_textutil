@@ -69,6 +69,7 @@ The tool installs these automatically when you follow the installation steps:
 *   **charset-normalizer:** Detects character encodings in files.
 *   **tqdm:** Displays progress bars during scanning and processing.
 *   **pyperclip:** Copies output directly to the system clipboard.
+    *   *Note for Linux users:* To use clipboard features, your system needs a clipboard utility. Install `xclip` or `xsel` if you use an X11 display server, or install `wl-clipboard` if you use Wayland.
 
 ### Optional Dependencies
 *   **tiktoken:** Provides accurate token counting. Without it, the tool uses a character-based estimate (1 token is approximately 4 characters).
@@ -108,7 +109,7 @@ The tool installs these automatically when you follow the installation steps:
     ```
 4.  **Run the Tool:**
     ```bash
-    python sourcecombine.py src/ --output combined.txt
+    python sourcecombine.py . --output combined.txt
     ```
 5.  **Create a Config (Optional):**
     ```bash
