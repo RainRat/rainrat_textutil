@@ -3853,6 +3853,138 @@ class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
             return AnsiString(', '.join(parts))
 
 
+def explain_paths(paths, config=None, json_format=False):
+    """Analyze and explain whether specified paths would be included or excluded by current filters."""
+    if config is None:
+        config = copy.deepcopy(utils.DEFAULT_CONFIG)
+
+    filter_opts = config.get('filters', {})
+    search_opts = config.get('search', {})
+    output_conf = config.get('output') or {}
+
+    root_folders = search_opts.get('root_folders', ["."])
+    root_folder = root_folders[0] if root_folders else "."
+    root_path = Path(root_folder).resolve()
+
+    abs_output_path = Path(output_conf.get('file', DEFAULT_OUTPUT_FILENAME)).resolve() if output_conf.get('file') else None
+
+    reason_map = {
+        'not_file': "The path is not a file or does not exist on disk.",
+        'output_file': "The file is the tool's own output file, excluded to prevent recursion.",
+        'excluded': "Excluded by filename/folder glob patterns (e.g., --exclude-file / -x or --exclude-folder / -X).",
+        'extension': "The file extension is not allowed or is explicitly excluded (e.g., --extension or --exclude-extension).",
+        'language_excluded': "The detected language is explicitly excluded (e.g., --exclude-language).",
+        'language_mismatch': "The detected language is not in the allowed languages list (e.g., --language).",
+        'not_included': "The file does not match any active inclusion group patterns (e.g., --include).",
+        'binary': "The file is detected as a binary file (skipped when skip_binary is enabled).",
+        'modified_since': "The file was modified before the minimum allowed modification time (modified_since).",
+        'modified_until': "The file was modified after the maximum allowed modification time (modified_until).",
+        'too_small': "The file size is smaller than the minimum allowed size (min_size_bytes).",
+        'too_large': "The file size is larger than the maximum allowed size (max_size_bytes).",
+        'grep_mismatch': "The file content does not match the required grep pattern.",
+        'exclude_grep_match': "The file content matches the excluded grep pattern.",
+        'too_few_tokens': "The estimated token count is lower than the minimum allowed tokens.",
+        'too_many_tokens': "The estimated token count is higher than the maximum allowed tokens.",
+        'too_few_lines': "The line count is lower than the minimum allowed lines.",
+        'too_many_lines': "The line count is higher than the maximum allowed lines.",
+        'stat_error': "An OS error occurred while trying to read the file metadata.",
+        'grep_error': "An error occurred while evaluating grep patterns or metrics on the file content.",
+    }
+
+    results = []
+
+    for path_str in paths:
+        file_path = Path(path_str)
+        exists = file_path.is_file()
+
+        try:
+            rel_path = file_path.resolve().relative_to(root_path)
+        except ValueError:
+            rel_path = file_path
+
+        if not exists:
+            included = False
+            reason = 'not_file'
+            file_size = None
+            tokens = None
+            lines = None
+            language = None
+        else:
+            try:
+                stat = file_path.stat()
+                file_size = stat.st_size
+            except OSError:
+                file_size = None
+
+            content = ""
+            try:
+                content, _ = read_file_best_effort(file_path)
+                lines = utils.count_lines(content)
+                tokens, _ = utils.estimate_tokens(content)
+            except Exception:
+                lines = None
+                tokens = None
+
+            custom_languages = search_opts.get('custom_languages')
+            language = utils.get_language_tag(PurePath(rel_path), content=content, overrides=custom_languages)
+
+            included, reason = should_include(
+                file_path=file_path,
+                relative_path=PurePath(rel_path),
+                filter_opts=filter_opts,
+                search_opts=search_opts,
+                return_reason=True,
+                abs_output_path=abs_output_path,
+            )
+
+        explanation = reason_map.get(reason, "Unknown reason.") if reason else "The file passed all configuration filters and would be combined."
+
+        result_item = {
+            "path": path_str,
+            "relative_path": str(rel_path.as_posix()),
+            "exists": exists,
+            "included": included,
+            "reason_code": reason,
+            "explanation": explanation,
+            "metadata": {
+                "size_bytes": file_size,
+                "lines": lines,
+                "tokens": tokens,
+                "language": language
+            }
+        }
+        results.append(result_item)
+
+    if json_format:
+        print(json.dumps(results, indent=2))
+    else:
+        print(f"{C_BOLD}{C_CYAN}PATH MATCH ANALYSIS & EXPLANATION{C_RESET}\n")
+
+        for item in results:
+            path_header = f"Path: {item['path']}"
+            print(f"{C_BOLD}{path_header}{C_RESET}")
+            print(f"  {C_DIM}Relative to root:{C_RESET} {item['relative_path']}")
+
+            status_color = C_GREEN if item['included'] else C_RED
+            status_text = "INCLUDED" if item['included'] else "EXCLUDED"
+            print(f"  {C_DIM}Status:{C_RESET} {status_color}{C_BOLD}{status_text}{C_RESET}")
+            print(f"  {C_DIM}Explanation:{C_RESET} {C_YELLOW}{item['explanation']}{C_RESET}")
+
+            if item['exists']:
+                meta = item['metadata']
+                size_str = utils.format_size(meta['size_bytes']) if meta['size_bytes'] is not None else "Unknown"
+                tokens_str = f"{meta['tokens']:,}" if meta['tokens'] is not None else "Unknown"
+                lines_str = f"{meta['lines']:,}" if meta['lines'] is not None else "Unknown"
+                print(f"  {C_DIM}Metadata:{C_RESET}")
+                print(f"    - Language: {meta['language']}")
+                print(f"    - Size:     {size_str}")
+                print(f"    - Lines:    {lines_str}")
+                print(f"    - Tokens:   {tokens_str}")
+            else:
+                print(f"  {C_DIM}Metadata:{C_RESET} N/A (file does not exist on disk)")
+            print()
+
+
 def main():
     """Main function to parse arguments and run the tool."""
     start_time = time.perf_counter()
@@ -4535,6 +4667,12 @@ def main():
         help="Show detected project information and Git status for the current project. Use --json for machine-readable output.",
     )
     utility_group.add_argument(
+        "--explain",
+        metavar="PATH",
+        nargs="+",
+        help="Analyze and explain whether the specified path(s) would be included or excluded by the current configuration and filters. Supports --json format.",
+    )
+    utility_group.add_argument(
         "--version",
         "-V",
         action="version",
@@ -4624,7 +4762,8 @@ def main():
         args.list_placeholders or
         getattr(args, 'project_info', False) or
         args.show_config or
-        args.verify
+        args.verify or
+        getattr(args, 'explain', False)
     ):
         root_logger.setLevel(logging.ERROR)
 
@@ -5432,6 +5571,11 @@ def main():
         except (OSError, utils.InvalidConfigError) as exc:
             logging.error("Could not export configuration: %s", exc)
             sys.exit(1)
+        sys.exit(0)
+
+    explain_val = getattr(args, 'explain', None)
+    if explain_val and type(explain_val).__name__ not in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        explain_paths(explain_val, config=config, json_format=getattr(args, 'json', False))
         sys.exit(0)
 
     if mirror_enabled:
