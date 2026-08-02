@@ -4512,6 +4512,11 @@ def main():
         help="Remove all '.bak' files from target folders. Use this to clean up after '--apply-in-place'.",
     )
     utility_group.add_argument(
+        "--list-backups",
+        action="store_true",
+        help="List all '.bak' backup files found recursively in target folders, showing their status and sizes. Use --json for machine-readable output.",
+    )
+    utility_group.add_argument(
         "--show-config",
         action="store_true",
         help="Show the final combined configuration (including defaults, files, and options) and exit. Use --json for machine-readable output.",
@@ -4959,6 +4964,12 @@ def main():
             validate_config(config, nested_required={'search': ['root_folders']})
         except utils.InvalidConfigError as e:
             _handle_invalid_config_error(e, args.verbose, f"The configuration is not valid: {e}")
+
+    if _get_bool_arg(args, 'list_backups'):
+        # Use the finalized root folders for listing backups
+        list_targets = config.get('search', {}).get('root_folders', ["."])
+        list_backups(list_targets, json_format=_get_bool_arg(args, 'json'))
+        sys.exit(0)
 
     if args.restore:
         # Use the finalized root folders for restoration
@@ -6492,6 +6503,118 @@ def restore_backups(targets, dry_run=False):
         logging.info("No files were restored.")
 
     return restored_count, error_count
+
+
+def list_backups(targets, json_format=False):
+    """Scan targets recursively for .bak files and print or return their status and details."""
+    if not targets:
+        targets = ["."]
+
+    backup_info_list = []
+
+    for target in targets:
+        root_path = Path(target)
+        if not root_path.exists():
+            if not json_format:
+                logging.warning("Target folder not found: %s", target)
+            continue
+
+        if root_path.is_file():
+            # If a single file is targeted, check if it's a backup or has one
+            backup_files = []
+            if root_path.suffix == ".bak":
+                backup_files = [root_path]
+            elif Path(f"{root_path}.bak").is_file():
+                backup_files = [Path(f"{root_path}.bak")]
+        else:
+            # Recursive scan for .bak files
+            backup_files = sorted(root_path.rglob("*.bak"))
+
+        for backup_path in backup_files:
+            original_path = backup_path.with_suffix("")
+            rel_backup_path = _get_rel_path(backup_path, root_path)
+            rel_original_path = _get_rel_path(original_path, root_path)
+
+            # Check original existence
+            orig_exists = original_path.is_file()
+
+            # Determine status
+            status = "ORPHANED"
+            if orig_exists:
+                # Compare content
+                try:
+                    with open(backup_path, "rb") as f_bak:
+                        bak_content = f_bak.read()
+                    with open(original_path, "rb") as f_orig:
+                        orig_content = f_orig.read()
+
+                    if bak_content == orig_content:
+                        status = "MATCHING"
+                    else:
+                        status = "MODIFIED"
+                except Exception:
+                    status = "ERROR"
+
+            # Size and Modified Time
+            try:
+                bak_size = backup_path.stat().st_size
+                bak_size_formatted = utils.format_size(bak_size)
+            except Exception:
+                bak_size = 0
+                bak_size_formatted = "N/A"
+
+            try:
+                mtime = backup_path.stat().st_mtime
+                mtime_str = datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M:%S")
+            except Exception:
+                mtime_str = "N/A"
+
+            backup_info_list.append({
+                "backup_path": str(rel_backup_path),
+                "original_path": str(rel_original_path),
+                "size_bytes": bak_size,
+                "size": bak_size_formatted,
+                "modified": mtime_str,
+                "status": status,
+            })
+
+    if json_format:
+        print(json.dumps({"backups": backup_info_list, "total": len(backup_info_list)}, indent=2))
+    else:
+        print(f"\n{C_BOLD}{C_CYAN}=== BACKUP FILES ==={C_RESET}")
+        if not backup_info_list:
+            print("  No backup files (.bak) found.")
+            print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
+            return backup_info_list
+
+        print(f"  {C_DIM}{'STATUS':<10}  {'ORIGINAL FILE PATH':<35}  {'SIZE':<10}  {'MODIFIED'}{C_RESET}")
+        for info in backup_info_list:
+            status = info["status"]
+            if status == "MATCHING":
+                status_color = f"{C_BOLD}{C_GREEN}{'[MATCH]':<10}{C_RESET}"
+            elif status == "MODIFIED":
+                status_color = f"{C_BOLD}{C_YELLOW}{'[MODIFIED]':<10}{C_RESET}"
+            elif status == "ORPHANED":
+                status_color = f"{C_BOLD}{C_RED}{'[ORPHAN]':<10}{C_RESET}"
+            else:
+                status_color = f"{C_BOLD}{C_DIM}{'[ERROR]':<10}{C_RESET}"
+
+            orig_path_str = info["original_path"]
+            if len(orig_path_str) > 35:
+                orig_path_str = "..." + orig_path_str[-32:]
+
+            print(f"  {status_color}  {orig_path_str:<35}  {info['size']:<10}  {info['modified']}")
+
+        total = len(backup_info_list)
+        matching = sum(1 for i in backup_info_list if i["status"] == "MATCHING")
+        modified = sum(1 for i in backup_info_list if i["status"] == "MODIFIED")
+        orphaned = sum(1 for i in backup_info_list if i["status"] == "ORPHANED")
+        errors = sum(1 for i in backup_info_list if i["status"] == "ERROR")
+
+        print(f"\n  {C_BOLD}Total Backups:{C_RESET} {total}  ({C_GREEN}{matching} matching{C_RESET}, {C_YELLOW}{modified} modified{C_RESET}, {C_RED}{orphaned} orphaned{C_RESET}{f', {C_RED}{errors} errors' if errors > 0 else ''})")
+        print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
+
+    return backup_info_list
 
 
 def delete_backups(targets, dry_run=False):
