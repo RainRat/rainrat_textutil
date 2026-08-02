@@ -70,6 +70,11 @@ The tool installs these automatically when you follow the installation steps:
 *   **tqdm:** Displays progress bars during scanning and processing.
 *   **pyperclip:** Copies output directly to the system clipboard.
 
+#### Linux Clipboard Requirements
+If you are on Linux, you must install an external system utility for the clipboard integration (`pyperclip`) to work:
+*   **X11 Systems:** Install `xclip` or `xsel` (for example: `sudo apt install xclip`).
+*   **Wayland Systems:** Install `wl-clipboard` (for example: `sudo apt install wl-clipboard`).
+
 ### Optional Dependencies
 *   **tiktoken:** Provides accurate token counting. Without it, the tool uses a character-based estimate (1 token is approximately 4 characters).
 
@@ -107,8 +112,9 @@ The tool installs these automatically when you follow the installation steps:
     pip install tiktoken
     ```
 4.  **Run the Tool:**
+    Combine all files in the current folder to test the installation:
     ```bash
-    python sourcecombine.py src/ --output combined.txt
+    python sourcecombine.py . --output combined.txt
     ```
 5.  **Create a Config (Optional):**
     ```bash
