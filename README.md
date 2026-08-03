@@ -64,7 +64,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   **Python 3.10 or newer:** The tool requires this version or newer to run.
 
 ### Standard Dependencies
-The tool installs these automatically when you follow the installation steps:
+These dependencies are installed when you install the requirements:
 *   **PyYAML:** Loads and validates configuration files.
 *   **charset-normalizer:** Detects character encodings in files.
 *   **tqdm:** Displays progress bars during scanning and processing.
@@ -72,6 +72,11 @@ The tool installs these automatically when you follow the installation steps:
 
 ### Optional Dependencies
 *   **tiktoken:** Provides accurate token counting. Without it, the tool uses a character-based estimate (1 token is approximately 4 characters).
+
+### Linux Clipboard Support
+If you are on Linux and want to use clipboard features (such as `--clipboard` or the `--ai` preset), your system needs a clipboard tool. Run one of these commands based on your window system:
+*   **For X11 systems:** `sudo apt install xclip` or `sudo apt install xsel`
+*   **For Wayland systems:** `sudo apt install wl-clipboard`
 
 ## Getting Started
 1.  **Clone the Repository:**
@@ -108,8 +113,10 @@ The tool installs these automatically when you follow the installation steps:
     ```
 4.  **Run the Tool:**
     ```bash
-    python sourcecombine.py src/ --output combined.txt
+    python sourcecombine.py . --output combined.txt
     ```
+    This scans the current directory and saves the combined output to `combined.txt`. You can replace `.` with the path to any project folder you want to scan.
+
 5.  **Create a Config (Optional):**
     ```bash
     python sourcecombine.py --init
