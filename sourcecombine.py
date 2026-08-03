@@ -3826,6 +3826,65 @@ class AnsiString(str):
         return len(_ANSI_ESCAPE.sub('', self))
 
 
+class ColoredArgumentParser(argparse.ArgumentParser):
+    """Custom ArgumentParser to provide beautiful colored error headers and smart spelling/choice suggestions."""
+
+    def error(self, message):
+        import sys
+        import re
+        import difflib
+
+        # Print standard usage to stderr
+        self.print_usage(sys.stderr)
+
+        suggestions = []
+
+        # 1. Unrecognized arguments
+        unrecognized_match = re.search(r"unrecognized arguments:\s*(.*)", message)
+        if unrecognized_match:
+            unrecognized_parts = unrecognized_match.group(1).split()
+            # Gather all registered options
+            all_options = []
+            for action in self._actions:
+                all_options.extend(action.option_strings)
+
+            for part in unrecognized_parts:
+                matches = difflib.get_close_matches(part, all_options, n=3, cutoff=0.6)
+                if matches:
+                    suggestions.append(f"Did you mean: {', '.join(matches)}?")
+
+        # 2. Invalid choice
+        choice_match = re.search(r"invalid choice:\s*'([^']*)'", message)
+        if choice_match:
+            invalid_val = choice_match.group(1)
+            # Find all possible choices
+            all_choices = []
+            for action in self._actions:
+                if action.choices:
+                    all_choices.extend(str(c) for c in action.choices)
+
+            matches = difflib.get_close_matches(invalid_val, all_choices, n=3, cutoff=0.6)
+            if matches:
+                suggestions.append(f"Did you mean choice: {', '.join(matches)}?")
+
+        # Format and color the error message
+        prefix = f"{C_BOLD}{C_RED}error:{C_RESET} "
+        if message.startswith("error: "):
+            formatted_message = prefix + message[7:]
+        else:
+            formatted_message = prefix + message
+
+        sys.stderr.write(f"\n{formatted_message}\n")
+
+        # Write any suggestions
+        if suggestions:
+            for sugg in suggestions:
+                sys.stderr.write(f"  {C_BOLD}{C_CYAN}{sugg}{C_RESET}\n")
+            sys.stderr.write("\n")
+
+        sys.exit(2)
+
+
 class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
     """Custom help formatter to provide rich terminal coloring and visual hierarchy."""
 
@@ -3856,7 +3915,7 @@ class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
 def main():
     """Main function to parse arguments and run the tool."""
     start_time = time.perf_counter()
-    parser = argparse.ArgumentParser(
+    parser = ColoredArgumentParser(
         description=(
             "A versatile tool for the terminal to find, filter, and combine source code files "
             "from a project into one file (or folder). Use it to give better context to AI "
