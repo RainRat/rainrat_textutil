@@ -108,7 +108,7 @@ The tool installs these automatically when you follow the installation steps:
     ```
 4.  **Run the Tool:**
     ```bash
-    python sourcecombine.py src/ --output combined.txt
+    python sourcecombine.py . --output combined.txt
     ```
 5.  **Create a Config (Optional):**
     ```bash
