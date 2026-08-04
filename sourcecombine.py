@@ -88,7 +88,7 @@ def _to_int_or_none(val: Any) -> int | None:
     try:
         s = str(val).lstrip('~').replace(',', '')
         return int(float(s))
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, OverflowError):
         return None
 
 
