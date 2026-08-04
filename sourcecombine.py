@@ -3853,10 +3853,74 @@ class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
             return AnsiString(', '.join(parts))
 
 
+class ColoredArgumentParser(argparse.ArgumentParser):
+    """Custom ArgumentParser that colorizes error messages and provides spelling suggestions."""
+
+    def error(self, message):
+        import difflib
+        import re
+        self.print_usage(sys.stderr)
+
+        bold = f"{C_BOLD:only_stderr}"
+        red = f"{C_RED:only_stderr}"
+        cyan = f"{C_CYAN:only_stderr}"
+        reset = f"{C_RESET:only_stderr}"
+
+        suggestion = ""
+
+        # Check for unrecognized argument spelling suggestion
+        if message.startswith("unrecognized arguments:"):
+            unrecognized_part = message.split("unrecognized arguments:", 1)[1].strip()
+            unrecognized_args = unrecognized_part.split()
+
+            # Compile all valid option strings defined in the parser
+            valid_options = []
+            for action in self._actions:
+                valid_options.extend(action.option_strings)
+
+            suggestions = []
+            for arg in unrecognized_args:
+                if arg.startswith("-"):
+                    matches = difflib.get_close_matches(arg, valid_options, n=1, cutoff=0.6)
+                    if matches:
+                        suggestions.append(f"{bold}{matches[0]}{reset}")
+            if suggestions:
+                if len(suggestions) == 1:
+                    suggestion = f"\n{cyan}Did you mean:{reset} {suggestions[0]}?"
+                else:
+                    suggestion = f"\n{cyan}Did you mean:{reset} {', '.join(suggestions)}?"
+
+        # Check for invalid choice spelling suggestion
+        elif "invalid choice:" in message:
+            invalid_match = re.search(r"invalid choice: '([^']+)'", message)
+            if invalid_match:
+                invalid_val = invalid_match.group(1)
+                choose_from_match = re.search(r"\(choose from ([^\)]+)\)", message)
+                valid_choices = []
+                if choose_from_match:
+                    choices_str = choose_from_match.group(1)
+                    valid_choices = [c.strip().strip("'\"") for c in choices_str.split(",")]
+                else:
+                    quotes = re.findall(r"'([^']+)'", message)
+                    if len(quotes) > 1:
+                        valid_choices = quotes[1:]
+
+                if valid_choices:
+                    matches = difflib.get_close_matches(invalid_val, valid_choices, n=1, cutoff=0.6)
+                    if matches:
+                        suggestion = f"\n{cyan}Did you mean:{reset} {bold}{matches[0]}{reset}?"
+
+        # Format and colorize the error message
+        err_prefix = f"{bold}{self.prog}: {red}error:{reset} "
+        formatted_err = f"{err_prefix}{bold}{message}{reset}{suggestion}\n"
+        sys.stderr.write(formatted_err)
+        self.exit(2)
+
+
 def main():
     """Main function to parse arguments and run the tool."""
     start_time = time.perf_counter()
-    parser = argparse.ArgumentParser(
+    parser = ColoredArgumentParser(
         description=(
             "A versatile tool for the terminal to find, filter, and combine source code files "
             "from a project into one file (or folder). Use it to give better context to AI "
