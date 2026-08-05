@@ -3853,10 +3853,80 @@ class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
             return AnsiString(', '.join(parts))
 
 
+class ColoredArgumentParser(argparse.ArgumentParser):
+    """Custom ArgumentParser subclass that improves feedback, error clarity, and usability by providing colored error messages and automated spelling suggestions."""
+
+    def error(self, message):
+        if message.startswith("unrecognized arguments:"):
+            unrecognized_part = message[len("unrecognized arguments:"):].strip()
+            unrecognized_args = unrecognized_part.split()
+
+            all_options = []
+            for action in self._actions:
+                all_options.extend(action.option_strings)
+
+            suggestions = []
+            for arg in unrecognized_args:
+                matches = difflib.get_close_matches(arg, all_options, n=1, cutoff=0.6)
+                if matches:
+                    suggestions.append(f"'{arg}' (did you mean: {matches[0]}?)")
+                else:
+                    suggestions.append(f"'{arg}'")
+
+            if suggestions:
+                message = "unrecognized arguments: " + ", ".join(suggestions)
+
+        elif "invalid choice: " in message and "(choose from " in message:
+            try:
+                parts = message.split("invalid choice: ")
+                prefix = parts[0].strip()
+                suffix = parts[1].strip()
+
+                choice_val = ""
+                if suffix.startswith("'"):
+                    end_idx = suffix.find("'", 1)
+                    if end_idx != -1:
+                        choice_val = suffix[1:end_idx]
+                elif suffix.startswith('"'):
+                    end_idx = suffix.find('"', 1)
+                    if end_idx != -1:
+                        choice_val = suffix[1:end_idx]
+
+                option_name = ""
+                if prefix.startswith("argument "):
+                    option_name = prefix[len("argument "):].rstrip(":")
+
+                if option_name and choice_val:
+                    matched_action = None
+                    for action in self._actions:
+                        if option_name in action.option_strings or action.dest == option_name:
+                            matched_action = action
+                            break
+
+                    if matched_action and matched_action.choices:
+                        valid_choices = [str(c) for c in matched_action.choices]
+                        matches = difflib.get_close_matches(choice_val, valid_choices, n=1, cutoff=0.6)
+                        if matches:
+                            message = message.replace(
+                                f"invalid choice: '{choice_val}'",
+                                f"invalid choice: '{choice_val}' (did you mean: '{matches[0]}'?)"
+                            ).replace(
+                                f'invalid choice: "{choice_val}"',
+                                f'invalid choice: "{choice_val}" (did you mean: "{matches[0]}"?)'
+                            )
+            except Exception:
+                pass
+
+        self.print_usage(sys.stderr)
+        colored_message = f"{C_BOLD}{C_RED}error:{C_RESET} {message}\n"
+        sys.stderr.write(colored_message)
+        sys.exit(2)
+
+
 def main():
     """Main function to parse arguments and run the tool."""
     start_time = time.perf_counter()
-    parser = argparse.ArgumentParser(
+    parser = ColoredArgumentParser(
         description=(
             "A versatile tool for the terminal to find, filter, and combine source code files "
             "from a project into one file (or folder). Use it to give better context to AI "
