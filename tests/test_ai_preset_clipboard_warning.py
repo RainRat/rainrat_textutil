@@ -32,8 +32,8 @@ def test_ai_preset_pyperclip_missing_warning(temp_cwd, mock_argv, caplog):
         warning_messages = [record.message for record in caplog.records if record.levelname == "WARNING"]
 
         expected_warning = (
-            "The 'pyperclip' library is not installed. AI preset cannot automatically "
-            "copy to the clipboard. Output will be saved to a file instead. "
-            "To enable clipboard support, run: pip install pyperclip"
+            "We could not find the 'pyperclip' library. The AI preset cannot automatically "
+            "copy to the clipboard. We will save the output to a file instead. "
+            "To copy to the clipboard, please install the library first: pip install pyperclip"
         )
         assert expected_warning in warning_messages

@@ -3808,7 +3808,7 @@ def find_and_combine_files(
             pyperclip.copy(combined_output)
             logging.info("Copied combined output to clipboard.")
         else:
-            logging.error("The 'pyperclip' tool is required for clipboard support. Install it with: pip install pyperclip")
+            logging.error("We need the 'pyperclip' library to copy to the clipboard. Please install it by running: pip install pyperclip")
             # We don't exit here as the output might have been written elsewhere or be the only intended action.
             # But usually if --clipboard is requested, user wants it there.
             # If they didn't specify an output file, it goes to stdout by default too?
@@ -4593,9 +4593,9 @@ def main():
                 logging.debug("AI preset: Automatically enabled the system clipboard.")
             else:
                 logging.warning(
-                    "The 'pyperclip' library is not installed. AI preset cannot automatically "
-                    "copy to the clipboard. Output will be saved to a file instead. "
-                    "To enable clipboard support, run: pip install pyperclip"
+                    "We could not find the 'pyperclip' library. The AI preset cannot automatically "
+                    "copy to the clipboard. We will save the output to a file instead. "
+                    "To copy to the clipboard, please install the library first: pip install pyperclip"
                 )
 
     # Configure logging *immediately* based on -v or -q.
@@ -5502,7 +5502,7 @@ def main():
                     logging.error("Failed to paste from clipboard: %s", e)
                     sys.exit(1)
             else:
-                logging.error("The 'pyperclip' tool is required for clipboard support. Install it with: pip install pyperclip")
+                logging.error("We need the 'pyperclip' library to read from the clipboard. Please install it by running: pip install pyperclip")
                 sys.exit(1)
 
         for target in remaining_targets:

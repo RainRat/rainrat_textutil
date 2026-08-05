@@ -89,7 +89,7 @@ def test_clipboard_missing_pyperclip_error(caplog):
             None,
             clipboard=True
         )
-    assert "The 'pyperclip' tool is required for clipboard support" in caplog.text
+    assert "We need the 'pyperclip' library to copy to the clipboard" in caplog.text
 
 def test_main_init_missing_yaml(tmp_path, caplog, monkeypatch):
     import sourcecombine
@@ -131,7 +131,7 @@ def test_main_extract_clipboard_paste_missing_pyperclip(caplog, tmp_path, monkey
             with pytest.raises(SystemExit) as exc:
                 main()
             assert exc.value.code == 1
-    assert "The 'pyperclip' tool is required for clipboard support" in caplog.text
+    assert "We need the 'pyperclip' library to read from the clipboard" in caplog.text
 
 def test_main_extract_clipboard_paste_error(caplog, tmp_path, monkeypatch):
     import sourcecombine
