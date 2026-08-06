@@ -12,6 +12,9 @@ def test_to_int_or_none():
     assert _to_int_or_none(None) is None
     assert _to_int_or_none("invalid") is None
     assert _to_int_or_none([]) is None
+    assert _to_int_or_none("inf") is None
+    assert _to_int_or_none("-inf") is None
+    assert _to_int_or_none("1e100000") is None
 
 def test_extract_xml_robustness_malformed_entries(tmp_path):
     """Verify that malformed entries in XML are skipped without crashing the entire extraction."""
