@@ -3989,10 +3989,55 @@ def explain_paths(paths, config=None, json_format=False):
             print()
 
 
+class ColoredArgumentParser(argparse.ArgumentParser):
+    """Custom ArgumentParser to provide rich error colors and intelligent spelling suggestions."""
+
+    def error(self, message):
+        import difflib
+        import re
+
+        # Build list of valid option strings
+        valid_options = []
+        for action in self._actions:
+            valid_options.extend(action.option_strings)
+
+        # Check for unrecognized arguments typo
+        if "unrecognized arguments" in message:
+            parts = message.split("unrecognized arguments:", 1)
+            if len(parts) == 2:
+                unrecognized_parts = parts[1].strip().split()
+                suggestions = []
+                for arg in unrecognized_parts:
+                    matches = difflib.get_close_matches(arg, valid_options, n=3, cutoff=0.6)
+                    if matches:
+                        suggestions.append(f"  {arg} -> did you mean: {', '.join(matches)}?")
+                if suggestions:
+                    message += "\n\nSuggestions:\n" + "\n".join(suggestions)
+
+        # Check for invalid choice errors
+        elif "invalid choice:" in message:
+            for action in self._actions:
+                if any(opt in message for opt in action.option_strings) and action.choices:
+                    m = re.search(r"invalid choice:\s*'([^']+)'", message)
+                    if m:
+                        invalid_val = m.group(1)
+                        choices_list = [str(c) for c in action.choices]
+                        matches = difflib.get_close_matches(invalid_val, choices_list, n=3, cutoff=0.5)
+                        if matches:
+                            message += f"\n  Did you mean: {', '.join(matches)}?"
+                    break
+
+        # Display usage to stderr
+        self.print_usage(sys.stderr)
+        # Apply bold and red coloring to error header
+        error_label = f"{C_BOLD}{C_RED}error:{C_RESET}"
+        self.exit(2, f"{self.prog}: {error_label} {message}\n")
+
+
 def main():
     """Main function to parse arguments and run the tool."""
     start_time = time.perf_counter()
-    parser = argparse.ArgumentParser(
+    parser = ColoredArgumentParser(
         description=(
             "A versatile tool for the terminal to find, filter, and combine source code files "
             "from a project into one file (or folder). Use it to give better context to AI "
