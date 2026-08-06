@@ -6815,6 +6815,11 @@ def _print_limit_usage_bar(label, current, maximum, label_width, is_size=False):
     print(f"    {C_DIM}{label:<{label_width}}{C_RESET}{bar_color}{bar}{C_RESET} {C_DIM}{percent:>6.1f}%{C_RESET} {C_DIM}{detail}{C_RESET}", file=sys.stderr)
 
 
+def _get_primary_metric(t, l):
+    """Get primary metric name based on whether tokens/lines are present."""
+    return 'tokens' if t else ('lines' if l else 'size')
+
+
 def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None, duration=None, source_desc=None, mirror_enabled=False):
     """Print a summary of the totals to the terminal."""
     if _get_bool_arg(args, 'quiet'):
