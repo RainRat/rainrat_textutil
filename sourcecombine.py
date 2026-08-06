@@ -4653,6 +4653,11 @@ def main():
         help="Remove all '.bak' files from target folders. Use this to clean up after '--apply-in-place'.",
     )
     utility_group.add_argument(
+        "--list-backups",
+        action="store_true",
+        help="List all '.bak' backup files in target folders along with their statuses relative to original files. Use --json for machine-readable output.",
+    )
+    utility_group.add_argument(
         "--show-config",
         action="store_true",
         help="Show the final combined configuration (including defaults, files, and options) and exit. Use --json for machine-readable output.",
@@ -4765,14 +4770,15 @@ def main():
 
     # Disable logging to stderr if we are outputting JSON to stdout,
     # to keep stdout clean for piping.
-    if getattr(args, 'json', False) and (
+    if _get_bool_arg(args, 'json') and (
         args.system_info or
         args.list_languages or
         args.list_placeholders or
         getattr(args, 'project_info', False) or
         args.show_config or
         args.verify or
-        getattr(args, 'explain', False)
+        getattr(args, 'explain', False) or
+        _get_bool_arg(args, 'list_backups')
     ):
         root_logger.setLevel(logging.ERROR)
 
@@ -5146,6 +5152,12 @@ def main():
         # Use the finalized root folders for deletion
         delete_targets = config.get('search', {}).get('root_folders', ["."])
         delete_backups(delete_targets, dry_run=args.dry_run)
+        sys.exit(0)
+
+    if _get_bool_arg(args, 'list_backups'):
+        # Use the finalized root folders for listing backups
+        list_targets = config.get('search', {}).get('root_folders', ["."])
+        list_backups(list_targets, json_format=_get_bool_arg(args, 'json'))
         sys.exit(0)
 
     # Re-configure level based on config, *unless* -v or -q was used.
@@ -6721,6 +6733,118 @@ def delete_backups(targets, dry_run=False):
         logging.info("No backup files were deleted.")
 
     return deleted_count, error_count
+
+
+def list_backups(targets, json_format=False):
+    """Scan targets recursively for .bak files and report their status relative to original files."""
+    if not targets:
+        targets = ["."]
+
+    reports = []
+    summary = {
+        "matching": 0,
+        "modified": 0,
+        "orphaned": 0,
+        "error": 0,
+        "total": 0
+    }
+
+    title = "Backup Files Report"
+    if not json_format:
+        print(f"\n{C_BOLD}{C_CYAN}=== {title.upper()} ==={C_RESET}")
+
+    for target in targets:
+        root_path = Path(target)
+        if not root_path.exists():
+            logging.warning("Target folder not found: %s", target)
+            continue
+
+        if root_path.is_file():
+            backup_files = []
+            if root_path.suffix == ".bak":
+                backup_files = [root_path]
+            elif Path(f"{root_path}.bak").is_file():
+                backup_files = [Path(f"{root_path}.bak")]
+        else:
+            backup_files = sorted(root_path.rglob("*.bak"))
+
+        for backup_path in backup_files:
+            original_path = backup_path.with_suffix("")
+            rel_path = _get_rel_path(backup_path, root_path)
+            rel_path_str = rel_path.as_posix()
+
+            status = "ERROR"
+            detail = ""
+            bak_size = None
+            orig_size = None
+
+            try:
+                bak_size = backup_path.stat().st_size
+                if not original_path.exists():
+                    status = "ORPHANED"
+                    detail = "original file missing"
+                else:
+                    orig_size = original_path.stat().st_size
+                    # Content check
+                    bak_bytes = backup_path.read_bytes()
+                    orig_bytes = original_path.read_bytes()
+                    if bak_bytes == orig_bytes:
+                        status = "MATCHING"
+                    else:
+                        status = "MODIFIED"
+                        detail = "contents differ"
+            except OSError as e:
+                status = "ERROR"
+                detail = f"error: {e}"
+
+            reports.append({
+                "path": rel_path_str,
+                "original_path": _get_rel_path(original_path, root_path).as_posix(),
+                "status": status,
+                "detail": detail,
+                "size_bytes": bak_size,
+                "original_size_bytes": orig_size
+            })
+
+            # Update counts
+            summary[status.lower()] += 1
+            summary["total"] += 1
+
+            if not json_format:
+                if status == "MATCHING":
+                    print(f"  {C_GREEN}{'[MATCHING]':<12}{C_RESET}  {rel_path_str}")
+                elif status == "MODIFIED":
+                    print(f"  {C_YELLOW}{'[MODIFIED]':<12}{C_RESET}  {rel_path_str} {C_DIM}({detail}){C_RESET}")
+                elif status == "ORPHANED":
+                    print(f"  {C_RED}{'[ORPHANED]':<12}{C_RESET}  {rel_path_str} {C_DIM}({detail}){C_RESET}")
+                else:  # ERROR
+                    print(f"  {C_RED}{'[ERROR]':<12}{C_RESET}  {rel_path_str} {C_DIM}({detail}){C_RESET}")
+
+    if json_format:
+        output = {
+            "title": title,
+            "backups": reports,
+            "summary": summary
+        }
+        print(json.dumps(output, indent=2))
+    else:
+        total = summary["total"]
+        matching = summary["matching"]
+        modified = summary["modified"]
+        orphaned = summary["orphaned"]
+        error = summary["error"]
+
+        print(f"\n{C_BOLD}Summary:{C_RESET}")
+        print(f"  Matching:   {C_GREEN if matching == total and total > 0 else C_RESET}{matching}/{total}{C_RESET}")
+        if modified:
+            print(f"  Modified:   {C_YELLOW}{modified}{C_RESET}")
+        if orphaned:
+            print(f"  Orphaned:   {C_RED}{orphaned}{C_RESET}")
+        if error:
+            print(f"  Errors:     {C_RED}{error}{C_RESET}")
+        print(f"{C_BOLD}{C_CYAN}{'=' * (len(title) + 8)}{C_RESET}\n")
+
+    return summary
 
 
 def print_system_info():
