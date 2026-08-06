@@ -69,6 +69,7 @@ The tool installs these automatically when you follow the installation steps:
 *   **charset-normalizer:** Detects character encodings in files.
 *   **tqdm:** Displays progress bars during scanning and processing.
 *   **pyperclip:** Copies output directly to the system clipboard.
+    *   *Note for Linux users:* You must install external clipboard tools to use the clipboard features. Install `xclip` or `xsel` for X11 environments, or `wl-clipboard` for Wayland environments.
 
 ### Optional Dependencies
 *   **tiktoken:** Provides accurate token counting. Without it, the tool uses a character-based estimate (1 token is approximately 4 characters).
