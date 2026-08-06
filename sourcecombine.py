@@ -4485,6 +4485,7 @@ def main():
     )
     utility_group.add_argument(
         "--verify",
+        "-y",
         action="store_true",
         help=(
             "Verify that files on disk match the content or hashes in combined files or manifests. "
@@ -4495,6 +4496,7 @@ def main():
     )
     utility_group.add_argument(
         "--repair",
+        "-P",
         action="store_true",
         help="Automatically fix mismatched or missing files when verifying (requires source content).",
     )

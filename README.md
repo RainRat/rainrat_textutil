@@ -46,7 +46,8 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 ### Utility Commands
 *   `--init`: Create a basic `sourcecombine.yml` configuration file to get started.
 *   `--extract`: Rebuild original files and folders from combined outputs (Text, JSON, XML, JSONL, CSV, or Markdown). You can read from files, folders, remote URLs (http/https), the terminal, or clipboard. Without an input file, it searches for `combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`.
-*   `--verify`: Verify that files on disk match the content or hashes in combined files or manifests. You can read from files, folders, remote URLs (http/https), the terminal, or clipboard. Without an input file, the tool searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`). For example: `python sourcecombine.py --verify combined_files.json`. Use `--json` for machine-readable output.
+*   `--verify` (`-y`): Verify that files on disk match the content or hashes in combined files or manifests. You can read from files, folders, remote URLs (http/https), the terminal, or clipboard. Without an input file, the tool searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`). For example: `python sourcecombine.py --verify combined_files.json`. Use `--json` for machine-readable output.
+*   `--repair` (`-P`): Automatically fix mismatched or missing files when verifying (requires source content).
 *   `--restore`: Undo changes made by `--apply-in-place` using `.bak` backup files.
 *   `--delete-backups`: Remove all `.bak` files from the folders.
 *   `--list-languages`: Show all supported language identifiers and exit. Use `--json` for machine-readable output.
@@ -168,10 +169,18 @@ Check if your files on disk match the content or SHA-256 hashes stored in a comb
    ```bash
    python sourcecombine.py --verify combined_files.json
    ```
+   *(or use the short-hand `-y`)*:
+   ```bash
+   python sourcecombine.py -y combined_files.json
+   ```
 
 2. **Repair missing or mismatched files:**
    ```bash
    python sourcecombine.py --repair combined_files.json
+   ```
+   *(or use the short-hand `-P`)*:
+   ```bash
+   python sourcecombine.py -P combined_files.json
    ```
 
 ## Configuration Guide
