@@ -1361,13 +1361,12 @@ def collect_file_paths(root_folder, recursive, exclude_folders, progress=None, m
 
             exclude_patterns = _normalize_patterns(exclude_folders)
             if exclude_patterns:
-                def _is_excluded(p):
-                    rel_p = p.relative_to(root)
-                    return _matches_folder_glob_cached(
-                        rel_p.parent.parts, exclude_patterns
+                file_paths = [
+                    p for p in file_paths
+                    if not _matches_folder_glob_cached(
+                        p.relative_to(root).parent.parts, exclude_patterns
                     )
-
-                file_paths = [p for p in file_paths if not _is_excluded(p)]
+                ]
 
             return file_paths, root, excluded
         is_directory = root_path.is_dir()
