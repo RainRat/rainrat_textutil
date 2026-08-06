@@ -20,9 +20,9 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--output` (`-o`): Save results to a file or folder instead of the terminal. Supports template placeholders (for example, `{{PROJECT_NAME}}_{{DATE}}.txt`).
 *   `--clipboard` (`-c`): Copy the combined output to the system clipboard.
 *   `--git-files` (`-G`): Use Git to find files and follow the `.gitignore` rules automatically.
-*   `--ignore-file PATH`: Add an ignore file containing glob patterns to skip. Default is `.sourcecombineignore`.
-*   `--extension` (`--ext`): Include only files with these extensions (for example, `py`, `js`).
-*   `--exclude-extension` (`--exclude-ext`): Skip files with these extensions (for example, `log`, `tmp`).
+*   `--ignore-file PATH`: Add an ignore file containing glob patterns to skip. Supports comma-separated lists (for example, `.ignore1,.ignore2`). Default is `.sourcecombineignore`.
+*   `--extension` (`--ext`): Include only files with these extensions. You can repeat this flag or use a comma-separated list (for example, `--ext py,js` or `--ext py --ext js`).
+*   `--exclude-extension` (`--exclude-ext`): Skip files with these extensions. Supports comma-separated lists (for example, `--exclude-ext log,tmp`).
 *   `--limit` (`-L`): Stop processing once you reach this file limit.
 *   `--unique` (`-u`): Skip duplicate files by path or content (duplicate removal).
 *   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, skipping binary files, removing duplicates, and automatically including Git context like logs and diffs). This also copies to the system clipboard if you do not specify an output.
@@ -128,8 +128,12 @@ python sourcecombine.py
 ```
 
 ### Filtering by Language
-Combine only Python and JavaScript files from the `src` folder:
+Combine only Python and JavaScript files from the `src` folder. You can repeat the language flag or use a simpler comma-separated list:
 ```bash
+# Using comma-separated lists
+python sourcecombine.py src/ --language python,javascript --output project_context.txt
+
+# Or repeating the flag
 python sourcecombine.py src/ --language python --language javascript --output project_context.txt
 ```
 

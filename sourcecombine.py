@@ -3973,7 +3973,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Skip files that match this pattern (for example, '*.log'). Can be used multiple times.",
+        help="Skip files that match this pattern (for example, '*.log,*.tmp' or '*.log'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--exclude-folder",
@@ -3983,7 +3983,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Skip folders that match this pattern (for example, 'build'). Can be used multiple times.",
+        help="Skip folders that match this pattern (for example, 'build,dist' or 'build'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--include",
@@ -3992,7 +3992,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Include only files that match this pattern (for example, '*.py'). Can be used multiple times.",
+        help="Include only files that match this pattern (for example, 'src/*.py,tests/*.py'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--extension",
@@ -4000,7 +4000,7 @@ def main():
         action="append",
         metavar="EXT",
         default=[],
-        help="Include only files with these extensions (for example, 'py', 'js'). Can be used multiple times.",
+        help="Include only files with these extensions (for example, 'py,js' or 'py'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--exclude-extension",
@@ -4008,7 +4008,7 @@ def main():
         action="append",
         metavar="EXT",
         default=[],
-        help="Skip files with these extensions (for example, 'log', 'tmp'). Can be used multiple times.",
+        help="Skip files with these extensions (for example, 'log,tmp' or 'log'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--language",
@@ -4016,7 +4016,7 @@ def main():
         action="append",
         metavar="LANG",
         default=[],
-        help="Include only files of these languages (for example, 'python', 'cpp'). Can be used multiple times. See --list-languages for a full list.",
+        help="Include only files of these languages (for example, 'python,cpp' or 'python'). Can be used multiple times. See --list-languages for a full list.",
     )
     filtering_group.add_argument(
         "--exclude-language",
@@ -4024,7 +4024,7 @@ def main():
         action="append",
         metavar="LANG",
         default=[],
-        help="Skip files of these languages (for example, 'javascript', 'html'). Can be used multiple times.",
+        help="Skip files of these languages (for example, 'javascript,html' or 'javascript'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--since",
@@ -4149,7 +4149,7 @@ def main():
         "--ignore-file",
         action="append",
         metavar="PATH",
-        help="Add an ignore file containing glob patterns to skip. Default is '.sourcecombineignore'. Can be used multiple times.",
+        help="Add an ignore file containing glob patterns to skip. Supports comma-separated lists. Default is '.sourcecombineignore'. Can be used multiple times.",
     )
 
     # Sorting & Limiting Group
