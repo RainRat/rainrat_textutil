@@ -4444,8 +4444,10 @@ def main():
     utility_group = parser.add_argument_group("Utility Commands")
     utility_group.add_argument(
         "--init",
-        action="store_true",
-        help="Create a basic 'sourcecombine.yml' configuration file in the current folder to get started.",
+        nargs="?",
+        const="sourcecombine.yml",
+        metavar="PATH",
+        help="Create a basic configuration file (YAML or JSON) at PATH to get started. Defaults to 'sourcecombine.yml' in the current folder.",
     )
     utility_group.add_argument(
         "--list-languages",
@@ -4837,38 +4839,66 @@ def main():
         sys.exit(0)
 
     if args.init:
-        target_config = Path("sourcecombine.yml")
+        target_path = Path(args.init)
+        if target_path.is_dir():
+            target_config = target_path / "sourcecombine.yml"
+        else:
+            target_config = target_path
+
+        # If target directory doesn't exist, create it
+        try:
+            target_config.parent.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            logging.error("Could not create target directory '%s': %s", target_config.parent, exc)
+            sys.exit(1)
+
         if target_config.exists():
             logging.error("The configuration file '%s' already exists. Stopping.", target_config)
             sys.exit(1)
 
-        template_path = Path(__file__).resolve().parent / "config.template.yml"
-        if template_path.exists():
+        is_json = target_config.suffix.lower() == '.json'
+
+        if is_json:
             try:
-                shutil.copy2(template_path, target_config)
+                # Write default configuration in JSON format
+                with open(target_config, 'w', encoding='utf-8') as f:
+                    json.dump(utils.DEFAULT_CONFIG, f, indent=2)
                 logging.info(
                     "Created default configuration at %s. You can now customize it or run 'sourcecombine' directly.",
                     target_config.resolve()
                 )
             except OSError as exc:
-                logging.error("Could not copy the template file: %s", exc)
+                logging.error("Could not write the JSON configuration file: %s", exc)
                 sys.exit(1)
         else:
-            logging.warning("Template not found at %s; creating a simple configuration.", template_path)
-            try:
-                with open(target_config, 'w', encoding='utf-8') as f:
-                    f.write("# Default SourceCombine Configuration\n")
-                    if utils.yaml:
-                        utils.yaml.dump(utils.DEFAULT_CONFIG, f, sort_keys=False)
-                    else:
-                        logging.warning("PyYAML not found; creating an empty configuration.")
-                logging.info(
-                    "Created a simple configuration at %s. You can now customize it or run 'sourcecombine' directly.",
-                    target_config.resolve()
-                )
-            except OSError as exc:
-                logging.error("Could not write the configuration file: %s", exc)
-                sys.exit(1)
+            # YAML format
+            template_path = Path(__file__).resolve().parent / "config.template.yml"
+            if template_path.exists():
+                try:
+                    shutil.copy2(template_path, target_config)
+                    logging.info(
+                        "Created default configuration at %s. You can now customize it or run 'sourcecombine' directly.",
+                        target_config.resolve()
+                    )
+                except OSError as exc:
+                    logging.error("Could not copy the template file: %s", exc)
+                    sys.exit(1)
+            else:
+                logging.warning("Template not found at %s; creating a simple configuration.", template_path)
+                try:
+                    with open(target_config, 'w', encoding='utf-8') as f:
+                        f.write("# Default SourceCombine Configuration\n")
+                        if utils.yaml:
+                            utils.yaml.dump(utils.DEFAULT_CONFIG, f, sort_keys=False)
+                        else:
+                            logging.warning("PyYAML not found; creating an empty configuration.")
+                    logging.info(
+                        "Created a simple configuration at %s. You can now customize it or run 'sourcecombine' directly.",
+                        target_config.resolve()
+                    )
+                except OSError as exc:
+                    logging.error("Could not write the configuration file: %s", exc)
+                    sys.exit(1)
         sys.exit(0)
 
     targets = args.targets
