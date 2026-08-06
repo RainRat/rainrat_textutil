@@ -4400,7 +4400,7 @@ def main():
     processing_group.add_argument(
         "--create-backups",
         action="store_true",
-        help="Create '.bak' copies of original files when using --apply-in-place.",
+        help="Create '.bak' copies of original files when using --apply-in-place, --extract, or --repair.",
     )
     processing_group.add_argument(
         "--remove-comments",
@@ -5830,6 +5830,10 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
     if config is None:
         config = copy.deepcopy(utils.DEFAULT_CONFIG)
 
+    create_backups = False
+    if config and config.get('processing'):
+        create_backups = bool(config['processing'].get('create_backups', False))
+
     files_to_verify = []
     for name, content in sources:
         found = _parse_combined_content(content, source_name=name)
@@ -5972,6 +5976,7 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
                                 _update_stats(repaired_inc=1)
                             else:
                                 try:
+                                    _create_backup_if_enabled(target_path, create_backups)
                                     target_path.write_text(expected_content, encoding='utf-8')
                                     if meta.get('modified') is not None:
                                         os.utime(target_path, (meta['modified'], meta['modified']))
@@ -6023,6 +6028,7 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
                             _update_stats(repaired_inc=1)
                         else:
                             try:
+                                _create_backup_if_enabled(target_path, create_backups)
                                 target_path.write_text(expected_content, encoding='utf-8')
                                 if meta.get('modified') is not None:
                                     os.utime(target_path, (meta['modified'], meta['modified']))
@@ -6088,6 +6094,20 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
     }
 
 
+def _create_backup_if_enabled(file_path: Path, create_backups: bool):
+    """Create a '.bak' copy of file_path if create_backups is True and the file exists."""
+    if not create_backups or not file_path.exists():
+        return
+    backup_path = Path(f"{file_path}.bak")
+    try:
+        shutil.copy2(file_path, backup_path)
+        logging.info("Created backup: %s -> %s", file_path, backup_path)
+    except OSError as exc:
+        raise utils.InvalidConfigError(
+            f"Failed to create backup for '{file_path}': {exc}"
+        ) from exc
+
+
 def _handle_invalid_config_error(exc, verbose, message=None):
     """Handle InvalidConfigError by logging it and exiting."""
     if verbose:
@@ -6103,6 +6123,10 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
 
     if config is None:
         config = copy.deepcopy(utils.DEFAULT_CONFIG)
+
+    create_backups = False
+    if config and config.get('processing'):
+        create_backups = bool(config['processing'].get('create_backups', False))
 
     stats = {
         'total_discovered': 0,
@@ -6406,15 +6430,19 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         if dry_run:
             logging.info("[DRY RUN] Would create: %s", target_path)
         else:
-            try:
-                target_path.parent.mkdir(parents=True, exist_ok=True)
-                target_path.write_text(file_content, encoding='utf-8')
-                if meta.get('modified') is not None:
-                    os.utime(target_path, (meta['modified'], meta['modified']))
-                logging.info("Extracted: %s", target_path)
-                extracted_count += 1
-            except OSError as e:
-                logging.error("Failed to write %s: %s", target_path, e)
+            if file_content is not None:
+                try:
+                    target_path.parent.mkdir(parents=True, exist_ok=True)
+                    _create_backup_if_enabled(target_path, create_backups)
+                    target_path.write_text(file_content, encoding='utf-8')
+                    if meta.get('modified') is not None:
+                        os.utime(target_path, (meta['modified'], meta['modified']))
+                    logging.info("Extracted: %s", target_path)
+                    extracted_count += 1
+                except OSError as e:
+                    logging.error("Failed to write %s: %s", target_path, e)
+            else:
+                logging.debug("Skipping file creation for %s: No content provided.", rel_path_str)
 
             running_size += (_to_int_or_none(meta.get('size')) or 0)
             running_lines += (_to_int_or_none(meta.get('lines')) or 0)
