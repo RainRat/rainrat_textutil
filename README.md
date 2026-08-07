@@ -54,6 +54,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--list-languages`: Show all supported language identifiers and exit. Use `--json` for machine-readable output.
 *   `--list-placeholders`: Show all supported template placeholders and exit. Use `--json` for machine-readable output.
 *   `--project-info` (`-I`): Show detected project information and Git information for the current project. Use `--json` for machine-readable output.
+*   `--explain PATH`: Analyze and explain whether the specified path(s) would be included or excluded by the current configuration and filters. Supports `--json` format.
 *   `--show-config`: Display the final configuration being used and exit. Use `--json` for machine-readable output.
 *   `--export-config`: Save the final combined configuration to a YAML file and exit.
 *   `--system-info`: Show environment details (Python version, OS, and other system details). Use `--json` for machine-readable output.
@@ -184,6 +185,46 @@ Check if your files on disk match the content or SHA-256 hashes stored in a comb
    ```bash
    python sourcecombine.py -P combined_files.json
    ```
+
+### Advanced Filtering and AI Optimization
+
+#### Explain Exclusion/Inclusion
+If you are unsure why a file is being skipped or included, you can check using the `--explain` command:
+```bash
+python sourcecombine.py --explain src/utils.py
+```
+
+#### Combine Only Changed Git Files
+You can choose to combine only files with staged or unstaged changes in Git using the `--git-diff` flag. This is great for reviewing code changes before committing:
+```bash
+python sourcecombine.py src/ --git-diff
+```
+To combine only staged changes, add the `--staged` flag:
+```bash
+python sourcecombine.py src/ --staged
+```
+
+#### Filter by File Size and Age
+You can easily skip large or old files to keep your output clean. For example, to only include files smaller than 50 Kilobytes modified in the last 24 hours:
+```bash
+python sourcecombine.py src/ --max-size 50KB --since 1d
+```
+
+#### Optimize Files for AI (Remove Comments and Whitespace)
+When sharing code with AI models, you can save tokens by removing source code comments and blank lines. Use the `--remove-comments` and `--compact-whitespace` flags together:
+```bash
+python sourcecombine.py src/ --remove-comments --compact-whitespace --output compact_code.txt
+```
+
+#### Filter by Content Patterns (Grep)
+You can filter files by matching patterns in their content. For example, to include only files containing the word "TODO":
+```bash
+python sourcecombine.py src/ --grep "TODO"
+```
+Or to skip files containing "DEPRECATED":
+```bash
+python sourcecombine.py src/ --exclude-grep "DEPRECATED"
+```
 
 ## Configuration Guide
 You can configure SourceCombine using a configuration file instead of passing many options via the command line.
