@@ -51,6 +51,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--restore`: Undo changes made by `--apply-in-place` using `.bak` backup files.
 *   `--delete-backups`: Remove all `.bak` files from the folders.
 *   `--list-backups`: List all `.bak` backup files in target folders along with their statuses relative to original files. Use `--json` for machine-readable output.
+*   `--diff-backups`: Show a unified diff between current files on disk and their `.bak` backup files. Use `--json` for machine-readable output.
 *   `--list-languages`: Show all supported language identifiers and exit. Use `--json` for machine-readable output.
 *   `--list-placeholders`: Show all supported template placeholders and exit. Use `--json` for machine-readable output.
 *   `--project-info` (`-I`): Show detected project information and Git information for the current project. Use `--json` for machine-readable output.
