@@ -187,6 +187,35 @@ Check if your files on disk match the content or SHA-256 hashes stored in a comb
    python sourcecombine.py -P combined_files.json
    ```
 
+### Backup and Restore (Safe Workflows)
+When you modify files on your system, SourceCombine keeps your original files safe. If you run `--apply-in-place`, `--extract`, or `--repair`, the tool creates backups by default. It saves these backups with a `.bak` extension next to your original files.
+
+You can inspect, compare, restore, or clean up these backups easily.
+
+1. **List all backup files:**
+   See which backup files exist and check if they match your current files:
+   ```bash
+   python sourcecombine.py --list-backups
+   ```
+
+2. **See the difference between original files and backups:**
+   Show a color-coded, line-by-line comparison of what has changed:
+   ```bash
+   python sourcecombine.py --diff-backups
+   ```
+
+3. **Restore your original files:**
+   Undo your changes and bring back the original files from the backups:
+   ```bash
+   python sourcecombine.py --restore
+   ```
+
+4. **Delete backup files (Clean up):**
+   When you are happy with your changes and no longer need the backups, remove all `.bak` files:
+   ```bash
+   python sourcecombine.py --clean
+   ```
+
 ### Advanced Filtering and AI Optimization
 
 #### Explain Exclusion/Inclusion
