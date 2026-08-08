@@ -452,10 +452,6 @@ def _get_folder_stats(top_files):
     return final_stats
 
 
-def _get_primary_metric(t, l):
-    return 'tokens' if t else ('lines' if l else 'size')
-
-
 def _get_summary_top_items(stats, items, is_folder=False):
     """Select the best metric (tokens, lines, or size) and return top 5 items.
 
@@ -6650,19 +6646,16 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         if dry_run:
             logging.info("[DRY RUN] Would create: %s", target_path)
         else:
-            if file_content is not None:
-                try:
-                    target_path.parent.mkdir(parents=True, exist_ok=True)
-                    _create_backup_if_enabled(target_path, create_backups)
-                    target_path.write_text(file_content, encoding='utf-8')
-                    if meta.get('modified') is not None:
-                        os.utime(target_path, (meta['modified'], meta['modified']))
-                    logging.info("Extracted: %s", target_path)
-                    extracted_count += 1
-                except OSError as e:
-                    logging.error("Failed to write %s: %s", target_path, e)
-            else:
-                logging.debug("Skipping file creation for %s: No content provided.", rel_path_str)
+            try:
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+                _create_backup_if_enabled(target_path, create_backups)
+                target_path.write_text(file_content, encoding='utf-8')
+                if meta.get('modified') is not None:
+                    os.utime(target_path, (meta['modified'], meta['modified']))
+                logging.info("Extracted: %s", target_path)
+                extracted_count += 1
+            except OSError as e:
+                logging.error("Failed to write %s: %s", target_path, e)
 
             running_size += (_to_int_or_none(meta.get('size')) or 0)
             running_lines += (_to_int_or_none(meta.get('lines')) or 0)
