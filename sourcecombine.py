@@ -4698,6 +4698,11 @@ def main():
         help="List all '.bak' backup files in target folders along with their statuses relative to original files. Use --json for machine-readable output.",
     )
     utility_group.add_argument(
+        "--diff-backups",
+        action="store_true",
+        help="Show a unified diff between current files on disk and their '.bak' backup files. Use --json for machine-readable output.",
+    )
+    utility_group.add_argument(
         "--show-config",
         action="store_true",
         help="Show the final combined configuration (including defaults, files, and options) and exit. Use --json for machine-readable output.",
@@ -4818,7 +4823,8 @@ def main():
         args.show_config or
         args.verify or
         getattr(args, 'explain', False) or
-        _get_bool_arg(args, 'list_backups')
+        _get_bool_arg(args, 'list_backups') or
+        _get_bool_arg(args, 'diff_backups')
     ):
         root_logger.setLevel(logging.ERROR)
 
@@ -5198,6 +5204,12 @@ def main():
         # Use the finalized root folders for listing backups
         list_targets = config.get('search', {}).get('root_folders', ["."])
         list_backups(list_targets, json_format=_get_bool_arg(args, 'json'))
+        sys.exit(0)
+
+    if _get_bool_arg(args, 'diff_backups'):
+        # Use the finalized root folders for diffing backups
+        diff_targets = config.get('search', {}).get('root_folders', ["."])
+        diff_backups(diff_targets, json_format=_get_bool_arg(args, 'json'))
         sys.exit(0)
 
     # Re-configure level based on config, *unless* -v or -q was used.
@@ -6861,6 +6873,136 @@ def list_backups(targets, json_format=False):
         output = {
             "title": title,
             "backups": reports,
+            "summary": summary
+        }
+        print(json.dumps(output, indent=2))
+    else:
+        total = summary["total"]
+        matching = summary["matching"]
+        modified = summary["modified"]
+        orphaned = summary["orphaned"]
+        error = summary["error"]
+
+        print(f"\n{C_BOLD}Summary:{C_RESET}")
+        print(f"  Matching:   {C_GREEN if matching == total and total > 0 else C_RESET}{matching}/{total}{C_RESET}")
+        if modified:
+            print(f"  Modified:   {C_YELLOW}{modified}{C_RESET}")
+        if orphaned:
+            print(f"  Orphaned:   {C_RED}{orphaned}{C_RESET}")
+        if error:
+            print(f"  Errors:     {C_RED}{error}{C_RESET}")
+        print(f"{C_BOLD}{C_CYAN}{'=' * (len(title) + 8)}{C_RESET}\n")
+
+    return summary
+
+
+def diff_backups(targets, json_format=False):
+    """Scan targets recursively for .bak files and show differences relative to original files."""
+    if not targets:
+        targets = ["."]
+
+    reports = []
+    summary = {
+        "matching": 0,
+        "modified": 0,
+        "orphaned": 0,
+        "error": 0,
+        "total": 0
+    }
+
+    title = "Backup Diffs Report"
+    if not json_format:
+        print(f"\n{C_BOLD}{C_CYAN}=== {title.upper()} ==={C_RESET}")
+
+    for target in targets:
+        root_path = Path(target)
+        if not root_path.exists():
+            logging.warning("Target folder not found: %s", target)
+            continue
+
+        if root_path.is_file():
+            backup_files = []
+            if root_path.suffix == ".bak":
+                backup_files = [root_path]
+            elif Path(f"{root_path}.bak").is_file():
+                backup_files = [Path(f"{root_path}.bak")]
+        else:
+            backup_files = sorted(root_path.rglob("*.bak"))
+
+        for backup_path in backup_files:
+            original_path = backup_path.with_suffix("")
+            rel_path = _get_rel_path(backup_path, root_path)
+            rel_path_str = rel_path.as_posix()
+            orig_rel_path_str = _get_rel_path(original_path, root_path).as_posix()
+
+            status = "ERROR"
+            detail = ""
+            diff_text = None
+
+            try:
+                if not original_path.exists():
+                    status = "ORPHANED"
+                    detail = "original file missing"
+                else:
+                    orig_text, _ = utils.read_file_best_effort(original_path)
+                    bak_text, _ = utils.read_file_best_effort(backup_path)
+
+                    if orig_text == bak_text:
+                        status = "MATCHING"
+                        detail = "contents match"
+                    else:
+                        status = "MODIFIED"
+                        detail = "contents differ"
+                        diff_lines = list(difflib.unified_diff(
+                            orig_text.splitlines(keepends=True),
+                            bak_text.splitlines(keepends=True),
+                            fromfile=f"a/{orig_rel_path_str}",
+                            tofile=f"b/{orig_rel_path_str}",
+                        ))
+                        diff_text = "".join(diff_lines)
+            except OSError as e:
+                status = "ERROR"
+                detail = f"error: {e}"
+
+            reports.append({
+                "path": rel_path_str,
+                "original_path": orig_rel_path_str,
+                "status": status,
+                "diff": diff_text,
+                "detail": detail
+            })
+
+            summary[status.lower()] += 1
+            summary["total"] += 1
+
+            if not json_format:
+                if status == "MATCHING":
+                    print(f"  {C_GREEN}{'[MATCHING]':<12}{C_RESET}  {rel_path_str}")
+                elif status == "MODIFIED":
+                    print(f"  {C_YELLOW}{'[MODIFIED]':<12}{C_RESET}  {rel_path_str}")
+                    if diff_text:
+                        # Print colored diff lines
+                        for line in diff_text.splitlines(keepends=True):
+                            if line.startswith('+++') or line.startswith('---'):
+                                print(f"    {C_BOLD}{line}{C_RESET}", end="")
+                            elif line.startswith('@@'):
+                                print(f"    {C_CYAN}{line}{C_RESET}", end="")
+                            elif line.startswith('+'):
+                                print(f"    {C_GREEN}{line}{C_RESET}", end="")
+                            elif line.startswith('-'):
+                                print(f"    {C_RED}{line}{C_RESET}", end="")
+                            else:
+                                print(f"    {line}", end="")
+                        print()  # Spacer after diff
+                elif status == "ORPHANED":
+                    print(f"  {C_RED}{'[ORPHANED]':<12}{C_RESET}  {rel_path_str} {C_DIM}({detail}){C_RESET}")
+                else:  # ERROR
+                    print(f"  {C_RED}{'[ERROR]':<12}{C_RESET}  {rel_path_str} {C_DIM}({detail}){C_RESET}")
+
+    if json_format:
+        output = {
+            "title": title,
+            "diffs": reports,
             "summary": summary
         }
         print(json.dumps(output, indent=2))
