@@ -97,3 +97,19 @@ def test_delete_backups_cli_integration(tmp_path):
         assert excinfo.value.code == 0
 
     assert not bak1.exists()
+
+
+def test_delete_backups_single_original_file_target(tmp_path):
+    """Verify that targeting an original file successfully deletes its .bak backup."""
+    file1 = tmp_path / "file1.txt"
+    bak1 = tmp_path / "file1.txt.bak"
+
+    file1.write_text("Original")
+    bak1.write_text("Backup")
+
+    deleted, errors = delete_backups([str(file1)])
+
+    assert deleted == 1
+    assert errors == 0
+    assert not bak1.exists()
+    assert file1.exists()

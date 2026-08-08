@@ -6680,6 +6680,17 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
     return stats
 
 
+def _find_backup_files(root_path: Path) -> list[Path]:
+    """Find all backup files (.bak) under or at the given target path."""
+    if root_path.is_file():
+        if root_path.suffix == ".bak":
+            return [root_path]
+        elif Path(f"{root_path}.bak").is_file():
+            return [Path(f"{root_path}.bak")]
+        return []
+    return sorted(root_path.rglob("*.bak"))
+
+
 def restore_backups(targets, dry_run=False):
     """Scan targets recursively for .bak files and restore them."""
     if not targets:
@@ -6694,16 +6705,7 @@ def restore_backups(targets, dry_run=False):
             logging.warning("Target folder not found: %s", target)
             continue
 
-        if root_path.is_file():
-            # If a single file is targeted, check if it's a backup or has one
-            backup_files = []
-            if root_path.suffix == ".bak":
-                backup_files = [root_path]
-            elif Path(f"{root_path}.bak").is_file():
-                backup_files = [Path(f"{root_path}.bak")]
-        else:
-            # Recursive scan for .bak files
-            backup_files = sorted(root_path.rglob("*.bak"))
+        backup_files = _find_backup_files(root_path)
 
         if not backup_files:
             logging.info("No backup files (.bak) found in '%s'.", target)
@@ -6749,12 +6751,7 @@ def delete_backups(targets, dry_run=False):
             logging.warning("Target folder not found: %s", target)
             continue
 
-        if root_path.is_file():
-            # If a single file is targeted, check if it's a backup
-            backup_files = [root_path] if root_path.suffix == ".bak" else []
-        else:
-            # Recursive scan for .bak files
-            backup_files = sorted(root_path.rglob("*.bak"))
+        backup_files = _find_backup_files(root_path)
 
         if not backup_files:
             logging.info("No backup files (.bak) found in '%s'.", target)
@@ -6808,14 +6805,7 @@ def list_backups(targets, json_format=False):
             logging.warning("Target folder not found: %s", target)
             continue
 
-        if root_path.is_file():
-            backup_files = []
-            if root_path.suffix == ".bak":
-                backup_files = [root_path]
-            elif Path(f"{root_path}.bak").is_file():
-                backup_files = [Path(f"{root_path}.bak")]
-        else:
-            backup_files = sorted(root_path.rglob("*.bak"))
+        backup_files = _find_backup_files(root_path)
 
         for backup_path in backup_files:
             original_path = backup_path.with_suffix("")
@@ -6920,14 +6910,7 @@ def diff_backups(targets, json_format=False):
             logging.warning("Target folder not found: %s", target)
             continue
 
-        if root_path.is_file():
-            backup_files = []
-            if root_path.suffix == ".bak":
-                backup_files = [root_path]
-            elif Path(f"{root_path}.bak").is_file():
-                backup_files = [Path(f"{root_path}.bak")]
-        else:
-            backup_files = sorted(root_path.rglob("*.bak"))
+        backup_files = _find_backup_files(root_path)
 
         for backup_path in backup_files:
             original_path = backup_path.with_suffix("")
