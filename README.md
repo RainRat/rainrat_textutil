@@ -112,9 +112,11 @@ The tool installs these automatically when you follow the installation steps:
     pip install tiktoken
     ```
 4.  **Run the Tool:**
+    Combine files in the current folder (`.`) into a single file named `combined.txt`:
     ```bash
-    python sourcecombine.py src/ --output combined.txt
+    python sourcecombine.py . --output combined.txt
     ```
+    This command works immediately in the cloned repository. It scans the current folder and generates the output without showing folder-not-found warnings.
 5.  **Create a Config (Optional):**
     ```bash
     python sourcecombine.py --init
