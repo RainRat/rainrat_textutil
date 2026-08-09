@@ -4687,6 +4687,11 @@ def main():
         help="Automatically fix mismatched or missing files when verifying (requires source content).",
     )
     utility_group.add_argument(
+        "--backup",
+        action="store_true",
+        help="Manually create '.bak' backup files of original files that match the active search config and filters. Supports --json for machine-readable output and --dry-run for previewing.",
+    )
+    utility_group.add_argument(
         "--delete-backups",
         "--clean",
         action="store_true",
@@ -5187,6 +5192,12 @@ def main():
             validate_config(config, nested_required={'search': ['root_folders']})
         except utils.InvalidConfigError as e:
             _handle_invalid_config_error(e, args.verbose, f"The configuration is not valid: {e}")
+
+    if _get_bool_arg(args, 'backup'):
+        # Use the finalized root folders for backup
+        backup_targets = config.get('search', {}).get('root_folders', ["."])
+        create_backups_for_targets(backup_targets, config, dry_run=args.dry_run, json_format=_get_bool_arg(args, 'json'))
+        sys.exit(0)
 
     if args.restore:
         # Use the finalized root folders for restoration
@@ -6678,6 +6689,133 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         logging.info("Extraction complete. %d files created in %s", extracted_count, output_folder)
 
     return stats
+
+
+def create_backups_for_targets(targets, config, dry_run=False, json_format=False):
+    """Find files matching current configuration and filters, and create .bak backups for them."""
+    if not targets:
+        targets = ["."]
+
+    search_opts = config.get('search', {})
+    filter_opts = config.get('filters', {})
+    exclude_folders = search_opts.get('exclude_folders', [])
+    recursive = search_opts.get('recursive', True)
+
+    processed_files = []
+    backed_up_count = 0
+    error_count = 0
+
+    title = "Manual Backup Process"
+    if not json_format:
+        print(f"\n{C_BOLD}{C_CYAN}=== {title.upper()} ==={C_RESET}")
+
+    seen_paths = set()
+
+    for target in targets:
+        root_folder = target
+        try:
+            paths, root, excluded = collect_file_paths(
+                root_folder,
+                recursive,
+                exclude_folders,
+                progress=None,
+                max_depth=search_opts.get('max_depth', 0),
+                use_git=search_opts.get('use_git', False),
+                use_git_diff=search_opts.get('use_git_diff', False),
+                git_diff_ref=search_opts.get('git_diff_ref'),
+                git_staged=search_opts.get('git_staged', False),
+                git_unstaged=search_opts.get('git_unstaged', False),
+            )
+        except Exception as e:
+            logging.error("Failed to collect files for %s: %s", target, e)
+            error_count += 1
+            continue
+
+        if not paths:
+            continue
+
+        # Path-based deduplication
+        unique_paths = []
+        if filter_opts.get('unique'):
+            for p in paths:
+                try:
+                    abs_p = p.resolve()
+                    if abs_p in seen_paths:
+                        continue
+                    seen_paths.add(abs_p)
+                    unique_paths.append(p)
+                except OSError:
+                    unique_paths.append(p)
+        else:
+            unique_paths = paths
+
+        # Apply filtering rules
+        filtered_paths = filter_file_paths(
+            unique_paths,
+            filter_opts=filter_opts,
+            search_opts=search_opts,
+            root_path=root,
+            record_size_exclusions=False,
+            create_backups=True,
+            stats=None,
+            abs_output_path=None,
+        )
+
+        for p in filtered_paths:
+            if not p.is_file():
+                continue
+
+            rel_path = _get_rel_path(p, root)
+            rel_path_str = rel_path.as_posix()
+            backup_path = Path(f"{p}.bak")
+
+            file_entry = {
+                "file": rel_path_str,
+                "backup": f"{rel_path_str}.bak",
+                "status": "pending",
+                "error": None
+            }
+
+            if dry_run:
+                file_entry["status"] = "would_backup"
+                if not json_format:
+                    logging.info("[DRY RUN] Would backup: %s", rel_path_str)
+                backed_up_count += 1
+            else:
+                try:
+                    shutil.copy2(p, backup_path)
+                    file_entry["status"] = "backed_up"
+                    if not json_format:
+                        logging.info("Created backup: %s -> %s", rel_path_str, f"{rel_path_str}.bak")
+                    backed_up_count += 1
+                except OSError as exc:
+                    file_entry["status"] = "error"
+                    file_entry["error"] = str(exc)
+                    if not json_format:
+                        logging.error("Failed to create backup for '%s': %s", rel_path_str, exc)
+                    error_count += 1
+
+            processed_files.append(file_entry)
+
+    if json_format:
+        report = {
+            "backups": processed_files,
+            "summary": {
+                "backed_up": backed_up_count,
+                "error": error_count,
+                "total": backed_up_count + error_count
+            }
+        }
+        print(json.dumps(report, indent=2))
+    else:
+        if backed_up_count > 0 or error_count > 0:
+            action = "Would backup" if dry_run else "Created"
+            logging.info("%s %d backup files. Errors: %d", action, backed_up_count, error_count)
+            print(f"{C_BOLD}{C_CYAN}{'=' * (len(title) + 8)}{C_RESET}\n")
+        else:
+            logging.info("No files matched the configuration for backup.")
+
+    return backed_up_count, error_count
 
 
 def restore_backups(targets, dry_run=False):

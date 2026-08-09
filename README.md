@@ -9,6 +9,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   **Include Groups:** Keep specific files regardless of other filters.
 *   **Pair Files:** Link related files (like `.cpp` and `.h`) into single output files.
 *   **Restore Files:** Rebuild original files and folders from combined Text, JSON, JSONL, XML, CSV, or Markdown. Supports filtering, remote URLs, and auto-detecting defaults.
+*   **Safe Backups:** Manually back up matching source files before making external edits, inspect backups using diffs, and restore files from their `.bak` copies.
 *   **Sort Results:** Organize files by name, size, date, tokens, lines, depth, or language.
 *   **Apply Limits:** Stop processing when reaching file, token, size, or line limits.
 *   **Choose Output:** Save to the terminal, a file, or the system clipboard.
@@ -48,6 +49,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--extract`: Rebuild original files and folders from combined outputs (Text, JSON, XML, JSONL, CSV, or Markdown). You can read from files, folders, remote URLs (http/https), the terminal, or clipboard. Without an input file, it searches for `combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`.
 *   `--verify` (`-y`): Verify that files on disk match the content or hashes in combined files or manifests. You can read from files, folders, remote URLs (http/https), the terminal, or clipboard. Without an input file, the tool searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`). For example: `python sourcecombine.py --verify combined_files.json`. Use `--json` for machine-readable output.
 *   `--repair` (`-P`): Automatically fix mismatched or missing files when verifying (requires source content).
+*   `--backup`: Manually create `.bak` backup files of original files that match the active search configuration and filters. Supports `--json` for machine-readable output and `--dry-run` for previewing.
 *   `--restore`: Undo changes made by `--apply-in-place` using `.bak` backup files.
 *   `--delete-backups`: Remove all `.bak` files from the folders.
 *   `--list-backups`: List all `.bak` backup files in target folders along with their statuses relative to original files. Use `--json` for machine-readable output.
@@ -185,6 +187,42 @@ Check if your files on disk match the content or SHA-256 hashes stored in a comb
    *(or use the short-hand `-P`)*:
    ```bash
    python sourcecombine.py -P combined_files.json
+   ```
+
+### Backup and Restore (Safe Workflows)
+You can easily create safe checkpoints of your source files, preview proposed backups or restorations, and clean up or inspect your backups.
+
+1. **Create backups manually for matching configuration/filters:**
+   ```bash
+   python sourcecombine.py --backup
+   ```
+   *(or dry-run to preview what will be backed up)*:
+   ```bash
+   python sourcecombine.py --backup --dry-run
+   ```
+   *(or output machine-readable JSON format)*:
+   ```bash
+   python sourcecombine.py --backup --json
+   ```
+
+2. **List all backups and check their status relative to disk:**
+   ```bash
+   python sourcecombine.py --list-backups
+   ```
+
+3. **Show diffs between current files on disk and backup copies:**
+   ```bash
+   python sourcecombine.py --diff-backups
+   ```
+
+4. **Restore original files from backups:**
+   ```bash
+   python sourcecombine.py --restore
+   ```
+
+5. **Clean up and delete all backup files:**
+   ```bash
+   python sourcecombine.py --delete-backups
    ```
 
 ### Advanced Filtering and AI Optimization
