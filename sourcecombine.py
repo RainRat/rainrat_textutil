@@ -3804,17 +3804,40 @@ def find_and_combine_files(
     if clipboard and clipboard_buffer is not None:
         combined_output = clipboard_buffer.getvalue()
         pyperclip = _get_pyperclip()
+
+        def _save_fallback():
+            fallback_filename = output_path
+            if not fallback_filename or fallback_filename == '-':
+                if output_format == 'markdown':
+                    fallback_filename = 'combined_files.md'
+                elif output_format == 'json':
+                    fallback_filename = 'combined_files.json'
+                elif output_format == 'jsonl':
+                    fallback_filename = 'combined_files.jsonl'
+                elif output_format == 'xml':
+                    fallback_filename = 'combined_files.xml'
+                elif output_format == 'csv':
+                    fallback_filename = 'combined_files.csv'
+                else:
+                    fallback_filename = 'combined_files.txt'
+            try:
+                Path(fallback_filename).parent.mkdir(parents=True, exist_ok=True)
+                with open(fallback_filename, 'w', encoding='utf8', newline='') as f:
+                    f.write(combined_output)
+                logging.info("Fallback: Saved combined output to '%s' instead.", fallback_filename)
+            except OSError as write_err:
+                logging.error("Failed to save fallback output to '%s': %s", fallback_filename, write_err)
+
         if pyperclip:
-            pyperclip.copy(combined_output)
-            logging.info("Copied combined output to clipboard.")
+            try:
+                pyperclip.copy(combined_output)
+                logging.info("Copied combined output to clipboard.")
+            except Exception as e:
+                logging.error("Failed to copy combined output to clipboard: %s", e)
+                _save_fallback()
         else:
             logging.error("We need the 'pyperclip' library to copy to the clipboard. Please install it by running: pip install pyperclip")
-            # We don't exit here as the output might have been written elsewhere or be the only intended action.
-            # But usually if --clipboard is requested, user wants it there.
-            # If they didn't specify an output file, it goes to stdout by default too?
-            # Let's check if we should exit.
-            # The previous code didn't check, just failed with AttributeError.
-            pass
+            _save_fallback()
 
     return stats
 
