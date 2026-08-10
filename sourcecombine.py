@@ -4077,13 +4077,13 @@ def main():
         "targets",
         nargs="*",
         metavar="TARGET",
-        help="Folders or files to search. If empty, the tool searches the current folder. If the first target is a YAML file (.yml or .yaml), the tool uses it as the configuration.",
+        help="Folders or files to scan. If you leave this empty, the tool searches the current folder. If the first target is a YAML (.yml, .yaml) or JSON (.json) file, the tool loads it as your configuration.",
     )
     core_group.add_argument(
         "--config",
         "-k",
         metavar="PATH",
-        help="Use a specific configuration file. This stops the tool from trying to find one automatically in the target list.",
+        help="Use a specific YAML or JSON configuration file. This stops the tool from looking for a configuration file automatically.",
     )
     core_group.add_argument(
         "--output",
