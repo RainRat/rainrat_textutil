@@ -3419,8 +3419,6 @@ def find_and_combine_files(
                 processed = None
                 file_size = file_path.stat().st_size if file_path.exists() else 0
 
-                rel_p = _get_rel_path(file_path, root_path)
-
                 if is_excluded_by_size:
                     placeholder = output_opts.get('max_size_placeholder')
                     if placeholder:
