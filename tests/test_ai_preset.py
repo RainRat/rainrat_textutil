@@ -1,158 +1,116 @@
-import sys; import os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
-
 import sys
-import unittest
-from unittest.mock import patch, MagicMock
-from pathlib import Path
+import os
 import argparse
+import logging
+from pathlib import Path
+from unittest.mock import patch, MagicMock
+import pytest
 
-# Add current directory to sys.path to import sourcecombine
-sys.path.append(str(Path(__file__).parent.parent))
-import sourcecombine
+sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
-class TestAIPreset(unittest.TestCase):
-    def _create_mock_args(self, ai=True, output=None):
-        return argparse.Namespace(
-            targets=[],
-            ai=ai,
-            markdown=False,
-            json=False,
-            xml=False,
-            format=None,
-            line_numbers=False,
-            toc=False,
-            include_tree=False,
-            output=output,
-            clipboard=False,
-            dry_run=False,
-            list_files=False,
-            tree=False,
-            estimate_tokens=False,
-            verbose=False,
-            exclude_file=[],
-            exclude_folder=[],
-            include=[],
-            since=None,
-            until=None,
-            limit=None,
-            max_tokens=None,
-            files_from=None,
-            compact=False,
-            sort=None,
-            reverse=False,
-            extract=False,
-            system_info=False,
-            init=False,
-            restore=False,
-            delete_backups=False,
-            grep=None,
-            exclude_grep=None,
-            max_depth=None,
-            git_files=False,
-            staged=False,
-            unstaged=False,
-            min_size=None,
-            max_size=None,
-            max_total_size=None,
-            max_total_lines=None,
-            min_tokens=None,
-            max_file_tokens=None,
-            min_lines=None,
-            max_file_lines=None,
-            config=None,
-            apply_in_place=False,
-            create_backups=False,
-            show_config=False,
-            max_lines=None,
-            skip_binary=False,
-            keep_line_numbers=False,
-            overview=False,
-            truncate_tokens=None,
-            json_summary=None,
-            language=[],
-            exclude_language=[],
-            git_diff=False,
-            list_languages=False,
-            list_placeholders=False,
-            diff=False,
-            replace=[],
-            replace_line=[],
-            map_lang=[],
-            pair=[],
-            include_unpaired=False,
-            pair_template=None,
-            unique=False,
-            git_log=None,
-            verify=False,
-            clean=False,
-            preview=False,
-            header=None,
-            footer=None,
-            global_header=None,
-            global_footer=None,
-            max_size_placeholder=None,
-            export_config=None,
+from sourcecombine import main
+
+@pytest.fixture
+def temp_cwd(tmp_path):
+    original_cwd = os.getcwd()
+    os.chdir(tmp_path)
+    yield tmp_path
+    os.chdir(original_cwd)
+
+@pytest.fixture
+def mock_main_deps():
+    with patch('sourcecombine.load_and_validate_config', return_value={}), \
+         patch('sourcecombine.find_and_combine_files', return_value={}), \
+         patch('sourcecombine._print_execution_summary'), \
+         patch('sys.exit'):
+        yield
+
+@pytest.fixture
+def capture_parsed_args():
+    captured = []
+    original_parse_args = argparse.ArgumentParser.parse_args
+
+    def mock_parse_args(self, *args, **kwargs):
+        parsed_args = original_parse_args(self, *args, **kwargs)
+        captured.append(parsed_args)
+        return parsed_args
+
+    with patch('argparse.ArgumentParser.parse_args', mock_parse_args):
+        yield captured
+
+def test_ai_preset_expansion(temp_cwd, mock_main_deps, capture_parsed_args):
+    with patch('importlib.util.find_spec', return_value=MagicMock()), \
+         patch.object(sys, 'argv', ['sourcecombine.py', '.', '--ai']):
+
+        main()
+
+        assert len(capture_parsed_args) == 1
+        args = capture_parsed_args[0]
+        assert args.markdown is True
+        assert args.line_numbers is True
+        assert args.toc is True
+        assert args.include_tree is True
+        assert args.overview is True
+        assert args.skip_binary is True
+        assert args.unique is True
+        assert args.git_log == 5
+        assert args.include_diff is True
+        assert args.clipboard is True
+
+def test_ai_preset_no_clipboard_if_output_provided(temp_cwd, mock_main_deps, capture_parsed_args):
+    with patch('importlib.util.find_spec', return_value=MagicMock()), \
+         patch.object(sys, 'argv', ['sourcecombine.py', '.', '--ai', '--output', 'out.txt']):
+
+        main()
+
+        assert len(capture_parsed_args) == 1
+        args = capture_parsed_args[0]
+        assert args.markdown is True
+        assert args.clipboard is False
+
+def test_ai_preset_no_clipboard_if_no_pyperclip(temp_cwd, mock_main_deps, capture_parsed_args):
+    with patch('importlib.util.find_spec', return_value=None), \
+         patch.object(sys, 'argv', ['sourcecombine.py', '.', '--ai']):
+
+        main()
+
+        assert len(capture_parsed_args) == 1
+        args = capture_parsed_args[0]
+        assert args.markdown is True
+        assert args.clipboard is False
+
+def test_ai_preset_pyperclip_missing_warning(temp_cwd, mock_main_deps, caplog):
+    with patch('importlib.util.find_spec', return_value=None), \
+         patch.object(sys, 'argv', ['sourcecombine.py', '.', '--ai']):
+
+        main()
+
+        warning_messages = [record.message for record in caplog.records if record.levelname == "WARNING"]
+        expected_warning = (
+            "We could not find the 'pyperclip' library. The AI preset cannot automatically "
+            "copy to the clipboard. We will save the output to a file instead. "
+            "To copy to the clipboard, please install the library first: pip install pyperclip"
         )
+        assert expected_warning in warning_messages
 
-    @patch('argparse.ArgumentParser.parse_args')
-    @patch('importlib.util.find_spec')
-    def test_ai_preset_expansion(self, mock_find_spec, mock_parse_args):
-        # Set up mock arguments
-        mock_args = self._create_mock_args()
-        mock_parse_args.return_value = mock_args
-        mock_find_spec.return_value = MagicMock() # Simulate pyperclip installed
+def test_ai_preset_respects_explicit_git_log(temp_cwd, mock_main_deps, capture_parsed_args):
+    with patch('importlib.util.find_spec', return_value=MagicMock()), \
+         patch.object(sys, 'argv', ['sourcecombine.py', '.', '--ai', '--git-log', '10']):
 
-        # Mock dependencies to prevent main() from doing real work or exiting
-        with patch('sourcecombine.load_and_validate_config'), \
-             patch('sourcecombine.find_and_combine_files'), \
-             patch('sourcecombine._print_execution_summary'), \
-             patch('logging.getLogger'), \
-             patch('sys.exit'):
+        main()
 
-            sourcecombine.main()
+        assert len(capture_parsed_args) == 1
+        args = capture_parsed_args[0]
+        assert args.git_log == 10
+        assert args.markdown is True
+        assert args.clipboard is True
 
-            # Check if flags were updated in the mock_args object
-            self.assertTrue(mock_args.markdown)
-            self.assertTrue(mock_args.line_numbers)
-            self.assertTrue(mock_args.toc)
-            self.assertTrue(mock_args.include_tree)
-            self.assertTrue(mock_args.clipboard)
+def test_ai_preset_respects_explicit_disabled_git_log(temp_cwd, mock_main_deps, capture_parsed_args):
+    with patch('importlib.util.find_spec', return_value=MagicMock()), \
+         patch.object(sys, 'argv', ['sourcecombine.py', '.', '--ai', '--git-log', '0']):
 
-    @patch('argparse.ArgumentParser.parse_args')
-    @patch('importlib.util.find_spec')
-    def test_ai_preset_no_clipboard_if_output_provided(self, mock_find_spec, mock_parse_args):
-        mock_args = self._create_mock_args(output='out.txt')
-        mock_parse_args.return_value = mock_args
-        mock_find_spec.return_value = MagicMock()
+        main()
 
-        with patch('sourcecombine.load_and_validate_config'), \
-             patch('sourcecombine.find_and_combine_files'), \
-             patch('sourcecombine._print_execution_summary'), \
-             patch('logging.getLogger'), \
-             patch('sys.exit'):
-
-            sourcecombine.main()
-
-            self.assertTrue(mock_args.markdown)
-            self.assertFalse(mock_args.clipboard)
-
-    @patch('argparse.ArgumentParser.parse_args')
-    @patch('importlib.util.find_spec')
-    def test_ai_preset_no_clipboard_if_no_pyperclip(self, mock_find_spec, mock_parse_args):
-        mock_args = self._create_mock_args()
-        mock_parse_args.return_value = mock_args
-        mock_find_spec.return_value = None # Simulate pyperclip NOT installed
-
-        with patch('sourcecombine.load_and_validate_config'), \
-             patch('sourcecombine.find_and_combine_files'), \
-             patch('sourcecombine._print_execution_summary'), \
-             patch('logging.getLogger'), \
-             patch('sys.exit'):
-
-            sourcecombine.main()
-
-            self.assertTrue(mock_args.markdown)
-            self.assertFalse(mock_args.clipboard)
-
-if __name__ == '__main__':
-    unittest.main()
+        assert len(capture_parsed_args) == 1
+        args = capture_parsed_args[0]
+        assert args.git_log == 0
