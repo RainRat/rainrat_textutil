@@ -113,8 +113,11 @@ The tool installs these automatically when you follow the installation steps:
     ```
 4.  **Run the Tool:**
     ```bash
-    python sourcecombine.py src/ --output combined.txt
+    # Combine files in the current folder (represented by '.') into combined.txt:
+    python sourcecombine.py . --output combined.txt
     ```
+    *(Note)* You can replace `.` with any folder path on your system.
+
 5.  **Create a Config (Optional):**
     ```bash
     python sourcecombine.py --init
@@ -133,13 +136,13 @@ python sourcecombine.py
 ```
 
 ### Filtering by Language
-Combine only Python and JavaScript files from the `src` folder. You can repeat the language flag or use a simpler comma-separated list:
+Combine only Python and JavaScript files from the current folder (`.`). You can repeat the language flag or use a simpler comma-separated list:
 ```bash
 # Using comma-separated lists
-python sourcecombine.py src/ --language python,javascript --output project_context.txt
+python sourcecombine.py . --language python,javascript --output project_context.txt
 
 # Or repeating the flag
-python sourcecombine.py src/ --language python --language javascript --output project_context.txt
+python sourcecombine.py . --language python --language javascript --output project_context.txt
 ```
 
 ### File Extraction
@@ -151,19 +154,19 @@ python sourcecombine.py --extract combined_files.md --output restored_project/
 ### AI Model Context
 Prepare a full project context for AI models. This preset uses Markdown format and includes a Table of Contents, folder tree, project overview, line numbers, and Git context (logs and diffs). It also removes duplicates and skips binary files. If you do not specify an output file, the tool copies the result to the system clipboard:
 ```bash
-python sourcecombine.py src/ --ai
+python sourcecombine.py . --ai
 ```
 
 ### File Pairing
 Combine related files (such as `.cpp` and `.h` pairs) into their own individual combined files in a separate folder:
 ```bash
-python sourcecombine.py src/ --pair .cpp .h --output combined_src/
+python sourcecombine.py . --pair .cpp .h --output combined_src/
 ```
 
 ### Collapsible Markdown
 Combine files into collapsible Markdown blocks, perfect for reducing clutter when sharing large code bases with AI models:
 ```bash
-python sourcecombine.py src/ --format markdown --collapsible --output project_context.md
+python sourcecombine.py . --format markdown --collapsible --output project_context.md
 ```
 
 ### File Verification and Repair
@@ -192,39 +195,39 @@ Check if your files on disk match the content or SHA-256 hashes stored in a comb
 #### Explain Exclusion/Inclusion
 If you are unsure why a file is being skipped or included, you can check using the `--explain` command:
 ```bash
-python sourcecombine.py --explain src/utils.py
+python sourcecombine.py --explain utils.py
 ```
 
 #### Combine Only Changed Git Files
 You can choose to combine only files with staged or unstaged changes in Git using the `--git-diff` flag. This is great for reviewing code changes before committing:
 ```bash
-python sourcecombine.py src/ --git-diff
+python sourcecombine.py . --git-diff
 ```
 To combine only staged changes, add the `--staged` flag:
 ```bash
-python sourcecombine.py src/ --staged
+python sourcecombine.py . --staged
 ```
 
 #### Filter by File Size and Age
 You can easily skip large or old files to keep your output clean. For example, to only include files smaller than 50 Kilobytes modified in the last 24 hours:
 ```bash
-python sourcecombine.py src/ --max-size 50KB --since 1d
+python sourcecombine.py . --max-size 50KB --since 1d
 ```
 
 #### Optimize Files for AI (Remove Comments and Whitespace)
 When sharing code with AI models, you can save tokens by removing source code comments and blank lines. Use the `--remove-comments` and `--compact-whitespace` flags together:
 ```bash
-python sourcecombine.py src/ --remove-comments --compact-whitespace --output compact_code.txt
+python sourcecombine.py . --remove-comments --compact-whitespace --output compact_code.txt
 ```
 
 #### Filter by Content Patterns (Grep)
 You can filter files by matching patterns in their content. For example, to include only files containing the word "TODO":
 ```bash
-python sourcecombine.py src/ --grep "TODO"
+python sourcecombine.py . --grep "TODO"
 ```
 Or to skip files containing "DEPRECATED":
 ```bash
-python sourcecombine.py src/ --exclude-grep "DEPRECATED"
+python sourcecombine.py . --exclude-grep "DEPRECATED"
 ```
 
 ## Configuration Guide
