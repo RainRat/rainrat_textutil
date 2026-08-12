@@ -4006,9 +4006,10 @@ class ColoredArgumentParser(argparse.ArgumentParser):
                 for arg in unrecognized_parts:
                     matches = difflib.get_close_matches(arg, valid_options, n=3, cutoff=0.6)
                     if matches:
-                        suggestions.append(f"  {arg} -> did you mean: {', '.join(matches)}?")
+                        colored_matches = ", ".join(f"{C_BOLD:only_stderr}{C_GREEN:only_stderr}{m}{C_RESET:only_stderr}" for m in matches)
+                        suggestions.append(f"  {C_BOLD:only_stderr}{C_RED:only_stderr}{arg}{C_RESET:only_stderr} -> did you mean: {colored_matches}?")
                 if suggestions:
-                    message += "\n\nSuggestions:\n" + "\n".join(suggestions)
+                    message += f"\n\n{C_BOLD:only_stderr}{C_CYAN:only_stderr}Suggestions:{C_RESET:only_stderr}\n" + "\n".join(suggestions)
 
         # Check for invalid choice errors
         elif "invalid choice:" in message:
@@ -4020,7 +4021,8 @@ class ColoredArgumentParser(argparse.ArgumentParser):
                         choices_list = [str(c) for c in action.choices]
                         matches = difflib.get_close_matches(invalid_val, choices_list, n=3, cutoff=0.5)
                         if matches:
-                            message += f"\n  Did you mean: {', '.join(matches)}?"
+                            colored_matches = ", ".join(f"{C_BOLD:only_stderr}{C_GREEN:only_stderr}{m}{C_RESET:only_stderr}" for m in matches)
+                            message += f"\n  Did you mean: {colored_matches}?"
                     break
 
         # Display usage to stderr
