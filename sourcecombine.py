@@ -4693,6 +4693,11 @@ def main():
         help="Undo 'apply-in-place' changes by restoring original files from their .bak copies. This command scans target folders recursively for backup files.",
     )
     utility_group.add_argument(
+        "--backup",
+        action="store_true",
+        help="Create '.bak' backup files of all files that match the active filters and configuration. Supports --dry-run and --json.",
+    )
+    utility_group.add_argument(
         "--verify",
         "-y",
         action="store_true",
@@ -4847,7 +4852,8 @@ def main():
         args.verify or
         getattr(args, 'explain', False) or
         _get_bool_arg(args, 'list_backups') or
-        _get_bool_arg(args, 'diff_backups')
+        _get_bool_arg(args, 'diff_backups') or
+        _get_bool_arg(args, 'backup')
     ):
         root_logger.setLevel(logging.ERROR)
 
@@ -5215,6 +5221,12 @@ def main():
         # Use the finalized root folders for restoration
         restore_targets = config.get('search', {}).get('root_folders', ["."])
         restore_backups(restore_targets, dry_run=args.dry_run)
+        sys.exit(0)
+
+    if _get_bool_arg(args, 'backup'):
+        # Use the finalized root folders for manual backup
+        backup_targets = config.get('search', {}).get('root_folders', ["."])
+        create_backups_for_targets(backup_targets, config, dry_run=args.dry_run, json_format=_get_bool_arg(args, 'json'))
         sys.exit(0)
 
     if args.delete_backups:
@@ -7030,6 +7042,186 @@ def diff_backups(targets, json_format=False):
         print(f"{C_BOLD}{C_CYAN}{'=' * (len(title) + 8)}{C_RESET}\n")
 
     return summary
+
+
+def create_backups_for_targets(targets, config, dry_run=False, json_format=False):
+    """Scan targets recursively for matched files and create '.bak' copies of them.
+
+    Parameters
+    ----------
+    targets : list of str
+        The target folder/file paths to scan.
+    config : dict
+        The active configuration containing search and filter options.
+    dry_run : bool, optional
+        If True, only show what files would be backed up without copying them.
+    json_format : bool, optional
+        If True, output the results in JSON format to stdout.
+    """
+    if not targets:
+        targets = ["."]
+
+    config = copy.deepcopy(config)
+    utils.validate_config(config)
+
+    search_opts = config.get('search', {})
+    filter_opts = config.get('filters', {})
+    output_opts = config.get('output', {})
+
+    # Load ignore patterns
+    ignore_files = list(search_opts.get('ignore_files') or [])
+    default_ignore = ".sourcecombineignore"
+    if default_ignore not in ignore_files and Path(default_ignore).is_file():
+        ignore_files.append(default_ignore)
+
+    if ignore_files:
+        filter_opts = copy.deepcopy(filter_opts)
+        exclusions = filter_opts.setdefault('exclusions', {})
+        filenames = exclusions.setdefault('filenames', [])
+        for ignore_file in ignore_files:
+            patterns = utils.parse_ignore_file(ignore_file)
+            if patterns:
+                filenames.extend(patterns)
+
+    # Resolve output path to prevent self-backup
+    abs_output_path = None
+    output_path = output_opts.get('file', DEFAULT_OUTPUT_FILENAME)
+    if output_path and output_path != '-':
+        try:
+            abs_output_path = Path(output_path).resolve()
+        except OSError:
+            try:
+                abs_output_path = Path(output_path).absolute()
+            except OSError:
+                abs_output_path = None
+
+    matched_files = []
+    # Discover files across targets
+    for target in targets:
+        root_path = Path(target)
+        if not root_path.exists():
+            logging.warning("Target folder not found: %s", target)
+            continue
+
+        try:
+            paths, root, _ = collect_file_paths(
+                root_path,
+                recursive=search_opts.get('recursive', True),
+                exclude_folders=filter_opts.get('exclusions', {}).get('folders') or [],
+                max_depth=search_opts.get('max_depth', 0),
+                use_git=search_opts.get('use_git', False),
+                use_git_diff=search_opts.get('use_git_diff', False),
+                git_diff_ref=search_opts.get('git_diff_ref'),
+                git_staged=search_opts.get('git_staged', False),
+                git_unstaged=search_opts.get('git_unstaged', False),
+            )
+        except OSError as e:
+            logging.warning("Failed to collect file paths for target '%s': %s", target, e)
+            continue
+
+        if paths:
+            # Filter the paths
+            filtered = filter_file_paths(
+                paths,
+                filter_opts=filter_opts,
+                search_opts=search_opts,
+                root_path=root,
+                abs_output_path=abs_output_path,
+            )
+            # Store pairs of (file_path, root)
+            for p in filtered:
+                matched_files.append((p, root))
+
+    backed_up_count = 0
+    error_count = 0
+    total = len(matched_files)
+
+    results = []
+
+    title = "Backup Creation Report"
+    if not json_format:
+        print(f"\n{C_BOLD}{C_CYAN}=== {title.upper()} ==={C_RESET}")
+
+    # Set up progress bar if appropriate
+    show_progress = not json_format and _progress_enabled(dry_run)
+    backup_bar = _progress_bar(
+        matched_files,
+        desc="Creating backups",
+        unit="file",
+        enabled=show_progress
+    )
+
+    try:
+        for file_path, root in backup_bar:
+            rel_path = _get_rel_path(file_path, root)
+            rel_path_str = rel_path.as_posix()
+            backup_path = Path(f"{file_path}.bak")
+
+            status = "ERROR"
+            detail = ""
+
+            if not file_path.exists():
+                status = "ERROR"
+                detail = "file not found"
+                error_count += 1
+            elif dry_run:
+                status = "PREVIEW"
+                detail = "would create backup"
+                backed_up_count += 1
+            else:
+                try:
+                    shutil.copy2(file_path, backup_path)
+                    status = "CREATED"
+                    detail = "backup created successfully"
+                    backed_up_count += 1
+                except OSError as e:
+                    status = "ERROR"
+                    detail = f"error: {e}"
+                    error_count += 1
+
+            results.append({
+                "path": rel_path_str,
+                "backup_path": _get_rel_path(backup_path, root).as_posix(),
+                "status": status,
+                "detail": detail
+            })
+
+            if not json_format:
+                if status == "CREATED":
+                    print(f"  {C_GREEN}{'[CREATED]':<12}{C_RESET}  {rel_path_str}")
+                elif status == "PREVIEW":
+                    print(f"  {C_CYAN}{'[PREVIEW]':<12}{C_RESET}  {rel_path_str}")
+                else:  # ERROR
+                    print(f"  {C_RED}{'[ERROR]':<12}{C_RESET}  {rel_path_str} {C_DIM}({detail}){C_RESET}")
+
+            if show_progress:
+                backup_bar.set_postfix(
+                    created=backed_up_count,
+                    errors=error_count
+                )
+    finally:
+        backup_bar.close()
+
+    if json_format:
+        output = {
+            "title": title,
+            "backups": results,
+            "summary": {
+                "created" if not dry_run else "preview": backed_up_count,
+                "errors": error_count,
+                "total": total
+            }
+        }
+        print(json.dumps(output, indent=2))
+    else:
+        print(f"\n{C_BOLD}Summary:{C_RESET}")
+        action_verb = "Would backup" if dry_run else "Backed up"
+        print(f"  {action_verb:<12} {C_GREEN if backed_up_count == total and total > 0 else C_RESET}{backed_up_count}/{total}{C_RESET}")
+        if error_count:
+            print(f"  Errors:      {C_RED}{error_count}{C_RESET}")
+        print(f"{C_BOLD}{C_CYAN}{'=' * (len(title) + 8)}{C_RESET}\n")
+
+    return backed_up_count, error_count
 
 
 def print_system_info():
