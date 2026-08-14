@@ -112,3 +112,19 @@ def test_ai_preset_respects_explicit_git_log(temp_cwd, mock_argv):
         mock_combine.assert_called_once()
         called_config = mock_combine.call_args[0][0]
         assert called_config['output'].get('git_log_count') == 10
+
+def test_ai_preset_respects_explicit_disabled_git_log(temp_cwd, mock_argv):
+    with mock_argv(['.', '--ai', '--git-log', '0']), \
+         patch('importlib.util.find_spec', return_value=None), \
+         patch('sourcecombine.find_and_combine_files') as mock_combine:
+
+        mock_combine.return_value = {}
+        try:
+            main()
+        except SystemExit:
+            pass
+
+        mock_combine.assert_called_once()
+        called_config = mock_combine.call_args[0][0]
+        assert called_config['output'].get('git_log_count') == 0
+

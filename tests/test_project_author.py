@@ -172,3 +172,9 @@ def test_format_author_empty_dict_and_list():
     assert utils._format_author({}) == ""
     assert utils._format_author([{}, "John"]) == "John"
     assert utils._format_author({"email": "john@example.com"}) == "<john@example.com>"
+
+
+def test_format_author_dict_without_name():
+    author_data = {"email": "test@example.com", "url": "https://example.com"}
+    res = utils._format_author(author_data)
+    assert res == "<test@example.com> (https://example.com)"

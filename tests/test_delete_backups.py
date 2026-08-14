@@ -113,3 +113,15 @@ def test_delete_backups_single_original_file_target(tmp_path):
     assert errors == 0
     assert not bak1.exists()
     assert file1.exists()
+
+
+def test_delete_backups_single_file_without_backup(tmp_path):
+    """Verify that targeting an original file without backup returns 0 deleted."""
+    file1 = tmp_path / "file1.txt"
+    file1.write_text("Original")
+
+    deleted, errors = delete_backups([str(file1)])
+
+    assert deleted == 0
+    assert errors == 0
+    assert file1.exists()

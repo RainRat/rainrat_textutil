@@ -60,3 +60,11 @@ def test_remove_comments_by_lang_multi_only():
     processed = utils.remove_comments_by_lang(text, 'javascript', multi_only=True)
     assert "// single line" in processed
     assert "multi" not in processed
+
+
+def test_remove_comments_by_lang_multi_only_cpp():
+    text_cpp = "// single line\n/* multi\n   line */\nprint('hi')"
+    processed = utils.remove_comments_by_lang(text_cpp, 'cpp', multi_only=True)
+    assert "// single line" in processed
+    assert "multi" not in processed
+    assert "print('hi')" in processed

@@ -114,3 +114,66 @@ def test_clipboard_fallback_with_none_or_dash_output_path(temp_cwd, caplog):
     fallback_file = temp_cwd / "combined_files.md"
     assert fallback_file.exists()
     assert "print('hello')" in fallback_file.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("fmt,expected_name", [
+    ("json", "combined_files.json"),
+    ("jsonl", "combined_files.jsonl"),
+    ("xml", "combined_files.xml"),
+    ("csv", "combined_files.csv"),
+    ("other", "combined_files.txt"),
+])
+def test_clipboard_fallback_formats(temp_cwd, caplog, fmt, expected_name):
+    caplog.clear()
+    caplog.set_level(logging.INFO)
+
+    sample_file = temp_cwd / "hello.py"
+    sample_file.write_text("print('hello')", encoding="utf-8")
+
+    config = {
+        "search": {"root_folders": [os.fspath(temp_cwd)], "recursive": True},
+        "filters": {},
+        "processing": {},
+        "output": {"header_template": "", "footer_template": ""},
+    }
+
+    with patch("sourcecombine._get_pyperclip", return_value=None):
+        sourcecombine.find_and_combine_files(
+            config,
+            output_path="-",
+            dry_run=False,
+            clipboard=True,
+            output_format=fmt
+        )
+
+    assert f"Fallback: Saved combined output to '{expected_name}' instead." in caplog.text
+    fallback_file = temp_cwd / expected_name
+    assert fallback_file.exists()
+
+
+def test_clipboard_fallback_write_error(temp_cwd, caplog):
+    caplog.clear()
+    caplog.set_level(logging.ERROR)
+
+    sample_file = temp_cwd / "hello.py"
+    sample_file.write_text("print('hello')", encoding="utf-8")
+
+    config = {
+        "search": {"root_folders": [os.fspath(temp_cwd)], "recursive": True},
+        "filters": {},
+        "processing": {},
+        "output": {"header_template": "", "footer_template": ""},
+    }
+
+    with patch("sourcecombine._get_pyperclip", return_value=None), \
+         patch("builtins.open", side_effect=OSError("Disk full")):
+        sourcecombine.find_and_combine_files(
+            config,
+            output_path="test_out.txt",
+            dry_run=False,
+            clipboard=True,
+            output_format="text"
+        )
+
+    assert "Failed to save fallback output" in caplog.text
+
