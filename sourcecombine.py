@@ -1954,6 +1954,20 @@ def _apply_project_overrides(config, args):
         project_conf['url'] = args.project_url
 
 
+def _create_backup_if_enabled(file_path: Path, create_backups: bool):
+    """Create a '.bak' copy of file_path if create_backups is True and the file exists."""
+    if not create_backups or not file_path.exists():
+        return
+    backup_path = Path(f"{file_path}.bak")
+    try:
+        shutil.copy2(file_path, backup_path)
+        logging.info("Created backup: %s -> %s", file_path, backup_path)
+    except OSError as exc:
+        raise utils.InvalidConfigError(
+            f"Failed to create backup for '{file_path}': {exc}"
+        ) from exc
+
+
 class FileProcessor:
     """Process files according to configuration and write them to an output.
 
@@ -2057,14 +2071,7 @@ class FileProcessor:
 
         if not estimate_tokens and not dry_run:
             logging.info("Updating in place: %s (encoding: %s)", file_path, encoding)
-            if self.create_backups:
-                backup_path = Path(f"{file_path}.bak")
-                try:
-                    shutil.copy2(file_path, backup_path)
-                except OSError as exc:
-                    raise utils.InvalidConfigError(
-                        f"Failed to create backup for '{file_path}': {exc}"
-                    ) from exc
+            _create_backup_if_enabled(file_path, self.create_backups)
             file_path.write_text(processed_content, encoding=encoding, newline='')
 
     def _emit_entry(
@@ -6355,20 +6362,6 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
         'repaired': repaired,
         'total': total
     }
-
-
-def _create_backup_if_enabled(file_path: Path, create_backups: bool):
-    """Create a '.bak' copy of file_path if create_backups is True and the file exists."""
-    if not create_backups or not file_path.exists():
-        return
-    backup_path = Path(f"{file_path}.bak")
-    try:
-        shutil.copy2(file_path, backup_path)
-        logging.info("Created backup: %s -> %s", file_path, backup_path)
-    except OSError as exc:
-        raise utils.InvalidConfigError(
-            f"Failed to create backup for '{file_path}': {exc}"
-        ) from exc
 
 
 def _handle_invalid_config_error(exc, verbose, message=None):
