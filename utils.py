@@ -1330,9 +1330,10 @@ def add_line_numbers(text):
 def remove_line_numbers(text):
     """Remove line numbers from each line of text.
 
-    This identifies lines starting with 'N: ' and removes that prefix.
-    It checks if the majority of lines match this pattern to avoid
-    accidental removal of content that happens to start with a number.
+    This function finds lines starting with a line number followed by a colon
+    (such as '123: ') and removes that prefix. It checks if most of the lines
+    have this prefix. This check prevents the function from removing numbers
+    from lines that just happen to start with a number.
     """
     lines = text.splitlines()
     if not lines:
@@ -1350,7 +1351,7 @@ def remove_line_numbers(text):
 
     # If more than 50% of non-empty lines match, remove the prefix
     if non_empty_lines > 0 and (matches / non_empty_lines) > 0.5:
-        # Use the compiled regex that specifically targets the 'N: ' at the start
+        # Use the compiled regex to target the line number prefix at the start of each line
         processed = [pattern.sub("", line) for line in lines]
         result = "\n".join(processed)
         if text.endswith("\n"):
