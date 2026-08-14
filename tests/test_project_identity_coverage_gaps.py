@@ -157,3 +157,10 @@ def test_get_project_identity_manifest_exception_handling(tmp_path):
 
         identity = get_project_identity(tmp_path)
         assert identity["project_name"] == tmp_path.name
+
+
+def test_parse_json_manifest_non_dict(tmp_path):
+    deno_file = tmp_path / "deno.json"
+    deno_file.write_text('["not", "a", "dict"]', encoding='utf-8')
+    identity = get_project_identity(tmp_path)
+    assert identity["project_name"] == tmp_path.name

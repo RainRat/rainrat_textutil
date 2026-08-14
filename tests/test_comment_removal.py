@@ -53,3 +53,10 @@ def test_unsupported_language_graceful_fallback():
 def test_empty_input():
     assert utils.remove_comments_by_lang("", "python") == ""
     assert utils.remove_comments_by_lang(None, "python") is None
+
+
+def test_remove_comments_by_lang_multi_only():
+    text = "// single line\n/* multi\nline */"
+    processed = utils.remove_comments_by_lang(text, 'javascript', multi_only=True)
+    assert "// single line" in processed
+    assert "multi" not in processed

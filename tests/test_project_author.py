@@ -166,3 +166,9 @@ def test_project_author_autodetect_rendered(tmp_path):
     find_and_combine_files(config, output_file)
 
     assert "AUTH: Auto Author" in output_file.read_text()
+
+
+def test_format_author_empty_dict_and_list():
+    assert utils._format_author({}) == ""
+    assert utils._format_author([{}, "John"]) == "John"
+    assert utils._format_author({"email": "john@example.com"}) == "<john@example.com>"
