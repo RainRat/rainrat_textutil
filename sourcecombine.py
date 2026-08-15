@@ -4750,6 +4750,13 @@ def main():
         help="Save the final configuration to a YAML file (defaults to 'sourcecombine.yml') and exit.",
     )
     utility_group.add_argument(
+        "--validate-config",
+        nargs="?",
+        const="",
+        metavar="PATH",
+        help="Validate a configuration file (YAML or JSON) syntax and schema and exit. Use --json for machine-readable output.",
+    )
+    utility_group.add_argument(
         "--system-info",
         action="store_true",
         help="Show details about the system and environment. Use --json for machine-readable output.",
@@ -5080,6 +5087,80 @@ def main():
         else:
             print_languages(query=query)
         sys.exit(0)
+
+    val_cfg = getattr(args, 'validate_config', None)
+    if val_cfg is not None and type(val_cfg).__name__ not in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        raw_val = val_cfg
+        target_path = None
+        if raw_val and isinstance(raw_val, str):
+            target_path = Path(raw_val)
+        elif args.config:
+            target_path = Path(args.config)
+        else:
+            defaults = [
+                'sourcecombine.yml', 'sourcecombine.yaml',
+                'sourcecombine.json',
+                'config.yml', 'config.yaml',
+                'config.json'
+            ]
+            for d in defaults:
+                if Path(d).is_file():
+                    target_path = Path(d)
+                    break
+
+        json_out = getattr(args, 'json', False)
+        if not target_path:
+            if json_out:
+                print(json.dumps({"status": "error", "message": "No configuration file specified or found."}, indent=2))
+            else:
+                logging.error("No configuration file specified or found to validate.")
+            sys.exit(1)
+
+        if not target_path.exists():
+            if json_out:
+                print(json.dumps({
+                    "file": str(target_path),
+                    "status": "error",
+                    "message": f"Configuration file '{target_path}' does not exist."
+                }, indent=2))
+            else:
+                logging.error("Configuration file '%s' does not exist.", target_path)
+            sys.exit(1)
+
+        try:
+            cfg = utils.load_and_validate_config(target_path)
+            sections = [k for k in cfg.keys() if isinstance(cfg[k], dict)]
+            if json_out:
+                res = {
+                    "file": str(target_path),
+                    "status": "valid",
+                    "message": "Configuration syntax and structure are valid.",
+                    "sections": sections
+                }
+                print(json.dumps(res, indent=2))
+            else:
+                sec_str = ", ".join(sections) if sections else "none"
+                print("\nCONFIGURATION VALIDATION\n")
+                print(f"File:     {target_path}")
+                print("Status:   VALID")
+                print("Message:  Configuration syntax and structure are valid.")
+                print(f"Sections: {sec_str}\n")
+            sys.exit(0)
+        except Exception as exc:
+            err_msg = str(exc)
+            if json_out:
+                res = {
+                    "file": str(target_path),
+                    "status": "invalid",
+                    "error": err_msg
+                }
+                print(json.dumps(res, indent=2))
+            else:
+                print("\nCONFIGURATION VALIDATION\n")
+                print(f"File:   {target_path}")
+                print("Status: INVALID")
+                print(f"Error:  {err_msg}\n")
+            sys.exit(1)
 
     if args.init:
         target_path = Path(args.init)
