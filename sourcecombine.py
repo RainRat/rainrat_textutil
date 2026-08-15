@@ -1796,8 +1796,10 @@ def _process_paired_files(
                 f_size = primary_path.stat().st_size if primary_path.exists() else 0
                 if stats is not None:
                     _update_stats_metrics(stats, token_count, line_count, is_approx)
-                    _update_token_stats(stats, primary_path, token_count)
-                    _update_line_stats(stats, primary_path, line_count)
+                    if token_count:
+                        _update_distribution_stats(stats, primary_path, token_count, 'tokens')
+                    if line_count:
+                        _update_distribution_stats(stats, primary_path, line_count, 'lines')
                     rel_p_str = _get_rel_path(primary_path, root_path).as_posix()
                     status = stats.get('file_statuses', {}).get(rel_p_str)
                     lang = utils.get_language_tag(primary_path, overrides=stats.get('custom_languages'))
@@ -1843,8 +1845,10 @@ def _process_paired_files(
                     f_size = file_path.stat().st_size if file_path.exists() else 0
                     if stats is not None:
                         _update_stats_metrics(stats, token_count, line_count, is_approx)
-                        _update_token_stats(stats, file_path, token_count)
-                        _update_line_stats(stats, file_path, line_count)
+                        if token_count:
+                            _update_distribution_stats(stats, file_path, token_count, 'tokens')
+                        if line_count:
+                            _update_distribution_stats(stats, file_path, line_count, 'lines')
                         rel_p_str = _get_rel_path(file_path, root_path).as_posix()
                         status = stats.get('file_statuses', {}).get(rel_p_str)
                         lang = utils.get_language_tag(file_path, overrides=stats.get('custom_languages'))
@@ -1893,16 +1897,6 @@ def _update_file_stats(stats, file_path, size=None):
 
     ext, lang = _update_distribution_stats(stats, file_path, 1, 'files')
     _update_distribution_stats(stats, file_path, size, 'size', ext=ext, lang=lang)
-
-
-def _update_token_stats(stats, file_path, tokens):
-    if tokens:
-        _update_distribution_stats(stats, file_path, tokens, 'tokens')
-
-
-def _update_line_stats(stats, file_path, lines):
-    if lines:
-        _update_distribution_stats(stats, file_path, lines, 'lines')
 
 
 def _update_stats_metrics(stats, tokens, lines, is_approx):
@@ -3131,8 +3125,10 @@ def find_and_combine_files(
                         tokens, is_approx = utils.estimate_tokens(processed)
                         lines = utils.count_lines(processed)
                         _update_stats_metrics(stats, tokens, lines, is_approx)
-                        _update_token_stats(stats, p, tokens)
-                        _update_line_stats(stats, p, lines)
+                        if tokens:
+                            _update_distribution_stats(stats, p, tokens, 'tokens')
+                        if lines:
+                            _update_distribution_stats(stats, p, lines, 'lines')
 
                     rel_p_str = _get_rel_path(p, root_path).as_posix()
                     status = stats.get('file_statuses', {}).get(rel_p_str)
@@ -3460,8 +3456,10 @@ def find_and_combine_files(
                     if is_approx:
                         stats['token_count_is_approx'] = True
 
-                _update_token_stats(stats, file_path, content_tokens)
-                _update_line_stats(stats, file_path, content_lines)
+                if content_tokens:
+                    _update_distribution_stats(stats, file_path, content_tokens, 'tokens')
+                if content_lines:
+                    _update_distribution_stats(stats, file_path, content_lines, 'lines')
 
                 # Store content details for Table of Contents/Tree
                 rel_p_str = rel_p.as_posix()
@@ -3555,8 +3553,10 @@ def find_and_combine_files(
                 file_p = item[0]
                 meta = file_information.get(file_p, {})
                 _update_file_stats(stats, file_p, size=meta.get('size'))
-                _update_token_stats(stats, file_p, meta.get('tokens'))
-                _update_line_stats(stats, file_p, meta.get('lines'))
+                if meta.get('tokens'):
+                    _update_distribution_stats(stats, file_p, meta.get('tokens'), 'tokens')
+                if meta.get('lines'):
+                    _update_distribution_stats(stats, file_p, meta.get('lines'), 'lines')
             token_limit_pass_performed = True
         else:
             token_limit_pass_performed = False
@@ -3766,8 +3766,10 @@ def find_and_combine_files(
                     footer_lines = utils.count_lines(rendered_f)
 
                     _update_stats_metrics(stats, token_count + header_tokens + footer_tokens, line_count + header_lines + footer_lines, is_approx)
-                    _update_token_stats(stats, file_path, token_count)
-                    _update_line_stats(stats, file_path, line_count)
+                    if token_count:
+                        _update_distribution_stats(stats, file_path, token_count, 'tokens')
+                    if line_count:
+                        _update_distribution_stats(stats, file_path, line_count, 'lines')
 
                 f_size = file_path.stat().st_size if file_path.exists() else 0
                 if not token_limit_pass_performed:
