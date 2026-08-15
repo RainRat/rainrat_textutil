@@ -7337,17 +7337,25 @@ def print_placeholders(query=None):
     }
 
     placeholder_width = 25
+    total_count = 0
 
     for category, placeholders in categories.items():
         filtered_placeholders = []
         for placeholder, description in placeholders:
             if not query_lower or query_lower in placeholder.lower() or query_lower in description.lower():
                 filtered_placeholders.append((placeholder, description))
+                if placeholder.startswith("{{"):
+                    total_count += 1
 
         if filtered_placeholders:
             print(f"\n  {C_BOLD}{category}{C_RESET}")
             for placeholder, description in filtered_placeholders:
                 print(f"    {C_BOLD}{C_CYAN}{placeholder:<{placeholder_width}}{C_RESET} {C_DIM}{description}{C_RESET}")
+
+    if total_count == 0 and query:
+        print(f"\n  {C_DIM}No template placeholders matched the filter query '{query}'.{C_RESET}")
+    else:
+        print(f"\n  {C_BOLD}Total:{C_RESET} {total_count} template placeholders supported.")
 
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
