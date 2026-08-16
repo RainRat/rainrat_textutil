@@ -1485,7 +1485,7 @@ def format_tokens(count: int, is_approx: bool = False) -> str:
 
 
 def parse_time_value(value: str) -> float:
-    """Convert a time such as '1h' or '2023-01-01' into a number the computer can use.
+    """Convert a time string (such as '1h' or '2023-01-01') into a Unix timestamp.
 
     Supports relative durations (for example, '1h', '2d', '4w') and absolute dates
     in 'YYYY-MM-DD' format.
