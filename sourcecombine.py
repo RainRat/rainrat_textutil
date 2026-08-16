@@ -3986,31 +3986,31 @@ def explain_paths(paths, config=None, json_format=False):
     if json_format:
         print(json.dumps(results, indent=2))
     else:
-        print(f"{C_BOLD}{C_CYAN}PATH MATCH ANALYSIS & EXPLANATION{C_RESET}\n")
+        print(f"\n{C_BOLD}{C_CYAN}=== PATH MATCH ANALYSIS & EXPLANATION ==={C_RESET}")
 
         for item in results:
-            path_header = f"Path: {item['path']}"
-            print(f"{C_BOLD}{path_header}{C_RESET}")
-            print(f"  {C_DIM}Relative to root:{C_RESET} {item['relative_path']}")
-
             status_color = C_GREEN if item['included'] else C_RED
-            status_text = "INCLUDED" if item['included'] else "EXCLUDED"
-            print(f"  {C_DIM}Status:{C_RESET} {status_color}{C_BOLD}{status_text}{C_RESET}")
-            print(f"  {C_DIM}Explanation:{C_RESET} {C_YELLOW}{item['explanation']}{C_RESET}")
+            status_badge = f"[{'INCLUDED' if item['included'] else 'EXCLUDED'}]"
+            path_header = f"Path: {item['path']}"
+            print(f"\n  {status_color}{C_BOLD}{status_badge:<12}{C_RESET}  {C_BOLD}{path_header}{C_RESET}")
+            print(f"    {C_DIM}Relative to root:{C_RESET} {item['relative_path']}")
+            print(f"    {C_DIM}Status:{C_RESET}           {status_color}{C_BOLD}{'INCLUDED' if item['included'] else 'EXCLUDED'}{C_RESET}")
+            print(f"    {C_DIM}Explanation:{C_RESET}      {C_YELLOW}{item['explanation']}{C_RESET}")
 
             if item['exists']:
                 meta = item['metadata']
                 size_str = utils.format_size(meta['size_bytes']) if meta['size_bytes'] is not None else "Unknown"
                 tokens_str = f"{meta['tokens']:,}" if meta['tokens'] is not None else "Unknown"
                 lines_str = f"{meta['lines']:,}" if meta['lines'] is not None else "Unknown"
-                print(f"  {C_DIM}Metadata:{C_RESET}")
-                print(f"    - Language: {meta['language']}")
-                print(f"    - Size:     {size_str}")
-                print(f"    - Lines:    {lines_str}")
-                print(f"    - Tokens:   {tokens_str}")
+                print(f"    {C_DIM}Metadata:{C_RESET}")
+                print(f"      - Language: {meta['language']}")
+                print(f"      - Size:     {size_str}")
+                print(f"      - Lines:    {lines_str}")
+                print(f"      - Tokens:   {tokens_str}")
             else:
-                print(f"  {C_DIM}Metadata:{C_RESET} N/A (file does not exist on disk)")
-            print()
+                print(f"    {C_DIM}Metadata:{C_RESET} N/A (file does not exist on disk)")
+
+        print(f"\n{C_BOLD}{C_CYAN}{'=' * 41}{C_RESET}\n")
 
 
 class ColoredArgumentParser(argparse.ArgumentParser):
