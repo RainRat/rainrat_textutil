@@ -56,6 +56,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--list-placeholders`: Show all supported template placeholders and exit. Use `--json` for machine-readable output.
 *   `--project-info` (`-I`): Show detected project information and Git information for the current project. Use `--json` for machine-readable output.
 *   `--explain PATH`: Analyze and explain whether the specified path(s) would be included or excluded by the current configuration and filters. Supports `--json` format.
+*   `--validate-config [PATH]`: Validate a specified or auto-discovered configuration file against syntax and schema rules without running file processing. Use `--json` for machine-readable output.
 *   `--show-config`: Display the final configuration being used and exit. Use `--json` for machine-readable output.
 *   `--export-config`: Save the final combined configuration to a YAML file and exit.
 *   `--system-info`: Show environment details (Python version, OS, and other system details). Use `--json` for machine-readable output.
