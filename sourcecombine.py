@@ -3989,13 +3989,13 @@ def explain_paths(paths, config=None, json_format=False):
         print(f"{C_BOLD}{C_CYAN}PATH MATCH ANALYSIS & EXPLANATION{C_RESET}\n")
 
         for item in results:
-            path_header = f"Path: {item['path']}"
-            print(f"{C_BOLD}{path_header}{C_RESET}")
-            print(f"  {C_DIM}Relative to root:{C_RESET} {item['relative_path']}")
-
             status_color = C_GREEN if item['included'] else C_RED
             status_text = "INCLUDED" if item['included'] else "EXCLUDED"
-            print(f"  {C_DIM}Status:{C_RESET} {status_color}{C_BOLD}{status_text}{C_RESET}")
+            badge = f"{status_color}{C_BOLD}[{status_text}]{C_RESET}"
+
+            path_header = f"Path: {item['path']}"
+            print(f"{badge} {C_BOLD}{path_header}{C_RESET}")
+            print(f"  {C_DIM}Relative to root:{C_RESET} {item['relative_path']}")
             print(f"  {C_DIM}Explanation:{C_RESET} {C_YELLOW}{item['explanation']}{C_RESET}")
 
             if item['exists']:
