@@ -1868,6 +1868,9 @@ def _process_paired_files(
 
 def _update_distribution_stats(stats, file_path, value, metric_name, ext=None, lang=None):
     """Update extension and language distribution stats for a given metric."""
+    if not value:
+        return ext, lang
+
     if f"{metric_name}_by_extension" in stats:
         if ext is None:
             ext = file_path.suffix.lower() if hasattr(file_path, 'suffix') else Path(file_path).suffix.lower()
@@ -1896,13 +1899,11 @@ def _update_file_stats(stats, file_path, size=None):
 
 
 def _update_token_stats(stats, file_path, tokens):
-    if tokens:
-        _update_distribution_stats(stats, file_path, tokens, 'tokens')
+    _update_distribution_stats(stats, file_path, tokens, 'tokens')
 
 
 def _update_line_stats(stats, file_path, lines):
-    if lines:
-        _update_distribution_stats(stats, file_path, lines, 'lines')
+    _update_distribution_stats(stats, file_path, lines, 'lines')
 
 
 def _update_stats_metrics(stats, tokens, lines, is_approx):
