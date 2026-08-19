@@ -1310,7 +1310,7 @@ def get_all_languages() -> list[str]:
     """Return a sorted list of all unique supported language identifiers."""
     all_langs = set(EXTENSION_TO_LANG.values())
     all_langs.update(FILENAME_TO_LANG.values())
-    return sorted(list(all_langs))
+    return sorted(all_langs)
 
 
 def count_lines(text: str) -> int:
