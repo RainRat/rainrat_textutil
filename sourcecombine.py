@@ -7404,16 +7404,29 @@ def print_placeholders(query=None):
 
     placeholder_width = 25
 
+    total_matched = 0
+    total_available = 0
+
     for category, placeholders in categories.items():
         filtered_placeholders = []
         for placeholder, description in placeholders:
+            if placeholder != "Note:":
+                total_available += 1
             if not query_lower or query_lower in placeholder.lower() or query_lower in description.lower():
                 filtered_placeholders.append((placeholder, description))
+                if placeholder != "Note:":
+                    total_matched += 1
 
         if filtered_placeholders:
             print(f"\n  {C_BOLD}{category}{C_RESET}")
             for placeholder, description in filtered_placeholders:
                 print(f"    {C_BOLD}{C_CYAN}{placeholder:<{placeholder_width}}{C_RESET} {C_DIM}{description}{C_RESET}")
+
+    if query_lower and total_matched == 0:
+        print(f"\n  {C_YELLOW}No template placeholders matched the filter query '{query}'.{C_RESET}")
+    else:
+        count_label = f"Matching: {total_matched}" if query_lower else f"Total: {total_available}"
+        print(f"\n  {C_BOLD}{count_label}{C_RESET} template placeholders supported.")
 
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
