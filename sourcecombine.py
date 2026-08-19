@@ -4875,7 +4875,10 @@ def main():
         getattr(args, 'explain', False) or
         _get_bool_arg(args, 'list_backups') or
         _get_bool_arg(args, 'diff_backups') or
-        _get_bool_arg(args, 'backup')
+        _get_bool_arg(args, 'backup') or
+        _get_bool_arg(args, 'restore') or
+        _get_bool_arg(args, 'delete_backups') or
+        _get_bool_arg(args, 'clean')
     ):
         root_logger.setLevel(logging.ERROR)
 

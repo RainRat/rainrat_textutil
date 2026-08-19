@@ -50,8 +50,8 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--repair` (`-P`): Automatically fix mismatched or missing files when verifying (requires source content).
 *   `--backup`: Create `.bak` backup files for matching files without modifying original files. Supports `--dry-run` and `--json`.
 *   `--keep-line-numbers`: Keep existing line numbers when rebuilding files with `--extract`. By default, the tool removes line numbers automatically.
-*   `--restore`: Undo changes made by `--apply-in-place` using `.bak` backup files.
-*   `--delete-backups`: Remove all `.bak` files from the folders.
+*   `--restore`: Undo changes made by `--apply-in-place` using `.bak` backup files. Use `--json` for machine-readable output.
+*   `--delete-backups`: Remove all `.bak` files from the folders. Use `--json` for machine-readable output.
 *   `--list-backups`: List all `.bak` backup files in target folders along with their statuses relative to original files. Use `--json` for machine-readable output.
 *   `--diff-backups`: Show a unified diff between current files on disk and their `.bak` backup files. Use `--json` for machine-readable output.
 *   `--list-languages`: Show all supported language identifiers and exit. Use `--json` for machine-readable output.
@@ -64,7 +64,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--system-info`: Show environment details (Python version, OS, and other system details). Use `--json` for machine-readable output.
 *   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without actually writing them to disk.
 *   `--analyze` (`-A`): Perform a comprehensive project analysis without generating output files. Shortcut for `--dry-run --estimate-tokens --overview --include-tree --tree`.
-*   `--clean`: (Alias for `--delete-backups`) Remove all `.bak` backup files from the current directory and its subfolders.
+*   `--clean`: (Alias for `--delete-backups`) Remove all `.bak` backup files from the current directory and its subfolders. Use `--json` for machine-readable output.
 *   `--version` (`-V`): Show the application version and exit.
 
 ## Prerequisites
@@ -245,13 +245,13 @@ You can inspect, compare, restore, or clean up these backups easily.
    ```
 
 3. **Restore your original files:**
-   Undo your changes and bring back the original files from the backups:
+   Undo your changes and bring back the original files from the backups (add `--json` for machine-readable summary output):
    ```bash
    python sourcecombine.py --restore
    ```
 
 4. **Delete backup files (Clean up):**
-   When you are happy with your changes and no longer need the backups, remove all `.bak` files:
+   When you are happy with your changes and no longer need the backups, remove all `.bak` files (add `--json` for machine-readable summary output):
    ```bash
    python sourcecombine.py --clean
    ```
