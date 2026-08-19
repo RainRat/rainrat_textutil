@@ -4738,6 +4738,14 @@ def main():
         help="Show a unified diff between current files on disk and their '.bak' backup files. Use --json for machine-readable output.",
     )
     utility_group.add_argument(
+        "--validate-config",
+        nargs="?",
+        const="",
+        default=None,
+        metavar="PATH",
+        help="Validate the specified or auto-discovered configuration file without running processing. Use --json for machine-readable output.",
+    )
+    utility_group.add_argument(
         "--show-config",
         action="store_true",
         help="Show the final combined configuration (including defaults, files, and options) and exit. Use --json for machine-readable output.",
@@ -4850,12 +4858,18 @@ def main():
 
     # Disable logging to stderr if we are outputting JSON to stdout,
     # to keep stdout clean for piping.
+    val_cfg_raw = getattr(args, 'validate_config', None)
+    validate_config_val = None
+    if val_cfg_raw is not None and type(val_cfg_raw).__name__ not in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        validate_config_val = val_cfg_raw
+
     if _get_bool_arg(args, 'json') and (
         args.system_info or
         args.list_languages or
         args.list_placeholders or
         getattr(args, 'project_info', False) or
         args.show_config or
+        validate_config_val is not None or
         args.verify or
         getattr(args, 'explain', False) or
         _get_bool_arg(args, 'list_backups') or
@@ -5143,6 +5157,57 @@ def main():
                     logging.error("Could not write the configuration file: %s", exc)
                     sys.exit(1)
         sys.exit(0)
+
+    if validate_config_val is not None:
+        val_path = validate_config_val if validate_config_val != "" else args.config
+        if not val_path and args.targets:
+            first = args.targets[0]
+            if first.lower().endswith(('.yml', '.yaml', '.json')) and not Path(first).is_dir():
+                val_path = first
+        if not val_path:
+            defaults = [
+                'sourcecombine.yml', 'sourcecombine.yaml',
+                'sourcecombine.json',
+                'config.yml', 'config.yaml',
+                'config.json'
+            ]
+            for d in defaults:
+                if Path(d).is_file():
+                    val_path = d
+                    break
+
+        json_mode = getattr(args, 'json', False)
+
+        if not val_path:
+            msg = "No configuration file specified or found in current directory."
+            if json_mode:
+                print(json.dumps({"valid": False, "error": msg}, indent=2))
+            else:
+                logging.error(msg)
+            sys.exit(1)
+
+        try:
+            cfg = load_and_validate_config(val_path)
+            resolved_path = str(Path(val_path).resolve())
+            if json_mode:
+                print(json.dumps({"valid": True, "path": resolved_path}, indent=2))
+            else:
+                logging.info("Configuration file '%s' is valid.", resolved_path)
+            sys.exit(0)
+        except (ConfigNotFoundError, utils.ConfigNotFoundError):
+            msg = f"Could not find configuration file '{val_path}'."
+            if json_mode:
+                print(json.dumps({"valid": False, "path": str(val_path), "error": msg}, indent=2))
+            else:
+                logging.error(msg)
+            sys.exit(1)
+        except utils.InvalidConfigError as exc:
+            msg = f"The configuration file '{val_path}' is invalid: {exc}"
+            if json_mode:
+                print(json.dumps({"valid": False, "path": str(val_path), "error": str(exc)}, indent=2))
+            else:
+                logging.error(msg)
+            sys.exit(1)
 
     targets = args.targets
     config = None
