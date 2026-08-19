@@ -4698,7 +4698,7 @@ def main():
     utility_group.add_argument(
         "--restore",
         action="store_true",
-        help="Undo 'apply-in-place' changes by restoring original files from their .bak copies. This command scans target folders recursively for backup files.",
+        help="Undo 'apply-in-place' changes by restoring original files from their .bak copies. This command scans target folders recursively for backup files. Supports --dry-run and --json.",
     )
     utility_group.add_argument(
         "--backup",
@@ -4726,7 +4726,7 @@ def main():
         "--delete-backups",
         "--clean",
         action="store_true",
-        help="Remove all '.bak' files from target folders. Use this to clean up after '--apply-in-place'.",
+        help="Remove all '.bak' files from target folders. Use this to clean up after '--apply-in-place'. Supports --dry-run and --json.",
     )
     utility_group.add_argument(
         "--list-backups",
@@ -5293,7 +5293,7 @@ def main():
     if args.restore:
         # Use the finalized root folders for restoration
         restore_targets = config.get('search', {}).get('root_folders', ["."])
-        restore_backups(restore_targets, dry_run=args.dry_run)
+        restore_backups(restore_targets, dry_run=args.dry_run, json_format=_get_bool_arg(args, 'json'))
         sys.exit(0)
 
     if _get_bool_arg(args, 'backup'):
@@ -5305,7 +5305,7 @@ def main():
     if args.delete_backups:
         # Use the finalized root folders for deletion
         delete_targets = config.get('search', {}).get('root_folders', ["."])
-        delete_backups(delete_targets, dry_run=args.dry_run)
+        delete_backups(delete_targets, dry_run=args.dry_run, json_format=_get_bool_arg(args, 'json'))
         sys.exit(0)
 
     if _get_bool_arg(args, 'list_backups'):
@@ -6785,92 +6785,165 @@ def _find_backup_files(root_path: Path) -> list[Path]:
     return sorted(root_path.rglob("*.bak"))
 
 
-def restore_backups(targets, dry_run=False):
+def restore_backups(targets, dry_run=False, json_format=False):
     """Scan targets recursively for .bak files and restore them."""
     if not targets:
         targets = ["."]
 
     restored_count = 0
     error_count = 0
+    results = []
 
     for target in targets:
         root_path = Path(target)
         if not root_path.exists():
-            logging.warning("Target folder not found: %s", target)
+            if not json_format:
+                logging.warning("Target folder not found: %s", target)
             continue
 
         backup_files = _find_backup_files(root_path)
 
         if not backup_files:
-            logging.info("No backup files (.bak) found in '%s'.", target)
+            if not json_format:
+                logging.info("No backup files (.bak) found in '%s'.", target)
             continue
 
         for backup_path in backup_files:
             original_path = backup_path.with_suffix("")
             rel_path = _get_rel_path(original_path, root_path)
+            rel_path_str = rel_path.as_posix()
 
             if dry_run:
-                logging.info("[DRY RUN] Would restore: %s", rel_path)
+                if not json_format:
+                    logging.info("[DRY RUN] Would restore: %s", rel_path)
                 restored_count += 1
+                results.append({
+                    "path": rel_path_str,
+                    "backup_path": _get_rel_path(backup_path, root_path).as_posix(),
+                    "status": "WOULD_RESTORE",
+                    "error": None
+                })
             else:
                 try:
                     # Move the backup back to the original location, overwriting the processed file
                     shutil.move(backup_path, original_path)
-                    logging.info("Restored: %s", rel_path)
+                    if not json_format:
+                        logging.info("Restored: %s", rel_path)
                     restored_count += 1
+                    results.append({
+                        "path": rel_path_str,
+                        "backup_path": _get_rel_path(backup_path, root_path).as_posix(),
+                        "status": "RESTORED",
+                        "error": None
+                    })
                 except OSError as e:
-                    logging.error("Failed to restore %s: %s", rel_path, e)
+                    if not json_format:
+                        logging.error("Failed to restore %s: %s", rel_path, e)
                     error_count += 1
+                    results.append({
+                        "path": rel_path_str,
+                        "backup_path": _get_rel_path(backup_path, root_path).as_posix(),
+                        "status": "ERROR",
+                        "error": str(e)
+                    })
 
-    if restored_count > 0 or error_count > 0:
-        action = "Would restore" if dry_run else "Restored"
-        logging.info("%s %d files. Errors: %d", action, restored_count, error_count)
+    if json_format:
+        output = {
+            "title": "Restore Backups Report",
+            "dry_run": dry_run,
+            "restored": results,
+            "summary": {
+                "restored_count": restored_count,
+                "error_count": error_count,
+                "total": len(results)
+            }
+        }
+        print(json.dumps(output, indent=2))
     else:
-        logging.info("No files were restored.")
+        if restored_count > 0 or error_count > 0:
+            action = "Would restore" if dry_run else "Restored"
+            logging.info("%s %d files. Errors: %d", action, restored_count, error_count)
+        else:
+            logging.info("No files were restored.")
 
     return restored_count, error_count
 
 
-def delete_backups(targets, dry_run=False):
+def delete_backups(targets, dry_run=False, json_format=False):
     """Scan targets recursively for .bak files and delete them."""
     if not targets:
         targets = ["."]
 
     deleted_count = 0
     error_count = 0
+    results = []
 
     for target in targets:
         root_path = Path(target)
         if not root_path.exists():
-            logging.warning("Target folder not found: %s", target)
+            if not json_format:
+                logging.warning("Target folder not found: %s", target)
             continue
 
         backup_files = _find_backup_files(root_path)
 
         if not backup_files:
-            logging.info("No backup files (.bak) found in '%s'.", target)
+            if not json_format:
+                logging.info("No backup files (.bak) found in '%s'.", target)
             continue
 
         for backup_path in backup_files:
             rel_path = _get_rel_path(backup_path, root_path)
+            rel_path_str = rel_path.as_posix()
 
             if dry_run:
-                logging.info("[DRY RUN] Would delete: %s", rel_path)
+                if not json_format:
+                    logging.info("[DRY RUN] Would delete: %s", rel_path)
                 deleted_count += 1
+                results.append({
+                    "path": rel_path_str,
+                    "status": "WOULD_DELETE",
+                    "error": None
+                })
             else:
                 try:
                     os.remove(backup_path)
-                    logging.info("Deleted backup: %s", rel_path)
+                    if not json_format:
+                        logging.info("Deleted backup: %s", rel_path)
                     deleted_count += 1
+                    results.append({
+                        "path": rel_path_str,
+                        "status": "DELETED",
+                        "error": None
+                    })
                 except OSError as e:
-                    logging.error("Failed to delete backup %s: %s", rel_path, e)
+                    if not json_format:
+                        logging.error("Failed to delete backup %s: %s", rel_path, e)
                     error_count += 1
+                    results.append({
+                        "path": rel_path_str,
+                        "status": "ERROR",
+                        "error": str(e)
+                    })
 
-    if deleted_count > 0 or error_count > 0:
-        action = "Would delete" if dry_run else "Deleted"
-        logging.info("%s %d backup files. Errors: %d", action, deleted_count, error_count)
+    if json_format:
+        output = {
+            "title": "Delete Backups Report",
+            "dry_run": dry_run,
+            "deleted": results,
+            "summary": {
+                "deleted_count": deleted_count,
+                "error_count": error_count,
+                "total": len(results)
+            }
+        }
+        print(json.dumps(output, indent=2))
     else:
-        logging.info("No backup files were deleted.")
+        if deleted_count > 0 or error_count > 0:
+            action = "Would delete" if dry_run else "Deleted"
+            logging.info("%s %d backup files. Errors: %d", action, deleted_count, error_count)
+        else:
+            logging.info("No backup files were deleted.")
 
     return deleted_count, error_count
 
