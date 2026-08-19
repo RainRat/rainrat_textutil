@@ -4077,16 +4077,16 @@ def main():
               python sourcecombine.py
 
               # Combine files from a specific folder
-              python sourcecombine.py src/
+              python sourcecombine.py tests/
 
               # Use a configuration file
               python sourcecombine.py my_config.yml
 
               # Use a configuration but override the folders to search
-              python sourcecombine.py my_config.yml project_a/ project_b/
+              python sourcecombine.py my_config.yml folder_a/ folder_b/
 
               # Copy the result to the system clipboard
-              python sourcecombine.py src/ -c
+              python sourcecombine.py . -c
 
               # Estimate how many tokens the output will use
               python sourcecombine.py -e
@@ -4209,7 +4209,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Include only files that match this pattern (for example, 'src/*.py,tests/*.py'). Can be used multiple times.",
+        help="Include only files that match this pattern (for example, 'tests/*.py' or 'tests/*.py,*.md'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--extension",
