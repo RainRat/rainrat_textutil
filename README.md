@@ -48,6 +48,8 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--extract`: Rebuild original files and folders from combined outputs (Text, JSON, XML, JSONL, CSV, or Markdown). You can read from files, folders, remote URLs (http/https), the terminal, or clipboard. Without an input file, it searches for `combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`.
 *   `--verify` (`-y`): Verify that files on disk match the content or hashes in combined files or manifests. You can read from files, folders, remote URLs (http/https), the terminal, or clipboard. Without an input file, the tool searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`). For example: `python sourcecombine.py --verify combined_files.json`. Use `--json` for machine-readable output.
 *   `--repair` (`-P`): Automatically fix mismatched or missing files when verifying (requires source content).
+*   `--backup`: Create `.bak` backup files for matching files without modifying original files. Supports `--dry-run` and `--json`.
+*   `--keep-line-numbers`: Keep existing line numbers when rebuilding files with `--extract`. By default, the tool removes line numbers automatically.
 *   `--restore`: Undo changes made by `--apply-in-place` using `.bak` backup files.
 *   `--delete-backups`: Remove all `.bak` files from the folders.
 *   `--list-backups`: List all `.bak` backup files in target folders along with their statuses relative to original files. Use `--json` for machine-readable output.
