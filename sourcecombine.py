@@ -7591,7 +7591,7 @@ def print_project_info(stats):
     for category, fields in categories.items():
         print(f"\n  {C_BOLD}{category}{C_RESET}")
         for label, value in fields:
-            display_value = str(value) if value is not None else "N/A"
+            display_value = str(value) if (value is not None and str(value).strip() != "") else "N/A"
             if "\n" in display_value:
                 lines = display_value.splitlines()
                 print(f"    {C_BOLD}{label:<{label_width}}{C_RESET} {C_DIM}{lines[0]}{C_RESET}")

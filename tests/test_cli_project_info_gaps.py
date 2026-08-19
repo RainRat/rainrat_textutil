@@ -60,3 +60,17 @@ def test_main_project_info_invalid_config_handling(tmp_path, monkeypatch, caplog
     assert exc.value.code != 0
 
     assert "Error parsing YAML file" in caplog.text
+
+
+def test_print_project_info_empty_string_fields(capsys):
+    stats = {
+        'project_name': 'My Project',
+        'project_version': '',
+        'project_author': '   ',
+        'project_url': None,
+    }
+    sourcecombine.print_project_info(stats)
+    out, _ = capsys.readouterr()
+    assert "Version         N/A" in out
+    assert "Author          N/A" in out
+    assert "URL             N/A" in out
