@@ -27,6 +27,8 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--unique` (`-u`): Skip duplicate files by path or content (duplicate removal).
 *   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, skipping binary files, removing duplicates, and automatically including Git context like logs and diffs). This also copies to the system clipboard if you do not specify an output.
 *   `--analyze` (`-A`): Perform a comprehensive project analysis (token counts, line counts, language breakdown, and folder tree) without generating output files.
+*   `--list-files` (`-l`): Show a list of all files that match the current filters and exit without writing files. Supports structured formats (`--format json`, `--format csv`, `--format xml`, `--format markdown`).
+*   `--tree` (`-t`): Show a visual folder tree of all included files with details and exit without writing files. Supports structured formats (`--format json`, `--format xml`, `--format markdown`).
 *   `--strip-components N`: Remove N leading components from file paths during extraction or verification.
 *   `--project-name NAME`: Override the project name used in templates and reports.
 *   `--project-version VERSION`: Override the project version.
@@ -254,6 +256,25 @@ You can inspect, compare, restore, or clean up these backups easily.
    When you are happy with your changes and no longer need the backups, remove all `.bak` files (add `--json` for machine-readable summary output):
    ```bash
    python sourcecombine.py --clean
+   ```
+
+### File Listing and Folder Tree Preview
+Preview matching files or inspect your project structure without writing output files:
+
+1. **List all matching files:**
+   ```bash
+   python sourcecombine.py . --list-files
+   ```
+
+2. **Display a visual folder tree:**
+   ```bash
+   python sourcecombine.py . --tree
+   ```
+
+3. **Export structured lists or trees (JSON, CSV, XML, or Markdown):**
+   ```bash
+   python sourcecombine.py . --list-files --format json
+   python sourcecombine.py . --tree --format markdown
    ```
 
 ### Advanced Filtering and AI Optimization
