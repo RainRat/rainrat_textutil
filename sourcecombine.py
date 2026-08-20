@@ -7363,15 +7363,22 @@ def print_system_info():
     """Print environment diagnostics and optional dependency status."""
 
     print(f"\n{C_BOLD}{C_CYAN}=== SYSTEM INFORMATION ==={C_RESET}")
-    print(f"  {C_BOLD}SourceCombine Version:{C_RESET} {__version__}")
-    print(f"  {C_BOLD}Python Version:{C_RESET}      {sys.version.split()[0]}")
-    print(f"  {C_BOLD}Platform:{C_RESET}            {platform.platform()}")
-    print(f"  {C_BOLD}Executable:{C_RESET}          {sys.executable}")
-    print(f"  {C_BOLD}Current Folder:{C_RESET}      {Path.cwd()}")
 
     config_file = Path("sourcecombine.yml")
-    config_status = "Found" if config_file.exists() else "Not found"
-    print(f"  {C_BOLD}Local Config:{C_RESET}        {config_status} ({config_file.resolve() if config_file.exists() else 'N/A'})")
+    config_status = f"{'Found' if config_file.exists() else 'Not found'} ({config_file.resolve() if config_file.exists() else 'N/A'})"
+
+    sys_info = [
+        ("SourceCombine Version:", __version__),
+        ("Python Version:", sys.version.split()[0]),
+        ("Platform:", platform.platform()),
+        ("Executable:", sys.executable),
+        ("Current Folder:", str(Path.cwd())),
+        ("Local Config:", config_status),
+    ]
+
+    label_width = 22
+    for label, value in sys_info:
+        print(f"  {C_BOLD}{label:<{label_width}}{C_RESET} {value}")
 
     print(f"\n  {C_BOLD}Optional Dependencies:{C_RESET}")
 
