@@ -16,7 +16,7 @@ def test_explain_paths_nonexistent(tmp_path, capsys):
     captured = capsys.readouterr()
     assert "PATH MATCH ANALYSIS & EXPLANATION" in captured.out
     assert "EXCLUDED" in captured.out
-    assert "The path is not a file or does not exist on disk." in captured.out
+    assert "The path does not exist on disk." in captured.out
     assert "N/A (file does not exist on disk)" in captured.out
 
     # 2. JSON format
@@ -27,6 +27,29 @@ def test_explain_paths_nonexistent(tmp_path, capsys):
     assert results[0]["exists"] is False
     assert results[0]["included"] is False
     assert results[0]["reason_code"] == "not_file"
+
+def test_explain_paths_directory(tmp_path, capsys):
+    """Test explaining a directory path."""
+    subfolder = tmp_path / "subfolder"
+    subfolder.mkdir()
+    config = utils.DEFAULT_CONFIG.copy()
+
+    # 1. Text format
+    explain_paths([str(subfolder)], config=config, json_format=False)
+    captured = capsys.readouterr()
+    assert "PATH MATCH ANALYSIS & EXPLANATION" in captured.out
+    assert "EXCLUDED" in captured.out
+    assert "The path is a directory." in captured.out
+    assert "N/A (path is a directory)" in captured.out
+
+    # 2. JSON format
+    explain_paths([str(subfolder)], config=config, json_format=True)
+    captured = capsys.readouterr()
+    results = json.loads(captured.out)
+    assert len(results) == 1
+    assert results[0]["exists"] is True
+    assert results[0]["included"] is False
+    assert results[0]["reason_code"] == "directory"
 
 def test_explain_paths_included(tmp_path, capsys):
     """Test explaining a valid file that should be included."""
