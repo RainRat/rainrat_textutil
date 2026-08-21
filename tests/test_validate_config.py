@@ -104,3 +104,14 @@ def test_validate_config_invalid_schema_json(tmp_path, monkeypatch, capsys):
     data = json.loads(captured.out)
     assert data["valid"] is False
     assert "error" in data
+
+def test_validate_config_from_positional_target(tmp_path, monkeypatch, caplog):
+    config_file = tmp_path / "my_target_config.yml"
+    config_file.write_text("search:\n  recursive: true\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("sys.argv", ["sourcecombine", "my_target_config.yml", "--validate-config"])
+
+    with pytest.raises(SystemExit) as exc:
+        main()
+    assert exc.value.code == 0
+    assert "is valid" in caplog.text
