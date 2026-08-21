@@ -16,7 +16,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   **AI Integration:** Include system info and Git context automatically with the `--ai` preset.
 
 ## Common Flags
-*   `--config` (`-k`): Use a custom configuration file (YAML or JSON). The tool automatically searches for `sourcecombine.yml`, `sourcecombine.yaml`, `sourcecombine.json`, `config.yml`, `config.yaml`, or `config.json` in the current folder.
+*   `--config` (`-k`): Use a custom configuration file (YAML or JSON). Use `-` to read configuration from standard input (`stdin`). The tool automatically searches for `sourcecombine.yml`, `sourcecombine.yaml`, `sourcecombine.json`, `config.yml`, `config.yaml`, or `config.json` in the current folder.
 *   `--output` (`-o`): Save results to a file or folder instead of the terminal. Supports template placeholders (for example, `{{PROJECT_NAME}}_{{DATE}}.txt`).
 *   `--clipboard` (`-c`): Copy the combined output to the system clipboard.
 *   `--git-files` (`-G`): Use Git to find files and follow the `.gitignore` rules automatically.
@@ -44,7 +44,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--create-backups`: Create `.bak` copies of original files when using `--apply-in-place`, `--extract`, or `--repair`.
 
 ### Utility Commands
-*   `--init`: Create a basic `sourcecombine.yml` configuration file to get started.
+*   `--init`: Create a basic `sourcecombine.yml` configuration file to get started. Use `-` to print the default configuration to standard output (`stdout`).
 *   `--extract`: Rebuild original files and folders from combined outputs (Text, JSON, XML, JSONL, CSV, or Markdown). You can read from files, folders, remote URLs (http/https), the terminal, or clipboard. Without an input file, it searches for `combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`.
 *   `--verify` (`-y`): Verify that files on disk match the content or hashes in combined files or manifests. You can read from files, folders, remote URLs (http/https), the terminal, or clipboard. Without an input file, the tool searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`). For example: `python sourcecombine.py --verify combined_files.json`. Use `--json` for machine-readable output.
 *   `--repair` (`-P`): Automatically fix mismatched or missing files when verifying (requires source content).
@@ -58,9 +58,9 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--list-placeholders`: Show all supported template placeholders and exit. Use `--json` for machine-readable output.
 *   `--project-info` (`-I`): Show detected project information and Git information for the current project. Use `--json` for machine-readable output.
 *   `--explain PATH`: Analyze and explain whether the specified path(s) would be included or excluded by the current configuration and filters. Supports `--json` format.
-*   `--validate-config [PATH]`: Validate a specified or auto-discovered configuration file against syntax and schema rules without running file processing. Use `--json` for machine-readable output.
+*   `--validate-config [PATH]`: Validate a specified or auto-discovered configuration file against syntax and schema rules without running file processing. Use `-` to read from standard input (`stdin`). Use `--json` for machine-readable output.
 *   `--show-config`: Display the final configuration being used and exit. Use `--json` for machine-readable output.
-*   `--export-config`: Save the final combined configuration to a YAML file and exit.
+*   `--export-config`: Save the final combined configuration to a YAML file and exit. Use `-` to output to standard output (`stdout`).
 *   `--system-info`: Show environment details (Python version, OS, and other system details). Use `--json` for machine-readable output.
 *   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without actually writing them to disk.
 *   `--analyze` (`-A`): Perform a comprehensive project analysis without generating output files. Shortcut for `--dry-run --estimate-tokens --overview --include-tree --tree`.

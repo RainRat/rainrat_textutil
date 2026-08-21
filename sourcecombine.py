@@ -4114,7 +4114,7 @@ def main():
         "--config",
         "-k",
         metavar="PATH",
-        help="Use a specific configuration file (YAML or JSON). This stops the tool from trying to find one automatically in the target list.",
+        help="Use a specific configuration file (YAML or JSON). Use '-' to read from standard input (stdin).",
     )
     core_group.add_argument(
         "--output",
@@ -4664,7 +4664,7 @@ def main():
         nargs="?",
         const="sourcecombine.yml",
         metavar="PATH",
-        help="Create a basic configuration file (YAML or JSON) at PATH to get started. Defaults to 'sourcecombine.yml' in the current folder.",
+        help="Create a basic configuration file (YAML or JSON) at PATH. Defaults to 'sourcecombine.yml'. Use '-' to print to standard output (stdout).",
     )
     utility_group.add_argument(
         "--list-languages",
@@ -4744,7 +4744,7 @@ def main():
         const="",
         default=None,
         metavar="PATH",
-        help="Validate the specified or auto-discovered configuration file without running processing. Use --json for machine-readable output.",
+        help="Validate the specified or auto-discovered configuration file without running processing. Use '-' to read from standard input (stdin). Use --json for machine-readable output.",
     )
     utility_group.add_argument(
         "--show-config",
@@ -4756,7 +4756,7 @@ def main():
         nargs="?",
         const="sourcecombine.yml",
         metavar="FILENAME",
-        help="Save the final configuration to a YAML file (defaults to 'sourcecombine.yml') and exit.",
+        help="Save the final configuration to a YAML/JSON file (defaults to 'sourcecombine.yml'). Use '-' to output to standard output (stdout).",
     )
     utility_group.add_argument(
         "--system-info",
@@ -5100,6 +5100,17 @@ def main():
         sys.exit(0)
 
     if args.init:
+        if args.init == '-':
+            json_mode = getattr(args, 'json', False)
+            if json_mode:
+                print(json.dumps(utils.DEFAULT_CONFIG, indent=2))
+            elif utils.yaml:
+                sys.stdout.write("# Default SourceCombine Configuration\n")
+                utils.yaml.dump(utils.DEFAULT_CONFIG, sys.stdout, sort_keys=False)
+            else:
+                print(json.dumps(utils.DEFAULT_CONFIG, indent=2))
+            sys.exit(0)
+
         target_path = Path(args.init)
         if target_path.is_dir():
             target_config = target_path / "sourcecombine.yml"
@@ -5192,7 +5203,7 @@ def main():
 
         try:
             cfg = load_and_validate_config(val_path)
-            resolved_path = str(Path(val_path).resolve())
+            resolved_path = "<stdin>" if str(val_path) == '-' else str(Path(val_path).resolve())
             if json_mode:
                 print(json.dumps({"valid": True, "path": resolved_path}, indent=2))
             else:
@@ -5200,15 +5211,17 @@ def main():
             sys.exit(0)
         except (ConfigNotFoundError, utils.ConfigNotFoundError):
             msg = f"Could not find configuration file '{val_path}'."
+            resolved_err_path = "<stdin>" if str(val_path) == '-' else str(val_path)
             if json_mode:
-                print(json.dumps({"valid": False, "path": str(val_path), "error": msg}, indent=2))
+                print(json.dumps({"valid": False, "path": resolved_err_path, "error": msg}, indent=2))
             else:
                 logging.error(msg)
             sys.exit(1)
         except utils.InvalidConfigError as exc:
             msg = f"The configuration file '{val_path}' is invalid: {exc}"
+            resolved_err_path = "<stdin>" if str(val_path) == '-' else str(val_path)
             if json_mode:
-                print(json.dumps({"valid": False, "path": str(val_path), "error": str(exc)}, indent=2))
+                print(json.dumps({"valid": False, "path": resolved_err_path, "error": str(exc)}, indent=2))
             else:
                 logging.error(msg)
             sys.exit(1)
@@ -5753,7 +5766,8 @@ def main():
     if args.export_config:
         try:
             utils.save_yaml_config(args.export_config, _convert_to_json_friendly(config))
-            logging.info("Configuration exported to %s", Path(args.export_config).resolve())
+            if args.export_config != '-':
+                logging.info("Configuration exported to %s", Path(args.export_config).resolve())
         except (OSError, utils.InvalidConfigError) as exc:
             logging.error("Could not export configuration: %s", exc)
             sys.exit(1)
