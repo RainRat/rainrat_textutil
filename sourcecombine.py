@@ -3890,7 +3890,8 @@ def explain_paths(paths, config=None, json_format=False):
     abs_output_path = Path(output_conf.get('file', DEFAULT_OUTPUT_FILENAME)).resolve() if output_conf.get('file') else None
 
     reason_map = {
-        'not_file': "The path is not a file or does not exist on disk.",
+        'directory': "The path is a directory. The --explain command analyzes individual file paths.",
+        'not_file': "The path does not exist on disk.",
         'output_file': "The file is the tool's own output file, excluded to prevent recursion.",
         'excluded': "Excluded by filename/folder glob patterns (e.g., --exclude-file / -x or --exclude-folder / -X).",
         'extension': "The file extension is not allowed or is explicitly excluded (e.g., --extension or --exclude-extension).",
@@ -3916,14 +3917,28 @@ def explain_paths(paths, config=None, json_format=False):
 
     for path_str in paths:
         file_path = Path(path_str)
-        exists = file_path.is_file()
+        try:
+            is_file = file_path.is_file()
+            is_dir = False if is_file else file_path.is_dir()
+            exists = is_file or is_dir or file_path.exists()
+        except OSError:
+            is_file = False
+            is_dir = False
+            exists = False
 
         try:
             rel_path = file_path.resolve().relative_to(root_path)
         except ValueError:
             rel_path = file_path
 
-        if not exists:
+        if is_dir:
+            included = False
+            reason = 'directory'
+            file_size = None
+            tokens = None
+            lines = None
+            language = None
+        elif not is_file:
             included = False
             reason = 'not_file'
             file_size = None
@@ -3991,7 +4006,11 @@ def explain_paths(paths, config=None, json_format=False):
             print(f"  {C_DIM}Relative to root:{C_RESET} {item['relative_path']}")
             print(f"  {C_DIM}Explanation:{C_RESET} {C_YELLOW}{item['explanation']}{C_RESET}")
 
-            if item['exists']:
+            if item['reason_code'] == 'directory':
+                print(f"  {C_DIM}Metadata:{C_RESET} N/A (path is a directory)")
+            elif not item['exists']:
+                print(f"  {C_DIM}Metadata:{C_RESET} N/A (file does not exist on disk)")
+            else:
                 meta = item['metadata']
                 size_str = utils.format_size(meta['size_bytes']) if meta['size_bytes'] is not None else "Unknown"
                 tokens_str = f"{meta['tokens']:,}" if meta['tokens'] is not None else "Unknown"
@@ -4001,8 +4020,6 @@ def explain_paths(paths, config=None, json_format=False):
                 print(f"    - Size:     {size_str}")
                 print(f"    - Lines:    {lines_str}")
                 print(f"    - Tokens:   {tokens_str}")
-            else:
-                print(f"  {C_DIM}Metadata:{C_RESET} N/A (file does not exist on disk)")
             print()
 
 
