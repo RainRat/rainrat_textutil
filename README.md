@@ -20,6 +20,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--output` (`-o`): Save results to a file or folder instead of the terminal. Supports template placeholders (for example, `{{PROJECT_NAME}}_{{DATE}}.txt`).
 *   `--clipboard` (`-c`): Copy the combined output to the system clipboard.
 *   `--git-files` (`-G`): Use Git to find files and follow the `.gitignore` rules automatically.
+*   `--files-from PATH`: Read a list of file paths from a text file or standard input (`-`), skipping folder scanning.
 *   `--ignore-file PATH`: Add an ignore file containing glob patterns to skip. Supports comma-separated lists (for example, `.ignore1,.ignore2`). Default is `.sourcecombineignore`.
 *   `--extension` (`--ext`): Include only files with these extensions. You can repeat this flag or use a comma-separated list (for example, `--ext py,js` or `--ext py --ext js`).
 *   `--exclude-extension` (`--exclude-ext`): Skip files with these extensions. Supports comma-separated lists (for example, `--exclude-ext log,tmp`).
@@ -178,6 +179,16 @@ For more details, use `python sourcecombine.py --help` or check `config.template
 Combine all files in the current directory into `combined_files.txt`:
 ```bash
 python sourcecombine.py
+```
+
+### Reading File Paths from File or Stdin
+Combine files from an explicit list instead of scanning folders:
+```bash
+# Read file paths from a text file
+python sourcecombine.py --files-from file_list.txt --output combined.txt
+
+# Pipe file paths from another command via standard input
+git diff --name-only | python sourcecombine.py --files-from - --output diff_files.txt
 ```
 
 ### Filtering by Language
