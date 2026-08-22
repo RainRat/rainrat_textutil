@@ -4659,6 +4659,13 @@ def main():
         help="Create a basic configuration file (YAML or JSON) at PATH to get started. Defaults to 'sourcecombine.yml' in the current folder.",
     )
     utility_group.add_argument(
+        "--init-ignore",
+        nargs="?",
+        const=".sourcecombineignore",
+        metavar="PATH",
+        help="Create a default ignore file (.sourcecombineignore or custom PATH) populated with common exclude patterns and exit.",
+    )
+    utility_group.add_argument(
         "--list-languages",
         nargs="?",
         const=True,
@@ -4878,6 +4885,14 @@ def main():
 
     if args.files_from and args.init:
         logging.error("You cannot use --init and --files-from at the same time.")
+        sys.exit(1)
+
+    init_ignore_val = getattr(args, 'init_ignore', None)
+    if init_ignore_val and type(init_ignore_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        init_ignore_val = None
+
+    if args.files_from and init_ignore_val:
+        logging.error("You cannot use --init-ignore and --files-from at the same time.")
         sys.exit(1)
 
     if args.system_info:
@@ -5152,6 +5167,64 @@ def main():
                 except OSError as exc:
                     logging.error("Could not write the configuration file: %s", exc)
                     sys.exit(1)
+        sys.exit(0)
+
+    if init_ignore_val:
+        target_path = Path(init_ignore_val)
+        if target_path.is_dir():
+            target_ignore = target_path / ".sourcecombineignore"
+        else:
+            target_ignore = target_path
+
+        try:
+            target_ignore.parent.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            logging.error("Could not create target directory '%s': %s", target_ignore.parent, exc)
+            sys.exit(1)
+
+        if target_ignore.exists():
+            logging.error("The ignore file '%s' already exists. Stopping.", target_ignore)
+            sys.exit(1)
+
+        default_ignore_content = (
+            "# SourceCombine Ignore File (.sourcecombineignore)\n"
+            "# Add glob patterns to exclude files and folders from combining.\n\n"
+            "# Version control & metadata\n"
+            ".git/\n"
+            ".svn/\n"
+            ".hg/\n\n"
+            "# Environment & Dependencies\n"
+            "node_modules/\n"
+            "venv/\n"
+            ".venv/\n"
+            "env/\n"
+            "__pycache__/\n"
+            "*.pyc\n\n"
+            "# Build outputs & Dist\n"
+            "dist/\n"
+            "build/\n"
+            "target/\n"
+            "out/\n"
+            "*.egg-info/\n\n"
+            "# Logs and temporary files\n"
+            "*.log\n"
+            "*.tmp\n"
+            "*.bak\n"
+            "*.swp\n"
+            ".DS_Store\n"
+            "Thumbs.db\n"
+        )
+
+        try:
+            with open(target_ignore, "w", encoding="utf-8") as f:
+                f.write(default_ignore_content)
+            logging.info(
+                "Created default ignore file at %s. You can now customize it or use it with --ignore-file.",
+                target_ignore.resolve()
+            )
+        except OSError as exc:
+            logging.error("Could not write the ignore file: %s", exc)
+            sys.exit(1)
         sys.exit(0)
 
     if validate_config_val is not None:

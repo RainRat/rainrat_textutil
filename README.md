@@ -44,7 +44,8 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--create-backups`: Create `.bak` copies of original files when using `--apply-in-place`, `--extract`, or `--repair`.
 
 ### Utility Commands
-*   `--init`: Create a basic `sourcecombine.yml` configuration file to get started.
+*   `--init [PATH]`: Create a basic configuration file (`sourcecombine.yml` or `.json`) at `PATH` to get started. Defaults to `sourcecombine.yml` in the current folder.
+*   `--init-ignore [PATH]`: Create a default ignore file (`.sourcecombineignore` or custom `PATH`) populated with common exclude glob patterns (VCS metadata, dependencies, build outputs, log/temp files) and exit.
 *   `--extract`: Rebuild original files and folders from combined outputs (Text, JSON, XML, JSONL, CSV, or Markdown). You can read from files, folders, remote URLs (http/https), the terminal, or clipboard. Without an input file, it searches for `combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`.
 *   `--verify` (`-y`): Verify that files on disk match the content or hashes in combined files or manifests. You can read from files, folders, remote URLs (http/https), the terminal, or clipboard. Without an input file, the tool searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`). For example: `python sourcecombine.py --verify combined_files.json`. Use `--json` for machine-readable output.
 *   `--repair` (`-P`): Automatically fix mismatched or missing files when verifying (requires source content).
@@ -155,11 +156,16 @@ The tool installs these automatically when you follow the installation steps:
     ```
     *(Note)* You can replace `.` with any folder path on your system.
 
-5.  **Create a Config (Optional):**
+5.  **Create a Config or Ignore File (Optional):**
     ```bash
     python sourcecombine.py --init
     ```
     This command creates a `sourcecombine.yml` file with default settings to help you get started.
+
+    To create a standard `.sourcecombineignore` ignore file pre-filled with common exclude patterns:
+    ```bash
+    python sourcecombine.py --init-ignore
+    ```
 
     *(Note)* If you do not have the `PyYAML` library installed, you can also use JSON configurations (such as `sourcecombine.json` or `config.json`). They work immediately using Python's standard library.
 
