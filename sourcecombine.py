@@ -4003,7 +4003,8 @@ def explain_paths(paths, config=None, json_format=False):
 
             path_header = f"Path: {item['path']}"
             print(f"{badge} {C_BOLD}{path_header}{C_RESET}")
-            print(f"  {C_DIM}Relative to root:{C_RESET} {item['relative_path']}")
+            if item['path'] != item['relative_path']:
+                print(f"  {C_DIM}Relative to root:{C_RESET} {item['relative_path']}")
             print(f"  {C_DIM}Explanation:{C_RESET} {C_YELLOW}{item['explanation']}{C_RESET}")
 
             if item['reason_code'] == 'directory':
