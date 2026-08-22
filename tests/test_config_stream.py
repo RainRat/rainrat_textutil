@@ -129,3 +129,55 @@ def test_cli_config_stdin_combine(monkeypatch, tmp_path, capsys):
     sourcecombine.main()
     assert out_file.exists()
     assert "print('hello')" in out_file.read_text()
+
+
+def test_load_yaml_config_stdin_comment_only(monkeypatch):
+    monkeypatch.setattr("sys.stdin", io.StringIO("# only a comment\n"))
+    with pytest.raises(utils.InvalidConfigError, match="empty or invalid"):
+        utils.load_yaml_config("-")
+
+
+def test_load_yaml_config_stdin_no_yaml_success(monkeypatch):
+    monkeypatch.setattr(utils, "yaml", None)
+    monkeypatch.setattr("sys.stdin", io.StringIO('{"search": {"max_depth": 4}}'))
+    config = utils.load_yaml_config("-")
+    assert config["search"]["max_depth"] == 4
+
+
+def test_load_yaml_config_stdin_no_yaml_empty(monkeypatch):
+    monkeypatch.setattr(utils, "yaml", None)
+    monkeypatch.setattr("sys.stdin", io.StringIO('null'))
+    with pytest.raises(utils.InvalidConfigError, match="empty or invalid"):
+        utils.load_yaml_config("-")
+
+
+def test_load_yaml_config_stdin_no_yaml_non_dict(monkeypatch):
+    monkeypatch.setattr(utils, "yaml", None)
+    monkeypatch.setattr("sys.stdin", io.StringIO('[1, 2, 3]'))
+    with pytest.raises(utils.InvalidConfigError, match="dictionary"):
+        utils.load_yaml_config("-")
+
+
+def test_load_yaml_config_stdin_no_yaml_invalid_json(monkeypatch):
+    monkeypatch.setattr(utils, "yaml", None)
+    monkeypatch.setattr("sys.stdin", io.StringIO('invalid json : :'))
+    with pytest.raises(utils.InvalidConfigError, match="Error parsing JSON from stdin"):
+        utils.load_yaml_config("-")
+
+
+def test_save_yaml_config_stdout_os_error(monkeypatch):
+    with patch("sys.stdout.write", side_effect=OSError("stdout pipe broken")):
+        with pytest.raises(utils.InvalidConfigError, match="Could not write configuration to stdout"):
+            utils.save_yaml_config("-", {"a": 1})
+
+
+def test_cli_init_stdout_no_yaml(monkeypatch, capsys):
+    monkeypatch.setattr(utils, "yaml", None)
+    monkeypatch.setattr("sys.argv", ["sourcecombine.py", "--init", "-"])
+    with pytest.raises(SystemExit) as exc_info:
+        sourcecombine.main()
+    assert exc_info.value.code == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert "search" in data
+

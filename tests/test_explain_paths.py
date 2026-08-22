@@ -51,6 +51,20 @@ def test_explain_paths_directory(tmp_path, capsys):
     assert results[0]["included"] is False
     assert results[0]["reason_code"] == "directory"
 
+def test_explain_paths_oserror(tmp_path, capsys):
+    """Test explaining a path that raises an OSError on stat/is_file."""
+    bad_path = tmp_path / "bad_perm"
+    config = utils.DEFAULT_CONFIG.copy()
+
+    with patch.object(Path, "is_file", side_effect=OSError("Permission denied")):
+        explain_paths([str(bad_path)], config=config, json_format=True)
+        captured = capsys.readouterr()
+        results = json.loads(captured.out)
+        assert len(results) == 1
+        assert results[0]["exists"] is False
+        assert results[0]["reason_code"] == "not_file"
+
+
 def test_explain_paths_included(tmp_path, capsys):
     """Test explaining a valid file that should be included."""
     valid_file = tmp_path / "hello.py"

@@ -4008,7 +4008,7 @@ def explain_paths(paths, config=None, json_format=False):
 
             if item['reason_code'] == 'directory':
                 print(f"  {C_DIM}Metadata:{C_RESET} N/A (path is a directory)")
-            elif not item['exists']:
+            elif item['reason_code'] == 'not_file' or not item['exists']:
                 print(f"  {C_DIM}Metadata:{C_RESET} N/A (file does not exist on disk)")
             else:
                 meta = item['metadata']
@@ -4680,7 +4680,7 @@ def main():
         nargs="?",
         const=".sourcecombineignore",
         metavar="PATH",
-        help="Create a default ignore file (.sourcecombineignore or custom PATH) populated with common exclude patterns and exit.",
+        help="Create a default ignore file (.sourcecombineignore or custom PATH) populated with common exclude patterns and exit. Use '-' to print to standard output (stdout).",
     )
     utility_group.add_argument(
         "--list-languages",
@@ -5198,22 +5198,6 @@ def main():
         sys.exit(0)
 
     if init_ignore_val:
-        target_path = Path(init_ignore_val)
-        if target_path.is_dir():
-            target_ignore = target_path / ".sourcecombineignore"
-        else:
-            target_ignore = target_path
-
-        try:
-            target_ignore.parent.mkdir(parents=True, exist_ok=True)
-        except OSError as exc:
-            logging.error("Could not create target directory '%s': %s", target_ignore.parent, exc)
-            sys.exit(1)
-
-        if target_ignore.exists():
-            logging.error("The ignore file '%s' already exists. Stopping.", target_ignore)
-            sys.exit(1)
-
         default_ignore_content = (
             "# SourceCombine Ignore File (.sourcecombineignore)\n"
             "# Add glob patterns to exclude files and folders from combining.\n\n"
@@ -5242,6 +5226,26 @@ def main():
             ".DS_Store\n"
             "Thumbs.db\n"
         )
+
+        if init_ignore_val == '-':
+            sys.stdout.write(default_ignore_content)
+            sys.exit(0)
+
+        target_path = Path(init_ignore_val)
+        if target_path.is_dir() or str(init_ignore_val).endswith(('/', '\\')):
+            target_ignore = target_path / ".sourcecombineignore"
+        else:
+            target_ignore = target_path
+
+        try:
+            target_ignore.parent.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            logging.error("Could not create target directory '%s': %s", target_ignore.parent, exc)
+            sys.exit(1)
+
+        if target_ignore.exists():
+            logging.error("The ignore file '%s' already exists. Stopping.", target_ignore)
+            sys.exit(1)
 
         try:
             with open(target_ignore, "w", encoding="utf-8") as f:

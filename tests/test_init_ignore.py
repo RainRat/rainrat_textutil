@@ -112,3 +112,32 @@ def test_init_ignore_with_files_from_error(tmp_path, monkeypatch, caplog):
 
     assert exc_info.value.code == 1
     assert "You cannot use --init-ignore and --files-from at the same time" in caplog.text
+
+
+def test_init_ignore_stdout(monkeypatch, capsys):
+    test_args = ["sourcecombine.py", "--init-ignore", "-"]
+    monkeypatch.setattr(sys, "argv", test_args)
+
+    with pytest.raises(SystemExit) as exc_info:
+        sourcecombine.main()
+
+    assert exc_info.value.code == 0
+    captured = capsys.readouterr().out
+    assert "# SourceCombine Ignore File (.sourcecombineignore)" in captured
+    assert "node_modules/" in captured
+
+
+def test_init_ignore_directory_trailing_slash(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    target_dir = tmp_path / "custom_dir"
+    target_dir.mkdir()
+    test_args = ["sourcecombine.py", "--init-ignore", f"{str(target_dir)}/"]
+    monkeypatch.setattr(sys, "argv", test_args)
+
+    with pytest.raises(SystemExit) as exc_info:
+        sourcecombine.main()
+
+    assert exc_info.value.code == 0
+    expected_file = target_dir / ".sourcecombineignore"
+    assert expected_file.exists()
+
