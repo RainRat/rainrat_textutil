@@ -308,6 +308,32 @@ class InvalidConfigError(Exception):
 
 def load_yaml_config(config_file_path):
     """Load a YAML or JSON configuration file."""
+    if str(config_file_path) == '-':
+        logging.info("Loading configuration from standard input (stdin)...")
+        content = sys.stdin.read()
+        if not content.strip():
+            raise InvalidConfigError("Configuration from stdin is empty.")
+        if yaml is not None:
+            try:
+                config = yaml.safe_load(content)
+                if config is None:
+                    raise InvalidConfigError("Configuration from stdin is empty or invalid.")
+                if not isinstance(config, dict):
+                    raise InvalidConfigError("Configuration from stdin must be a dictionary.")
+                return config
+            except (AttributeError, yaml.YAMLError) as e:
+                raise InvalidConfigError(f"Error parsing YAML from stdin: {e}") from e
+        else:
+            try:
+                config = json.loads(content)
+                if config is None:
+                    raise InvalidConfigError("Configuration from stdin is empty or invalid.")
+                if not isinstance(config, dict):
+                    raise InvalidConfigError("Configuration from stdin must be a dictionary.")
+                return config
+            except json.JSONDecodeError as e:
+                raise InvalidConfigError(f"Error parsing JSON from stdin: {e}") from e
+
     path = Path(config_file_path)
     is_json = path.suffix.lower() == '.json'
 
@@ -367,6 +393,19 @@ def load_yaml_config(config_file_path):
 
 def save_yaml_config(config_file_path, config):
     """Save a dictionary to a YAML or JSON configuration file."""
+    if str(config_file_path) == '-':
+        logging.info("Saving configuration to standard output (stdout)...")
+        try:
+            if yaml is not None:
+                sys.stdout.write("# SourceCombine Configuration\n")
+                yaml.dump(config, sys.stdout, sort_keys=False)
+            else:
+                json.dump(config, sys.stdout, indent=2)
+                sys.stdout.write("\n")
+            return
+        except OSError as e:
+            raise InvalidConfigError(f"Could not write configuration to stdout: {e}") from e
+
     path = Path(config_file_path)
     is_json = path.suffix.lower() == '.json'
 
