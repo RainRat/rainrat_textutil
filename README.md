@@ -24,6 +24,8 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--ignore-file PATH`: Add an ignore file containing glob patterns to skip. Supports comma-separated lists (for example, `.ignore1,.ignore2`). Default is `.sourcecombineignore`.
 *   `--extension` (`--ext`): Include only files with these extensions. You can repeat this flag or use a comma-separated list (for example, `--ext py,js` or `--ext py --ext js`).
 *   `--exclude-extension` (`--exclude-ext`): Skip files with these extensions. Supports comma-separated lists (for example, `--exclude-ext log,tmp`).
+*   `--language` (`--lang`): Include only files matching these language identifiers. You can repeat this flag or use a comma-separated list (for example, `--lang python,javascript` or `--lang python --lang javascript`). Use `--list-languages` to see available identifiers.
+*   `--exclude-language` (`--exclude-lang`): Skip files matching these language identifiers. Supports comma-separated lists (for example, `--exclude-lang markdown,json`).
 *   `--limit` (`-L`): Stop processing once you reach this file limit.
 *   `--unique` (`-u`): Skip duplicate files by path or content (duplicate removal).
 *   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, skipping binary files, removing duplicates, and automatically including Git context like logs and diffs). This also copies to the system clipboard if you do not specify an output.
