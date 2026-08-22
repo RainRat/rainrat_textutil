@@ -705,18 +705,21 @@ def _replace_line_block(text, regex, replacement=None):
     lines = text.splitlines()
     out_lines = []
     in_block = False
-    for line in lines:
-        if regex.match(line):
-            in_block = True
-            continue
+
+    def _flush_block():
+        nonlocal in_block
         if in_block:
             if replacement is not None:
                 out_lines.append(replacement)
             in_block = False
+
+    for line in lines:
+        if regex.match(line):
+            in_block = True
+            continue
+        _flush_block()
         out_lines.append(line)
-    if in_block:
-        if replacement is not None:
-            out_lines.append(replacement)
+    _flush_block()
 
     result = "\n".join(out_lines)
     if text.endswith("\n") and out_lines:
