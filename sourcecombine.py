@@ -4023,6 +4023,37 @@ def explain_paths(paths, config=None, json_format=False):
             print()
 
 
+SORT_ALIASES = {
+    "date": "modified",
+    "time": "modified",
+    "mtime": "modified",
+    "lang": "language",
+    "token": "tokens",
+    "line": "lines",
+}
+
+FORMAT_ALIASES = {
+    "md": "markdown",
+    "txt": "text",
+}
+
+
+def parse_sort_choice(val: str) -> str:
+    """Normalize and map CLI --sort choice values and aliases."""
+    if not isinstance(val, str):
+        return val
+    v = val.lower()
+    return SORT_ALIASES.get(v, v)
+
+
+def parse_format_choice(val: str) -> str:
+    """Normalize and map CLI --format choice values and aliases."""
+    if not isinstance(val, str):
+        return val
+    v = val.lower()
+    return FORMAT_ALIASES.get(v, v)
+
+
 class ColoredArgumentParser(argparse.ArgumentParser):
     """Custom ArgumentParser to provide rich error colors and intelligent spelling suggestions."""
 
@@ -4383,6 +4414,7 @@ def main():
     sorting_group.add_argument(
         "--sort",
         "-s",
+        type=parse_sort_choice,
         choices=["name", "size", "modified", "tokens", "lines", "depth", "language"],
         help="Sort files by name, size, date (modified), tokens, lines, folder depth, or language before combining.",
     )
@@ -4439,6 +4471,7 @@ def main():
     output_group.add_argument(
         "--format",
         "-f",
+        type=parse_format_choice,
         choices=["text", "json", "jsonl", "markdown", "xml", "manifest", "csv"],
         help="Choose the output format ('text', 'json', 'jsonl', 'markdown', 'xml', 'manifest', 'csv'). 'json', 'jsonl', 'manifest', and 'csv' only work when combining many files into one.",
     )
