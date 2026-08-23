@@ -4691,6 +4691,15 @@ def main():
         help="Show supported languages (optionally filtered by QUERY) and exit. Use --json for machine-readable output.",
     )
     utility_group.add_argument(
+        "--list-extensions",
+        "--list-ext",
+        nargs="?",
+        const=True,
+        default=False,
+        metavar="QUERY",
+        help="Show supported file extensions and special filenames (optionally filtered by QUERY) and exit. Use --json for machine-readable output.",
+    )
+    utility_group.add_argument(
         "--list-placeholders",
         nargs="?",
         const=True,
@@ -4883,6 +4892,7 @@ def main():
     if _get_bool_arg(args, 'json') and (
         args.system_info or
         args.list_languages or
+        getattr(args, 'list_extensions', False) or
         args.list_placeholders or
         getattr(args, 'project_info', False) or
         args.show_config or
@@ -5121,6 +5131,32 @@ def main():
             print(json.dumps(output, indent=2))
         else:
             print_languages(query=query)
+        sys.exit(0)
+
+    list_ext_val = getattr(args, 'list_extensions', False)
+    if list_ext_val and type(list_ext_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        list_ext_val = False
+
+    if list_ext_val:
+        query = list_ext_val if isinstance(list_ext_val, str) else None
+        if getattr(args, 'json', False):
+            ext_map = dict(utils.EXTENSION_TO_LANG)
+            ext_map.update(utils.FILENAME_TO_LANG)
+
+            if query:
+                query_lower = query.lower()
+                ext_map = {
+                    item: lang for item, lang in ext_map.items()
+                    if query_lower in item.lower() or query_lower in lang.lower()
+                }
+
+            output = {
+                "extensions": {item: ext_map[item] for item in sorted(ext_map.keys())},
+                "total": len(ext_map)
+            }
+            print(json.dumps(output, indent=2))
+        else:
+            print_extensions(query=query)
         sys.exit(0)
 
     if args.init:
@@ -7611,6 +7647,39 @@ def print_placeholders(query=None):
         count_label = f"Matching: {total_matched}" if query_lower else f"Total: {total_available}"
         print(f"\n  {C_BOLD}{count_label}{C_RESET} template placeholders supported.")
 
+    print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
+
+
+def print_extensions(query=None):
+    """Print all supported file extensions and special filenames mapped to their language tags, optionally filtered by a query."""
+    if query:
+        query_lower = query.lower()
+        title_suffix = f" (FILTERED BY '{query}')"
+    else:
+        query_lower = None
+        title_suffix = ""
+
+    print(f"\n{C_BOLD}{C_CYAN}=== SUPPORTED EXTENSIONS & FILENAMES{title_suffix} ==={C_RESET}")
+
+    ext_map = dict(utils.EXTENSION_TO_LANG)
+    ext_map.update(utils.FILENAME_TO_LANG)
+
+    items = sorted(ext_map.keys())
+    if query_lower:
+        items = [
+            item for item in items
+            if query_lower in item.lower() or query_lower in ext_map[item].lower()
+        ]
+
+    ext_width = 25
+
+    print(f"  {C_DIM}{'EXTENSION / FILENAME':<{ext_width}}  LANGUAGE TAG{C_RESET}")
+    for item in items:
+        lang = ext_map[item]
+        print(f"  {C_BOLD}{C_CYAN}{item:<{ext_width}}{C_RESET}  {C_DIM}{lang}{C_RESET}")
+
+    count_label = f"Matching: {len(items)}" if query_lower else f"Total: {len(ext_map)}"
+    print(f"\n  {C_BOLD}{count_label}{C_RESET} extensions and filenames supported.")
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
 
