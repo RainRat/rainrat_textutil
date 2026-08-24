@@ -4846,7 +4846,11 @@ def main():
         if not args.output and not args.clipboard and not (
             args.dry_run or args.list_files or args.tree or args.estimate_tokens
         ):
-            if importlib.util.find_spec("pyperclip"):
+            try:
+                has_pyperclip = bool(importlib.util.find_spec("pyperclip"))
+            except Exception:
+                has_pyperclip = False
+            if has_pyperclip:
                 args.clipboard = True
                 logging.debug("AI preset: Automatically enabled the system clipboard.")
             else:
@@ -4914,39 +4918,7 @@ def main():
         sys.exit(1)
 
     if args.system_info:
-        if getattr(args, 'json', False):
-            # Same info as print_system_info
-            deps = [
-                ("tiktoken", "Accurate token counting"),
-                ("pyperclip", "Clipboard support"),
-                ("tqdm", "Progress bars"),
-                ("yaml", "Configuration support (PyYAML)"),
-                ("charset_normalizer", "Encoding detection"),
-            ]
-            dep_info = {}
-            for dep_name, purpose in deps:
-                spec = importlib.util.find_spec(dep_name)
-                dep_info[dep_name] = {
-                    "installed": spec is not None,
-                    "purpose": purpose
-                }
-
-            config_file = Path("sourcecombine.yml")
-            output = {
-                "version": __version__,
-                "python": sys.version.split()[0],
-                "platform": platform.platform(),
-                "executable": sys.executable,
-                "current_folder": str(Path.cwd()),
-                "local_config": {
-                    "found": config_file.exists(),
-                    "path": str(config_file.resolve()) if config_file.exists() else None
-                },
-                "dependencies": dep_info
-            }
-            print(json.dumps(output, indent=2))
-        else:
-            print_system_info()
+        print_system_info(json_format=getattr(args, 'json', False))
         sys.exit(0)
 
     if getattr(args, 'project_info', None) is True:
@@ -7460,8 +7432,43 @@ def create_backups_for_targets(targets, config, dry_run=False, json_format=False
     return backed_up_count, error_count
 
 
-def print_system_info():
+def print_system_info(json_format=False):
     """Print environment diagnostics and optional dependency status."""
+    if json_format:
+        deps = [
+            ("tiktoken", "Accurate token counting"),
+            ("pyperclip", "Clipboard support"),
+            ("tqdm", "Progress bars"),
+            ("yaml", "Configuration support (PyYAML)"),
+            ("charset_normalizer", "Encoding detection"),
+        ]
+        dep_info = {}
+        for dep_name, purpose in deps:
+            try:
+                spec = importlib.util.find_spec(dep_name)
+                installed = spec is not None
+            except Exception:
+                installed = False
+            dep_info[dep_name] = {
+                "installed": installed,
+                "purpose": purpose
+            }
+
+        config_file = Path("sourcecombine.yml")
+        output = {
+            "version": __version__,
+            "python": sys.version.split()[0],
+            "platform": platform.platform(),
+            "executable": sys.executable,
+            "current_folder": str(Path.cwd()),
+            "local_config": {
+                "found": config_file.exists(),
+                "path": str(config_file.resolve()) if config_file.exists() else None
+            },
+            "dependencies": dep_info
+        }
+        print(json.dumps(output, indent=2))
+        return
 
     print(f"\n{C_BOLD}{C_CYAN}=== SYSTEM INFORMATION ==={C_RESET}")
 
@@ -7492,24 +7499,19 @@ def print_system_info():
     ]
 
     for dep_name, purpose in deps:
-        spec = importlib.util.find_spec(dep_name)
-        status = f"{C_GREEN}Installed{C_RESET}" if spec else f"{C_YELLOW}Not found{C_RESET}"
+        try:
+            spec = importlib.util.find_spec(dep_name)
+            installed = spec is not None
+        except Exception:
+            installed = False
+        status = f"{C_GREEN}Installed{C_RESET}" if installed else f"{C_YELLOW}Not found{C_RESET}"
         print(f"    {C_BOLD}{dep_name:<20}{C_RESET} {status:<20} {C_DIM}({purpose}){C_RESET}")
 
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
 
-def print_placeholders(query=None):
+def print_placeholders(query=None, json_format=False):
     """Print all supported template placeholders and their descriptions, optionally filtered by a query."""
-    if query:
-        query_lower = query.lower()
-        title_suffix = f" (FILTERED BY '{query}')"
-    else:
-        query_lower = None
-        title_suffix = ""
-
-    print(f"\n{C_BOLD}{C_CYAN}=== TEMPLATE PLACEHOLDERS{title_suffix} ==={C_RESET}")
-
     categories = {
         "File-Level Placeholders": [
             ("{{FILENAME}}", "Full relative path to the file."),
@@ -7586,6 +7588,33 @@ def print_placeholders(query=None):
         ]
     }
 
+    if json_format:
+        if query:
+            query_lower = query.lower()
+            filtered_cats = {
+                cat: [
+                    (p, desc) for p, desc in fields
+                    if query_lower in p.lower() or query_lower in desc.lower()
+                ]
+                for cat, fields in categories.items()
+            }
+            filtered_cats = {cat: fields for cat, fields in filtered_cats.items() if fields}
+        else:
+            filtered_cats = categories
+
+        output = {cat: {p: desc for p, desc in fields} for cat, fields in filtered_cats.items()}
+        print(json.dumps(output, indent=2))
+        return
+
+    if query:
+        query_lower = query.lower()
+        title_suffix = f" (FILTERED BY '{query}')"
+    else:
+        query_lower = None
+        title_suffix = ""
+
+    print(f"\n{C_BOLD}{C_CYAN}=== TEMPLATE PLACEHOLDERS{title_suffix} ==={C_RESET}")
+
     placeholder_width = 25
 
     total_matched = 0
@@ -7615,8 +7644,30 @@ def print_placeholders(query=None):
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
 
-def print_languages(query=None):
+def print_languages(query=None, json_format=False):
     """Print all supported language identifiers and their mappings, optionally filtered by a query."""
+    # Group extensions and filenames by language tag
+    lang_groups = {}
+    for ext, lang in utils.EXTENSION_TO_LANG.items():
+        lang_groups.setdefault(lang, []).append(ext)
+    for name, lang in utils.FILENAME_TO_LANG.items():
+        lang_groups.setdefault(lang, []).append(name)
+
+    if json_format:
+        if query:
+            query_lower = query.lower()
+            lang_groups = {
+                tag: items for tag, items in lang_groups.items()
+                if query_lower in tag.lower() or any(query_lower in item.lower() for item in items)
+            }
+
+        output = {
+            "languages": {tag: sorted(items) for tag, items in lang_groups.items()},
+            "total": len(lang_groups)
+        }
+        print(json.dumps(output, indent=2))
+        return
+
     if query:
         query_lower = query.lower()
         title_suffix = f" (FILTERED BY '{query}')"
@@ -7625,13 +7676,6 @@ def print_languages(query=None):
         title_suffix = ""
 
     print(f"\n{C_BOLD}{C_CYAN}=== SUPPORTED LANGUAGES{title_suffix} ==={C_RESET}")
-
-    # Group extensions and filenames by language tag
-    lang_groups = {}
-    for ext, lang in utils.EXTENSION_TO_LANG.items():
-        lang_groups.setdefault(lang, []).append(ext)
-    for name, lang in utils.FILENAME_TO_LANG.items():
-        lang_groups.setdefault(lang, []).append(name)
 
     # Format the output as a table
     lang_tags = sorted(lang_groups.keys())
@@ -7664,8 +7708,12 @@ def print_languages(query=None):
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
 
-def print_project_info(stats):
+def print_project_info(stats, json_format=False):
     """Print detected project information and Git status."""
+    if json_format:
+        print(json.dumps(_convert_to_json_friendly(stats), indent=2))
+        return
+
     print(f"\n{C_BOLD}{C_CYAN}=== PROJECT INFORMATION ==={C_RESET}")
 
     categories = {
