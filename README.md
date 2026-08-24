@@ -154,14 +154,22 @@ The tool installs these automatically when you follow the installation steps:
     ```bash
     pip install tiktoken
     ```
-4.  **Run the Tool:**
+
+4.  **Running Tests (Optional):**
+    If you are contributing or want to verify your installation, install `pytest` and `pytest-mock` and run the test suite:
+    ```bash
+    pip install pytest pytest-mock
+    pytest
+    ```
+
+5.  **Run the Tool:**
     ```bash
     # Combine files in the current folder (represented by '.') into combined.txt:
     python sourcecombine.py . --output combined.txt
     ```
     *(Note)* You can replace `.` with any folder path on your system.
 
-5.  **Create a Config or Ignore File (Optional):**
+6.  **Create a Config or Ignore File (Optional):**
     ```bash
     python sourcecombine.py --init
     ```
