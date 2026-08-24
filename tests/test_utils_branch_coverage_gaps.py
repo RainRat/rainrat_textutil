@@ -5,9 +5,8 @@ from pathlib import Path
 
 sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
 
-import pytest
 import utils
-from utils import get_project_identity, _parse_json_manifest
+from utils import get_project_identity
 
 # --- Tests from PR #985 ---
 

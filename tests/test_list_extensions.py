@@ -1,6 +1,6 @@
 import json
 import pytest
-from sourcecombine import main, print_extensions, utils
+from sourcecombine import main, print_extensions
 
 
 def test_print_extensions_unfiltered(capsys):
@@ -25,6 +25,26 @@ def test_print_extensions_filtered_no_match(capsys):
     captured = capsys.readouterr().out
     assert "FILTERED BY 'nonexistentext999'" in captured
     assert "Matching: 0 extensions and filenames supported." in captured
+
+
+def test_print_extensions_json(capsys):
+    print_extensions(json_format=True)
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert "extensions" in data
+    assert ".py" in data["extensions"]
+    assert data["extensions"][".py"] == "python"
+    assert data["total"] > 0
+
+
+def test_print_extensions_json_query(capsys):
+    print_extensions(query="py", json_format=True)
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert "extensions" in data
+    assert ".py" in data["extensions"]
+    assert data["extensions"][".py"] == "python"
+    assert data["total"] > 0
 
 
 def test_cli_list_extensions(capsys, monkeypatch):
@@ -58,3 +78,4 @@ def test_cli_list_extensions_json(capsys, monkeypatch):
     assert ".py" in data["extensions"]
     assert data["extensions"][".py"] == "python"
     assert data["total"] == len(data["extensions"])
+
