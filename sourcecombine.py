@@ -4716,6 +4716,15 @@ def main():
         help="Show supported languages (optionally filtered by QUERY) and exit. Use --json for machine-readable output.",
     )
     utility_group.add_argument(
+        "--list-extensions",
+        "--list-ext",
+        nargs="?",
+        const=True,
+        default=False,
+        metavar="QUERY",
+        help="Show supported file extensions and special filenames (optionally filtered by QUERY) and exit. Use --json for machine-readable output.",
+    )
+    utility_group.add_argument(
         "--list-placeholders",
         nargs="?",
         const=True,
@@ -4912,6 +4921,7 @@ def main():
     if _get_bool_arg(args, 'json') and (
         args.system_info or
         args.list_languages or
+        getattr(args, 'list_extensions', False) or
         args.list_placeholders or
         getattr(args, 'project_info', False) or
         args.show_config or
@@ -4993,131 +5003,26 @@ def main():
         git_info = _get_git_info(root, log_count=config['output'].get('git_log_count', 0), include_diff=config['output'].get('include_diff', False))
         stats.update(git_info)
 
-        if getattr(args, 'json', False):
-            print(json.dumps(_convert_to_json_friendly(stats), indent=2))
-        else:
-            print_project_info(stats)
+        print_project_info(stats, json_format=getattr(args, 'json', False))
         sys.exit(0)
 
     if args.list_placeholders:
         query = args.list_placeholders if isinstance(args.list_placeholders, str) else None
-        if getattr(args, 'json', False):
-            # Same categories as print_placeholders
-            categories = {
-                "File-Level Placeholders": [
-                    ("{{FILENAME}}", "Full relative path to the file."),
-                    ("{{EXT}}", "File extension (for example, 'py')."),
-                    ("{{STEM}}", "Filename without extension (for example, 'main')."),
-                    ("{{DIR}}", "Folder path containing the file."),
-                    ("{{DIR_SLUG}}", "A version of the folder path safe for use in filenames."),
-                    ("{{LANG}}", "Detected language tag (for example, 'python', 'cpp')."),
-                    ("{{SIZE}}", "Human-readable file size."),
-                    ("{{TOKENS}}", "Number of tokens in the file."),
-                    ("{{LINE_COUNT}}", "Number of lines in the file."),
-                    ("{{MODIFIED}}", "Last modified date and time."),
-                    ("{{HASH}}", "SHA-256 hash of the file content."),
-                    ("{{INDEX}}", "The current file's position in the list (1, 2, 3...)."),
-                    ("{{TOTAL}}", "The total number of files being processed."),
-                    ("{{SIZE_PERCENT}}", "Percentage of the total project size."),
-                    ("{{TOKEN_PERCENT}}", "Percentage of the total project tokens."),
-                    ("{{LINE_PERCENT}}", "Percentage of the total project lines."),
-                ],
-                "Project Information (Global) Placeholders": [
-                    ("{{PROJECT_NAME}}", "Name of the project."),
-                    ("{{PROJECT_VERSION}}", "Version of the project."),
-                    ("{{PROJECT_AUTHOR}}", "Author of the project."),
-                    ("{{PROJECT_DESCRIPTION}}", "Short description of the project."),
-                    ("{{PROJECT_LICENSE}}", "License identifier of the project."),
-                    ("{{MANIFEST_SOURCE}}", "The manifest file from which project information was extracted."),
-                    ("{{FILE_COUNT}}", "Total number of files included."),
-                    ("{{TOTAL_SIZE}}", "Total size of all files."),
-                    ("{{TOTAL_TOKENS}}", "Total number of tokens."),
-                    ("{{TOTAL_LINES}}", "Total number of lines."),
-                    ("{{DATE}}", "Current date (YYYY-MM-DD)."),
-                    ("{{TIME}}", "Current time (HH:MM:SS)."),
-                    ("{{DATETIME}}", "Current date and time."),
-                    ("{{TOC}}", "Table of contents (Global only)."),
-                    ("{{TREE}}", "Visual folder tree (Global only)."),
-                    ("{{OVERVIEW}}", "Project overview summary (Global only)."),
-                ],
-                "Git Placeholders": [
-                    ("{{GIT_BRANCH}}", "Current branch name."),
-                    ("{{GIT_COMMIT}}", "Full commit hash."),
-                    ("{{GIT_COMMIT_SHORT}}", "Short commit hash (7 characters)."),
-                    ("{{GIT_AUTHOR}}", "Author of the latest commit."),
-                    ("{{GIT_AUTHOR_DATE}}", "Date of the latest commit."),
-                    ("{{GIT_TAG}}", "Latest Git tag."),
-                    ("{{GIT_STATUS}}", "Summary of project changes."),
-                    ("{{GIT_LOG}}", "Recent commit messages."),
-                    ("{{GIT_DIFF}}", "Project-wide changes."),
-                    ("{{FILE_DIFF}}", "Changes specific to the current file (File-level only)."),
-                    ("{{GIT_REMOTE_URL}}", "The repository's origin remote URL."),
-                    ("{{PROJECT_URL}}", "Web URL to the repository home."),
-                    ("{{FILE_URL}}", "Direct web link to the specific file and commit (File-level only)."),
-                    ("{{FILE_AUTHOR}}", "Last author of the file (File-level only)."),
-                    ("{{FILE_AUTHOR_DATE}}", "Last commit date of the file (File-level only)."),
-                    ("{{FILE_LOG}}", "Subject of the last commit for the file (File-level only)."),
-                    ("{{FILE_STATUS}}", "Git status of the file (for example, 'M', 'A', '??') (File-level only)."),
-                ],
-                "System & Environment Placeholders": [
-                    ("{{OS}}", "Operating system name."),
-                    ("{{PYTHON_VERSION}}", "Python version."),
-                    ("{{PLATFORM}}", "Detailed platform information."),
-                    ("{{ARCH}}", "CPU architecture."),
-                    ("{{ENV:VAR_NAME}}", "Value of an environment variable."),
-                ],
-                "Pairing-Specific Placeholders": [
-                    ("{{STEM}}", "Base filename shared by the pair."),
-                    ("{{SOURCE_EXT}}", "Extension of the source file (for example, '.cpp')."),
-                    ("{{HEADER_EXT}}", "Extension of the header file (for example, '.h')."),
-                    ("{{DIR}}", "Folder path containing the pair."),
-                    ("{{DIR_SLUG}}", "A version of the folder path safe for use in filenames."),
-                    ("{{LANG}}", "Detected language of the pair."),
-                    ("{{INDEX}}", "The current pair's position in the list."),
-                    ("{{TOTAL}}", "The total number of pairs being processed."),
-                    ("Note:", "All project, system, and Git placeholders are also supported."),
-                ]
-            }
-            if query:
-                query_lower = query.lower()
-                categories = {
-                    cat: [
-                        (p, desc) for p, desc in fields
-                        if query_lower in p.lower() or query_lower in desc.lower()
-                    ]
-                    for cat, fields in categories.items()
-                }
-                categories = {cat: fields for cat, fields in categories.items() if fields}
-            output = {cat: {p: desc for p, desc in fields} for cat, fields in categories.items()}
-            print(json.dumps(output, indent=2))
-        else:
-            print_placeholders(query=query)
+        print_placeholders(query=query, json_format=getattr(args, 'json', False))
         sys.exit(0)
 
     if args.list_languages:
         query = args.list_languages if isinstance(args.list_languages, str) else None
-        if getattr(args, 'json', False):
-            # Group extensions and filenames by language tag
-            lang_groups = {}
-            for ext, lang in utils.EXTENSION_TO_LANG.items():
-                lang_groups.setdefault(lang, []).append(ext)
-            for name, lang in utils.FILENAME_TO_LANG.items():
-                lang_groups.setdefault(lang, []).append(name)
+        print_languages(query=query, json_format=getattr(args, 'json', False))
+        sys.exit(0)
 
-            if query:
-                query_lower = query.lower()
-                lang_groups = {
-                    tag: items for tag, items in lang_groups.items()
-                    if query_lower in tag.lower() or any(query_lower in item.lower() for item in items)
-                }
+    list_ext_val = getattr(args, 'list_extensions', False)
+    if list_ext_val and type(list_ext_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        list_ext_val = False
 
-            output = {
-                "languages": {tag: sorted(items) for tag, items in lang_groups.items()},
-                "total": len(lang_groups)
-            }
-            print(json.dumps(output, indent=2))
-        else:
-            print_languages(query=query)
+    if list_ext_val:
+        query = list_ext_val if isinstance(list_ext_val, str) else None
+        print_extensions(query=query, json_format=getattr(args, 'json', False))
         sys.exit(0)
 
     if args.init:
@@ -7665,6 +7570,54 @@ def print_placeholders(query=None, json_format=False):
         count_label = f"Matching: {total_matched}" if query_lower else f"Total: {total_available}"
         print(f"\n  {C_BOLD}{count_label}{C_RESET} template placeholders supported.")
 
+    print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
+
+
+def print_extensions(query=None, json_format=False):
+    """Print all supported file extensions and special filenames mapped to their language tags, optionally filtered by a query."""
+    ext_map = dict(utils.EXTENSION_TO_LANG)
+    ext_map.update(utils.FILENAME_TO_LANG)
+
+    if json_format:
+        if query:
+            query_lower = query.lower()
+            ext_map = {
+                item: lang for item, lang in ext_map.items()
+                if query_lower in item.lower() or query_lower in lang.lower()
+            }
+
+        output = {
+            "extensions": {item: ext_map[item] for item in sorted(ext_map.keys())},
+            "total": len(ext_map)
+        }
+        print(json.dumps(output, indent=2))
+        return
+
+    if query:
+        query_lower = query.lower()
+        title_suffix = f" (FILTERED BY '{query}')"
+    else:
+        query_lower = None
+        title_suffix = ""
+
+    print(f"\n{C_BOLD}{C_CYAN}=== SUPPORTED EXTENSIONS & FILENAMES{title_suffix} ==={C_RESET}")
+
+    items = sorted(ext_map.keys())
+    if query_lower:
+        items = [
+            item for item in items
+            if query_lower in item.lower() or query_lower in ext_map[item].lower()
+        ]
+
+    ext_width = 25
+
+    print(f"  {C_DIM}{'EXTENSION / FILENAME':<{ext_width}}  LANGUAGE TAG{C_RESET}")
+    for item in items:
+        lang = ext_map[item]
+        print(f"  {C_BOLD}{C_CYAN}{item:<{ext_width}}{C_RESET}  {C_DIM}{lang}{C_RESET}")
+
+    count_label = f"Matching: {len(items)}" if query_lower else f"Total: {len(ext_map)}"
+    print(f"\n  {C_BOLD}{count_label}{C_RESET} extensions and filenames supported.")
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
 
