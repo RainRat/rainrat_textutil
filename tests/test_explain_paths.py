@@ -92,6 +92,27 @@ def test_explain_paths_included(tmp_path, capsys):
     assert results[0]["included"] is True
     assert results[0]["metadata"]["language"] == "python"
 
+def test_explain_paths_relative_root_display(tmp_path, capsys, monkeypatch):
+    """Test that 'Relative to root:' is omitted when path equals relative_path, and included when they differ."""
+    monkeypatch.chdir(tmp_path)
+    file_path = tmp_path / "sample.py"
+    file_path.write_text("a = 1")
+
+    config = utils.DEFAULT_CONFIG.copy()
+    config['search'] = {'root_folders': ["."]}
+
+    # 1. When path equals relative_path ("sample.py"), "Relative to root:" should be omitted.
+    explain_paths(["sample.py"], config=config, json_format=False)
+    captured = capsys.readouterr()
+    assert "Path: sample.py" in captured.out
+    assert "Relative to root:" not in captured.out
+
+    # 2. When path differs from relative_path ("./sample.py"), "Relative to root:" should be shown.
+    explain_paths(["./sample.py"], config=config, json_format=False)
+    captured = capsys.readouterr()
+    assert "Path: ./sample.py" in captured.out
+    assert "Relative to root: sample.py" in captured.out
+
 def test_explain_paths_excluded_by_extension(tmp_path, capsys):
     """Test explaining a file excluded by extension settings."""
     txt_file = tmp_path / "notes.txt"
