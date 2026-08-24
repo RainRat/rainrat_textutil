@@ -951,6 +951,7 @@ def should_include(
 
     grep_pattern = filter_opts.get('grep')
     exclude_grep_pattern = filter_opts.get('exclude_grep')
+    grep_flags = re.IGNORECASE if filter_opts.get('grep_ignore_case') else 0
     min_tokens = filter_opts.get('min_tokens', 0)
     max_tokens = filter_opts.get('max_tokens', 0)
     min_lines = filter_opts.get('min_lines', 0)
@@ -970,10 +971,10 @@ def should_include(
             else:
                 content = ""
 
-            if grep_pattern and not re.search(grep_pattern, content):
+            if grep_pattern and not re.search(grep_pattern, content, flags=grep_flags):
                 return (False, 'grep_mismatch') if return_reason else False
 
-            if exclude_grep_pattern and re.search(exclude_grep_pattern, content):
+            if exclude_grep_pattern and re.search(exclude_grep_pattern, content, flags=grep_flags):
                 return (False, 'exclude_grep_match') if return_reason else False
 
             if min_tokens > 0 or max_tokens > 0:
@@ -4339,6 +4340,12 @@ def main():
         help="Skip files whose content matches this pattern.",
     )
     filtering_group.add_argument(
+        "--grep-ignore-case",
+        "--grep-icase",
+        action="store_true",
+        help="Perform case-insensitive matching for content grep patterns (--grep and --exclude-grep).",
+    )
+    filtering_group.add_argument(
         "--skip-binary",
         "-B",
         action="store_true",
@@ -5515,6 +5522,9 @@ def main():
 
     if args.exclude_grep:
         config['filters']['exclude_grep'] = args.exclude_grep
+
+    if getattr(args, 'grep_ignore_case', False):
+        config['filters']['grep_ignore_case'] = True
 
     if args.skip_binary:
         config['filters']['skip_binary'] = True
