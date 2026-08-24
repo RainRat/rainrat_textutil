@@ -1912,19 +1912,10 @@ def _populate_project_stats(stats, root_folder, config):
     stats.update(utils.get_datetime_placeholders())
     stats.update(utils.get_system_info())
 
-    project_meta = config.get('project', {})
-    if project_meta.get('name'):
-        stats['project_name'] = project_meta['name']
-    if project_meta.get('version'):
-        stats['project_version'] = project_meta['version']
-    if project_meta.get('author'):
-        stats['project_author'] = project_meta['author']
-    if project_meta.get('description'):
-        stats['project_description'] = project_meta['description']
-    if project_meta.get('license'):
-        stats['project_license'] = project_meta['license']
-    if project_meta.get('url'):
-        stats['project_url'] = project_meta['url']
+    project_meta = config.get('project') or {}
+    for key in ('name', 'version', 'author', 'description', 'license', 'url'):
+        if project_meta.get(key):
+            stats[f'project_{key}'] = project_meta[key]
 
 
 def _apply_project_overrides(config, args):
