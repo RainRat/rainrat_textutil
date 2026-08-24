@@ -767,16 +767,12 @@ def _normalize_extension_list(ext_list, context_prefix):
 
     Ensures each extension is a lowercase string with a leading dot.
     """
+    if ext_list is None:
+        return []
     _normalize_string_list(ext_list, context_prefix)
 
-    normalized = []
-    for ext in (ext_list or []):
-        if not ext.startswith('.'):
-            ext = '.' + ext
-        normalized.append(ext)
-
-    if ext_list is not None:
-        ext_list[:] = normalized
+    normalized = [ext if ext.startswith('.') else '.' + ext for ext in ext_list]
+    ext_list[:] = normalized
     return normalized
 
 
