@@ -7732,7 +7732,7 @@ def print_project_info(stats, json_format=False):
         ]
     }
 
-    label_width = 15
+    label_width = 20
 
     for category, fields in categories.items():
         print(f"\n  {C_BOLD}{category}{C_RESET}")

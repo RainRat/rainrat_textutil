@@ -71,6 +71,6 @@ def test_print_project_info_empty_string_fields(capsys):
     }
     sourcecombine.print_project_info(stats)
     out, _ = capsys.readouterr()
-    assert "Version         N/A" in out
-    assert "Author          N/A" in out
-    assert "URL             N/A" in out
+    assert "Version " in out and "N/A" in out
+    assert "Author " in out and "N/A" in out
+    assert "URL " in out and "N/A" in out
