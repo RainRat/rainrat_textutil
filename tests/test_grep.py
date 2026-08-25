@@ -181,3 +181,65 @@ def test_cli_grep_ignore_case_flag(tmp_path, monkeypatch):
         called_config = mock_combine.call_args[0][0]
         assert called_config['filters']['grep'] == "FIXME"
         assert called_config['filters']['grep_ignore_case'] is True
+
+def test_exclude_grep_ignore_case_filtering(tmp_path):
+    dir1 = tmp_path / "src"
+    dir1.mkdir()
+    (dir1 / "file1.txt").write_text("This has a DEPRECATED function.")
+    (dir1 / "file2.txt").write_text("This has deprecated text.")
+    (dir1 / "file3.txt").write_text("Clean file.")
+
+    config = DEFAULT_CONFIG.copy()
+    config['search'] = {'root_folders': [str(dir1)], 'recursive': True}
+    config['filters'] = {'exclude_grep': 'Deprecated', 'grep_ignore_case': True}
+    config['output'] = {'format': 'text', 'file': str(tmp_path / "combined.txt")}
+
+    stats = find_and_combine_files(config, str(tmp_path / "combined.txt"))
+
+    assert stats['total_files'] == 1
+    assert stats['filter_reasons'].get('exclude_grep_match') == 2
+
+    combined_content = (tmp_path / "combined.txt").read_text()
+    assert "file3.txt" in combined_content
+    assert "file1.txt" not in combined_content
+    assert "file2.txt" not in combined_content
+
+def test_cli_grep_icase_alias(tmp_path, monkeypatch):
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "file1.txt").write_text("todo note", encoding="utf-8")
+
+    out_file = tmp_path / "out.txt"
+
+    monkeypatch.setattr(sys, "argv", ["sourcecombine.py", str(root), "-o", str(out_file), "--exclude-grep", "NOTE", "--grep-icase"])
+
+    with patch("sourcecombine.find_and_combine_files") as mock_combine:
+        mock_combine.return_value = {
+            'total_files': 0,
+            'files_by_language': {},
+            'filter_reasons': {},
+            'top_files': []
+        }
+        try:
+            main()
+        except SystemExit:
+            pass
+
+        assert mock_combine.called
+        called_config = mock_combine.call_args[0][0]
+        assert called_config['filters']['exclude_grep'] == "NOTE"
+        assert called_config['filters']['grep_ignore_case'] is True
+
+def test_validate_config_grep_ignore_case():
+    from utils import validate_config, InvalidConfigError
+
+    config = DEFAULT_CONFIG.copy()
+    config['filters'] = {'grep_ignore_case': True}
+    validate_config(config)
+
+    config_invalid = DEFAULT_CONFIG.copy()
+    config_invalid['filters'] = {'grep_ignore_case': "true"}
+    with pytest.raises(InvalidConfigError) as excinfo:
+        validate_config(config_invalid)
+    assert "filters.grep_ignore_case must be true or false" in str(excinfo.value)
+

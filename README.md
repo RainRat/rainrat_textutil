@@ -27,9 +27,12 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--language` (`--lang`): Include only files matching these language identifiers. You can repeat this flag or use a comma-separated list (for example, `--lang python,javascript` or `--lang python --lang javascript`). Use `--list-languages` to see available identifiers.
 *   `--exclude-language` (`--exclude-lang`): Skip files matching these language identifiers. Supports comma-separated lists (for example, `--exclude-lang markdown,json`).
 *   `--limit` (`-L`): Stop processing once you reach this file limit.
+*   `--grep PATTERN`: Only include files whose content matches this regular expression.
+*   `--exclude-grep PATTERN`: Skip files whose content matches this regular expression.
+*   `--grep-ignore-case` (`--grep-icase`): Perform case-insensitive matching for `--grep` and `--exclude-grep` patterns.
 *   `--unique` (`-u`): Skip duplicate files by path or content (duplicate removal).
 *   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, skipping binary files, removing duplicates, and automatically including Git context like logs and diffs). This also copies to the system clipboard if you do not specify an output.
-*   `--analyze` (`-A`): Perform a comprehensive project analysis (token counts, line counts, language breakdown, and folder tree) without generating output files.
+*   `--analyze` (`-A`): Run complete project analysis (token counts, line counts, language breakdown, and folder tree) without generating output files.
 *   `--list-files` (`-l`): Show a list of all files that match the current filters and exit without writing files. Supports structured formats (`--format json`, `--format csv`, `--format xml`, `--format markdown`).
 *   `--tree` (`-t`): Show a visual folder tree of all included files with details and exit without writing files. Supports structured formats (`--format json`, `--format xml`, `--format markdown`).
 *   `--strip-components N`: Remove N leading components from file paths during extraction or verification.
@@ -71,7 +74,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--export-config`: Save the final combined configuration to a YAML file and exit. Use `-` to output to standard output (`stdout`).
 *   `--system-info`: Show environment details (Python version, OS, and other system details). Use `--json` for machine-readable output.
 *   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without actually writing them to disk.
-*   `--analyze` (`-A`): Perform a comprehensive project analysis without generating output files. Shortcut for `--dry-run --estimate-tokens --overview --include-tree --tree`.
+*   `--analyze` (`-A`): Run project analysis without generating output files. Shortcut for `--dry-run --estimate-tokens --overview --include-tree --tree`.
 *   `--clean`: (Alias for `--delete-backups`) Remove all `.bak` backup files from the current directory and its subfolders. Use `--json` for machine-readable output.
 *   `--version` (`-V`): Show the application version and exit.
 
@@ -232,7 +235,7 @@ python sourcecombine.py . --pair .cpp .h --output combined_src/
 ```
 
 ### Collapsible Markdown
-Combine files into collapsible Markdown blocks, perfect for reducing clutter when sharing large code bases with AI models:
+Combine files into collapsible Markdown blocks to reduce clutter when sharing large code bases with AI models:
 ```bash
 python sourcecombine.py . --format markdown --collapsible --output project_context.md
 ```
@@ -259,9 +262,9 @@ Check if your files on disk match the content or SHA-256 hashes stored in a comb
    ```
 
 ### Backup and Restore (Safe Workflows)
-When you modify files on your system, SourceCombine keeps your original files safe. If you run `--apply-in-place`, `--extract`, or `--repair`, the tool creates backups by default. It saves these backups with a `.bak` extension next to your original files.
+When modifying files, SourceCombine can create backups. If you run `--apply-in-place`, `--extract`, or `--repair`, the tool creates backups by default, saved with a `.bak` extension next to the original files.
 
-You can inspect, compare, restore, or clean up these backups easily.
+You can inspect, compare, restore, or clean up these backups:
 
 1. **List all backup files:**
    See which backup files exist and check if they match your current files:
@@ -325,7 +328,7 @@ python sourcecombine.py . --staged
 ```
 
 #### Filter by File Size and Age
-You can easily skip large or old files to keep your output clean. For example, to only include files smaller than 50 Kilobytes modified in the last 24 hours:
+Skip large or old files to keep output concise. For example, to only include files smaller than 50 Kilobytes modified in the last 24 hours:
 ```bash
 python sourcecombine.py . --max-size 50KB --since 1d
 ```
@@ -345,6 +348,10 @@ Or to skip files containing "DEPRECATED":
 ```bash
 python sourcecombine.py . --exclude-grep "DEPRECATED"
 ```
+To perform case-insensitive matching with `--grep` or `--exclude-grep`, add `--grep-ignore-case` (or `--grep-icase`):
+```bash
+python sourcecombine.py . --grep "fixme" --grep-ignore-case
+```
 
 ## Configuration Guide
 You can configure SourceCombine using a configuration file instead of passing many options via the command line.
@@ -362,7 +369,7 @@ python sourcecombine.py --config my_custom_config.yml
 ```
 
 ### YAML Configuration Example
-Here is a simple and clean YAML configuration file (`sourcecombine.yml`). This configuration defines search rules, filters out build/environment folders, and configures the output file:
+Here is an example YAML configuration file (`sourcecombine.yml`). It defines search rules, excludes build/environment folders, and sets the output file:
 
 ```yaml
 # --- Search Parameters ---
@@ -403,7 +410,7 @@ output:
 ```
 
 ### JSON Configuration Example (No PyYAML Required)
-If you do not have `PyYAML` installed, or if you prefer JSON, you can use a JSON configuration file (`sourcecombine.json`). It works immediately using Python's standard library:
+If you do not have `PyYAML` installed or prefer JSON, you can use a JSON configuration file (`sourcecombine.json`). It works with Python's standard library without extra dependencies:
 
 ```json
 {

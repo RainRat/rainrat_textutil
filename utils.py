@@ -232,6 +232,7 @@ DEFAULT_CONFIG = {
         'modified_until': 0,
         'grep': '',
         'exclude_grep': '',
+        'grep_ignore_case': False,
         'exclusions': {
             'filenames': [
                 '*.pyc', '*.pyo', '*.pyd',
@@ -590,8 +591,8 @@ def remove_comments_by_lang(text, lang, single_only=False, multi_only=False):
     if single_prefix and not multi_only:
         # Match from prefix to end of line, being careful not to match
         # prefixes inside strings or already within multi-line comments.
-        # This is a basic implementation; robust comment removal usually
-        # requires a proper lexer, but this works for most common cases.
+        # This is a regex implementation; full comment removal across all edge cases usually
+        # requires a parser, but this handles standard cases.
         pattern = r'^[ \t]*' + re.escape(single_prefix) + r'.*$'
         text = re.sub(pattern, '', text, flags=re.MULTILINE)
 
@@ -881,6 +882,7 @@ def _validate_filters_section(config):
 
     _validate_bool(filters, 'unique', 'filters')
     _validate_bool(filters, 'skip_binary', 'filters')
+    _validate_bool(filters, 'grep_ignore_case', 'filters')
 
     grep_pattern = filters.get('grep')
     if grep_pattern:

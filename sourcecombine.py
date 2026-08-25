@@ -6362,7 +6362,7 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
             # Priority 2: Check content if available
             if expected_content is not None:
                 actual_content, _ = read_file_best_effort(target_path)
-                # Normalize line endings for content comparison to be robust across OS
+                # Normalize line endings for consistent cross-platform content comparison
                 if actual_content.replace('\r\n', '\n') == expected_content.replace('\r\n', '\n'):
                     if json_format:
                         json_results.append({"path": rel_path_str, "status": "OK", "detail": "content match"})

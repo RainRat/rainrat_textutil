@@ -1,6 +1,6 @@
 # ================================================================
-# Comprehensive configuration template for SourceCombine
-# Lists every available option with default values and explanations.
+# Configuration template for SourceCombine
+# Lists available options with default values and explanations.
 # ================================================================
 
 # --- Search Parameters ---
@@ -238,6 +238,9 @@ filters:
 
   # Skip files whose content matches this regular expression.
   exclude_grep: ""
+
+  # If true, perform case-insensitive matching for grep and exclude_grep patterns.
+  grep_ignore_case: false
 
   # --- Inclusion Groups ---
   # Enable specific groups to only include listed filenames or patterns.
