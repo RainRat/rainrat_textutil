@@ -27,6 +27,8 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--language` (`--lang`): Include only files matching these language identifiers. You can repeat this flag or use a comma-separated list (for example, `--lang python,javascript` or `--lang python --lang javascript`). Use `--list-languages` to see available identifiers.
 *   `--exclude-language` (`--exclude-lang`): Skip files matching these language identifiers. Supports comma-separated lists (for example, `--exclude-lang markdown,json`).
 *   `--limit` (`-L`): Stop processing once you reach this file limit.
+*   `--sort SORT_BY` (`-s SORT_BY`): Sort matched files before combining (`name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`).
+*   `--reverse` (`-r`): Reverse the file sorting order.
 *   `--grep PATTERN`: Only include files whose content matches this regular expression.
 *   `--exclude-grep PATTERN`: Skip files whose content matches this regular expression.
 *   `--grep-ignore-case` (`--grep-icase`): Perform case-insensitive matching for `--grep` and `--exclude-grep` patterns.
@@ -42,7 +44,8 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--project-description TEXT`: Override the project description.
 *   `--project-license NAME`: Override the project license.
 *   `--project-url URL`: Override the project URL.
-*   `--json`: Output results in JSON format.
+*   `--format FORMAT` (`-f FORMAT`): Set the output format (`text`, `markdown`, `json`, `jsonl`, `xml`, or `csv`). You can also use shortcut flags like `--markdown`, `--json`, `--jsonl`, `--xml`, or `--csv`.
+*   `--json`: Output results in JSON format. Shortcut for `--format json`.
 *   `--dry-run` (`-d`): Show what would happen without making any changes.
 *   `--remove-comments` (`-R`): Remove both single-line and multi-line comments based on the detected language.
 *   `--remove-single-line-comments`: Remove only single-line comments based on the detected language.
