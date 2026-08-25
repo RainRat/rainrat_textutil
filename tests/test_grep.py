@@ -133,3 +133,51 @@ def test_should_include_grep_virtual_bytes_coverage():
     include, reason = should_include(None, Path("test.txt"), filter_opts, search_opts, return_reason=True, virtual_content=virtual_content)
     assert include is True
     assert reason is None
+
+def test_grep_ignore_case_filtering(tmp_path):
+    dir1 = tmp_path / "src"
+    dir1.mkdir()
+    (dir1 / "file1.txt").write_text("This file has a todo item.")
+    (dir1 / "file2.txt").write_text("This file is clean.")
+    (dir1 / "file3.txt").write_text("Another TODO here.")
+
+    config = DEFAULT_CONFIG.copy()
+    config['search'] = {'root_folders': [str(dir1)], 'recursive': True}
+    config['filters'] = {'grep': 'TODO', 'grep_ignore_case': True}
+    config['output'] = {'format': 'text', 'file': str(tmp_path / "combined.txt")}
+
+    stats = find_and_combine_files(config, str(tmp_path / "combined.txt"))
+
+    assert stats['total_files'] == 2
+    assert stats['filter_reasons'].get('grep_mismatch') == 1
+
+    combined_content = (tmp_path / "combined.txt").read_text()
+    assert "file1.txt" in combined_content
+    assert "file3.txt" in combined_content
+    assert "file2.txt" not in combined_content
+
+def test_cli_grep_ignore_case_flag(tmp_path, monkeypatch):
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "file1.txt").write_text("fixme later", encoding="utf-8")
+
+    out_file = tmp_path / "out.txt"
+
+    monkeypatch.setattr(sys, "argv", ["sourcecombine.py", str(root), "-o", str(out_file), "--grep", "FIXME", "--grep-ignore-case"])
+
+    with patch("sourcecombine.find_and_combine_files") as mock_combine:
+        mock_combine.return_value = {
+            'total_files': 1,
+            'files_by_language': {},
+            'filter_reasons': {},
+            'top_files': []
+        }
+        try:
+            main()
+        except SystemExit:
+            pass
+
+        assert mock_combine.called
+        called_config = mock_combine.call_args[0][0]
+        assert called_config['filters']['grep'] == "FIXME"
+        assert called_config['filters']['grep_ignore_case'] is True
