@@ -53,3 +53,12 @@ def test_print_system_info_with_and_without_optional_dependencies(capsys):
     assert "Installed" in captured.out
     assert "pyperclip" in captured.out
     assert "Not found" in captured.out
+
+def test_print_system_info_handles_find_spec_exception(capsys):
+    from sourcecombine import print_system_info
+    with patch("importlib.util.find_spec", side_effect=Exception("find_spec error")):
+        print_system_info()
+
+    captured = capsys.readouterr()
+    assert "=== SYSTEM INFORMATION ===" in captured.out
+    assert "Not found" in captured.out
