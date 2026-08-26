@@ -1990,9 +1990,6 @@ class FileProcessor:
         self.seen_hashes = set()
         self.csv_writer = None
 
-    def _make_bar(self, **kwargs):
-        return _progress_bar(enabled=_progress_enabled(self.dry_run), **kwargs)
-
     def _write_with_templates(self, outfile, content, relative_path, size=None, tokens=None, lines=None, modified=None, index=None, total=None, global_size=None, global_tokens=None, global_lines=None, file_path=None, language=None, sha256=None):
         """Write ``content`` with configured header/footer templates."""
 
@@ -2983,7 +2980,8 @@ def find_and_combine_files(
         else:
             # Standard finding from root folders
             for root_folder in root_folders:
-                finding_bar = processor._make_bar(
+                finding_bar = _progress_bar(
+                    enabled=_progress_enabled(processor.dry_run),
                     desc=f"Finding in {_truncate_path(root_folder, 40)}",
                     unit="file",
                     leave=False,
@@ -3342,7 +3340,8 @@ def find_and_combine_files(
             # If sorting by tokens or lines, we must calculate metrics for all files first
             if sort_by in ('tokens', 'lines'):
                 metric_data = []
-                sort_bar = processor._make_bar(
+                sort_bar = _progress_bar(
+                    enabled=_progress_enabled(processor.dry_run),
                     total=len(all_combined_items),
                     desc=f"Calculating {sort_by} for sorting",
                     unit="file",
@@ -3394,7 +3393,8 @@ def find_and_combine_files(
                 all_combined_items = all_combined_items[:max_files]
                 stats['limit_reached'] = True
 
-            est_bar = processor._make_bar(
+            est_bar = _progress_bar(
+                enabled=_progress_enabled(processor.dry_run),
                 total=len(all_combined_items),
                 desc="Analyzing files",
                 unit="file",
@@ -3548,7 +3548,8 @@ def find_and_combine_files(
 
         # Process Paired files if enabled
         if pairing_enabled and not list_files and not tree_view:
-            processing_bar = processor._make_bar(
+            processing_bar = _progress_bar(
+                enabled=_progress_enabled(processor.dry_run),
                 total=sum(len(paths) for _, _, paths in all_paired_items),
                 desc="Processing files",
                 unit="file",
@@ -3676,7 +3677,8 @@ def find_and_combine_files(
                 if not dry_run and not estimate_tokens:
                     outfile.write(toc_content)
 
-            processing_bar = processor._make_bar(
+            processing_bar = _progress_bar(
+                enabled=_progress_enabled(processor.dry_run),
                 total=len(all_combined_items),
                 desc="Processing files",
                 unit="file",
