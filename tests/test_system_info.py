@@ -53,3 +53,17 @@ def test_print_system_info_with_and_without_optional_dependencies(capsys):
     assert "Installed" in captured.out
     assert "pyperclip" in captured.out
     assert "Not found" in captured.out
+
+def test_print_system_info_handles_find_spec_exception(capsys):
+    import json
+    from sourcecombine import print_system_info
+    with patch("importlib.util.find_spec", side_effect=RuntimeError("Resolution error")):
+        print_system_info(json_format=False)
+        captured = capsys.readouterr()
+        assert "=== SYSTEM INFORMATION ===" in captured.out
+        assert "Not found" in captured.out
+
+        print_system_info(json_format=True)
+        captured_json = capsys.readouterr()
+        data = json.loads(captured_json.out)
+        assert data["dependencies"]["tiktoken"]["installed"] is False
