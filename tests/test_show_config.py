@@ -4,18 +4,27 @@ import subprocess
 import yaml
 
 def test_show_config_defaults():
-    """Test that --show-config displays default values."""
+    """Test that --show-config displays default values and no stderr log clutter."""
     result = subprocess.run(
         ["python", "sourcecombine.py", "--show-config"],
         capture_output=True,
         text=True,
         check=True
     )
-    # The first line might be "INFO: Final merged configuration:" if logging is on
-    # but since it's on stderr and we captured stdout, we should just get YAML
     config = yaml.safe_load(result.stdout)
     assert config["output"]["format"] == "text"
     assert config["search"]["root_folders"] == ["."]
+    assert "Final merged configuration:" not in result.stderr
+    assert "No config file found" not in result.stderr
+
+def test_stdout_streaming_config_commands_clean_stderr():
+    """Test that stdout streaming configuration commands output clean text without INFO log clutter on stderr."""
+    for flag in ["--show-config", "--export-config", "--init", "--init-ignore"]:
+        cmd = ["python", "sourcecombine.py", flag, "-"] if flag != "--show-config" else ["python", "sourcecombine.py", flag]
+        res = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        assert res.stdout.strip() != ""
+        assert "Saving configuration to standard output" not in res.stderr
+        assert "Final merged configuration:" not in res.stderr
 
 def test_show_config_overrides():
     """Test that --show-config reflects CLI overrides."""
