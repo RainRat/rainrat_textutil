@@ -7621,10 +7621,13 @@ def print_extensions(query=None, json_format=False):
 
     ext_width = 25
 
-    print(f"  {C_DIM}{'EXTENSION / FILENAME':<{ext_width}}  LANGUAGE TAG{C_RESET}")
-    for item in items:
-        lang = ext_map[item]
-        print(f"  {C_BOLD}{C_CYAN}{item:<{ext_width}}{C_RESET}  {C_DIM}{lang}{C_RESET}")
+    if query_lower and len(items) == 0:
+        print(f"\n  {C_YELLOW}No extensions or filenames matched the filter query '{query}'.{C_RESET}")
+    else:
+        print(f"  {C_DIM}{'EXTENSION / FILENAME':<{ext_width}}  LANGUAGE TAG{C_RESET}")
+        for item in items:
+            lang = ext_map[item]
+            print(f"  {C_BOLD}{C_CYAN}{item:<{ext_width}}{C_RESET}  {C_DIM}{lang}{C_RESET}")
 
     count_label = f"Matching: {len(items)}" if query_lower else f"Total: {len(ext_map)}"
     print(f"\n  {C_BOLD}{count_label}{C_RESET} extensions and filenames supported.")
@@ -7675,23 +7678,27 @@ def print_languages(query=None, json_format=False):
     tag_width = 15
     desc_width = max(40, shutil.get_terminal_size((80, 20)).columns - tag_width - 6)
 
-    print(f"  {C_DIM}{'LANGUAGE TAG':<{tag_width}}  EXTENSION / FILENAME MAPPINGS{C_RESET}")
-    for tag in lang_tags:
-        items = sorted(lang_groups[tag])
-        items_str = ", ".join(items)
+    if query_lower and len(lang_tags) == 0:
+        print(f"\n  {C_YELLOW}No languages matched the filter query '{query}'.{C_RESET}")
+    else:
+        print(f"  {C_DIM}{'LANGUAGE TAG':<{tag_width}}  EXTENSION / FILENAME MAPPINGS{C_RESET}")
+        for tag in lang_tags:
+            items = sorted(lang_groups[tag])
+            items_str = ", ".join(items)
 
-        # Wrap long lists of extensions
-        wrapped = textwrap.wrap(items_str, width=desc_width)
+            # Wrap long lists of extensions
+            wrapped = textwrap.wrap(items_str, width=desc_width)
 
-        # Print the first line with the tag
-        first_line = wrapped[0] if wrapped else ""
-        print(f"  {C_BOLD}{C_CYAN}{tag:<{tag_width}}{C_RESET}  {C_DIM}{first_line}{C_RESET}")
+            # Print the first line with the tag
+            first_line = wrapped[0] if wrapped else ""
+            print(f"  {C_BOLD}{C_CYAN}{tag:<{tag_width}}{C_RESET}  {C_DIM}{first_line}{C_RESET}")
 
-        # Print subsequent lines indented
-        for line in wrapped[1:]:
-            print(f"  {' ':<{tag_width}}  {C_DIM}{line}{C_RESET}")
+            # Print subsequent lines indented
+            for line in wrapped[1:]:
+                print(f"  {' ':<{tag_width}}  {C_DIM}{line}{C_RESET}")
 
-    print(f"\n  {C_BOLD}Total:{C_RESET} {len(lang_tags)} languages supported.")
+    count_label = f"Matching: {len(lang_tags)}" if query_lower else f"Total: {len(lang_groups)}"
+    print(f"\n  {C_BOLD}{count_label}{C_RESET} languages supported.")
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
 
