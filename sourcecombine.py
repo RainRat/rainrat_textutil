@@ -5918,6 +5918,7 @@ def main():
             keep_line_numbers=args.keep_line_numbers,
             show_diff=config.get('output', {}).get('show_diff', False),
             strip_components=args.strip_components,
+            json_format=getattr(args, 'json', False),
         )
         dest = f"to '{output_folder}'"
         if len(sources) == 1:
@@ -5926,7 +5927,8 @@ def main():
             source_desc = f"from {len(sources)} sources"
 
         duration = time.perf_counter() - start_time
-        _print_execution_summary(stats, args, pairing_enabled=False, destination_desc=dest, duration=duration, source_desc=source_desc, mirror_enabled=mirror_enabled)
+        if not getattr(args, 'json', False):
+            _print_execution_summary(stats, args, pairing_enabled=False, destination_desc=dest, duration=duration, source_desc=source_desc, mirror_enabled=mirror_enabled)
 
         summary_path = output_conf.get('summary_json')
         if summary_path and summary_path != '-' and '{{' in summary_path:
@@ -6454,7 +6456,7 @@ def _handle_invalid_config_error(exc, verbose, message=None):
     sys.exit(1)
 
 
-def extract_files(sources, output_folder, dry_run=False, source_name="combined file", config=None, list_files=False, tree_view=False, limit=0, estimate_tokens=False, sort_by='name', sort_reverse=False, keep_line_numbers=False, show_diff=False, strip_components=0):
+def extract_files(sources, output_folder, dry_run=False, source_name="combined file", config=None, list_files=False, tree_view=False, limit=0, estimate_tokens=False, sort_by='name', sort_reverse=False, keep_line_numbers=False, show_diff=False, strip_components=0, json_format=False):
     """Recreate the original folder structure and files from combined content sources."""
     output_folder = Path(output_folder)
 
@@ -6709,12 +6711,14 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
     logging.info("Found %d files to extract from %s", len(files_to_create), source_name)
 
     extracted_count = 0
+    error_count = 0
+    json_extracted_files = []
 
     extraction_bar = _progress_bar(
         files_to_create,
         desc="Extracting files",
         unit="file",
-        enabled=_progress_enabled(dry_run)
+        enabled=(not json_format and _progress_enabled(dry_run))
     )
 
     running_size = 0
@@ -6722,50 +6726,134 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
     running_tokens = 0
 
     for rel_path_str, file_content, meta in extraction_bar:
-        extraction_bar.set_description(f"Extracting {_truncate_path(rel_path_str, 40)}")
+        if not json_format:
+            extraction_bar.set_description(f"Extracting {_truncate_path(rel_path_str, 40)}")
 
         if file_content is None:
-            logging.info("Skipping extraction for file without content: %s", rel_path_str)
+            if not json_format:
+                logging.info("Skipping extraction for file without content: %s", rel_path_str)
+            if json_format:
+                json_extracted_files.append({
+                    "path": rel_path_str,
+                    "target_path": None,
+                    "status": "SKIPPED",
+                    "reason": "no file content",
+                    "size": None,
+                    "lines": None,
+                    "tokens": None,
+                    "error": None
+                })
             continue
+
+        file_size = _to_int_or_none(meta.get('size'))
+        if file_size is None and file_content is not None:
+            file_size = len(file_content.encode('utf-8'))
+
+        file_lines = _to_int_or_none(meta.get('lines'))
+        if file_lines is None and file_content is not None:
+            file_lines = len(file_content.splitlines())
+
+        file_tokens = _to_int_or_none(meta.get('tokens'))
 
         # Security check: prevent path traversal and absolute paths across platforms.
         try:
-            # We use joinpath and resolve to catch traversal and absolute path attempts.
-            # Malformed paths such as 'C:../' or '/etc/passwd' are handled safely.
             requested_path = Path(rel_path_str)
 
             if strip_components > 0:
                 parts = requested_path.parts
                 if len(parts) <= strip_components:
-                    logging.warning("Skipping path with fewer than %d components: %s", strip_components, rel_path_str)
+                    msg = f"Skipping path with fewer than {strip_components} components: {rel_path_str}"
+                    if not json_format:
+                        logging.warning("%s", msg)
+                    if json_format:
+                        json_extracted_files.append({
+                            "path": rel_path_str,
+                            "target_path": None,
+                            "status": "SKIPPED",
+                            "reason": msg,
+                            "size": file_size,
+                            "lines": file_lines,
+                            "tokens": file_tokens,
+                            "error": None
+                        })
                     continue
                 requested_path = Path(*parts[strip_components:])
-            
-            # Absolute paths are always unsafe.
+
             if requested_path.is_absolute() or PurePosixPath(rel_path_str).is_absolute() or PureWindowsPath(rel_path_str).is_absolute():
-                logging.warning("Skipping absolute path: %s", rel_path_str)
+                msg = f"Absolute path unsafe: {rel_path_str}"
+                if not json_format:
+                    logging.warning("Skipping absolute path: %s", rel_path_str)
+                if json_format:
+                    json_extracted_files.append({
+                        "path": rel_path_str,
+                        "target_path": None,
+                        "status": "SKIPPED",
+                        "reason": msg,
+                        "size": file_size,
+                        "lines": file_lines,
+                        "tokens": file_tokens,
+                        "error": None
+                    })
                 continue
 
-            # Check for '..' in parts across different path flavors to catch bypasses such as 'C:../'
-            # We also check the raw string for ':' which is unsafe in relative paths.
             if ('..' in requested_path.parts or 
                 '..' in PurePosixPath(rel_path_str.replace('\\', '/')).parts or
                 '..' in PureWindowsPath(rel_path_str).parts or
                 ':' in rel_path_str):
-                logging.warning("Skipping potentially unsafe path: %s", rel_path_str)
+                msg = f"Potentially unsafe path: {rel_path_str}"
+                if not json_format:
+                    logging.warning("Skipping potentially unsafe path: %s", rel_path_str)
+                if json_format:
+                    json_extracted_files.append({
+                        "path": rel_path_str,
+                        "target_path": None,
+                        "status": "SKIPPED",
+                        "reason": msg,
+                        "size": file_size,
+                        "lines": file_lines,
+                        "tokens": file_tokens,
+                        "error": None
+                    })
                 continue
 
             target_path = (output_folder / requested_path).resolve()
-        except (ValueError, OSError):
-            logging.warning("Skipping invalid path: %s", rel_path_str)
+        except (ValueError, OSError) as e:
+            msg = f"Invalid path: {rel_path_str}"
+            if not json_format:
+                logging.warning("Skipping invalid path: %s", rel_path_str)
+            if json_format:
+                json_extracted_files.append({
+                    "path": rel_path_str,
+                    "target_path": None,
+                    "status": "SKIPPED",
+                    "reason": msg,
+                    "size": file_size,
+                    "lines": file_lines,
+                    "tokens": file_tokens,
+                    "error": str(e)
+                })
             continue
 
         if show_diff and target_path.exists():
             old_content, _ = read_file_best_effort(target_path)
             _print_diff(old_content, file_content, rel_path_str)
 
+        target_path_str = target_path.as_posix()
+
         if dry_run:
-            logging.info("[DRY RUN] Would create: %s", target_path)
+            if not json_format:
+                logging.info("[DRY RUN] Would create: %s", target_path)
+            extracted_count += 1
+            if json_format:
+                json_extracted_files.append({
+                    "path": rel_path_str,
+                    "target_path": target_path_str,
+                    "status": "WOULD_EXTRACT",
+                    "size": file_size,
+                    "lines": file_lines,
+                    "tokens": file_tokens,
+                    "error": None
+                })
         else:
             try:
                 target_path.parent.mkdir(parents=True, exist_ok=True)
@@ -6773,18 +6861,60 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
                 target_path.write_text(file_content, encoding='utf-8')
                 if meta.get('modified') is not None:
                     os.utime(target_path, (meta['modified'], meta['modified']))
-                logging.info("Extracted: %s", target_path)
+                if not json_format:
+                    logging.info("Extracted: %s", target_path)
                 extracted_count += 1
+                if json_format:
+                    json_extracted_files.append({
+                        "path": rel_path_str,
+                        "target_path": target_path_str,
+                        "status": "EXTRACTED",
+                        "size": file_size,
+                        "lines": file_lines,
+                        "tokens": file_tokens,
+                        "error": None
+                    })
             except OSError as e:
-                logging.error("Failed to write %s: %s", target_path, e)
+                if not json_format:
+                    logging.error("Failed to write %s: %s", target_path, e)
+                error_count += 1
+                if json_format:
+                    json_extracted_files.append({
+                        "path": rel_path_str,
+                        "target_path": target_path_str,
+                        "status": "ERROR",
+                        "size": file_size,
+                        "lines": file_lines,
+                        "tokens": file_tokens,
+                        "error": str(e)
+                    })
 
-            running_size += (_to_int_or_none(meta.get('size')) or 0)
-            running_lines += (_to_int_or_none(meta.get('lines')) or 0)
-            running_tokens += (_to_int_or_none(meta.get('tokens')) or 0)
+        running_size += (file_size or 0)
+        running_lines += (file_lines or 0)
+        running_tokens += (file_tokens or 0)
+        if not json_format:
             extraction_bar.set_postfix(size=utils.format_size(running_size), lines=f"{running_lines:,}", tokens=f"{running_tokens:,}")
 
-    if not dry_run:
+    if not json_format and not dry_run:
         logging.info("Extraction complete. %d files created in %s", extracted_count, output_folder)
+
+    if json_format:
+        output_report = {
+            "title": "Extraction Report",
+            "dry_run": dry_run,
+            "output_folder": output_folder.as_posix(),
+            "files": json_extracted_files,
+            "summary": {
+                "extracted_count": extracted_count,
+                "error_count": error_count,
+                "skipped_count": len(files_to_create) - extracted_count - error_count,
+                "total_discovered": len(files_to_create),
+                "total_size_bytes": running_size,
+                "total_lines": running_lines,
+                "total_tokens": running_tokens
+            }
+        }
+        print(json.dumps(output_report, indent=2))
 
     return stats
 
