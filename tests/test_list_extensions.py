@@ -24,6 +24,7 @@ def test_print_extensions_filtered_no_match(capsys):
     print_extensions(query="nonexistentext999")
     captured = capsys.readouterr().out
     assert "FILTERED BY 'nonexistentext999'" in captured
+    assert "No extensions or filenames matched the filter query 'nonexistentext999'." in captured
     assert "Matching: 0 extensions and filenames supported." in captured
 
 

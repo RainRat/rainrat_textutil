@@ -40,7 +40,8 @@ def test_print_languages_filtered_no_match():
         sys.stdout = sys.__stdout__
     output = captured_output.getvalue()
     assert "=== SUPPORTED LANGUAGES (FILTERED BY 'nonexistentlang12345') ===" in output
-    assert "Total: 0 languages supported." in output
+    assert "No languages matched the filter query 'nonexistentlang12345'." in output
+    assert "Matching: 0 languages supported." in output
 
 def test_print_placeholders_unfiltered():
     captured_output = io.StringIO()

@@ -71,3 +71,13 @@ def test_list_languages_cli(capsys):
     assert "python" in captured.out
     assert "javascript" in captured.out
     assert "SUPPORTED LANGUAGES" in captured.out
+
+
+def test_list_languages_no_match(capsys):
+    from sourcecombine import print_languages
+
+    print_languages(query="nonexistentlang999")
+    captured = capsys.readouterr().out
+    assert "FILTERED BY 'nonexistentlang999'" in captured
+    assert "No languages matched the filter query 'nonexistentlang999'." in captured
+    assert "Matching: 0 languages supported." in captured
