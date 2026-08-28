@@ -4744,7 +4744,7 @@ def main():
         action="store_true",
         help=(
             "Rebuild original files and folders from combined outputs (JSON, XML, JSONL, CSV, Markdown, or Text). "
-            "Supports filtering, sorting, and processing."
+            "Supports filtering, sorting, and processing. Use --json for machine-readable output."
         ),
     )
     utility_group.add_argument(
@@ -4943,6 +4943,7 @@ def main():
         args.show_config or
         validate_config_val is not None or
         args.verify or
+        getattr(args, 'extract', False) or
         getattr(args, 'explain', False) or
         _get_bool_arg(args, 'list_backups') or
         _get_bool_arg(args, 'diff_backups') or
@@ -6735,7 +6736,8 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         print(_generate_tree_string(tree_paths, Path(source_name), include_header=False, information=information_lookup))
         return stats
 
-    logging.info("Found %d files to extract from %s", len(files_to_create), source_name)
+    if not json_format:
+        logging.info("Found %d files to extract from %s", len(files_to_create), source_name)
 
     extracted_count = 0
     error_count = 0

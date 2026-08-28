@@ -227,7 +227,7 @@ Rebuild the original project structure from a combined Markdown file:
 ```bash
 python sourcecombine.py --extract combined_files.md --output restored_project/
 ```
-Output machine-readable JSON extraction summary report (with `--dry-run` preview support):
+Output a JSON extraction summary in preview mode:
 ```bash
 python sourcecombine.py --extract combined_files.json --json --dry-run
 ```

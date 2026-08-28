@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 from sourcecombine import extract_files, main
 
 
@@ -11,7 +10,7 @@ def test_extract_files_json_format_dry_run(tmp_path, capsys):
     sources = [("test.json", content)]
     out_dir = tmp_path / "output"
 
-    stats = extract_files(sources, out_dir, dry_run=True, json_format=True)
+    extract_files(sources, out_dir, dry_run=True, json_format=True)
 
     captured = capsys.readouterr()
     report = json.loads(captured.out)
@@ -36,7 +35,7 @@ def test_extract_files_json_format_actual_extraction(tmp_path, capsys):
     sources = [("test.json", content)]
     out_dir = tmp_path / "extracted"
 
-    stats = extract_files(sources, out_dir, dry_run=False, json_format=True)
+    extract_files(sources, out_dir, dry_run=False, json_format=True)
 
     captured = capsys.readouterr()
     report = json.loads(captured.out)
@@ -60,7 +59,7 @@ def test_extract_files_json_format_skipped_and_unsafe_paths(tmp_path, capsys):
     sources = [("test.json", content)]
     out_dir = tmp_path / "extracted"
 
-    stats = extract_files(sources, out_dir, dry_run=False, json_format=True)
+    extract_files(sources, out_dir, dry_run=False, json_format=True)
 
     captured = capsys.readouterr()
     report = json.loads(captured.out)
@@ -98,3 +97,25 @@ def test_extract_cli_json_flag(tmp_path, capsys, monkeypatch):
     assert report["title"] == "Extraction Report"
     assert report["dry_run"] is True
     assert report["files"][0]["path"] == "sample.py"
+    assert "Found 1 files to extract" not in captured.err
+
+
+def test_extract_cli_json_clean_stderr(tmp_path):
+    import subprocess
+    json_file = tmp_path / "combined.json"
+    json_file.write_text(json.dumps([
+        {"path": "hello.txt", "content": "world"}
+    ]), encoding="utf-8")
+    out_dir = tmp_path / "out"
+
+    res = subprocess.run([
+        "python", "sourcecombine.py",
+        "--extract", str(json_file),
+        "--output", str(out_dir),
+        "--json"
+    ], capture_output=True, text=True, check=True)
+
+    report = json.loads(res.stdout)
+    assert report["summary"]["extracted_count"] == 1
+    assert res.stderr.strip() == ""
+
