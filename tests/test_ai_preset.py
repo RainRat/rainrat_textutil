@@ -128,3 +128,17 @@ def test_ai_preset_respects_explicit_disabled_git_log(temp_cwd, mock_argv):
         called_config = mock_combine.call_args[0][0]
         assert called_config['output'].get('git_log_count') == 0
 
+def test_ai_preset_handles_find_spec_exception(temp_cwd, mock_argv):
+    with mock_argv(['.', '--ai']), \
+         patch('importlib.util.find_spec', side_effect=RuntimeError("Module resolution failed")), \
+         patch('sourcecombine.find_and_combine_files') as mock_combine:
+
+        mock_combine.return_value = {}
+        try:
+            main()
+        except SystemExit:
+            pass
+
+        mock_combine.assert_called_once()
+        called_kwargs = mock_combine.call_args[1]
+        assert called_kwargs.get('clipboard') is False
