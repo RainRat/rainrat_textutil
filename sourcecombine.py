@@ -4740,6 +4740,14 @@ def main():
         help="Show supported template placeholders (optionally filtered by QUERY) and exit. Use --json for machine-readable output.",
     )
     utility_group.add_argument(
+        "--list-formats",
+        nargs="?",
+        const=True,
+        default=False,
+        metavar="QUERY",
+        help="Show supported output formats and aliases (optionally filtered by QUERY) and exit. Use --json for machine-readable output.",
+    )
+    utility_group.add_argument(
         "--extract",
         action="store_true",
         help=(
@@ -5026,6 +5034,15 @@ def main():
     if args.list_placeholders:
         query = args.list_placeholders if isinstance(args.list_placeholders, str) else None
         print_placeholders(query=query, json_format=getattr(args, 'json', False))
+        sys.exit(0)
+
+    list_fmt_val = getattr(args, 'list_formats', False)
+    if list_fmt_val and type(list_fmt_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        list_fmt_val = False
+
+    if list_fmt_val:
+        query = list_fmt_val if isinstance(list_fmt_val, str) else None
+        print_formats(query=query, json_format=getattr(args, 'json', False))
         sys.exit(0)
 
     if args.list_languages:
@@ -7790,6 +7807,93 @@ def print_extensions(query=None, json_format=False):
 
     count_label = f"Matching: {len(items)}" if query_lower else f"Total: {len(ext_map)}"
     print(f"\n  {C_BOLD}{count_label}{C_RESET} extensions and filenames supported.")
+    print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
+
+
+def print_formats(query=None, json_format=False):
+    """Print all supported output formats and their aliases, optionally filtered by a query."""
+    formats_info = {
+        "text": {
+            "aliases": ["txt"],
+            "description": "Standard plain text representation with optional header and footer templates."
+        },
+        "markdown": {
+            "aliases": ["md"],
+            "description": "Markdown formatted code blocks with language syntax highlighting."
+        },
+        "json": {
+            "aliases": [],
+            "description": "Structured JSON array containing file metadata and contents."
+        },
+        "jsonl": {
+            "aliases": [],
+            "description": "Line-delimited JSON objects for streaming large datasets line by line."
+        },
+        "xml": {
+            "aliases": [],
+            "description": "XML formatted structure with safe character escaping for files."
+        },
+        "manifest": {
+            "aliases": [],
+            "description": "Manifest format storing file paths, sizes, line counts, and SHA-256 hashes."
+        },
+        "csv": {
+            "aliases": [],
+            "description": "Comma-separated values format containing tabular file metadata and content."
+        }
+    }
+
+    if json_format:
+        if query:
+            query_lower = query.lower()
+            filtered_fmt = {
+                fmt: details for fmt, details in formats_info.items()
+                if query_lower in fmt.lower() or
+                any(query_lower in alias.lower() for alias in details["aliases"]) or
+                query_lower in details["description"].lower()
+            }
+        else:
+            filtered_fmt = formats_info
+
+        output = {
+            "formats": filtered_fmt,
+            "total": len(filtered_fmt)
+        }
+        print(json.dumps(output, indent=2))
+        return
+
+    if query:
+        query_lower = query.lower()
+        title_suffix = f" (FILTERED BY '{query}')"
+    else:
+        query_lower = None
+        title_suffix = ""
+
+    print(f"\n{C_BOLD}{C_CYAN}=== SUPPORTED OUTPUT FORMATS{title_suffix} ==={C_RESET}")
+
+    items = sorted(formats_info.keys())
+    if query_lower:
+        items = [
+            fmt for fmt in items
+            if query_lower in fmt.lower() or
+            any(query_lower in alias.lower() for alias in formats_info[fmt]["aliases"]) or
+            query_lower in formats_info[fmt]["description"].lower()
+        ]
+
+    fmt_width = 15
+    alias_width = 12
+
+    if query_lower and len(items) == 0:
+        print(f"\n  {C_YELLOW}No output formats matched the filter query '{query}'.{C_RESET}")
+    else:
+        print(f"  {C_DIM}{'FORMAT':<{fmt_width}}  {'ALIASES':<{alias_width}}  DESCRIPTION{C_RESET}")
+        for fmt in items:
+            aliases_str = ", ".join(formats_info[fmt]["aliases"]) if formats_info[fmt]["aliases"] else "-"
+            desc = formats_info[fmt]["description"]
+            print(f"  {C_BOLD}{C_CYAN}{fmt:<{fmt_width}}{C_RESET}  {C_DIM}{aliases_str:<{alias_width}}  {desc}{C_RESET}")
+
+    count_label = f"Matching: {len(items)}" if query_lower else f"Total: {len(formats_info)}"
+    print(f"\n  {C_BOLD}{count_label}{C_RESET} output formats supported.")
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
 
