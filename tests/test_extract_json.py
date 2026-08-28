@@ -119,3 +119,79 @@ def test_extract_cli_json_clean_stderr(tmp_path):
     assert report["summary"]["extracted_count"] == 1
     assert res.stderr.strip() == ""
 
+
+def test_extract_files_json_format_strip_components(tmp_path, capsys):
+    content = json.dumps([
+        {"path": "foo/bar.txt", "content": "Hello", "size": None, "lines": None}
+    ])
+    sources = [("test.json", content)]
+    out_dir = tmp_path / "extracted"
+
+    extract_files(sources, out_dir, dry_run=False, json_format=True, strip_components=2)
+
+    captured = capsys.readouterr()
+    report = json.loads(captured.out)
+
+    assert report["summary"]["skipped_count"] == 1
+    assert report["files"][0]["status"] == "SKIPPED"
+    assert "fewer than 2 components" in report["files"][0]["reason"]
+    assert report["files"][0]["size"] == 5
+    assert report["files"][0]["lines"] == 1
+
+
+def test_extract_files_strip_components_non_json_logging(tmp_path, capsys, caplog):
+    content = json.dumps([
+        {"path": "single.txt", "content": "Test"}
+    ])
+    sources = [("test.json", content)]
+    out_dir = tmp_path / "extracted"
+
+    with caplog.at_level("WARNING"):
+        extract_files(sources, out_dir, dry_run=False, json_format=False, strip_components=1)
+
+    assert "Skipping path with fewer than 1 components: single.txt" in caplog.text
+
+
+def test_extract_files_json_format_invalid_path_exception(tmp_path, capsys, monkeypatch):
+    content = json.dumps([
+        {"path": "some_file.txt", "content": "Hello"}
+    ])
+    sources = [("test.json", content)]
+    out_dir = tmp_path / "extracted"
+
+    def mock_resolve(*args, **kwargs):
+        raise OSError("Invalid resolution error")
+
+    monkeypatch.setattr("pathlib.Path.resolve", mock_resolve)
+
+    extract_files(sources, out_dir, dry_run=False, json_format=True)
+
+    captured = capsys.readouterr()
+    report = json.loads(captured.out)
+
+    assert report["summary"]["skipped_count"] == 1
+    assert report["files"][0]["status"] == "SKIPPED"
+    assert "Invalid path" in report["files"][0]["reason"]
+    assert "Invalid resolution error" in report["files"][0]["error"]
+
+
+def test_extract_files_json_format_write_os_error(tmp_path, capsys, monkeypatch):
+    content = json.dumps([
+        {"path": "error.txt", "content": "Sample content"}
+    ])
+    sources = [("test.json", content)]
+    out_dir = tmp_path / "extracted"
+
+    def mock_write_text(*args, **kwargs):
+        raise OSError("Permission denied / disk full")
+
+    monkeypatch.setattr("pathlib.Path.write_text", mock_write_text)
+
+    extract_files(sources, out_dir, dry_run=False, json_format=True)
+
+    captured = capsys.readouterr()
+    report = json.loads(captured.out)
+
+    assert report["summary"]["error_count"] == 1
+    assert report["files"][0]["status"] == "ERROR"
+    assert "Permission denied / disk full" in report["files"][0]["error"]
