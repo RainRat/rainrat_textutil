@@ -7960,7 +7960,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     term_width = 80
     try:
         term_width = shutil.get_terminal_size((80, 20)).columns
-    except Exception:
+    except (OSError, ValueError):
         pass
 
     total_included = stats.get('total_files', 0)
