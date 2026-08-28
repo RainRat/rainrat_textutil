@@ -22,6 +22,9 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--git-files` (`-G`): Use Git to find files and follow the `.gitignore` rules automatically.
 *   `--files-from PATH`: Read a list of file paths from a text file or standard input (`-`), skipping folder scanning.
 *   `--ignore-file PATH`: Add an ignore file containing glob patterns to skip. Supports comma-separated lists (for example, `.ignore1,.ignore2`). Default is `.sourcecombineignore`.
+*   `--exclude-file` (`-x`): Skip files matching a glob pattern (for example, `-x "*.json"` or `--exclude-file "*.tmp"`). You can repeat this flag.
+*   `--exclude-folder` (`-X`): Skip folders matching a glob pattern (for example, `-X tests` or `--exclude-folder "build*"`). You can repeat this flag.
+*   `--include-file` (`-i`): Include files matching a glob pattern regardless of other filter rules (for example, `-i "*.config"`). You can repeat this flag.
 *   `--extension` (`--ext`): Include only files with these extensions. You can repeat this flag or use a comma-separated list (for example, `--ext py,js` or `--ext py --ext js`).
 *   `--exclude-extension` (`--exclude-ext`): Skip files with these extensions. Supports comma-separated lists (for example, `--exclude-ext log,tmp`).
 *   `--language` (`--lang`): Include only files matching these language identifiers. You can repeat this flag or use a comma-separated list (for example, `--lang python,javascript` or `--lang python --lang javascript`). Use `--list-languages` to see available identifiers.
