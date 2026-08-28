@@ -344,9 +344,9 @@ python sourcecombine.py . --max-size 50KB --since 1d
 ```
 
 #### Optimize Files for AI (Remove Comments and Whitespace)
-When sharing code with AI models, you can save tokens by removing source code comments and blank lines. Use the `--remove-comments` and `--compact-whitespace` flags together:
+When sharing code with AI models, you can save tokens by removing source code comments and blank lines. Use the `--remove-comments` and `--compact` flags together:
 ```bash
-python sourcecombine.py . --remove-comments --compact-whitespace --output compact_code.txt
+python sourcecombine.py . --remove-comments --compact --output compact_code.txt
 ```
 
 #### Filter by Content Patterns (Grep)
