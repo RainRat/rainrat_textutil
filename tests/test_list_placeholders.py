@@ -51,6 +51,7 @@ class TestListPlaceholders(unittest.TestCase):
 
         output = captured_output.getvalue()
         self.assertIn("No template placeholders matched the filter query 'nonexistentquery12345'.", output)
+        self.assertIn("Matching: 0 template placeholders supported.", output)
 
 if __name__ == '__main__':
     unittest.main()

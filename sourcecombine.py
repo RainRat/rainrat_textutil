@@ -7735,9 +7735,9 @@ def print_placeholders(query=None, json_format=False):
 
     if query_lower and total_matched == 0:
         print(f"\n  {C_YELLOW}No template placeholders matched the filter query '{query}'.{C_RESET}")
-    else:
-        count_label = f"Matching: {total_matched}" if query_lower else f"Total: {total_available}"
-        print(f"\n  {C_BOLD}{count_label}{C_RESET} template placeholders supported.")
+
+    count_label = f"Matching: {total_matched}" if query_lower else f"Total: {total_available}"
+    print(f"\n  {C_BOLD}{count_label}{C_RESET} template placeholders supported.")
 
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 

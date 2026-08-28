@@ -78,6 +78,8 @@ def test_print_placeholders_filtered_no_match():
     assert "=== TEMPLATE PLACEHOLDERS (FILTERED BY 'nonexistentplaceholder12345') ===" in output
     assert "File-Level Placeholders" not in output
     assert "Git Placeholders" not in output
+    assert "No template placeholders matched the filter query 'nonexistentplaceholder12345'." in output
+    assert "Matching: 0 template placeholders supported." in output
 
 def test_cli_list_languages_filtered(capsys):
     test_args = ["sourcecombine.py", "--list-languages", "python"]
