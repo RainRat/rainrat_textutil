@@ -1,0 +1,100 @@
+import json
+from pathlib import Path
+from sourcecombine import extract_files, main
+
+
+def test_extract_files_json_format_dry_run(tmp_path, capsys):
+    content = json.dumps([
+        {"path": "foo.py", "content": "print('hello')", "size": 14, "lines": 1, "tokens": 4},
+        {"path": "bar.js", "content": "console.log('hi')", "size": 18, "lines": 1, "tokens": 5}
+    ])
+    sources = [("test.json", content)]
+    out_dir = tmp_path / "output"
+
+    stats = extract_files(sources, out_dir, dry_run=True, json_format=True)
+
+    captured = capsys.readouterr()
+    report = json.loads(captured.out)
+
+    assert report["title"] == "Extraction Report"
+    assert report["dry_run"] is True
+    assert report["output_folder"] == out_dir.as_posix()
+    assert len(report["files"]) == 2
+    assert report["files"][0]["status"] == "WOULD_EXTRACT"
+    assert report["files"][0]["path"] == "foo.py"
+    assert report["files"][0]["size"] == 14
+    assert report["summary"]["extracted_count"] == 2
+    assert report["summary"]["error_count"] == 0
+    assert report["summary"]["total_discovered"] == 2
+    assert not (out_dir / "foo.py").exists()
+
+
+def test_extract_files_json_format_actual_extraction(tmp_path, capsys):
+    content = json.dumps([
+        {"path": "a.txt", "content": "Hello World", "size": 11, "lines": 1}
+    ])
+    sources = [("test.json", content)]
+    out_dir = tmp_path / "extracted"
+
+    stats = extract_files(sources, out_dir, dry_run=False, json_format=True)
+
+    captured = capsys.readouterr()
+    report = json.loads(captured.out)
+
+    assert report["title"] == "Extraction Report"
+    assert report["dry_run"] is False
+    assert len(report["files"]) == 1
+    assert report["files"][0]["status"] == "EXTRACTED"
+    assert report["files"][0]["path"] == "a.txt"
+    assert report["summary"]["extracted_count"] == 1
+    assert (out_dir / "a.txt").exists()
+    assert (out_dir / "a.txt").read_text(encoding="utf-8") == "Hello World"
+
+
+def test_extract_files_json_format_skipped_and_unsafe_paths(tmp_path, capsys):
+    content = json.dumps([
+        {"path": "valid.txt", "content": None},
+        {"path": "/absolute/path.txt", "content": "bad"},
+        {"path": "../relative/path.txt", "content": "bad"}
+    ])
+    sources = [("test.json", content)]
+    out_dir = tmp_path / "extracted"
+
+    stats = extract_files(sources, out_dir, dry_run=False, json_format=True)
+
+    captured = capsys.readouterr()
+    report = json.loads(captured.out)
+
+    assert report["summary"]["skipped_count"] == 3
+    assert report["summary"]["extracted_count"] == 0
+    statuses = [f["status"] for f in report["files"]]
+    assert all(s == "SKIPPED" for s in statuses)
+
+
+def test_extract_cli_json_flag(tmp_path, capsys, monkeypatch):
+    json_file = tmp_path / "combined.json"
+    json_file.write_text(json.dumps([
+        {"path": "sample.py", "content": "x = 42"}
+    ]), encoding="utf-8")
+    out_dir = tmp_path / "cli_out"
+
+    monkeypatch.setattr("sys.argv", [
+        "sourcecombine.py",
+        "--extract",
+        str(json_file),
+        "--output",
+        str(out_dir),
+        "--json",
+        "--dry-run"
+    ])
+
+    try:
+        main()
+    except SystemExit as e:
+        assert e.code == 0
+
+    captured = capsys.readouterr()
+    report = json.loads(captured.out)
+    assert report["title"] == "Extraction Report"
+    assert report["dry_run"] is True
+    assert report["files"][0]["path"] == "sample.py"
