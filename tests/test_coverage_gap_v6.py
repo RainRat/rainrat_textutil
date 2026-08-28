@@ -3,6 +3,7 @@ import utils
 
 import os
 import sys
+import logging
 import pytest
 import importlib
 from pathlib import Path
@@ -84,6 +85,7 @@ def test_write_json_summary_none_stats():
 
 def test_write_json_summary_full_branches(caplog):
     # Covers sourcecombine.py lines 46, 48, 50, 64
+    caplog.set_level(logging.INFO)
     stats = {"total_files": 1}
     # Use side_effect=lambda x: x to make mock_convert return a JSON serializable dict
     with patch("sourcecombine._convert_to_json_friendly", side_effect=lambda x: x) as mock_convert:

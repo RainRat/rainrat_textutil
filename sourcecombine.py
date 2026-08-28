@@ -4920,14 +4920,23 @@ def main():
         root_logger.addHandler(handler)
     root_logger.setLevel(prelim_level)
 
-    # Disable logging to stderr if we are outputting JSON to stdout,
+    # Disable logging to stderr if we are outputting JSON or streaming configuration to stdout,
     # to keep stdout clean for piping.
     val_cfg_raw = getattr(args, 'validate_config', None)
     validate_config_val = None
     if val_cfg_raw is not None and type(val_cfg_raw).__name__ not in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
         validate_config_val = val_cfg_raw
 
-    if _get_bool_arg(args, 'json') and (
+    is_stdout_stream_cmd = (
+        args.show_config or
+        args.export_config == '-' or
+        args.init == '-' or
+        getattr(args, 'init_ignore', None) == '-'
+    )
+
+    if is_stdout_stream_cmd:
+        root_logger.setLevel(logging.WARNING)
+    elif _get_bool_arg(args, 'json') and (
         args.system_info or
         args.list_languages or
         getattr(args, 'list_extensions', False) or
@@ -5333,9 +5342,29 @@ def main():
         diff_backups(diff_targets, json_format=_get_bool_arg(args, 'json'))
         sys.exit(0)
 
-    # Re-configure level based on config, *unless* -v or -q was used.
+    # Re-configure level based on config, *unless* -v, -q, json, or stdout stream command was used.
     # The -v (DEBUG) and -q (WARNING) options override the configuration file's setting.
-    if _get_bool_arg(args, 'quiet'):
+    if is_stdout_stream_cmd:
+        logging.getLogger().setLevel(logging.WARNING)
+    elif _get_bool_arg(args, 'json') and (
+        args.system_info or
+        args.list_languages or
+        getattr(args, 'list_extensions', False) or
+        args.list_placeholders or
+        getattr(args, 'project_info', False) or
+        args.show_config or
+        validate_config_val is not None or
+        args.verify or
+        getattr(args, 'explain', False) or
+        _get_bool_arg(args, 'list_backups') or
+        _get_bool_arg(args, 'diff_backups') or
+        _get_bool_arg(args, 'backup') or
+        _get_bool_arg(args, 'restore') or
+        _get_bool_arg(args, 'delete_backups') or
+        _get_bool_arg(args, 'clean')
+    ):
+        logging.getLogger().setLevel(logging.ERROR)
+    elif _get_bool_arg(args, 'quiet'):
         logging.getLogger().setLevel(logging.WARNING)
     elif not args.verbose:
         level_str = config.get('logging', {}).get('level', 'INFO')
@@ -5753,8 +5782,6 @@ def main():
     output_conf['format'] = args.format
 
     if args.show_config:
-        if not getattr(args, 'json', False):
-            logging.info("Final merged configuration:")
         if getattr(args, 'json', False):
             print(json.dumps(_convert_to_json_friendly(config), indent=2))
         elif utils.yaml:
