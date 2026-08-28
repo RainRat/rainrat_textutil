@@ -32,7 +32,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--limit` (`-L`): Stop processing once you reach this file limit.
 *   `--sort SORT_BY` (`-s SORT_BY`): Sort processed files by specific criteria (`name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`). Case-insensitive and supports aliases like `date`/`time` for `modified`, `token` for `tokens`, `line` for `lines`, and `lang` for `language`.
 *   `--reverse` (`-r`): Reverse the file sorting order.
-*   `--format FORMAT` (`-f FORMAT`): Set the output format (`text`, `markdown`, `json`, `jsonl`, `xml`, or `csv`). Case-insensitive and supports aliases like `txt` or `md`. You can also use shortcut flags like `--markdown`, `--json`, `--jsonl`, `--xml`, or `--csv`.
+*   `--format FORMAT` (`-f FORMAT`): Set the output format (`text`, `markdown`, `json`, `jsonl`, `xml`, `manifest`, or `csv`). Case-insensitive and supports aliases like `txt` or `md`. You can also use shortcut flags like `--markdown`, `--json`, `--jsonl`, `--xml`, or `--csv`.
 *   `--grep PATTERN`: Only include files whose content matches this regular expression.
 *   `--exclude-grep PATTERN`: Skip files whose content matches this regular expression.
 *   `--grep-ignore-case` (`--grep-icase`): Perform case-insensitive matching for `--grep` and `--exclude-grep` patterns.

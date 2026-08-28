@@ -220,7 +220,7 @@ def test_summary_terminal_size_fallback(capsys):
 
     with patch('sys.stderr.isatty', return_value=True):
         with patch.dict(os.environ, {"NO_COLOR": "1"}):
-            with patch('shutil.get_terminal_size', side_effect=Exception("Terminal error")):
+            with patch('shutil.get_terminal_size', side_effect=OSError("Terminal error")):
                 sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
 
     captured = capsys.readouterr()

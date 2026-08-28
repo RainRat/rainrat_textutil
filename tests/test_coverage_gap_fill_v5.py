@@ -138,7 +138,7 @@ def test_print_execution_summary_terminal_size_exception():
         'total_files': 0,
         'files_by_language': {}
     }
-    with patch('shutil.get_terminal_size', side_effect=Exception("error")):
+    with patch('shutil.get_terminal_size', side_effect=OSError("error")):
         with patch('sys.stderr', new=MagicMock()):
              sourcecombine._print_execution_summary(mock_stats, mock_args, False)
 
