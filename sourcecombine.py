@@ -2018,22 +2018,20 @@ class FileProcessor:
             outfile.write(summary_line)
 
         if self.output_format not in ("json", "jsonl", "manifest", "csv"):
-            outfile.write(_render_template(
-                header_template, relative_path, size=size, tokens=tokens, lines=lines,
-                escape_func=escape_func, modified=modified, content=content,
-                custom_languages=self.custom_languages, index=index, total=total,
-                global_size=global_size, global_tokens=global_tokens, global_lines=global_lines,
-                git_info=self.git_info, file_path=file_path, language=language, sha256=sha256
-            ))
-        outfile.write(content)
-        if self.output_format not in ("json", "jsonl", "manifest", "csv"):
-            outfile.write(_render_template(
-                footer_template, relative_path, size=size, tokens=tokens, lines=lines,
-                escape_func=escape_func, modified=modified, content=content,
-                custom_languages=self.custom_languages, index=index, total=total,
-                global_size=global_size, global_tokens=global_tokens, global_lines=global_lines,
-                git_info=self.git_info, file_path=file_path, language=language, sha256=sha256
-            ))
+            def _render(tmpl):
+                return _render_template(
+                    tmpl, relative_path, size=size, tokens=tokens, lines=lines,
+                    escape_func=escape_func, modified=modified, content=content,
+                    custom_languages=self.custom_languages, index=index, total=total,
+                    global_size=global_size, global_tokens=global_tokens, global_lines=global_lines,
+                    git_info=self.git_info, file_path=file_path, language=language, sha256=sha256
+                )
+
+            outfile.write(_render(header_template))
+            outfile.write(content)
+            outfile.write(_render(footer_template))
+        else:
+            outfile.write(content)
 
         if is_markdown_collapsible:
             outfile.write("\n</details>\n")
