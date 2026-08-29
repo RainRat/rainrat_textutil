@@ -195,3 +195,19 @@ def test_extract_files_json_format_write_os_error(tmp_path, capsys, monkeypatch)
     assert report["summary"]["error_count"] == 1
     assert report["files"][0]["status"] == "ERROR"
     assert "Permission denied / disk full" in report["files"][0]["error"]
+
+
+def test_extract_files_json_format_fallback_size_and_lines_computation(tmp_path, capsys):
+    content = json.dumps([
+        {"path": "fallback.py", "content": "print('line 1')\nprint('line 2')\n"}
+    ])
+    sources = [("test.json", content)]
+    out_dir = tmp_path / "out"
+
+    extract_files(sources, out_dir, dry_run=True, json_format=True)
+
+    captured = capsys.readouterr()
+    report = json.loads(captured.out)
+
+    assert report["files"][0]["size"] == 32
+    assert report["files"][0]["lines"] == 2
