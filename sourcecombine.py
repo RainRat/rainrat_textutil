@@ -63,11 +63,14 @@ def _get_pyperclip():
         return None
 
 
+_XML_ENTITIES = {'"': "&quot;", "'": "&apos;"}
+
+
 def xml_escape(data: str) -> str:
     """Escape &, <, >, \", and ' for safe use in XML."""
     if data is None:
         return ""
-    return _xml_escape(data, {'"': "&quot;", "'": "&apos;"})
+    return _xml_escape(data, _XML_ENTITIES)
 
 
 def _get_bool_arg(args, name: str) -> bool:
