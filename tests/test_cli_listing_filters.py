@@ -92,6 +92,17 @@ def test_cli_list_languages_filtered(capsys):
     assert "python" in captured.out
     assert "javascript" not in captured.out
 
+def test_cli_list_lang_alias_filtered(capsys):
+    test_args = ["sourcecombine.py", "--list-lang", "python"]
+    with patch.object(sys, "argv", test_args):
+        with pytest.raises(SystemExit) as excinfo:
+            main()
+        assert excinfo.value.code == 0
+    captured = capsys.readouterr()
+    assert "=== SUPPORTED LANGUAGES (FILTERED BY 'python') ===" in captured.out
+    assert "python" in captured.out
+    assert "javascript" not in captured.out
+
 def test_cli_list_languages_filtered_json(capsys):
     test_args = ["sourcecombine.py", "--list-languages", "python", "--json"]
     with patch.object(sys, "argv", test_args):
