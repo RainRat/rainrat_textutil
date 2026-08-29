@@ -29,6 +29,10 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--exclude-extension` (`--exclude-ext`): Skip files with these extensions. Supports comma-separated lists (for example, `--exclude-ext log,tmp`).
 *   `--language` (`--lang`): Include only files matching these language identifiers. You can repeat this flag or use a comma-separated list (for example, `--lang python,javascript` or `--lang python --lang javascript`). Use `--list-languages` to see available identifiers.
 *   `--exclude-language` (`--exclude-lang`): Skip files matching these language identifiers. Supports comma-separated lists (for example, `--exclude-lang markdown,json`).
+*   `--since TIME` (`-S TIME`): Include only files modified since this time (for example, `1d`, `2h`, or `2023-01-01`).
+*   `--until TIME` (`-U TIME`): Include only files modified before this time (for example, `1d`, `2h`, or `2023-01-01`).
+*   `--min-size SIZE`: Include only files that are at least this size (for example, `10KB` or `1MB`).
+*   `--max-size SIZE`: Include only files that are at most this size (for example, `50KB` or `2MB`).
 *   `--limit` (`-L`): Stop processing once you reach this file limit.
 *   `--sort SORT_BY` (`-s SORT_BY`): Sort processed files by specific criteria (`name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`). Case-insensitive and supports aliases like `date`/`time` for `modified`, `token` for `tokens`, `line` for `lines`, and `lang` for `language`.
 *   `--reverse` (`-r`): Reverse the file sorting order.
@@ -39,6 +43,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--unique` (`-u`): Skip duplicate files by path or content (duplicate removal).
 *   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, skipping binary files, removing duplicates, and automatically including Git context like logs and diffs). This also copies to the system clipboard if you do not specify an output.
 *   `--analyze` (`-A`): Run complete project analysis (token counts, line counts, language breakdown, and folder tree) without generating output files.
+*   `--estimate-tokens` (`-e`): Calculate total tokens across matching files without writing any files to disk.
 *   `--list-files` (`-l`): Show a list of all files that match the current filters and exit without writing files. Supports structured formats (`--format json`, `--format csv`, `--format xml`, `--format markdown`).
 *   `--tree` (`-t`): Show a visual folder tree of all included files with details and exit without writing files. Supports structured formats (`--format json`, `--format xml`, `--format markdown`).
 *   `--strip-components N`: Remove N leading components from file paths during extraction or verification.
@@ -50,6 +55,8 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--project-url URL`: Override the project URL.
 *   `--json`: Output results in JSON format.
 *   `--dry-run` (`-d`): Show what would happen without making any changes.
+*   `--verbose` (`-v`): Display detailed log messages to help troubleshoot issues.
+*   `--quiet` (`-q`): Suppress non-essential status messages and summary output.
 *   `--remove-comments` (`-R`): Remove both single-line and multi-line comments based on the detected language.
 *   `--remove-single-line-comments`: Remove only single-line comments based on the detected language.
 *   `--mirror`: Recreate the input directory structure in the output folder, applying all filtering and processing rules to each file individually.
