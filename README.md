@@ -70,7 +70,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--delete-backups`: Remove all `.bak` files from the folders. Use `--json` for machine-readable output.
 *   `--list-backups`: List all `.bak` backup files in target folders along with their statuses relative to original files. Use `--json` for machine-readable output.
 *   `--diff-backups`: Show a unified diff between current files on disk and their `.bak` backup files. Use `--json` for machine-readable output.
-*   `--list-languages`: Show all supported language identifiers and exit. Use `--json` for machine-readable output.
+*   `--list-languages` (`--list-lang`): Show all supported language identifiers and exit. Use `--json` for machine-readable output.
 *   `--list-extensions` (`--list-ext`): Show all supported file extensions and special filenames mapped to their language tags and exit. Use `--json` for machine-readable output.
 *   `--list-placeholders`: Show all supported template placeholders and exit. Use `--json` for machine-readable output.
 *   `--list-formats`: Show all supported output formats and aliases and exit. Use `--json` for machine-readable output.

@@ -4719,6 +4719,7 @@ def main():
     )
     utility_group.add_argument(
         "--list-languages",
+        "--list-lang",
         nargs="?",
         const=True,
         default=False,
