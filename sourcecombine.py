@@ -6498,10 +6498,7 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
 
 def _handle_invalid_config_error(exc, verbose, message=None):
     """Handle InvalidConfigError by logging it and exiting."""
-    if verbose:
-        logging.error(message or str(exc), exc_info=True)
-    else:
-        logging.error(message or str(exc))
+    logging.error(message or str(exc), exc_info=bool(verbose))
     sys.exit(1)
 
 
