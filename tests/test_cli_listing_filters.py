@@ -126,8 +126,31 @@ def test_cli_list_placeholders_filtered(capsys):
     assert "{{GIT_BRANCH}}" in captured.out
     assert "{{FILENAME}}" not in captured.out
 
+def test_cli_list_ph_alias_filtered(capsys):
+    test_args = ["sourcecombine.py", "--list-ph", "git"]
+    with patch.object(sys, "argv", test_args):
+        with pytest.raises(SystemExit) as excinfo:
+            main()
+        assert excinfo.value.code == 0
+    captured = capsys.readouterr()
+    assert "=== TEMPLATE PLACEHOLDERS (FILTERED BY 'git') ===" in captured.out
+    assert "{{GIT_BRANCH}}" in captured.out
+    assert "{{FILENAME}}" not in captured.out
+
 def test_cli_list_placeholders_filtered_json(capsys):
     test_args = ["sourcecombine.py", "--list-placeholders", "git", "--json"]
+    with patch.object(sys, "argv", test_args):
+        with pytest.raises(SystemExit) as excinfo:
+            main()
+        assert excinfo.value.code == 0
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert "Git Placeholders" in data
+    assert "File-Level Placeholders" not in data
+    assert "{{GIT_BRANCH}}" in data["Git Placeholders"]
+
+def test_cli_list_ph_alias_filtered_json(capsys):
+    test_args = ["sourcecombine.py", "--list-ph", "git", "--json"]
     with patch.object(sys, "argv", test_args):
         with pytest.raises(SystemExit) as excinfo:
             main()

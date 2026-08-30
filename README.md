@@ -79,8 +79,8 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--diff-backups`: Show a unified diff between current files on disk and their `.bak` backup files. Use `--json` for machine-readable output.
 *   `--list-languages` (`--list-lang`): Show all supported language identifiers and exit. Use `--json` for machine-readable output.
 *   `--list-extensions` (`--list-ext`): Show all supported file extensions and special filenames mapped to their language tags and exit. Use `--json` for machine-readable output.
-*   `--list-placeholders`: Show all supported template placeholders and exit. Use `--json` for machine-readable output.
-*   `--list-formats`: Show all supported output formats and aliases and exit. Use `--json` for machine-readable output.
+*   `--list-placeholders` (`--list-ph`): Show all supported template placeholders and exit. Use `--json` for machine-readable output.
+*   `--list-formats` (`--list-fmt`): Show all supported output formats and aliases and exit. Use `--json` for machine-readable output.
 *   `--project-info` (`-I`): Show detected project information and Git information for the current project. Use `--json` for machine-readable output.
 *   `--explain PATH`: Analyze and explain whether the specified path(s) would be included or excluded by the current configuration and filters. Supports `--json` format.
 *   `--validate-config [PATH]`: Validate a specified or auto-discovered configuration file against syntax and schema rules without running file processing. Use `-` to read from standard input (`stdin`). Use `--json` for machine-readable output.

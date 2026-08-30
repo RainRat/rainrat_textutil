@@ -4737,6 +4737,7 @@ def main():
     )
     utility_group.add_argument(
         "--list-placeholders",
+        "--list-ph",
         nargs="?",
         const=True,
         default=False,
@@ -4745,6 +4746,7 @@ def main():
     )
     utility_group.add_argument(
         "--list-formats",
+        "--list-fmt",
         nargs="?",
         const=True,
         default=False,
