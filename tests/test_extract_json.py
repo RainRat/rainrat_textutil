@@ -211,3 +211,31 @@ def test_extract_files_json_format_fallback_size_and_lines_computation(tmp_path,
 
     assert report["files"][0]["size"] == 32
     assert report["files"][0]["lines"] == 2
+
+
+def test_extract_files_json_format_non_int_metadata_fallback(tmp_path, capsys):
+    content = json.dumps([
+        {"path": "invalid_meta.py", "content": "alpha\nbeta\ngamma", "size": "invalid", "lines": "invalid"}
+    ])
+    sources = [("test.json", content)]
+    out_dir = tmp_path / "out"
+
+    extract_files(sources, out_dir, dry_run=True, json_format=True)
+
+    captured = capsys.readouterr()
+    report = json.loads(captured.out)
+
+    assert report["files"][0]["size"] == 16
+    assert report["files"][0]["lines"] == 3
+
+
+def test_file_processor_write_with_templates_non_template_format():
+    import io
+    from pathlib import PurePath
+    from sourcecombine import FileProcessor
+
+    fp = FileProcessor({"processing": {}}, {}, output_format="json")
+    buf = io.StringIO()
+    fp._write_with_templates(buf, "direct content string", PurePath("sample.json"))
+
+    assert buf.getvalue() == "direct content string"
