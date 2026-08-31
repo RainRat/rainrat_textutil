@@ -8,6 +8,16 @@ def test_print_formats_unfiltered(capsys):
     captured = capsys.readouterr().out
     assert "=== SUPPORTED OUTPUT FORMATS ===" in captured
     assert "markdown" in captured
+
+
+def test_cli_list_fmt_alias(capsys, monkeypatch):
+    monkeypatch.setattr("sys.argv", ["sourcecombine.py", "--list-fmt"])
+    with pytest.raises(SystemExit) as exc:
+        main()
+    assert exc.value.code == 0
+    captured = capsys.readouterr().out
+    assert "=== SUPPORTED OUTPUT FORMATS ===" in captured
+    assert "markdown" in captured
     assert "md" in captured
     assert "json" in captured
     assert "Total: 7" in captured
