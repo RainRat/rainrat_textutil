@@ -30,6 +30,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--exclude-extension` (`--exclude-ext`): Skip files with these extensions. Supports comma-separated lists (for example, `--exclude-ext log,tmp`).
 *   `--language` (`--lang`): Include only files matching these language identifiers. You can repeat this flag or use a comma-separated list (for example, `--lang python,javascript` or `--lang python --lang javascript`). Use `--list-languages` to see available identifiers.
 *   `--exclude-language` (`--exclude-lang`): Skip files matching these language identifiers. Supports comma-separated lists (for example, `--exclude-lang markdown,json`).
+*   `--map-lang EXTENSION LANGUAGE`: Map a file extension or filename to a specific language identifier (for example, `--map-lang .mjml html`). You can repeat this flag.
 *   `--since TIME` (`-S TIME`): Include only files modified since this time (for example, `1d`, `2h`, or `2023-01-01`).
 *   `--until TIME` (`-U TIME`): Include only files modified before this time (for example, `1d`, `2h`, or `2023-01-01`).
 *   `--min-size SIZE`: Include only files that are at least this size (for example, `10KB` or `1MB`).
@@ -229,6 +230,12 @@ python sourcecombine.py . --language python,javascript --output project_context.
 
 # Or repeating the flag
 python sourcecombine.py . --language python --language javascript --output project_context.txt
+```
+
+### Custom Language Mapping
+Map unrecognized file extensions or special filenames to specific language identifiers:
+```bash
+python sourcecombine.py . --map-lang .mjml html --map-lang .env bash
 ```
 
 ### File Extraction
