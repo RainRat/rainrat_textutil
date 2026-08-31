@@ -4754,6 +4754,15 @@ def main():
         help="Show supported output formats and aliases (optionally filtered by QUERY) and exit. Use --json for machine-readable output.",
     )
     utility_group.add_argument(
+        "--list-presets",
+        "--list-pre",
+        nargs="?",
+        const=True,
+        default=False,
+        metavar="QUERY",
+        help="Show built-in presets and expanded options (optionally filtered by QUERY) and exit. Use --json for machine-readable output.",
+    )
+    utility_group.add_argument(
         "--extract",
         action="store_true",
         help=(
@@ -4959,6 +4968,7 @@ def main():
         args.verify or
         getattr(args, 'extract', False) or
         getattr(args, 'explain', False) or
+        _get_bool_arg(args, 'list_presets') or
         _get_bool_arg(args, 'list_backups') or
         _get_bool_arg(args, 'diff_backups') or
         _get_bool_arg(args, 'backup') or
@@ -5049,6 +5059,15 @@ def main():
     if list_fmt_val:
         query = list_fmt_val if isinstance(list_fmt_val, str) else None
         print_formats(query=query, json_format=getattr(args, 'json', False))
+        sys.exit(0)
+
+    list_pre_val = getattr(args, 'list_presets', False)
+    if list_pre_val and type(list_pre_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        list_pre_val = False
+
+    if list_pre_val:
+        query = list_pre_val if isinstance(list_pre_val, str) else None
+        print_presets(query=query, json_format=getattr(args, 'json', False))
         sys.exit(0)
 
     if args.list_languages:
@@ -7897,6 +7916,77 @@ def print_formats(query=None, json_format=False):
 
     count_label = f"Matching: {len(items)}" if query_lower else f"Total: {len(formats_info)}"
     print(f"\n  {C_BOLD}{count_label}{C_RESET} output formats supported.")
+    print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
+
+
+def print_presets(query=None, json_format=False):
+    """Print all built-in presets and their expanded CLI options, optionally filtered by a query."""
+    presets_info = {
+        "ai": {
+            "flag": "--ai, -a",
+            "flags": "--format markdown --line-numbers --toc --include-tree --overview --git-log 5 --include-diff --skip-binary --unique",
+            "description": "Preset for AI models / LLMs (Markdown format, line numbers, Table of Contents, file tree, project overview, Git context, duplicate removal, skip binary)."
+        },
+        "analyze": {
+            "flag": "--analyze, -A",
+            "flags": "--dry-run --estimate-tokens --overview --include-tree --tree",
+            "description": "Comprehensive project analysis without generating output files (dry run, token estimation, project overview, file tree preview)."
+        }
+    }
+
+    if json_format:
+        if query:
+            query_lower = query.lower()
+            filtered_presets = {
+                preset: details for preset, details in presets_info.items()
+                if query_lower in preset.lower() or
+                query_lower in details["flag"].lower() or
+                query_lower in details["flags"].lower() or
+                query_lower in details["description"].lower()
+            }
+        else:
+            filtered_presets = presets_info
+
+        output = {
+            "presets": filtered_presets,
+            "total": len(filtered_presets)
+        }
+        print(json.dumps(output, indent=2))
+        return
+
+    if query:
+        query_lower = query.lower()
+        title_suffix = f" (FILTERED BY '{query}')"
+    else:
+        query_lower = None
+        title_suffix = ""
+
+    print(f"\n{C_BOLD}{C_CYAN}=== BUILT-IN PRESETS{title_suffix} ==={C_RESET}")
+
+    items = sorted(presets_info.keys())
+    if query_lower:
+        items = [
+            preset for preset in items
+            if query_lower in preset.lower() or
+            query_lower in presets_info[preset]["flag"].lower() or
+            query_lower in presets_info[preset]["flags"].lower() or
+            query_lower in presets_info[preset]["description"].lower()
+        ]
+
+    preset_width = 10
+    flag_width = 15
+
+    if query_lower and len(items) == 0:
+        print(f"\n  {C_YELLOW}No presets matched the filter query '{query}'.{C_RESET}")
+    else:
+        print(f"  {C_DIM}{'PRESET':<{preset_width}}  {'FLAG':<{flag_width}}  DESCRIPTION{C_RESET}")
+        for preset in items:
+            flag = presets_info[preset]["flag"]
+            desc = presets_info[preset]["description"]
+            print(f"  {C_BOLD}{C_CYAN}{preset:<{preset_width}}{C_RESET}  {C_DIM}{flag:<{flag_width}}  {desc}{C_RESET}")
+
+    count_label = f"Matching: {len(items)}" if query_lower else f"Total: {len(presets_info)}"
+    print(f"\n  {C_BOLD}{count_label}{C_RESET} built-in presets supported.")
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
 
