@@ -6067,6 +6067,20 @@ def main():
         _write_json_summary(stats, summary_path, duration=duration, source_desc=source_desc, destination_desc=destination_desc)
 
 
+def _parse_json_entry(entry: dict) -> tuple[str, Any, dict]:
+    """Extract (path, content, meta) tuple from a parsed JSON entry dictionary."""
+    meta = {
+        'tokens': _to_int_or_none(entry.get('tokens')),
+        'size': _to_int_or_none(entry.get('size_bytes')),
+        'lines': _to_int_or_none(entry.get('lines')),
+        'is_approx': entry.get('tokens_is_approx', False),
+        'modified': entry.get('modified'),
+        'sha256': entry.get('sha256'),
+        'language': entry.get('language'),
+    }
+    return entry['path'], entry.get('content'), meta
+
+
 def _parse_combined_content(content, source_name="combined file"):
     """Identify and parse combined file content into a list of (path, content, meta) tuples."""
     if not content:
@@ -6080,16 +6094,7 @@ def _parse_combined_content(content, source_name="combined file"):
         if isinstance(data, list):
             for entry in data:
                 if isinstance(entry, dict) and 'path' in entry:
-                    meta = {
-                        'tokens': _to_int_or_none(entry.get('tokens')),
-                        'size': _to_int_or_none(entry.get('size_bytes')),
-                        'lines': _to_int_or_none(entry.get('lines')),
-                        'is_approx': entry.get('tokens_is_approx', False),
-                        'modified': entry.get('modified'),
-                        'sha256': entry.get('sha256'),
-                        'language': entry.get('language'),
-                    }
-                    files_found.append((entry['path'], entry.get('content'), meta))
+                    files_found.append(_parse_json_entry(entry))
             if files_found:
                 return files_found
     except json.JSONDecodeError:
@@ -6104,16 +6109,7 @@ def _parse_combined_content(content, source_name="combined file"):
         try:
             entry = json.loads(line)
             if isinstance(entry, dict) and 'path' in entry:
-                meta = {
-                    'tokens': _to_int_or_none(entry.get('tokens')),
-                    'size': _to_int_or_none(entry.get('size_bytes')),
-                    'lines': _to_int_or_none(entry.get('lines')),
-                    'is_approx': entry.get('tokens_is_approx', False),
-                    'modified': entry.get('modified'),
-                    'sha256': entry.get('sha256'),
-                    'language': entry.get('language'),
-                }
-                potential_files.append((entry['path'], entry.get('content'), meta))
+                potential_files.append(_parse_json_entry(entry))
             else:
                 logging.debug("Skipping malformed JSONL line in %s: %s", source_name, line)
         except (json.JSONDecodeError, TypeError):
