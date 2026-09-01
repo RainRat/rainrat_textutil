@@ -116,6 +116,19 @@ def test_list_backups_cli_integration(tmp_path, capsys):
     assert "BACKUP FILES REPORT" in captured.out
     assert "file.txt.bak" in captured.out
 
+def test_list_backups_cli_integration_alias(tmp_path, capsys):
+    bak = tmp_path / "file.txt.bak"
+    bak.write_text("backup")
+
+    with patch("sys.argv", ["sourcecombine.py", str(tmp_path), "--list-bak"]):
+        with pytest.raises(SystemExit) as excinfo:
+            main()
+        assert excinfo.value.code == 0
+
+    captured = capsys.readouterr()
+    assert "BACKUP FILES REPORT" in captured.out
+    assert "file.txt.bak" in captured.out
+
 def test_list_backups_cli_integration_json(tmp_path, capsys):
     bak = tmp_path / "file.txt.bak"
     bak.write_text("backup")

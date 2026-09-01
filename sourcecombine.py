@@ -4805,6 +4805,7 @@ def main():
     )
     utility_group.add_argument(
         "--list-backups",
+        "--list-bak",
         action="store_true",
         help="List all '.bak' backup files in target folders along with their statuses relative to original files. Use --json for machine-readable output.",
     )
