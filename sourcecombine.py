@@ -7229,14 +7229,17 @@ def list_backups(targets, json_format=False):
         orphaned = summary["orphaned"]
         error = summary["error"]
 
-        print(f"\n{C_BOLD}Summary:{C_RESET}")
-        print(f"  Matching:   {C_GREEN if matching == total and total > 0 else C_RESET}{matching}/{total}{C_RESET}")
-        if modified:
-            print(f"  Modified:   {C_YELLOW}{modified}{C_RESET}")
-        if orphaned:
-            print(f"  Orphaned:   {C_RED}{orphaned}{C_RESET}")
-        if error:
-            print(f"  Errors:     {C_RED}{error}{C_RESET}")
+        if total == 0:
+            print(f"  {C_YELLOW}No backup files (.bak) found.{C_RESET}")
+        else:
+            print(f"\n{C_BOLD}Summary:{C_RESET}")
+            print(f"  Matching:   {C_GREEN if matching == total and total > 0 else C_RESET}{matching}/{total}{C_RESET}")
+            if modified:
+                print(f"  Modified:   {C_YELLOW}{modified}{C_RESET}")
+            if orphaned:
+                print(f"  Orphaned:   {C_RED}{orphaned}{C_RESET}")
+            if error:
+                print(f"  Errors:     {C_RED}{error}{C_RESET}")
         print(f"{C_BOLD}{C_CYAN}{'=' * (len(title) + 8)}{C_RESET}\n")
 
     return summary
@@ -7352,14 +7355,17 @@ def diff_backups(targets, json_format=False):
         orphaned = summary["orphaned"]
         error = summary["error"]
 
-        print(f"\n{C_BOLD}Summary:{C_RESET}")
-        print(f"  Matching:   {C_GREEN if matching == total and total > 0 else C_RESET}{matching}/{total}{C_RESET}")
-        if modified:
-            print(f"  Modified:   {C_YELLOW}{modified}{C_RESET}")
-        if orphaned:
-            print(f"  Orphaned:   {C_RED}{orphaned}{C_RESET}")
-        if error:
-            print(f"  Errors:     {C_RED}{error}{C_RESET}")
+        if total == 0:
+            print(f"  {C_YELLOW}No backup files (.bak) found.{C_RESET}")
+        else:
+            print(f"\n{C_BOLD}Summary:{C_RESET}")
+            print(f"  Matching:   {C_GREEN if matching == total and total > 0 else C_RESET}{matching}/{total}{C_RESET}")
+            if modified:
+                print(f"  Modified:   {C_YELLOW}{modified}{C_RESET}")
+            if orphaned:
+                print(f"  Orphaned:   {C_RED}{orphaned}{C_RESET}")
+            if error:
+                print(f"  Errors:     {C_RED}{error}{C_RESET}")
         print(f"{C_BOLD}{C_CYAN}{'=' * (len(title) + 8)}{C_RESET}\n")
 
     return summary

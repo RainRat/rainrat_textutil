@@ -96,7 +96,7 @@ def test_diff_backups_error_handling(tmp_path):
         assert summary["error"] == 1
         assert summary["total"] == 1
 
-def test_diff_backups_defaults_to_current_folder():
+def test_diff_backups_defaults_to_current_folder(capsys):
     with patch("sourcecombine.Path") as mock_path:
         mock_instance = mock_path.return_value
         mock_instance.exists.return_value = False
@@ -104,6 +104,8 @@ def test_diff_backups_defaults_to_current_folder():
         summary = diff_backups([])
         assert summary["total"] == 0
         mock_path.assert_any_call(".")
+        captured = capsys.readouterr()
+        assert "No backup files (.bak) found." in captured.out
 
 def test_diff_backups_logs_warning_on_non_existent_target(tmp_path, caplog):
     non_existent = tmp_path / "does_not_exist"
