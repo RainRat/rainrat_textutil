@@ -239,3 +239,31 @@ def test_file_processor_write_with_templates_non_template_format():
     fp._write_with_templates(buf, "direct content string", PurePath("sample.json"))
 
     assert buf.getvalue() == "direct content string"
+
+
+def test_extract_files_json_format_recomputed_metrics_when_none(tmp_path, capsys, monkeypatch):
+    from unittest.mock import patch
+
+    mock_files = [
+        ("invalid_meta.py", "line 1\nline 2\n", {"size": 14, "lines": 2})
+    ]
+
+    out_dir = tmp_path / "out"
+
+    def mock_to_int_or_none(val):
+        if val in (14, 2):
+            return None
+        return val
+
+    monkeypatch.setattr("sourcecombine._to_int_or_none", mock_to_int_or_none)
+
+    with patch("sourcecombine._parse_combined_content", return_value=mock_files):
+        extract_files([("dummy.txt", "dummy")], out_dir, dry_run=False, json_format=True)
+
+    captured = capsys.readouterr()
+    report = json.loads(captured.out)
+
+    assert report["summary"]["extracted_count"] == 1
+    assert report["files"][0]["status"] == "EXTRACTED"
+    assert report["files"][0]["size"] == 14
+    assert report["files"][0]["lines"] == 2
