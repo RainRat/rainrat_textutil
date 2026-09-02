@@ -7572,27 +7572,28 @@ def create_backups_for_targets(targets, config, dry_run=False, json_format=False
 
 def print_system_info(json_format=False):
     """Print environment diagnostics and optional dependency status."""
-    if json_format:
-        deps = [
-            ("tiktoken", "Accurate token counting"),
-            ("pyperclip", "Clipboard support"),
-            ("tqdm", "Progress bars"),
-            ("yaml", "Configuration support (PyYAML)"),
-            ("charset_normalizer", "Encoding detection"),
-        ]
-        dep_info = {}
-        for dep_name, purpose in deps:
-            try:
-                spec = importlib.util.find_spec(dep_name)
-                installed = spec is not None
-            except Exception:
-                installed = False
-            dep_info[dep_name] = {
-                "installed": installed,
-                "purpose": purpose
-            }
+    deps = [
+        ("tiktoken", "Accurate token counting"),
+        ("pyperclip", "Clipboard support"),
+        ("tqdm", "Progress bars"),
+        ("yaml", "Configuration support (PyYAML)"),
+        ("charset_normalizer", "Encoding detection"),
+    ]
+    dep_info = {}
+    for dep_name, purpose in deps:
+        try:
+            spec = importlib.util.find_spec(dep_name)
+            installed = spec is not None
+        except Exception:
+            installed = False
+        dep_info[dep_name] = {
+            "installed": installed,
+            "purpose": purpose
+        }
 
-        config_file = Path("sourcecombine.yml")
+    config_file = Path("sourcecombine.yml")
+
+    if json_format:
         output = {
             "version": __version__,
             "python": sys.version.split()[0],
@@ -7610,7 +7611,6 @@ def print_system_info(json_format=False):
 
     print(f"\n{C_BOLD}{C_CYAN}=== SYSTEM INFORMATION ==={C_RESET}")
 
-    config_file = Path("sourcecombine.yml")
     config_status = f"{'Found' if config_file.exists() else 'Not found'} ({config_file.resolve() if config_file.exists() else 'N/A'})"
 
     sys_info = [
@@ -7628,20 +7628,9 @@ def print_system_info(json_format=False):
 
     print(f"\n  {C_BOLD}Optional Dependencies:{C_RESET}")
 
-    deps = [
-        ("tiktoken", "Accurate token counting"),
-        ("pyperclip", "Clipboard support"),
-        ("tqdm", "Progress bars"),
-        ("yaml", "Configuration support (PyYAML)"),
-        ("charset_normalizer", "Encoding detection"),
-    ]
-
-    for dep_name, purpose in deps:
-        try:
-            spec = importlib.util.find_spec(dep_name)
-            installed = spec is not None
-        except Exception:
-            installed = False
+    for dep_name, info in dep_info.items():
+        installed = info["installed"]
+        purpose = info["purpose"]
         status = f"{C_GREEN}Installed{C_RESET}" if installed else f"{C_YELLOW}Not found{C_RESET}"
         print(f"    {C_BOLD}{dep_name:<20}{C_RESET} {status:<20} {C_DIM}({purpose}){C_RESET}")
 
