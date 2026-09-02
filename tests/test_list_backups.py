@@ -129,3 +129,16 @@ def test_list_backups_cli_integration_json(tmp_path, capsys):
     data = json.loads(captured.out)
     assert data["title"] == "Backup Files Report"
     assert data["summary"]["orphaned"] == 1
+
+def test_list_backups_cli_shortcut_alias(tmp_path, capsys):
+    bak = tmp_path / "shortcut.txt.bak"
+    bak.write_text("backup")
+
+    with patch("sys.argv", ["sourcecombine.py", str(tmp_path), "--list-bak"]):
+        with pytest.raises(SystemExit) as excinfo:
+            main()
+        assert excinfo.value.code == 0
+
+    captured = capsys.readouterr()
+    assert "BACKUP FILES REPORT" in captured.out
+    assert "shortcut.txt.bak" in captured.out
