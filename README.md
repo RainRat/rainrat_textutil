@@ -20,7 +20,10 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--output` (`-o`): Save results to a file or folder instead of the terminal. Supports template placeholders (for example, `{{PROJECT_NAME}}_{{DATE}}.txt`).
 *   `--clipboard` (`-c`): Copy the combined output to the system clipboard.
 *   `--git-files` (`-G`): Use Git to find files and follow the `.gitignore` rules automatically.
+*   `--git-diff`: Include only files that have changed in Git (staged, unstaged, or untracked).
+*   `--staged`: Include only staged changes in Git (used with `--git-diff`).
 *   `--no-recursive`: Skip searching subfolders and scan only top-level files in target folders.
+*   `--max-depth DEPTH`: Limit folder scanning to a specific depth (for example, `1` for top-level files only).
 *   `--files-from PATH`: Read a list of file paths from a text file or standard input (`-`), skipping folder scanning.
 *   `--ignore-file PATH`: Add an ignore file containing glob patterns to skip. Supports comma-separated lists (for example, `.ignore1,.ignore2`). Default is `.sourcecombineignore`.
 *   `--exclude-file` (`-x`): Skip files matching a glob pattern (for example, `-x "*.json"` or `--exclude-file "*.tmp"`). You can repeat this flag.
@@ -42,7 +45,14 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--grep PATTERN`: Only include files whose content matches this regular expression.
 *   `--exclude-grep PATTERN`: Skip files whose content matches this regular expression.
 *   `--grep-ignore-case` (`--grep-icase`): Perform case-insensitive matching for `--grep` and `--exclude-grep` patterns.
+*   `--skip-binary`: Skip files that appear to contain binary data automatically.
 *   `--unique` (`-u`): Skip duplicate files by path or content (duplicate removal).
+*   `--line-numbers` (`-n`): Add line numbers starting at 1 for each file in the output.
+*   `--replace PATTERN REPLACEMENT`: Find and replace content using regular expressions. You can repeat this flag.
+*   `--replace-line PATTERN REPLACEMENT`: Find and replace line patterns using regular expressions. You can repeat this flag.
+*   `--git-log`: Include recent Git commit history in project overview and templates (`{{GIT_LOG}}`).
+*   `--git-log-count COUNT`: Set the number of recent Git commits to include (for example, `--git-log-count 5`).
+*   `--include-diff`: Include Git diffs in project overview and templates (`{{GIT_DIFF}}` and `{{FILE_DIFF}}`).
 *   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, skipping binary files, removing duplicates, and automatically including Git context like logs and diffs). This also copies to the system clipboard if you do not specify an output.
 *   `--analyze` (`-A`): Run complete project analysis (token counts, line counts, language breakdown, and folder tree) without generating output files.
 *   `--estimate-tokens` (`-e`): Calculate total tokens across matching files without writing any files to disk.
