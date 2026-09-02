@@ -10,7 +10,8 @@ def test_print_presets_text(capsys):
     assert "BUILT-IN PRESETS" in captured.out
     assert "ai" in captured.out
     assert "analyze" in captured.out
-    assert "Total: 2 built-in presets supported." in captured.out
+    assert "review" in captured.out
+    assert "Total: 3 built-in presets supported." in captured.out
 
 
 def test_print_presets_filter_matching(capsys):
@@ -33,9 +34,10 @@ def test_print_presets_json(capsys):
     sourcecombine.print_presets(json_format=True)
     captured = capsys.readouterr()
     data = json.loads(captured.out)
-    assert data["total"] == 2
+    assert data["total"] == 3
     assert "ai" in data["presets"]
     assert "analyze" in data["presets"]
+    assert "review" in data["presets"]
     assert "--ai, -a" in data["presets"]["ai"]["flag"]
 
 
@@ -74,4 +76,4 @@ def test_cli_list_presets_json_main(capsys):
         assert exc.value.code == 0
     captured = capsys.readouterr()
     data = json.loads(captured.out)
-    assert data["total"] == 2
+    assert data["total"] == 3
