@@ -37,3 +37,14 @@ def test_invalid_preset_name(caplog, tmp_path):
             sourcecombine.main()
         assert exc.value.code == 1
     assert "Unknown preset 'invalid_name'" in caplog.text
+
+
+def test_preset_short_flag_aliases(tmp_path):
+    f = tmp_path / "test.py"
+    f.write_text("print('hello')")
+    with patch("sys.argv", ["sourcecombine", str(tmp_path), "--preset=-A"]):
+        sourcecombine.main()
+    with patch("sys.argv", ["sourcecombine", str(tmp_path), "--preset=-a", "--dry-run"]):
+        sourcecombine.main()
+
+

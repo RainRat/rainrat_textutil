@@ -103,7 +103,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--show-config`: Display the final configuration being used and exit. Use `--json` for machine-readable output.
 *   `--export-config`: Save the final combined configuration to a YAML file and exit. Use `-` to output to standard output (`stdout`).
 *   `--system-info`: Show environment details (Python version, OS, and other system details). Use `--json` for machine-readable output.
-*   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without actually writing them to disk.
+*   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without writing them to disk.
 *   `--analyze` (`-A`): Run project analysis without generating output files. Shortcut for `--dry-run --estimate-tokens --overview --include-tree --tree`.
 *   `--clean`: (Alias for `--delete-backups`) Remove all `.bak` backup files from the current directory and its subfolders. Use `--json` for machine-readable output.
 *   `--version` (`-V`): Show the application version and exit.
@@ -269,7 +269,7 @@ python sourcecombine.py . --preset ai
 ```
 
 ### Code Review & Pull Request Context
-Prepare a full context for code reviews and Pull Requests. This preset uses Markdown format and includes a Table of Contents, folder tree, project overview, line numbers, Git diffs, and recent 10 commits while skipping binary files:
+Prepare a full context for code reviews and Pull Requests. This preset uses Markdown format and includes a Table of Contents, folder tree, project overview, line numbers, Git diffs, and the last 10 commits while skipping binary files:
 ```bash
 python sourcecombine.py . --preset review
 # or using the shortcut flag:

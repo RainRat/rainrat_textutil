@@ -4896,11 +4896,12 @@ def main():
         preset_val = None
 
     if preset_val:
-        preset_key = str(preset_val).strip().lower()
-        if preset_key in ('ai', '-a', '--ai'):
-            args.ai = True
-        elif preset_key in ('analyze', '-a', '--analyze'):
+        preset_raw = str(preset_val).strip()
+        preset_key = preset_raw.lower()
+        if preset_raw == '-A' or preset_key in ('analyze', '--analyze'):
             args.analyze = True
+        elif preset_key in ('ai', '-a', '--ai'):
+            args.ai = True
         elif preset_key in ('review', '--review', 'pr', 'pr-review'):
             args.review = True
         else:
