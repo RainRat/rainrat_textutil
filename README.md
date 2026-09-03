@@ -61,6 +61,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--quiet` (`-q`): Suppress non-essential status messages and summary output.
 *   `--remove-comments` (`-R`): Remove both single-line and multi-line comments based on the detected language.
 *   `--remove-single-line-comments`: Remove only single-line comments based on the detected language.
+*   `--compact` (`-C`): Clean up extra spaces and blank lines in the output.
 *   `--mirror`: Recreate the input directory structure in the output folder, applying all filtering and processing rules to each file individually.
 *   `--no-content` (`-N`): Skip the actual file content in the output, while preserving templates, information, and structured components like the Table of Contents and Tree View.
 *   `--collapsible`: Wrap each file's markdown code block in collapsible HTML `<details>` and `<summary>` tags.
