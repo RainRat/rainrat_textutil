@@ -15,6 +15,17 @@ def test_validate_config_valid_yaml(tmp_path, monkeypatch, caplog):
     assert exc.value.code == 0
     assert "is valid" in caplog.text
 
+def test_validate_alias(tmp_path, monkeypatch, caplog):
+    config_file = tmp_path / "sourcecombine.yml"
+    config_file.write_text("search:\n  recursive: true\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("sys.argv", ["sourcecombine", "--validate"])
+
+    with pytest.raises(SystemExit) as exc:
+        main()
+    assert exc.value.code == 0
+    assert "is valid" in caplog.text
+
 def test_validate_config_valid_json(tmp_path, monkeypatch, caplog):
     config_file = tmp_path / "custom_config.json"
     config_file.write_text(json.dumps({"search": {"recursive": False}}), encoding="utf-8")
