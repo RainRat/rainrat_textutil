@@ -22,6 +22,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--git-files` (`-G`): Use Git to find files and follow the `.gitignore` rules automatically.
 *   `--git-diff`: Include only files that have changed in Git (staged, unstaged, or untracked).
 *   `--staged`: Include only staged changes in Git (used with `--git-diff`).
+*   `--unstaged`: Include only unstaged and untracked changes in Git (used with `--git-diff`).
 *   `--no-recursive`: Skip searching subfolders and scan only top-level files in target folders.
 *   `--max-depth DEPTH`: Limit folder scanning to a specific depth (for example, `1` for top-level files only).
 *   `--files-from PATH`: Read a list of file paths from a text file or standard input (`-`), skipping folder scanning.
@@ -373,6 +374,10 @@ python sourcecombine.py . --git-diff
 To combine only staged changes, add the `--staged` flag:
 ```bash
 python sourcecombine.py . --staged
+```
+To combine only unstaged and untracked changes, add the `--unstaged` flag:
+```bash
+python sourcecombine.py . --unstaged
 ```
 
 #### Filter by File Size and Age
