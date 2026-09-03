@@ -94,6 +94,8 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--list-extensions` (`--list-ext`): Show all supported file extensions and special filenames mapped to their language tags and exit. Use `--json` for machine-readable output.
 *   `--list-placeholders` (`--list-ph`): Show all supported template placeholders and exit. Use `--json` for machine-readable output.
 *   `--list-formats` (`--list-fmt`): Show all supported output formats and aliases and exit. Use `--json` for machine-readable output.
+*   `--preset NAME`: Apply a built-in configuration preset by name (`ai`, `analyze`, or `review`).
+*   `--review`: Enable preset for code reviews and Pull Requests (Markdown format, line numbers, Table of Contents, file tree, project overview, Git logs and diffs, skip binary).
 *   `--list-presets` (`--list-pre`): Show built-in presets and their expanded options and exit. Use `--json` for machine-readable output.
 *   `--project-info` (`-I`): Show detected project information and Git information for the current project. Use `--json` for machine-readable output.
 *   `--explain PATH`: Analyze and explain whether the specified path(s) would be included or excluded by the current configuration and filters. Supports `--json` format.
@@ -263,7 +265,15 @@ python sourcecombine.py --extract combined_files.json --json --dry-run
 ### AI Model Context
 Prepare a full project context for AI models. This preset uses Markdown format and includes a Table of Contents, folder tree, project overview, line numbers, and Git context (logs and diffs). It also removes duplicates and skips binary files. If you do not specify an output file, the tool copies the result to the system clipboard:
 ```bash
-python sourcecombine.py . --ai
+python sourcecombine.py . --preset ai
+```
+
+### Code Review & Pull Request Context
+Prepare a full context for code reviews and Pull Requests. This preset uses Markdown format and includes a Table of Contents, folder tree, project overview, line numbers, Git diffs, and recent 10 commits while skipping binary files:
+```bash
+python sourcecombine.py . --preset review
+# or using the shortcut flag:
+python sourcecombine.py . --review
 ```
 
 ### File Pairing

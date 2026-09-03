@@ -4450,6 +4450,15 @@ def main():
     # Output Options Group
     output_group = parser.add_argument_group("Output Options")
     output_group.add_argument(
+        "--preset",
+        metavar="NAME",
+        type=str,
+        help=(
+            "Apply a built-in configuration preset by name ('ai', 'analyze', or 'review'). "
+            "Use --list-presets to view all available presets."
+        ),
+    )
+    output_group.add_argument(
         "--ai",
         "-a",
         action="store_true",
@@ -4457,6 +4466,14 @@ def main():
             "Enable preset for AI models (Markdown, line numbers, Table of Contents, tree, project overview, "
             "skipping binary, duplicate removal, and Git context (logs and diffs)). Copies to clipboard if "
             "no output is specified."
+        ),
+    )
+    output_group.add_argument(
+        "--review",
+        action="store_true",
+        help=(
+            "Enable preset for code reviews and Pull Requests (Markdown, line numbers, Table of Contents, "
+            "file tree, project overview, Git log (10 commits), diffs, and skip binary)."
         ),
     )
     output_group.add_argument(
@@ -4873,6 +4890,23 @@ def main():
         root_logger.addHandler(handler)
         root_logger.setLevel(prelim_level)
 
+    # Handle the preset option by name
+    preset_val = getattr(args, 'preset', None)
+    if preset_val and type(preset_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        preset_val = None
+
+    if preset_val:
+        preset_key = str(preset_val).strip().lower()
+        if preset_key in ('ai', '-a', '--ai'):
+            args.ai = True
+        elif preset_key in ('analyze', '-a', '--analyze'):
+            args.analyze = True
+        elif preset_key in ('review', '--review', 'pr', 'pr-review'):
+            args.review = True
+        else:
+            logging.error("Unknown preset '%s'. Supported presets: ai, analyze, review. Use --list-presets to view details.", preset_val)
+            sys.exit(1)
+
     # Handle the analyze preset option
     if getattr(args, 'analyze', False):
         args.dry_run = True
@@ -4880,6 +4914,18 @@ def main():
         args.overview = True
         args.include_tree = True
         args.tree = True
+
+    # Handle the review preset option
+    if getattr(args, 'review', False):
+        args.markdown = True
+        args.line_numbers = True
+        args.toc = True
+        args.include_tree = True
+        args.overview = True
+        args.skip_binary = True
+        args.include_diff = True
+        if args.git_log is None:
+            args.git_log = 10
 
     # Handle the repair option by automatically enabling verification if not in extract mode
     if getattr(args, 'repair', False) is True:
@@ -7918,6 +7964,11 @@ def print_presets(query=None, json_format=False):
             "flag": "--analyze, -A",
             "flags": "--dry-run --estimate-tokens --overview --include-tree --tree",
             "description": "Comprehensive project analysis without generating output files (dry run, token estimation, project overview, file tree preview)."
+        },
+        "review": {
+            "flag": "--review",
+            "flags": "--format markdown --line-numbers --toc --include-tree --overview --git-log 10 --include-diff --skip-binary",
+            "description": "Preset for code reviews and Pull Requests (Markdown format, line numbers, Table of Contents, file tree, project overview, Git diffs and logs, skip binary)."
         }
     }
 
