@@ -99,7 +99,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--list-presets` (`--list-pre`): Show built-in presets and their expanded options and exit. Use `--json` for machine-readable output.
 *   `--project-info` (`-I`): Show detected project information and Git information for the current project. Use `--json` for machine-readable output.
 *   `--explain PATH`: Analyze and explain whether the specified path(s) would be included or excluded by the current configuration and filters. Supports `--json` format.
-*   `--validate-config [PATH]`: Validate a specified or auto-discovered configuration file against syntax and schema rules without running file processing. Use `-` to read from standard input (`stdin`). Use `--json` for machine-readable output.
+*   `--validate-config [PATH]` (`--validate`): Validate a specified or auto-discovered configuration file against syntax and schema rules without running file processing. Use `-` to read from standard input (`stdin`). Use `--json` for machine-readable output.
 *   `--show-config`: Display the final configuration being used and exit. Use `--json` for machine-readable output.
 *   `--export-config`: Save the final combined configuration to a YAML file and exit. Use `-` to output to standard output (`stdout`).
 *   `--system-info`: Show environment details (Python version, OS, and other system details). Use `--json` for machine-readable output.
