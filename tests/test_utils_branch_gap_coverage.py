@@ -76,3 +76,23 @@ def test_get_project_identity_pubspec_existing_url_no_homepage(tmp_path, monkeyp
     identity = utils.get_project_identity(tmp_path)
     assert identity["project_name"] == "pub_pkg"
     assert identity["manifest_source"] == "pubspec.yaml"
+
+
+def test_get_project_identity_readme_subheaders_leave_description_empty(tmp_path):
+    (tmp_path / "README.md").write_text(
+        "# Title\n\n## Section Overview\n\n### Details\n\nThis is the description paragraph.\n",
+        encoding="utf-8",
+    )
+    identity = utils.get_project_identity(tmp_path)
+    assert identity["project_name"] == "Title"
+    assert identity["project_description"] == ""
+
+
+def test_get_project_identity_readme_all_subheaders(tmp_path):
+    (tmp_path / "README.md").write_text(
+        "# Title\n\n## Subheader 1\n\n### Subheader 2\n",
+        encoding="utf-8",
+    )
+    identity = utils.get_project_identity(tmp_path)
+    assert identity["project_name"] == "Title"
+    assert identity["project_description"] == ""
