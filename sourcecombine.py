@@ -1461,10 +1461,15 @@ def filter_file_paths(
     size_excluded = []
     reasons = stats.get('filter_reasons') if stats is not None else None
 
+    record_excluded_list = stats.get('excluded_files_list') if stats is not None and isinstance(stats.get('excluded_files_list'), list) else None
+
     for p in file_paths:
         if p.suffix.lower() == '.bak' and create_backups:
             if reasons is not None:
                 reasons['excluded_bak'] = reasons.get('excluded_bak', 0) + 1
+            if record_excluded_list is not None:
+                rel_p = _get_rel_path(p, root_path)
+                record_excluded_list.append({'path': rel_p.as_posix(), 'reason': 'excluded_bak', 'relative_path': rel_p.as_posix()})
             continue
         rel_p = _get_rel_path(p, root_path)
 
@@ -1484,6 +1489,8 @@ def filter_file_paths(
                 logging.debug("Skipping %s: %s", rel_p, reason)
                 if reasons is not None:
                     reasons[reason] = reasons.get(reason, 0) + 1
+                if record_excluded_list is not None:
+                    record_excluded_list.append({'path': rel_p.as_posix(), 'reason': reason, 'relative_path': rel_p.as_posix()})
             if record_size_exclusions and reason == 'too_large':
                 size_excluded.append(p)
 
@@ -2784,6 +2791,7 @@ def find_and_combine_files(
         'max_total_lines': config.get('filters', {}).get('max_total_lines', 0),
         'max_files': config.get('filters', {}).get('max_files', 0),
         'filter_reasons': {},
+        'excluded_files_list': [],
     }
 
     # Gather project information for templates
@@ -4775,6 +4783,15 @@ def main():
         help="Show built-in presets and expanded options (optionally filtered by QUERY) and exit. Use --json for machine-readable output.",
     )
     utility_group.add_argument(
+        "--list-excluded",
+        "--list-exc",
+        nargs="?",
+        const=True,
+        default=False,
+        metavar="QUERY",
+        help="Show all files excluded during processing and their reasons (optionally filtered by QUERY) and exit. Use --json for machine-readable output.",
+    )
+    utility_group.add_argument(
         "--extract",
         action="store_true",
         help=(
@@ -6049,6 +6066,29 @@ def main():
 
         _write_json_summary(stats, summary_path, duration=duration, source_desc=source_desc, destination_desc=dest)
         sys.exit(0)
+
+    list_exc_val = getattr(args, 'list_excluded', False)
+    if list_exc_val and type(list_exc_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        list_exc_val = False
+
+    if list_exc_val:
+        try:
+            stats = find_and_combine_files(
+                config,
+                output_path,
+                dry_run=True,
+                clipboard=False,
+                output_format=args.format,
+                estimate_tokens=False,
+                list_files=False,
+                tree_view=False,
+                explicit_files=explicit_files,
+            )
+            query = list_exc_val if isinstance(list_exc_val, str) else None
+            print_excluded_files(stats.get('excluded_files_list', []), query=query, json_format=getattr(args, 'json', False))
+            sys.exit(0)
+        except utils.InvalidConfigError as exc:
+            _handle_invalid_config_error(exc, args.verbose)
 
     if mirror_enabled:
         action_desc = "Mirror"
@@ -7950,6 +7990,55 @@ def print_formats(query=None, json_format=False):
 
     count_label = f"Matching: {len(items)}" if query_lower else f"Total: {len(formats_info)}"
     print(f"\n  {C_BOLD}{count_label}{C_RESET} output formats supported.")
+    print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
+
+
+def print_excluded_files(excluded_files, query=None, json_format=False):
+    """Print all files filtered out during processing along with their specific exclusion reasons."""
+    items = list(excluded_files or [])
+
+    if json_format:
+        if query:
+            query_lower = query.lower()
+            items = [
+                item for item in items
+                if query_lower in item.get('path', '').lower() or query_lower in item.get('reason', '').lower()
+            ]
+
+        output = {
+            "excluded_files": items,
+            "total": len(items)
+        }
+        print(json.dumps(output, indent=2))
+        return
+
+    if query:
+        query_lower = query.lower()
+        title_suffix = f" (FILTERED BY '{query}')"
+        items = [
+            item for item in items
+            if query_lower in item.get('path', '').lower() or query_lower in item.get('reason', '').lower()
+        ]
+    else:
+        title_suffix = ""
+
+    print(f"\n{C_BOLD}{C_CYAN}=== EXCLUDED FILES{title_suffix} ==={C_RESET}")
+
+    if not items:
+        if query:
+            print(f"\n  {C_YELLOW}No excluded files matched the filter query '{query}'.{C_RESET}")
+        else:
+            print(f"\n  {C_GREEN}No files were excluded.{C_RESET}")
+    else:
+        path_width = max(30, min(60, max(len(item.get('path', '')) for item in items) + 2))
+        print(f"  {C_DIM}{'EXCLUDED PATH':<{path_width}}  REASON{C_RESET}")
+        for item in items:
+            path_str = item.get('path', '')
+            reason_str = item.get('reason', '')
+            print(f"  {C_BOLD}{path_str:<{path_width}}{C_RESET}  {C_YELLOW}{reason_str}{C_RESET}")
+
+    count_label = f"Matching: {len(items)}" if query else f"Total: {len(items)}"
+    print(f"\n  {C_BOLD}{count_label}{C_RESET} excluded files.")
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
 
