@@ -3840,6 +3840,11 @@ class AnsiString(str):
 class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
     """Custom help formatter to provide rich terminal coloring and visual hierarchy."""
 
+    def add_usage(self, usage, actions, groups, prefix=None):
+        if usage is None and actions:
+            usage = f"%(prog)s [OPTIONS] [TARGET ...]"
+        super().add_usage(usage, actions, groups, prefix)
+
     def start_section(self, heading):
         if heading:
             heading = f"{C_BOLD}{C_CYAN}{heading}{C_RESET}"
