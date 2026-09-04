@@ -75,3 +75,11 @@ def test_ansi_string_len():
     s = AnsiString("\033[1m-o\033[0m \033[90mPATH\033[0m")
     assert len(s) == 7
     assert s == "\033[1m-o\033[0m \033[90mPATH\033[0m"
+
+def test_colored_help_formatter_usage_concise():
+    formatter = ColoredHelpFormatter(prog="sourcecombine.py")
+    action1 = argparse.Action(option_strings=["-v", "--verbose"], dest="verbose", nargs=0)
+    action2 = argparse.Action(option_strings=[], dest="targets", metavar="TARGET", nargs="*")
+    formatter.add_usage(None, [action1, action2], [])
+    help_text = formatter.format_help()
+    assert "usage: sourcecombine.py [OPTIONS] [TARGET ...]" in help_text
