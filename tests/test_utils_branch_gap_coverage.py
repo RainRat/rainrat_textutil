@@ -76,3 +76,28 @@ def test_get_project_identity_pubspec_existing_url_no_homepage(tmp_path, monkeyp
     identity = utils.get_project_identity(tmp_path)
     assert identity["project_name"] == "pub_pkg"
     assert identity["manifest_source"] == "pubspec.yaml"
+
+
+def test_get_project_identity_empty_license_file_skipped(tmp_path):
+    (tmp_path / "LICENSE").write_text("", encoding="utf-8")
+    (tmp_path / "LICENSE.txt").write_text(
+        "MIT License\nCopyright (c) 2024 Jane Doe", encoding="utf-8"
+    )
+
+    identity = utils.get_project_identity(tmp_path)
+    assert identity["project_license"] == "MIT"
+    assert identity["project_author"] == "Jane Doe"
+
+
+def test_get_project_identity_author_preset_license_extracted(tmp_path):
+    (tmp_path / "pubspec.yaml").write_text(
+        "name: flutter_app\nauthor: John Doe\n", encoding="utf-8"
+    )
+    (tmp_path / "LICENSE").write_text(
+        "Apache License 2.0\nCopyright (c) 2024 Other Author", encoding="utf-8"
+    )
+
+    identity = utils.get_project_identity(tmp_path)
+    assert identity["project_name"] == "flutter_app"
+    assert identity["project_author"] == "John Doe"
+    assert identity["project_license"] == "Apache"
