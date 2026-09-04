@@ -8,7 +8,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   **Remove Duplicates:** Skip duplicate files by path or content.
 *   **Include Groups:** Keep specific files regardless of other filters.
 *   **Pair Files:** Link related files (like `.cpp` and `.h`) into single output files.
-*   **Restore Files:** Rebuild original files and folders from combined Text, JSON, JSONL, XML, CSV, or Markdown. Supports filtering, remote URLs, and auto-detecting defaults.
+*   **Restore Files:** Rebuild original files and folders from combined Text, JSON, JSONL, XML, CSV, or Markdown outputs. Read from files, folders, URLs, standard input (`stdin`), or system clipboard.
 *   **Sort Results:** Organize files by name, size, date, tokens, lines, depth, or language.
 *   **Apply Limits:** Stop processing when reaching file, token, size, or line limits.
 *   **Choose Output:** Save to the terminal, a file, or the system clipboard.
@@ -16,15 +16,15 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   **AI Integration:** Include system info and Git context automatically with the `--ai` preset.
 
 ## Common Flags
-*   `--config` (`-k`): Use a custom configuration file (YAML or JSON). Use `-` to read configuration from standard input (`stdin`). The tool automatically searches for `sourcecombine.yml`, `sourcecombine.yaml`, `sourcecombine.json`, `config.yml`, `config.yaml`, or `config.json` in the current folder.
-*   `--output` (`-o`): Save results to a file or folder instead of the terminal. Supports template placeholders (for example, `{{PROJECT_NAME}}_{{DATE}}.txt`).
+*   `--config` (`-k`): Load settings from a YAML or JSON configuration file. Pass `-` to read configuration from standard input (`stdin`). The tool automatically checks for `sourcecombine.yml`, `sourcecombine.yaml`, `sourcecombine.json`, `config.yml`, `config.yaml`, or `config.json` in the current folder.
+*   `--output` (`-o`): Write output to a specific file or folder instead of printing to the terminal. Supports template placeholders (for example, `{{PROJECT_NAME}}_{{DATE}}.txt`).
 *   `--clipboard` (`-c`): Copy the combined output to the system clipboard.
 *   `--git-files` (`-G`): Use Git to find files and follow the `.gitignore` rules automatically.
 *   `--git-diff`: Include only files that have changed in Git (staged, unstaged, or untracked).
 *   `--staged`: Include only staged changes in Git (used with `--git-diff`).
 *   `--no-recursive`: Skip searching subfolders and scan only top-level files in target folders.
 *   `--max-depth DEPTH`: Limit folder scanning to a specific depth (for example, `1` for top-level files only).
-*   `--files-from PATH`: Read a list of file paths from a text file or standard input (`-`), skipping folder scanning.
+*   `--files-from PATH`: Read file paths directly from a text file or standard input (`-`), skipping folder scanning.
 *   `--ignore-file PATH`: Add an ignore file containing glob patterns to skip. Supports comma-separated lists (for example, `.ignore1,.ignore2`). Default is `.sourcecombineignore`.
 *   `--exclude-file` (`-x`): Skip files matching a glob pattern (for example, `-x "*.json"` or `--exclude-file "*.tmp"`). You can repeat this flag.
 *   `--exclude-folder` (`-X`): Skip folders matching a glob pattern (for example, `-X tests` or `--exclude-folder "build*"`). You can repeat this flag.
@@ -97,7 +97,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--preset NAME`: Apply a built-in configuration preset by name (`ai`, `analyze`, or `review`).
 *   `--review`: Enable preset for code reviews and Pull Requests (Markdown format, line numbers, Table of Contents, file tree, project overview, Git logs and diffs, skip binary).
 *   `--list-presets` (`--list-pre`): Show built-in presets and their expanded options and exit. Use `--json` for machine-readable output.
-*   `--project-info` (`-I`): Show detected project information and Git information for the current project. Use `--json` for machine-readable output.
+*   `--project-info` (`-I`): Display detected project details and Git repository status. Use `--json` for machine-readable output.
 *   `--explain PATH`: Analyze and explain whether the specified path(s) would be included or excluded by the current configuration and filters. Supports `--json` format.
 *   `--validate-config [PATH]`: Validate a specified or auto-discovered configuration file against syntax and schema rules without running file processing. Use `-` to read from standard input (`stdin`). Use `--json` for machine-readable output.
 *   `--show-config`: Display the final configuration being used and exit. Use `--json` for machine-readable output.
