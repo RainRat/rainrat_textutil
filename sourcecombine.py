@@ -6081,11 +6081,7 @@ def main():
             explicit_files=explicit_files,
         )
     except utils.InvalidConfigError as exc:
-        if args.verbose:
-            logging.error(exc, exc_info=True)
-        else:
-            logging.error(exc)
-        sys.exit(1)
+        _handle_invalid_config_error(exc, args.verbose)
 
     if stats:
         # Determine source description
