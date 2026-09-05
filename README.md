@@ -57,6 +57,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--analyze` (`-A`): Run complete project analysis (token counts, line counts, language breakdown, and folder tree) without generating output files.
 *   `--estimate-tokens` (`-e`): Calculate total tokens across matching files without writing any files to disk.
 *   `--list-files` (`-l`): Show a list of all files that match the current filters and exit without writing files. Supports structured formats (`--format json`, `--format csv`, `--format xml`, `--format markdown`).
+*   `--list-excluded` (`--list-exc`): Show all files excluded by active filters along with their exclusion reasons and exit without writing files. Supports `--json` for machine-readable output.
 *   `--tree` (`-t`): Show a visual folder tree of all included files with details and exit without writing files. Supports structured formats (`--format json`, `--format xml`, `--format markdown`).
 *   `--strip-components N`: Remove N leading components from file paths during extraction or verification.
 *   `--project-name NAME`: Override the project name used in templates and reports.
@@ -94,6 +95,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--list-extensions` (`--list-ext`): Show all supported file extensions and special filenames mapped to their language tags and exit. Use `--json` for machine-readable output.
 *   `--list-placeholders` (`--list-ph`): Show all supported template placeholders and exit. Use `--json` for machine-readable output.
 *   `--list-formats` (`--list-fmt`): Show all supported output formats and aliases and exit. Use `--json` for machine-readable output.
+*   `--list-excluded` (`--list-exc`): Show all files excluded by active filters along with their exclusion reasons and exit. Use `--json` for machine-readable output.
 *   `--preset NAME`: Apply a built-in configuration preset by name (`ai`, `analyze`, or `review`).
 *   `--review`: Enable preset for code reviews and Pull Requests (Markdown format, line numbers, Table of Contents, file tree, project overview, Git logs and diffs, skip binary).
 *   `--list-presets` (`--list-pre`): Show built-in presets and their expanded options and exit. Use `--json` for machine-readable output.
@@ -355,6 +357,12 @@ Preview matching files or inspect your project structure without writing output 
    ```bash
    python sourcecombine.py . --list-files --format json
    python sourcecombine.py . --tree --format markdown
+   ```
+
+4. **List all excluded files with reasons:**
+   ```bash
+   python sourcecombine.py . --list-excluded
+   python sourcecombine.py . --list-excluded --json
    ```
 
 ### Advanced Filtering and AI Optimization
