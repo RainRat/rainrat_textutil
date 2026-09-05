@@ -5380,9 +5380,17 @@ def main():
     elif not args.files_from:
         if not config.get('search', {}).get('root_folders'):
             if not config_path:
-                logging.info(
-                    "No config file found. Scanning current folder '.' with default settings."
+                is_backup_cmd = (
+                    getattr(args, 'restore', False)
+                    or _get_bool_arg(args, 'backup')
+                    or getattr(args, 'delete_backups', False)
+                    or _get_bool_arg(args, 'list_backups')
+                    or _get_bool_arg(args, 'diff_backups')
                 )
+                if not is_backup_cmd:
+                    logging.info(
+                        "No config file found. Scanning current folder '.' with default settings."
+                    )
             else:
                 logging.info(
                     "No root folders specified in configuration. Scanning current folder '.'"
