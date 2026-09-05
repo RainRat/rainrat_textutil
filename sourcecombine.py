@@ -4169,13 +4169,13 @@ def main():
     core_group.add_argument(
         "--no-recursive",
         action="store_true",
-        help="Do not search subfolders recursively (only scan target folder's top-level files).",
+        help="Skip searching subfolders recursively and scan only top-level files in target folders.",
     )
     core_group.add_argument(
         "-q",
         "--quiet",
         action="store_true",
-        help="Suppress success messages and non-essential output (like '[OK]' files during verification or the final execution summary)."
+        help="Suppress non-essential status messages and summary output.",
     )
 
     # Project Information Group
@@ -4221,7 +4221,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Skip files that match this pattern (for example, '*.log,*.tmp' or '*.log'). Can be used multiple times.",
+        help="Skip files matching a glob pattern (for example, '*.log' or '*.tmp'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--exclude-folder",
@@ -4231,7 +4231,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Skip folders that match this pattern (for example, 'build,dist' or 'build'). Can be used multiple times.",
+        help="Skip folders matching a glob pattern (for example, 'build' or 'dist'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--include",
@@ -4240,7 +4240,7 @@ def main():
         action="append",
         metavar="PATTERN",
         default=[],
-        help="Include only files that match this pattern (for example, 'tests/*.py' or 'tests/*.py,*.md'). Can be used multiple times.",
+        help="Include files matching a glob pattern regardless of other filter rules. Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--extension",
@@ -4264,7 +4264,7 @@ def main():
         action="append",
         metavar="LANG",
         default=[],
-        help="Include only files of these languages (for example, 'python,cpp' or 'python'). Can be used multiple times. See --list-languages for a full list.",
+        help="Include only files matching these language identifiers (for example, 'python,javascript'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--exclude-language",
@@ -4272,7 +4272,7 @@ def main():
         action="append",
         metavar="LANG",
         default=[],
-        help="Skip files of these languages (for example, 'javascript,html' or 'javascript'). Can be used multiple times.",
+        help="Skip files matching these language identifiers (for example, 'markdown,json'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--since",
@@ -4323,19 +4323,19 @@ def main():
     filtering_group.add_argument(
         "--files-from",
         metavar="PATH",
-        help="Read a list of files from a text file (use '-' for the terminal). This skips looking for files in folders.",
+        help="Read file paths from a text file or standard input ('-'), skipping folder scanning.",
     )
     filtering_group.add_argument(
         "--grep",
         "-g",
         metavar="PATTERN",
-        help="Include only files whose content matches this pattern.",
+        help="Include only files whose content matches this regular expression pattern.",
     )
     filtering_group.add_argument(
         "--exclude-grep",
         "-E",
         metavar="PATTERN",
-        help="Skip files whose content matches this pattern.",
+        help="Skip files whose content matches this regular expression pattern.",
     )
     filtering_group.add_argument(
         "--grep-ignore-case",
@@ -4347,63 +4347,63 @@ def main():
         "--skip-binary",
         "-B",
         action="store_true",
-        help="Skip files that contain non-text data (binary files).",
+        help="Skip files that contain binary data automatically.",
     )
     filtering_group.add_argument(
         "--max-depth",
         "-D",
         type=int,
         metavar="N",
-        help="Limit folder scanning to this depth (for example, '-D 1' for root files only; 0 for no limit).",
+        help="Limit folder scanning to a specific depth (for example, 1 for top-level files only).",
     )
     filtering_group.add_argument(
         "--git-files",
         "-G",
         action="store_true",
-        help="Use 'git ls-files' to find files. This follows the .gitignore rules.",
+        help="Use Git to find files and follow .gitignore rules automatically.",
     )
     filtering_group.add_argument(
         "--git-diff",
         nargs="?",
         const=True,
         metavar="REF",
-        help="Include only files changed in Git since REF (default: HEAD, staged, and untracked).",
+        help="Include only files that have changed in Git (staged, unstaged, or untracked).",
     )
     filtering_group.add_argument(
         "--staged",
         action="store_true",
-        help="Include only staged changes in Git. This automatically enables Git diff functionality.",
+        help="Include only staged changes in Git (used with --git-diff).",
     )
     filtering_group.add_argument(
         "--unstaged",
         action="store_true",
-        help="Include only unstaged and untracked changes in Git. This automatically enables Git diff functionality.",
+        help="Include only unstaged and untracked changes in Git.",
     )
     filtering_group.add_argument(
         "--unique",
         "-u",
         action="store_true",
-        help="Skip duplicate files by path or content (duplicate removal).",
+        help="Skip duplicate files by path or content.",
     )
     filtering_group.add_argument(
         "--strip-components",
         type=int,
         default=0,
         metavar="N",
-        help="Remove N leading components from file paths during extraction or verification.",
+        help="Remove N leading path components from file paths during extraction or verification.",
     )
     filtering_group.add_argument(
         "--map-lang",
         nargs=2,
         action="append",
         metavar=("EXTENSION", "LANGUAGE"),
-        help="Manually map a file extension or filename to a specific language (for example, '.mjml' 'html'). Can be used multiple times.",
+        help="Map a file extension or filename to a specific language identifier (for example, '.mjml' 'html'). Can be used multiple times.",
     )
     filtering_group.add_argument(
         "--ignore-file",
         action="append",
         metavar="PATH",
-        help="Add an ignore file containing glob patterns to skip. Supports comma-separated lists. Default is '.sourcecombineignore'. Can be used multiple times.",
+        help="Add an ignore file containing glob patterns to skip. Supports comma-separated lists (default: '.sourcecombineignore'). Can be used multiple times.",
     )
 
     # Sorting & Limiting Group
@@ -4668,7 +4668,7 @@ def main():
     processing_group.add_argument(
         "--apply-in-place",
         action="store_true",
-        help="Apply processing rules directly to the source files (WARNING: modifies the files!).",
+        help="Save processed changes directly back to the original source files.",
     )
     processing_group.add_argument(
         "--create-backups",
