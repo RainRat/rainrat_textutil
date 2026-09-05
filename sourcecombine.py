@@ -1484,6 +1484,11 @@ def filter_file_paths(
                 logging.debug("Skipping %s: %s", rel_p, reason)
                 if reasons is not None:
                     reasons[reason] = reasons.get(reason, 0) + 1
+            if stats is not None and 'excluded_files' in stats:
+                stats['excluded_files'].append({
+                    'path': rel_p.as_posix(),
+                    'reason': reason or 'excluded'
+                })
             if record_size_exclusions and reason == 'too_large':
                 size_excluded.append(p)
 
@@ -2736,6 +2741,8 @@ def find_and_combine_files(
     list_files=False,
     tree_view=False,
     explicit_files=None,
+    list_excluded=False,
+    json_format=False,
 ):
     """Find, filter, and combine files based on the settings."""
 
@@ -2785,6 +2792,8 @@ def find_and_combine_files(
         'max_files': config.get('filters', {}).get('max_files', 0),
         'filter_reasons': {},
     }
+    if list_excluded:
+        stats['excluded_files'] = []
 
     # Gather project information for templates
     first_root = "."
@@ -2895,7 +2904,7 @@ def find_and_combine_files(
         if not output_opts.get('global_footer_template') or output_opts.get('global_footer_template') == default_global_footer:
             output_opts['global_footer_template'] = "\n</repository>\n"
 
-    if not pairing_enabled and not dry_run and not estimate_tokens and not clipboard and not list_files and not tree_view and output_path is None:
+    if not pairing_enabled and not dry_run and not estimate_tokens and not clipboard and not list_files and not tree_view and not list_excluded and output_path is None:
         raise utils.InvalidConfigError(
             "You must set an output file in the configuration or use the --output option."
         )
@@ -2919,7 +2928,7 @@ def find_and_combine_files(
 
     clipboard_buffer = io.StringIO() if clipboard else None
 
-    if estimate_tokens or list_files or tree_view:
+    if estimate_tokens or list_files or tree_view or list_excluded:
         outfile_ctx = _DevNull()
     elif (dry_run and output_opts.get('show_diff') and output_path and output_path != '-'):
         clipboard_buffer = io.StringIO()
@@ -2934,7 +2943,7 @@ def find_and_combine_files(
         outfile_ctx = open(output_path, 'w', encoding='utf8', newline='')
 
     # We only want true dry-run behavior (skipping reading) if we are NOT estimating tokens.
-    processor_dry_run = (dry_run and not estimate_tokens) or list_files or tree_view
+    processor_dry_run = (dry_run and not estimate_tokens) or list_files or tree_view or list_excluded
     processor = FileProcessor(
         config,
         output_opts,
@@ -3022,6 +3031,11 @@ def find_and_combine_files(
                         if abs_p in seen_paths:
                             logging.debug("Skipping duplicate path: %s", p)
                             stats['filter_reasons']['duplicate_path'] = stats['filter_reasons'].get('duplicate_path', 0) + 1
+                            if 'excluded_files' in stats:
+                                stats['excluded_files'].append({
+                                    'path': _get_rel_path(p, root_path).as_posix(),
+                                    'reason': 'duplicate_path'
+                                })
                             continue
                         seen_paths.add(abs_p)
                         unique_for_root.append(p)
@@ -3182,6 +3196,35 @@ def find_and_combine_files(
                     all_combined_items.append((file_path, root_path, is_excluded_by_size))
 
         # End of root_folder loop
+
+        if list_excluded:
+            raw_excluded = stats.get('excluded_files', [])
+            seen_paths = set()
+            excluded_list = []
+            for item in raw_excluded:
+                p = item['path']
+                if p not in seen_paths:
+                    seen_paths.add(p)
+                    excluded_list.append(item)
+            excluded_list.sort(key=lambda x: x['path'])
+
+            if json_format or output_format == 'json':
+                out_data = {
+                    "total_excluded": len(excluded_list),
+                    "excluded_files": excluded_list
+                }
+                print(json.dumps(out_data, indent=2))
+            else:
+                if not excluded_list:
+                    print(f"\n{C_YELLOW}No files were excluded.{C_RESET}")
+                else:
+                    title = f"Excluded Files ({len(excluded_list)})"
+                    print(f"\n{C_BOLD}{C_CYAN}=== {title.upper()} ==={C_RESET}")
+                    for item in excluded_list:
+                        p_str = item['path']
+                        r_str = item['reason']
+                        print(f"  {C_BOLD}{p_str}{C_RESET} {C_DIM}({r_str}){C_RESET}")
+            return stats
 
         # Information and Sorting Pass
         sort_by = output_opts.get('sort_by', 'name')
@@ -4775,6 +4818,12 @@ def main():
         help="Show built-in presets and expanded options (optionally filtered by QUERY) and exit. Use --json for machine-readable output.",
     )
     utility_group.add_argument(
+        "--list-excluded",
+        "--list-exc",
+        action="store_true",
+        help="Show all files excluded by active filters along with their exclusion reasons and exit. Use --json for machine-readable output.",
+    )
+    utility_group.add_argument(
         "--extract",
         action="store_true",
         help=(
@@ -5012,6 +5061,7 @@ def main():
         getattr(args, 'extract', False) or
         getattr(args, 'explain', False) or
         _get_bool_arg(args, 'list_presets') or
+        _get_bool_arg(args, 'list_excluded') or
         _get_bool_arg(args, 'list_backups') or
         _get_bool_arg(args, 'diff_backups') or
         _get_bool_arg(args, 'backup') or
@@ -6062,6 +6112,8 @@ def main():
         logging.info("%sOutput: Listing files only%s %s(no files will be written)%s", C_CYAN, C_RESET, C_DIM, C_RESET)
     elif args.tree:
         logging.info("%sOutput: Showing file tree%s %s(no files will be written)%s", C_CYAN, C_RESET, C_DIM, C_RESET)
+    elif getattr(args, 'list_excluded', False):
+        logging.info("%sOutput: Listing excluded files only%s %s(no files will be written)%s", C_CYAN, C_RESET, C_DIM, C_RESET)
     elif args.estimate_tokens:
         logging.info("%sOutput: Token estimation only%s %s(no files will be written)%s", C_CYAN, C_RESET, C_DIM, C_RESET)
     else:
@@ -6079,7 +6131,11 @@ def main():
             list_files=args.list_files,
             tree_view=args.tree,
             explicit_files=explicit_files,
+            list_excluded=getattr(args, 'list_excluded', False),
+            json_format=_get_bool_arg(args, 'json'),
         )
+        if getattr(args, 'list_excluded', False):
+            sys.exit(0)
     except utils.InvalidConfigError as exc:
         if args.verbose:
             logging.error(exc, exc_info=True)
