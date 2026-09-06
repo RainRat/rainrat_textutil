@@ -48,6 +48,9 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--skip-binary`: Skip files that appear to contain binary data automatically.
 *   `--unique` (`-u`): Skip duplicate files by path or content (duplicate removal).
 *   `--line-numbers` (`-n`): Add line numbers starting at 1 for each file in the output.
+*   `--toc` (`-T`): Add a Table of Contents to the beginning of the combined output.
+*   `--include-tree` (`-p`): Add a visual folder tree to the beginning of the combined output.
+*   `--overview` (`-O`): Add a project overview summary with statistics and language breakdown to the beginning of the combined output.
 *   `--replace PATTERN REPLACEMENT`: Find and replace content using regular expressions. You can repeat this flag.
 *   `--replace-line PATTERN REPLACEMENT`: Find and replace line patterns using regular expressions. You can repeat this flag.
 *   `--git-log`: Include recent Git commit history in project overview and templates (`{{GIT_LOG}}`).
