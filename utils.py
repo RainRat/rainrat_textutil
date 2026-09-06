@@ -1666,7 +1666,7 @@ def _parse_json_manifest(manifest_path: Path, identity: dict) -> bool:
                 elif isinstance(repo, str):
                     identity["project_url"] = repo
             return True
-    except Exception:
+    except (OSError, ValueError, TypeError):
         pass
     return False
 
