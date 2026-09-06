@@ -1448,6 +1448,7 @@ def filter_file_paths(
     search_opts,
     root_path,
     record_size_exclusions=False,
+    record_all_exclusions=False,
     create_backups=False,
     stats=None,
     abs_output_path=None,
@@ -1456,15 +1457,20 @@ def filter_file_paths(
 
     When ``record_size_exclusions`` is ``True`` an additional list of paths
     excluded for exceeding ``max_size_bytes`` is returned.
+    When ``record_all_exclusions`` is ``True`` an additional list of tuples
+    ``(path, reason)`` for all excluded paths is returned.
     """
     filtered = []
     size_excluded = []
+    all_exclusions = []
     reasons = stats.get('filter_reasons') if stats is not None else None
 
     for p in file_paths:
         if p.suffix.lower() == '.bak' and create_backups:
             if reasons is not None:
                 reasons['excluded_bak'] = reasons.get('excluded_bak', 0) + 1
+            if record_all_exclusions:
+                all_exclusions.append((p, 'excluded_bak'))
             continue
         rel_p = _get_rel_path(p, root_path)
 
@@ -1484,9 +1490,15 @@ def filter_file_paths(
                 logging.debug("Skipping %s: %s", rel_p, reason)
                 if reasons is not None:
                     reasons[reason] = reasons.get(reason, 0) + 1
+                if record_all_exclusions:
+                    all_exclusions.append((p, reason))
             if record_size_exclusions and reason == 'too_large':
                 size_excluded.append(p)
 
+    if record_all_exclusions and record_size_exclusions:
+        return filtered, size_excluded, all_exclusions
+    if record_all_exclusions:
+        return filtered, all_exclusions
     if record_size_exclusions:
         return filtered, size_excluded
     return filtered
@@ -2734,8 +2746,10 @@ def find_and_combine_files(
     output_format='text',
     estimate_tokens=False,
     list_files=False,
+    list_excluded=False,
     tree_view=False,
     explicit_files=None,
+    json_format=False,
 ):
     """Find, filter, and combine files based on the settings."""
 
@@ -2895,7 +2909,7 @@ def find_and_combine_files(
         if not output_opts.get('global_footer_template') or output_opts.get('global_footer_template') == default_global_footer:
             output_opts['global_footer_template'] = "\n</repository>\n"
 
-    if not pairing_enabled and not dry_run and not estimate_tokens and not clipboard and not list_files and not tree_view and output_path is None:
+    if not pairing_enabled and not dry_run and not estimate_tokens and not clipboard and not list_files and not list_excluded and not tree_view and output_path is None:
         raise utils.InvalidConfigError(
             "You must set an output file in the configuration or use the --output option."
         )
@@ -2914,12 +2928,12 @@ def find_and_combine_files(
     out_folder = None
     if pairing_enabled and output_path:
         out_folder = Path(output_path)
-        if not dry_run and not estimate_tokens and not list_files and not tree_view:
+        if not dry_run and not estimate_tokens and not list_files and not list_excluded and not tree_view:
             out_folder.mkdir(parents=True, exist_ok=True)
 
     clipboard_buffer = io.StringIO() if clipboard else None
 
-    if estimate_tokens or list_files or tree_view:
+    if estimate_tokens or list_files or list_excluded or tree_view:
         outfile_ctx = _DevNull()
     elif (dry_run and output_opts.get('show_diff') and output_path and output_path != '-'):
         clipboard_buffer = io.StringIO()
@@ -2963,7 +2977,7 @@ def find_and_combine_files(
         global_header = output_opts.get('global_header_template')
         global_footer = output_opts.get('global_footer_template')
 
-        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not tree_view and output_format in ('json', 'manifest'):
+        if not pairing_enabled and not dry_run and not estimate_tokens and not list_files and not list_excluded and not tree_view and output_format in ('json', 'manifest'):
             outfile.write('[')
 
         first_item = True
@@ -3038,16 +3052,39 @@ def find_and_combine_files(
                 search_opts=search_opts,
                 root_path=root_path,
                 record_size_exclusions=record_size_exclusions,
+                record_all_exclusions=list_excluded,
                 create_backups=processor.create_backups,
                 stats=stats,
                 abs_output_path=abs_output_path,
             )
-            if record_size_exclusions:
-                filtered_paths, size_excluded = filtered_result
-                all_size_excluded.update(size_excluded)
+            if list_excluded:
+                if record_size_exclusions:
+                    filtered_paths, size_excluded, exclusions = filtered_result
+                    all_size_excluded.update(size_excluded)
+                else:
+                    filtered_paths, exclusions = filtered_result
+                    size_excluded = []
             else:
-                filtered_paths = filtered_result
-                size_excluded = []
+                exclusions = []
+                if record_size_exclusions:
+                    filtered_paths, size_excluded = filtered_result
+                    all_size_excluded.update(size_excluded)
+                else:
+                    filtered_paths = filtered_result
+                    size_excluded = []
+
+            if list_excluded:
+                if json_format:
+                    excluded_items = [
+                        {"path": _get_rel_path(p, root_path).as_posix(), "reason": reason}
+                        for p, reason in exclusions
+                    ]
+                    print(json.dumps(excluded_items, indent=2))
+                else:
+                    for p, reason in exclusions:
+                        rel = _get_rel_path(p, root_path).as_posix()
+                        print(f"{rel} ({reason})")
+                continue
 
             if list_files or tree_view:
                 paths_to_list = []
@@ -4637,6 +4674,12 @@ def main():
         help="Show a list of all files that would be included and exit.",
     )
     display_group.add_argument(
+        "--list-excluded",
+        "--list-exc",
+        action="store_true",
+        help="Show a list of all files excluded by filtering rules along with their reasons and exit. Use --json for machine-readable output.",
+    )
+    display_group.add_argument(
         "--tree",
         "-t",
         action="store_true",
@@ -6058,7 +6101,9 @@ def main():
         action_desc = "Combine"
     logging.info("%sOperation: %s%s", C_DIM, action_desc, C_RESET)
 
-    if args.list_files:
+    if getattr(args, 'list_excluded', False):
+        logging.info("%sOutput: Listing excluded files only%s %s(no files will be written)%s", C_CYAN, C_RESET, C_DIM, C_RESET)
+    elif args.list_files:
         logging.info("%sOutput: Listing files only%s %s(no files will be written)%s", C_CYAN, C_RESET, C_DIM, C_RESET)
     elif args.tree:
         logging.info("%sOutput: Showing file tree%s %s(no files will be written)%s", C_CYAN, C_RESET, C_DIM, C_RESET)
@@ -6077,8 +6122,10 @@ def main():
             output_format=args.format,
             estimate_tokens=args.estimate_tokens,
             list_files=args.list_files,
+            list_excluded=getattr(args, 'list_excluded', False),
             tree_view=args.tree,
             explicit_files=explicit_files,
+            json_format=getattr(args, 'json', False),
         )
     except utils.InvalidConfigError as exc:
         if args.verbose:
@@ -8319,7 +8366,9 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         action = "Combined"
 
     # Refine status prefix with base action
-    if total_included == 0:
+    if getattr(args, 'list_excluded', False) is True:
+        status_prefix = "EXCLUDED LISTING"
+    elif total_included == 0:
         status_prefix = f"NO FILES FOUND ({base_action})"
     elif getattr(args, 'dry_run', False) is True:
         status_prefix = f"{base_action} PREVIEW"
@@ -8341,6 +8390,8 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
     # Details part
     if getattr(args, 'dry_run', False) is True:
         verb_phrase = f"Would {verb} {total_included:,} {file_word}"
+    elif getattr(args, 'list_excluded', False) is True:
+        verb_phrase = "Excluded files listed"
     elif getattr(args, 'estimate_tokens', False) is True or getattr(args, 'list_files', False) is True or getattr(args, 'tree', False) is True:
         verb_phrase = f"{total_included:,} {file_word}"
     else:
