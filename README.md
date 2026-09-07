@@ -38,7 +38,14 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--until TIME` (`-U TIME`): Include only files modified before this time (for example, `1d`, `2h`, or `2023-01-01`).
 *   `--min-size SIZE`: Include only files that are at least this size (for example, `10KB` or `1MB`).
 *   `--max-size SIZE`: Include only files that are at most this size (for example, `50KB` or `2MB`).
+*   `--min-tokens N`: Include only files with at least N tokens.
+*   `--max-file-tokens N`: Include only files with at most N tokens.
+*   `--min-lines N`: Include only files with at least N lines.
+*   `--max-file-lines N`: Include only files with at most N lines.
 *   `--limit` (`-L`): Stop processing once you reach this file limit.
+*   `--max-tokens N` (`-M N`): Stop processing once you reach the total tokens limit across all combined files.
+*   `--max-total-size SIZE`: Stop processing once you reach the total size limit across all combined files (for example, `5MB`).
+*   `--max-total-lines N`: Stop processing once you reach the total lines limit across all combined files.
 *   `--sort SORT_BY` (`-s SORT_BY`): Sort processed files by specific criteria (`name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`). Case-insensitive and supports aliases like `date`/`time` for `modified`, `token` for `tokens`, `line` for `lines`, and `lang` for `language`.
 *   `--reverse` (`-r`): Reverse the file sorting order.
 *   `--format FORMAT` (`-f FORMAT`): Set the output format (`text`, `markdown`, `json`, `jsonl`, `xml`, `manifest`, or `csv`). Case-insensitive and supports aliases like `txt` or `md`. You can also use shortcut flags like `--markdown`, `--json`, `--jsonl`, `--xml`, or `--csv`.
@@ -379,6 +386,16 @@ python sourcecombine.py . --staged
 Skip large or old files to keep output concise. For example, to only include files smaller than 50 Kilobytes modified in the last 24 hours:
 ```bash
 python sourcecombine.py . --max-size 50KB --since 1d
+```
+
+#### Filter by Line and Token Limits
+Set minimum or maximum limits for individual files or total output limits:
+```bash
+# Include files with at least 10 lines and at most 500 tokens
+python sourcecombine.py . --min-lines 10 --max-file-tokens 500
+
+# Stop processing when total output reaches 100,000 tokens or 5 Megabytes
+python sourcecombine.py . --max-tokens 100000 --max-total-size 5MB
 ```
 
 #### Optimize Files for AI (Remove Comments and Whitespace)
