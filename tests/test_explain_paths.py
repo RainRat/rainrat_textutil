@@ -218,3 +218,18 @@ def test_explain_cli_json_integration(tmp_path, capsys):
     results = json.loads(captured.out)
     assert len(results) == 1
     assert results[0]["path"] == str(test_file)
+
+def test_explain_exp_alias_cli_integration(tmp_path, capsys):
+    """Test the CLI integration of --exp shortcut alias via main() mock."""
+    test_file = tmp_path / "test.py"
+    test_file.write_text("print('test')")
+
+    test_argv = ["sourcecombine.py", "--exp", str(test_file)]
+
+    with patch("sys.argv", test_argv), pytest.raises(SystemExit) as exc_info:
+        main()
+
+    assert exc_info.value.code == 0
+    captured = capsys.readouterr()
+    assert "PATH MATCH ANALYSIS & EXPLANATION" in captured.out
+    assert "test.py" in captured.out

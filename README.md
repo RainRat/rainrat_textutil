@@ -98,7 +98,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--review`: Enable preset for code reviews and Pull Requests (Markdown format, line numbers, Table of Contents, file tree, project overview, Git logs and diffs, skip binary).
 *   `--list-presets` (`--list-pre`): Show built-in presets and their expanded options and exit. Use `--json` for machine-readable output.
 *   `--project-info` (`-I`): Show detected project information and Git information for the current project. Use `--json` for machine-readable output.
-*   `--explain PATH`: Analyze and explain whether the specified path(s) would be included or excluded by the current configuration and filters. Supports `--json` format.
+*   `--explain PATH` (`--exp`): Analyze and explain whether the specified path(s) would be included or excluded by the current configuration and filters. Supports `--json` format.
 *   `--validate-config [PATH]`: Validate a specified or auto-discovered configuration file against syntax and schema rules without running file processing. Use `-` to read from standard input (`stdin`). Use `--json` for machine-readable output.
 *   `--show-config`: Display the final configuration being used and exit. Use `--json` for machine-readable output.
 *   `--export-config`: Save the final combined configuration to a YAML file and exit. Use `-` to output to standard output (`stdout`).
@@ -360,9 +360,11 @@ Preview matching files or inspect your project structure without writing output 
 ### Advanced Filtering and AI Optimization
 
 #### Explain Exclusion/Inclusion
-If you are unsure why a file is being skipped or included, you can check using the `--explain` command:
+If you are unsure why a file is being skipped or included, you can check using the `--explain` (or `--exp`) command:
 ```bash
 python sourcecombine.py --explain utils.py
+# or using the shortcut alias
+python sourcecombine.py --exp utils.py
 ```
 
 #### Combine Only Changed Git Files
