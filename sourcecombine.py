@@ -2736,6 +2736,7 @@ def find_and_combine_files(
     list_files=False,
     tree_view=False,
     explicit_files=None,
+    json_format=False,
 ):
     """Find, filter, and combine files based on the settings."""
 
@@ -3121,6 +3122,9 @@ def find_and_combine_files(
 
                 if tree_view:
                     print(_generate_tree_string(paths_to_list, root_path, include_header=False, information=view_information))
+                elif json_format:
+                    formatted_paths = [(_get_rel_path(p, root_path) if p.is_absolute() else p).as_posix() for p in paths_to_list]
+                    print(json.dumps({"files": formatted_paths, "total_files": len(formatted_paths)}, indent=2))
                 else:
                     for p in paths_to_list:
                         # Print relative path if possible for cleaner output
@@ -6050,23 +6054,26 @@ def main():
         _write_json_summary(stats, summary_path, duration=duration, source_desc=source_desc, destination_desc=dest)
         sys.exit(0)
 
-    if mirror_enabled:
-        action_desc = "Mirror"
-    elif pairing_enabled:
-        action_desc = "Pair"
-    else:
-        action_desc = "Combine"
-    logging.info("%sOperation: %s%s", C_DIM, action_desc, C_RESET)
+    is_json = getattr(args, 'json', False)
 
-    if args.list_files:
-        logging.info("%sOutput: Listing files only%s %s(no files will be written)%s", C_CYAN, C_RESET, C_DIM, C_RESET)
-    elif args.tree:
-        logging.info("%sOutput: Showing file tree%s %s(no files will be written)%s", C_CYAN, C_RESET, C_DIM, C_RESET)
-    elif args.estimate_tokens:
-        logging.info("%sOutput: Token estimation only%s %s(no files will be written)%s", C_CYAN, C_RESET, C_DIM, C_RESET)
-    else:
-        dry_run_indicator = f" {C_DIM}(dry run){C_RESET}" if args.dry_run else ""
-        logging.info("%sOutput:%s %s%s%s%s", C_CYAN, C_RESET, C_BOLD, destination_desc, C_RESET, dry_run_indicator)
+    if not (args.list_files and is_json):
+        if mirror_enabled:
+            action_desc = "Mirror"
+        elif pairing_enabled:
+            action_desc = "Pair"
+        else:
+            action_desc = "Combine"
+        logging.info("%sOperation: %s%s", C_DIM, action_desc, C_RESET)
+
+        if args.list_files:
+            logging.info("%sOutput: Listing files only%s %s(no files will be written)%s", C_CYAN, C_RESET, C_DIM, C_RESET)
+        elif args.tree:
+            logging.info("%sOutput: Showing file tree%s %s(no files will be written)%s", C_CYAN, C_RESET, C_DIM, C_RESET)
+        elif args.estimate_tokens:
+            logging.info("%sOutput: Token estimation only%s %s(no files will be written)%s", C_CYAN, C_RESET, C_DIM, C_RESET)
+        else:
+            dry_run_indicator = f" {C_DIM}(dry run){C_RESET}" if args.dry_run else ""
+            logging.info("%sOutput:%s %s%s%s%s", C_CYAN, C_RESET, C_BOLD, destination_desc, C_RESET, dry_run_indicator)
 
     try:
         stats = find_and_combine_files(
@@ -6079,6 +6086,7 @@ def main():
             list_files=args.list_files,
             tree_view=args.tree,
             explicit_files=explicit_files,
+            json_format=is_json,
         )
     except utils.InvalidConfigError as exc:
         if args.verbose:
@@ -6106,7 +6114,8 @@ def main():
         if resolved_path and resolved_path != '-' and not pairing_enabled:
             destination_desc = f"to '{resolved_path}'"
 
-        _print_execution_summary(stats, args, pairing_enabled, destination_desc, duration=duration, source_desc=source_desc, mirror_enabled=mirror_enabled)
+        if not (args.list_files and is_json):
+            _print_execution_summary(stats, args, pairing_enabled, destination_desc, duration=duration, source_desc=source_desc, mirror_enabled=mirror_enabled)
 
         summary_path = output_conf.get('summary_json')
         if summary_path and summary_path != '-' and '{{' in summary_path:
@@ -6796,8 +6805,12 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
     files_to_create = filtered_files
 
     if list_files:
-        for path_str, _, _ in files_to_create:
-            print(path_str)
+        if json_format:
+            paths = [p for p, _, _ in files_to_create]
+            print(json.dumps({"files": paths, "total_files": len(paths)}, indent=2))
+        else:
+            for path_str, _, _ in files_to_create:
+                print(path_str)
         return stats
 
     if tree_view:

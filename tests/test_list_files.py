@@ -2,6 +2,7 @@ import sys; import os; from pathlib import Path; sys.path.insert(0, os.fspath(Pa
 
 from unittest.mock import patch
 import sys
+import json
 import sourcecombine
 from sourcecombine import main
 import yaml
@@ -204,3 +205,56 @@ def test_list_files_with_token_estimation_approx(tmp_path, capsys):
         )
 
     assert stats['token_count_is_approx'] is True
+
+
+def test_list_files_json(tmp_path, capsys):
+    """Verify find_and_combine_files, extract_files, and CLI main with list_files=True and json_format=True."""
+    (tmp_path / "a.py").write_text("print(1)")
+    (tmp_path / "b.txt").write_text("hello")
+
+    config = {
+        "search": {"root_folders": [str(tmp_path)]},
+        "filters": {}
+    }
+
+    # Test find_and_combine_files
+    stats = sourcecombine.find_and_combine_files(
+        config,
+        output_path=None,
+        list_files=True,
+        json_format=True
+    )
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert "files" in data
+    assert "a.py" in data["files"]
+    assert "b.txt" in data["files"]
+    assert data["total_files"] == 2
+
+    # Test extract_files
+    source_content = '[{"path": "f1.py", "content": "x=1"}, {"path": "f2.py", "content": "y=2"}]'
+    stats_ext = sourcecombine.extract_files(
+        [("combined.json", source_content)],
+        output_folder=str(tmp_path / "extracted"),
+        list_files=True,
+        json_format=True
+    )
+    captured_ext = capsys.readouterr()
+    data_ext = json.loads(captured_ext.out)
+    assert data_ext["files"] == ["f1.py", "f2.py"]
+    assert data_ext["total_files"] == 2
+
+    # Test CLI main() with --list-files --json
+    with patch.object(sys, "argv", ["sourcecombine.py", str(tmp_path), "--list-files", "--json"]):
+        try:
+            main()
+        except SystemExit:
+            pass
+
+    captured_main = capsys.readouterr()
+    data_main = json.loads(captured_main.out)
+    assert "a.py" in data_main["files"]
+    assert "b.txt" in data_main["files"]
+    # stderr should not contain execution summary headers
+    assert "COMBINE LISTING" not in captured_main.err
+    assert "Operation: Combine" not in captured_main.err

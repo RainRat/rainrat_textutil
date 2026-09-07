@@ -56,7 +56,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, skipping binary files, removing duplicates, and automatically including Git context like logs and diffs). This also copies to the system clipboard if you do not specify an output.
 *   `--analyze` (`-A`): Run complete project analysis (token counts, line counts, language breakdown, and folder tree) without generating output files.
 *   `--estimate-tokens` (`-e`): Calculate total tokens across matching files without writing any files to disk.
-*   `--list-files` (`-l`): Show a list of all files that match the current filters and exit without writing files. Supports structured formats (`--format json`, `--format csv`, `--format xml`, `--format markdown`).
+*   `--list-files` (`-l`): Show a list of all files that match the current filters and exit without writing files. Supports `--json` for machine-readable JSON output format.
 *   `--tree` (`-t`): Show a visual folder tree of all included files with details and exit without writing files. Supports structured formats (`--format json`, `--format xml`, `--format markdown`).
 *   `--strip-components N`: Remove N leading components from file paths during extraction or verification.
 *   `--project-name NAME`: Override the project name used in templates and reports.
@@ -65,7 +65,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--project-description TEXT`: Override the project description.
 *   `--project-license NAME`: Override the project license.
 *   `--project-url URL`: Override the project URL.
-*   `--json`: Output results in JSON format.
+*   `--json`: Output results in machine-readable JSON format (supported by listing options, verification, extraction, backups, system info, project info, and `--list-files`).
 *   `--dry-run` (`-d`): Show what would happen without making any changes.
 *   `--verbose` (`-v`): Display detailed log messages to help troubleshoot issues.
 *   `--quiet` (`-q`): Suppress non-essential status messages and summary output.
