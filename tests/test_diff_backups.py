@@ -143,3 +143,19 @@ def test_diff_backups_cli_integration_json(tmp_path, capsys):
     data = json.loads(captured.out)
     assert data["title"] == "Backup Diffs Report"
     assert data["summary"]["orphaned"] == 1
+
+def test_diff_bak_cli_alias(tmp_path, capsys):
+    file_modified = tmp_path / "file.txt"
+    file_modified.write_text("Hello\nWorld\n", encoding="utf-8")
+    bak = tmp_path / "file.txt.bak"
+    bak.write_text("Hello\nThere\n", encoding="utf-8")
+
+    with patch("sys.argv", ["sourcecombine.py", str(tmp_path), "--diff-bak"]):
+        with pytest.raises(SystemExit) as excinfo:
+            main()
+        assert excinfo.value.code == 0
+
+    captured = capsys.readouterr()
+    assert "BACKUP DIFFS REPORT" in captured.out
+    assert "file.txt.bak" in captured.out
+    assert "World" in captured.out

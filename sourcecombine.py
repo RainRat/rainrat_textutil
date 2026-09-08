@@ -4828,6 +4828,7 @@ def main():
     )
     utility_group.add_argument(
         "--diff-backups",
+        "--diff-bak",
         action="store_true",
         help="Show a unified diff between current files on disk and their '.bak' backup files. Use --json for machine-readable output.",
     )
