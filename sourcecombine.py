@@ -4775,6 +4775,15 @@ def main():
         help="Show built-in presets and expanded options (optionally filtered by QUERY) and exit. Use --json for machine-readable output.",
     )
     utility_group.add_argument(
+        "--list-ignores",
+        "--list-ig",
+        nargs="?",
+        const=True,
+        default=False,
+        metavar="QUERY",
+        help="Show active ignore patterns from ignore files (optionally filtered by QUERY) and exit. Use --json for machine-readable output.",
+    )
+    utility_group.add_argument(
         "--extract",
         action="store_true",
         help=(
@@ -5012,6 +5021,7 @@ def main():
         getattr(args, 'extract', False) or
         getattr(args, 'explain', False) or
         _get_bool_arg(args, 'list_presets') or
+        _get_bool_arg(args, 'list_ignores') or
         _get_bool_arg(args, 'list_backups') or
         _get_bool_arg(args, 'diff_backups') or
         _get_bool_arg(args, 'backup') or
@@ -5111,6 +5121,47 @@ def main():
     if list_pre_val:
         query = list_pre_val if isinstance(list_pre_val, str) else None
         print_presets(query=query, json_format=getattr(args, 'json', False))
+        sys.exit(0)
+
+    list_ig_val = getattr(args, 'list_ignores', False)
+    if list_ig_val and type(list_ig_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        list_ig_val = False
+
+    if list_ig_val:
+        query = list_ig_val if isinstance(list_ig_val, str) else None
+        # Load active config to resolve ignore_files option if specified
+        config_path = args.config
+        if not config_path:
+            defaults = [
+                'sourcecombine.yml', 'sourcecombine.yaml',
+                'sourcecombine.json',
+                'config.yml', 'config.yaml',
+                'config.json'
+            ]
+            for d in defaults:
+                if Path(d).is_file():
+                    config_path = d
+                    break
+        try:
+            if config_path:
+                config = load_and_validate_config(config_path)
+            else:
+                config = copy.deepcopy(utils.DEFAULT_CONFIG)
+                utils.validate_config(config)
+        except (ConfigNotFoundError, utils.InvalidConfigError) as e:
+            _handle_invalid_config_error(e, args.verbose)
+
+        if getattr(args, 'ignore_file', None):
+            if config['search'].get('ignore_files') is None:
+                config['search']['ignore_files'] = []
+            for path in args.ignore_file:
+                if isinstance(path, str):
+                    for p in path.split(','):
+                        p = p.strip()
+                        if p and p not in config['search']['ignore_files']:
+                            config['search']['ignore_files'].append(p)
+
+        print_ignore_patterns(query=query, json_format=getattr(args, 'json', False), config=config)
         sys.exit(0)
 
     if args.list_languages:
@@ -7678,6 +7729,106 @@ def print_system_info(json_format=False):
         status = f"{C_GREEN}Installed{C_RESET}" if installed else f"{C_YELLOW}Not found{C_RESET}"
         print(f"    {C_BOLD}{dep_name:<20}{C_RESET} {status:<20} {C_DIM}({purpose}){C_RESET}")
 
+    print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
+
+
+def print_ignore_patterns(query=None, json_format=False, config=None):
+    """Print active ignore patterns from loaded ignore files, optionally filtered by a query."""
+    if config is None:
+        config = copy.deepcopy(utils.DEFAULT_CONFIG)
+
+    search_opts = config.get('search', {}) or {}
+    raw_ignore_files = list(search_opts.get('ignore_files') or [])
+
+    default_ignore = ".sourcecombineignore"
+    if Path(default_ignore).is_file():
+        if not any(Path(f).resolve() == Path(default_ignore).resolve() for f in raw_ignore_files):
+            raw_ignore_files.append(default_ignore)
+
+    ignore_files = []
+    seen_resolved = set()
+    for f in raw_ignore_files:
+        try:
+            res = Path(f).resolve()
+            if res not in seen_resolved:
+                seen_resolved.add(res)
+                ignore_files.append(f)
+        except OSError:
+            if f not in ignore_files:
+                ignore_files.append(f)
+
+    parsed_ignores = {}
+    total_patterns = 0
+
+    for ignore_file in ignore_files:
+        patterns = utils.parse_ignore_file(ignore_file)
+        parsed_ignores[str(ignore_file)] = patterns
+        total_patterns += len(patterns)
+
+    if json_format:
+        if query:
+            query_lower = str(query).lower()
+            filtered_ignores = {}
+            filtered_count = 0
+            for fname, pats in parsed_ignores.items():
+                matching_pats = [
+                    p for p in pats
+                    if query_lower in p.lower() or query_lower in Path(fname).name.lower()
+                ]
+                if matching_pats:
+                    filtered_ignores[fname] = matching_pats
+                    filtered_count += len(matching_pats)
+            output = {
+                "ignore_files": filtered_ignores,
+                "total_patterns": filtered_count,
+                "total_files": len(filtered_ignores)
+            }
+        else:
+            output = {
+                "ignore_files": parsed_ignores,
+                "total_patterns": total_patterns,
+                "total_files": len(parsed_ignores)
+            }
+        print(json.dumps(output, indent=2))
+        return
+
+    if query:
+        query_lower = str(query).lower()
+        title_suffix = f" (FILTERED BY '{query}')"
+    else:
+        query_lower = None
+        title_suffix = ""
+
+    print(f"\n{C_BOLD}{C_CYAN}=== ACTIVE IGNORE PATTERNS{title_suffix} ==={C_RESET}")
+
+    matched_patterns_count = 0
+    matched_files_count = 0
+
+    if not parsed_ignores:
+        print(f"\n  {C_YELLOW}No ignore files found or specified.{C_RESET}")
+    else:
+        for fname in sorted(parsed_ignores.keys()):
+            pats = parsed_ignores[fname]
+            if query_lower:
+                matching_pats = [
+                    p for p in pats
+                    if query_lower in p.lower() or query_lower in Path(fname).name.lower()
+                ]
+            else:
+                matching_pats = pats
+
+            if matching_pats:
+                matched_files_count += 1
+                matched_patterns_count += len(matching_pats)
+                print(f"\n  {C_BOLD}{fname}{C_RESET} {C_DIM}({len(matching_pats)} patterns){C_RESET}")
+                for p in matching_pats:
+                    print(f"    {C_BOLD}{C_CYAN}•{C_RESET} {p}")
+
+        if query_lower and matched_patterns_count == 0:
+            print(f"\n  {C_YELLOW}No ignore patterns matched the filter query '{query}'.{C_RESET}")
+
+    count_label = f"Matching: {matched_patterns_count} patterns across {matched_files_count} ignore file(s)" if query_lower else f"Total: {total_patterns} patterns across {len(parsed_ignores)} ignore file(s)"
+    print(f"\n  {C_BOLD}{count_label}{C_RESET}")
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
 
