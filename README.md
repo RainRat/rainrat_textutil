@@ -66,6 +66,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--project-license NAME`: Override the project license.
 *   `--project-url URL`: Override the project URL.
 *   `--json`: Output results in JSON format.
+*   `--json-summary PATH`: Save execution summary statistics (file counts, token counts, lines, and duration) in JSON format to a file or standard output (`-`). Supports template placeholders.
 *   `--dry-run` (`-d`): Show what would happen without making any changes.
 *   `--verbose` (`-v`): Display detailed log messages to help troubleshoot issues.
 *   `--quiet` (`-q`): Suppress non-essential status messages and summary output.
@@ -356,6 +357,16 @@ Preview matching files or inspect your project structure without writing output 
    python sourcecombine.py . --list-files --format json
    python sourcecombine.py . --tree --format markdown
    ```
+
+### Save Execution Summary Statistics
+Save execution summary metrics (file counts, token counts, lines, and processing duration) to a JSON file or stream them to standard output:
+```bash
+# Save execution summary to a JSON file
+python sourcecombine.py . --output combined.txt --json-summary summary.json
+
+# Output execution summary directly to standard output
+python sourcecombine.py . --json-summary -
+```
 
 ### Advanced Filtering and AI Optimization
 
