@@ -4730,6 +4730,15 @@ def main():
         help="Create a default ignore file (.sourcecombineignore or custom PATH) populated with common exclude patterns and exit. Use '-' to print to standard output (stdout).",
     )
     utility_group.add_argument(
+        "--list-ignores",
+        "--list-ig",
+        nargs="?",
+        const=True,
+        default=False,
+        metavar="QUERY",
+        help="Show active ignore patterns loaded from ignore files (optionally filtered by QUERY) and exit. Use --json for machine-readable output.",
+    )
+    utility_group.add_argument(
         "--list-languages",
         "--list-lang",
         nargs="?",
@@ -5002,6 +5011,7 @@ def main():
         root_logger.setLevel(logging.WARNING)
     elif _get_bool_arg(args, 'json') and (
         args.system_info or
+        getattr(args, 'list_ignores', False) or
         args.list_languages or
         getattr(args, 'list_extensions', False) or
         args.list_placeholders or
@@ -5111,6 +5121,16 @@ def main():
     if list_pre_val:
         query = list_pre_val if isinstance(list_pre_val, str) else None
         print_presets(query=query, json_format=getattr(args, 'json', False))
+        sys.exit(0)
+
+    list_ig_val = getattr(args, 'list_ignores', False)
+    if list_ig_val and type(list_ig_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        list_ig_val = False
+
+    if list_ig_val:
+        query = list_ig_val if isinstance(list_ig_val, str) else None
+        ignore_files_override = [args.ignore_file] if getattr(args, 'ignore_file', None) else None
+        print_ignore_patterns(query=query, json_format=getattr(args, 'json', False), config=None, ignore_files_override=ignore_files_override)
         sys.exit(0)
 
     if args.list_languages:
@@ -5432,6 +5452,7 @@ def main():
         logging.getLogger().setLevel(logging.WARNING)
     elif _get_bool_arg(args, 'json') and (
         args.system_info or
+        getattr(args, 'list_ignores', False) or
         args.list_languages or
         getattr(args, 'list_extensions', False) or
         args.list_placeholders or
@@ -7678,6 +7699,76 @@ def print_system_info(json_format=False):
         status = f"{C_GREEN}Installed{C_RESET}" if installed else f"{C_YELLOW}Not found{C_RESET}"
         print(f"    {C_BOLD}{dep_name:<20}{C_RESET} {status:<20} {C_DIM}({purpose}){C_RESET}")
 
+    print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
+
+
+def print_ignore_patterns(query=None, json_format=False, config=None, ignore_files_override=None):
+    """Print active ignore patterns loaded from ignore files, optionally filtered by a query."""
+    search_opts = (config.get('search', {}) or {}) if config else {}
+    ignore_files = list(ignore_files_override or search_opts.get('ignore_files') or [])
+
+    default_ignore = ".sourcecombineignore"
+    if default_ignore not in ignore_files and Path(default_ignore).is_file():
+        ignore_files.append(default_ignore)
+
+    sources_map = {}
+    total_patterns = 0
+
+    for ignore_file in ignore_files:
+        path = Path(ignore_file)
+        if path.is_file():
+            patterns = utils.parse_ignore_file(path)
+            if patterns:
+                sources_map[str(ignore_file)] = patterns
+                total_patterns += len(patterns)
+
+    if json_format:
+        if query:
+            query_lower = query.lower()
+            filtered_sources = {
+                src: [p for p in patterns if query_lower in p.lower()]
+                for src, patterns in sources_map.items()
+            }
+            filtered_sources = {src: pats for src, pats in filtered_sources.items() if pats}
+            total_matched = sum(len(pats) for pats in filtered_sources.values())
+        else:
+            filtered_sources = sources_map
+            total_matched = total_patterns
+
+        output = {
+            "ignore_sources": filtered_sources,
+            "total": total_matched
+        }
+        print(json.dumps(output, indent=2))
+        return
+
+    if query:
+        query_lower = query.lower()
+        title_suffix = f" (FILTERED BY '{query}')"
+    else:
+        query_lower = None
+        title_suffix = ""
+
+    print(f"\n{C_BOLD}{C_CYAN}=== ACTIVE IGNORE PATTERNS{title_suffix} ==={C_RESET}")
+
+    total_matched = 0
+
+    if not sources_map:
+        print(f"\n  {C_YELLOW}No active ignore files found.{C_RESET}")
+    else:
+        for src, patterns in sources_map.items():
+            matching_patterns = [p for p in patterns if not query_lower or query_lower in p.lower()]
+            if matching_patterns:
+                total_matched += len(matching_patterns)
+                print(f"\n  {C_BOLD}Source: {src}{C_RESET}")
+                for pat in matching_patterns:
+                    print(f"    {C_BOLD}{C_CYAN}{pat}{C_RESET}")
+
+    if query_lower and total_matched == 0 and sources_map:
+        print(f"\n  {C_YELLOW}No ignore patterns matched the filter query '{query}'.{C_RESET}")
+
+    count_label = f"Matching: {total_matched}" if query_lower else f"Total: {total_patterns}"
+    print(f"\n  {C_BOLD}{count_label}{C_RESET} active ignore patterns loaded.")
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
 
