@@ -4775,6 +4775,15 @@ def main():
         help="Show built-in presets and expanded options (optionally filtered by QUERY) and exit. Use --json for machine-readable output.",
     )
     utility_group.add_argument(
+        "--list-ignores",
+        "--list-ig",
+        nargs="?",
+        const=True,
+        default=False,
+        metavar="QUERY",
+        help="Show active ignore patterns from loaded ignore files (optionally filtered by QUERY) and exit. Use --json for machine-readable output.",
+    )
+    utility_group.add_argument(
         "--extract",
         action="store_true",
         help=(
@@ -4995,7 +5004,13 @@ def main():
         args.show_config or
         args.export_config == '-' or
         args.init == '-' or
-        getattr(args, 'init_ignore', None) == '-'
+        getattr(args, 'init_ignore', None) == '-' or
+        _get_bool_arg(args, 'list_languages') or
+        _get_bool_arg(args, 'list_extensions') or
+        _get_bool_arg(args, 'list_placeholders') or
+        _get_bool_arg(args, 'list_formats') or
+        _get_bool_arg(args, 'list_presets') or
+        _get_bool_arg(args, 'list_ignores')
     )
 
     if is_stdout_stream_cmd:
@@ -5012,6 +5027,7 @@ def main():
         getattr(args, 'extract', False) or
         getattr(args, 'explain', False) or
         _get_bool_arg(args, 'list_presets') or
+        _get_bool_arg(args, 'list_ignores') or
         _get_bool_arg(args, 'list_backups') or
         _get_bool_arg(args, 'diff_backups') or
         _get_bool_arg(args, 'backup') or
@@ -5440,6 +5456,7 @@ def main():
         validate_config_val is not None or
         args.verify or
         getattr(args, 'explain', False) or
+        _get_bool_arg(args, 'list_ignores') or
         _get_bool_arg(args, 'list_backups') or
         _get_bool_arg(args, 'diff_backups') or
         _get_bool_arg(args, 'backup') or
@@ -5887,6 +5904,15 @@ def main():
     explain_val = getattr(args, 'explain', None)
     if explain_val and type(explain_val).__name__ not in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
         explain_paths(explain_val, config=config, json_format=getattr(args, 'json', False))
+        sys.exit(0)
+
+    list_ig_val = getattr(args, 'list_ignores', False)
+    if list_ig_val and type(list_ig_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        list_ig_val = False
+
+    if list_ig_val:
+        query = list_ig_val if isinstance(list_ig_val, str) else None
+        print_ignore_patterns(query=query, json_format=getattr(args, 'json', False), config=config)
         sys.exit(0)
 
     if mirror_enabled:
@@ -8026,6 +8052,68 @@ def print_presets(query=None, json_format=False):
 
     count_label = f"Matching: {len(items)}" if query_lower else f"Total: {len(presets_info)}"
     print(f"\n  {C_BOLD}{count_label}{C_RESET} built-in presets supported.")
+    print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
+
+
+def print_ignore_patterns(query=None, json_format=False, config=None):
+    """Print active ignore patterns from loaded ignore files, optionally filtered by a query."""
+    search_opts = (config or {}).get('search', {})
+    ignore_files = list(search_opts.get('ignore_files') or [])
+
+    default_ignore = ".sourcecombineignore"
+    if default_ignore not in ignore_files and Path(default_ignore).is_file():
+        ignore_files.append(default_ignore)
+
+    results = []
+    total_patterns = 0
+    query_lower = query.lower() if query else None
+
+    for ignore_file in ignore_files:
+        patterns = utils.parse_ignore_file(ignore_file)
+        if not patterns:
+            continue
+
+        if query_lower:
+            matched_patterns = [p for p in patterns if query_lower in p.lower()]
+        else:
+            matched_patterns = patterns
+
+        if matched_patterns:
+            results.append({
+                "file": str(ignore_file),
+                "patterns": matched_patterns,
+                "count": len(matched_patterns)
+            })
+            total_patterns += len(matched_patterns)
+
+    if json_format:
+        output = {
+            "ignore_files": results,
+            "total_patterns": total_patterns
+        }
+        print(json.dumps(output, indent=2))
+        return
+
+    if query:
+        title_suffix = f" (FILTERED BY '{query}')"
+    else:
+        title_suffix = ""
+
+    print(f"\n{C_BOLD}{C_CYAN}=== ACTIVE IGNORE PATTERNS{title_suffix} ==={C_RESET}")
+
+    if not results:
+        if query_lower:
+            print(f"\n  {C_YELLOW}No ignore patterns matched the filter query '{query}'.{C_RESET}")
+        else:
+            print(f"\n  {C_YELLOW}No active ignore patterns found.{C_RESET}")
+    else:
+        for item in results:
+            print(f"\n  {C_BOLD}File: {item['file']}{C_RESET}")
+            for p in item['patterns']:
+                print(f"    {C_BOLD}{C_CYAN}{p}{C_RESET}")
+
+    count_label = f"Matching: {total_patterns}" if query_lower else f"Total: {total_patterns}"
+    print(f"\n  {C_BOLD}{count_label}{C_RESET} active ignore patterns supported.")
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
 
