@@ -22,8 +22,9 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--git-files` (`-G`): Use Git to find files and follow the `.gitignore` rules automatically.
 *   `--git-diff`: Include only files that have changed in Git (staged, unstaged, or untracked).
 *   `--staged`: Include only staged changes in Git (used with `--git-diff`).
+*   `--unstaged`: Include only unstaged and untracked changes in Git (used with `--git-diff`).
 *   `--no-recursive`: Skip searching subfolders and scan only top-level files in target folders.
-*   `--max-depth DEPTH`: Limit folder scanning to a specific depth (for example, `1` for top-level files only).
+*   `--max-depth DEPTH` (`-D DEPTH`): Limit folder scanning to a specific depth (for example, `1` for top-level files only).
 *   `--files-from PATH`: Read a list of file paths from a text file or standard input (`-`), skipping folder scanning.
 *   `--ignore-file PATH`: Add an ignore file containing glob patterns to skip. Supports comma-separated lists (for example, `.ignore1,.ignore2`). Default is `.sourcecombineignore`.
 *   `--exclude-file` (`-x`): Skip files matching a glob pattern (for example, `-x "*.json"` or `--exclude-file "*.tmp"`). You can repeat this flag.
@@ -42,10 +43,10 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--sort SORT_BY` (`-s SORT_BY`): Sort processed files by specific criteria (`name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`). Case-insensitive and supports aliases like `date`/`time` for `modified`, `token` for `tokens`, `line` for `lines`, and `lang` for `language`.
 *   `--reverse` (`-r`): Reverse the file sorting order.
 *   `--format FORMAT` (`-f FORMAT`): Set the output format (`text`, `markdown`, `json`, `jsonl`, `xml`, `manifest`, or `csv`). Case-insensitive and supports aliases like `txt` or `md`. You can also use shortcut flags like `--markdown`, `--json`, `--jsonl`, `--xml`, or `--csv`.
-*   `--grep PATTERN`: Only include files whose content matches this regular expression.
-*   `--exclude-grep PATTERN`: Skip files whose content matches this regular expression.
+*   `--grep PATTERN` (`-g PATTERN`): Only include files whose content matches this regular expression.
+*   `--exclude-grep PATTERN` (`-E PATTERN`): Skip files whose content matches this regular expression.
 *   `--grep-ignore-case` (`--grep-icase`): Perform case-insensitive matching for `--grep` and `--exclude-grep` patterns.
-*   `--skip-binary`: Skip files that appear to contain binary data automatically.
+*   `--skip-binary` (`-B`): Skip files that appear to contain binary data automatically.
 *   `--unique` (`-u`): Skip duplicate files by path or content (duplicate removal).
 *   `--line-numbers` (`-n`): Add line numbers starting at 1 for each file in the output.
 *   `--replace PATTERN REPLACEMENT`: Find and replace content using regular expressions. You can repeat this flag.
@@ -373,6 +374,10 @@ python sourcecombine.py . --git-diff
 To combine only staged changes, add the `--staged` flag:
 ```bash
 python sourcecombine.py . --staged
+```
+To combine only unstaged and untracked changes, add the `--unstaged` flag:
+```bash
+python sourcecombine.py . --unstaged
 ```
 
 #### Filter by File Size and Age
