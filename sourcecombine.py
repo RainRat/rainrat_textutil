@@ -4934,6 +4934,7 @@ def main():
     )
     utility_group.add_argument(
         "--explain",
+        "--exp",
         metavar="PATH",
         nargs="+",
         help="Analyze and explain whether the specified path(s) would be included or excluded by the current configuration and filters. Supports --json format.",
