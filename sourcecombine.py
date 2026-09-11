@@ -4033,6 +4033,16 @@ FORMAT_ALIASES = {
     "txt": "text",
 }
 
+PRESET_ALIASES = {
+    "-a": "ai",
+    "-A": "analyze",
+    "--ai": "ai",
+    "--analyze": "analyze",
+    "--review": "review",
+    "pr": "review",
+    "pr-review": "review",
+}
+
 
 def parse_sort_choice(val: str) -> str:
     """Normalize and map CLI --sort choice values and aliases."""
@@ -4048,6 +4058,17 @@ def parse_format_choice(val: str) -> str:
         return val
     v = val.lower()
     return FORMAT_ALIASES.get(v, v)
+
+
+def parse_preset_choice(val: str) -> str:
+    """Normalize and map CLI --preset choice values and aliases."""
+    if not isinstance(val, str):
+        return val
+    v = val.strip()
+    if v == "-A":
+        return "analyze"
+    v_lower = v.lower()
+    return PRESET_ALIASES.get(v_lower, v_lower)
 
 
 class ColoredArgumentParser(argparse.ArgumentParser):
@@ -4457,7 +4478,7 @@ def main():
     output_group.add_argument(
         "--preset",
         metavar="NAME",
-        type=str,
+        type=parse_preset_choice,
         help=(
             "Apply a built-in configuration preset by name ('ai', 'analyze', or 'review'). "
             "Use --list-presets to view all available presets."
@@ -4902,13 +4923,12 @@ def main():
         preset_val = None
 
     if preset_val:
-        preset_raw = str(preset_val).strip()
-        preset_key = preset_raw.lower()
-        if preset_raw == '-A' or preset_key in ('analyze', '--analyze'):
+        preset_key = parse_preset_choice(preset_val)
+        if preset_key == 'analyze':
             args.analyze = True
-        elif preset_key in ('ai', '-a', '--ai'):
+        elif preset_key == 'ai':
             args.ai = True
-        elif preset_key in ('review', '--review', 'pr', 'pr-review'):
+        elif preset_key == 'review':
             args.review = True
         else:
             logging.error("Unknown preset '%s'. Supported presets: ai, analyze, review. Use --list-presets to view details.", preset_val)

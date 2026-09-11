@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch
-from sourcecombine import main, parse_sort_choice, parse_format_choice
+from sourcecombine import main, parse_sort_choice, parse_format_choice, parse_preset_choice
 
 
 def test_parse_sort_choice_unit():
@@ -23,6 +23,20 @@ def test_parse_format_choice_unit():
     assert parse_format_choice("Xml") == "xml"
     assert parse_format_choice("unknown") == "unknown"
     assert parse_format_choice(123) == 123
+
+
+def test_parse_preset_choice_unit():
+    assert parse_preset_choice("ai") == "ai"
+    assert parse_preset_choice("AI") == "ai"
+    assert parse_preset_choice("-a") == "ai"
+    assert parse_preset_choice("--ai") == "ai"
+    assert parse_preset_choice("-A") == "analyze"
+    assert parse_preset_choice("--ANALYZE") == "analyze"
+    assert parse_preset_choice("review") == "review"
+    assert parse_preset_choice("PR") == "review"
+    assert parse_preset_choice("pr-review") == "review"
+    assert parse_preset_choice("unknown") == "unknown"
+    assert parse_preset_choice(123) == 123
 
 
 def test_cli_sort_aliases(capsys):
