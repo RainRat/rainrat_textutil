@@ -4833,6 +4833,7 @@ def main():
     )
     utility_group.add_argument(
         "--validate-config",
+        "--validate",
         nargs="?",
         const="",
         default=None,
