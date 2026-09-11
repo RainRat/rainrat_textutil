@@ -110,52 +110,31 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--version` (`-V`): Show the application version and exit.
 
 ## Prerequisites
-*   **Python 3.10 or newer:** The tool requires this version or newer to run.
+*   **Python 3.10 or newer:** Make sure you have Python 3.10 or higher installed.
 
 ### Standard Dependencies
-The tool installs these automatically when you follow the installation steps:
-*   **PyYAML:** Loads and validates configuration files.
-*   **charset-normalizer:** Detects character encodings in files.
-*   **tqdm:** Displays progress bars during scanning and processing.
-*   **pyperclip:** Copies output directly to the system clipboard.
-    *   *Note for Linux and WSL users:* Linux environments need an external clipboard utility to let the tool communicate with the system clipboard. Run the appropriate command below depending on your environment:
+The tool installs these packages automatically during setup:
+*   **PyYAML:** Reads and writes YAML configuration files.
+*   **charset-normalizer:** Detects file character encodings.
+*   **tqdm:** Displays progress bars during long tasks.
+*   **pyperclip:** Copies text directly to your system clipboard.
+    *   *Note for Linux and WSL users:* Linux requires an external clipboard tool to enable clipboard support. Install one for your system:
 
-        **For X11 desktop environments:**
-        *   **Debian / Ubuntu:**
-            ```bash
-            sudo apt update && sudo apt install xclip
-            ```
-        *   **Fedora / CentOS:**
-            ```bash
-            sudo dnf install xclip
-            ```
-        *   **Arch Linux:**
-            ```bash
-            sudo pacman -S xclip
-            ```
+        **X11 desktop environments:**
+        *   **Debian / Ubuntu:** `sudo apt update && sudo apt install xclip`
+        *   **Fedora / CentOS:** `sudo dnf install xclip`
+        *   **Arch Linux:** `sudo pacman -S xclip`
 
-        **For Wayland desktop environments:**
-        *   **Debian / Ubuntu:**
-            ```bash
-            sudo apt update && sudo apt install wl-clipboard
-            ```
-        *   **Fedora / CentOS:**
-            ```bash
-            sudo dnf install wl-clipboard
-            ```
-        *   **Arch Linux:**
-            ```bash
-            sudo pacman -S wl-clipboard
-            ```
+        **Wayland desktop environments:**
+        *   **Debian / Ubuntu:** `sudo apt update && sudo apt install wl-clipboard`
+        *   **Fedora / CentOS:** `sudo dnf install wl-clipboard`
+        *   **Arch Linux:** `sudo pacman -S wl-clipboard`
 
-        **For Windows Subsystem for Linux (WSL):**
-        If you run the tool inside WSL (Ubuntu), you can share the clipboard with your Windows host by installing `xclip`:
-        ```bash
-        sudo apt update && sudo apt install xclip
-        ```
+        **Windows Subsystem for Linux (WSL):**
+        *   `sudo apt update && sudo apt install xclip`
 
 ### Optional Dependencies
-*   **tiktoken:** Provides accurate token counting. Without it, the tool uses a character-based estimate (1 token is approximately 4 characters).
+*   **tiktoken:** Enables exact token counting for OpenAI models. Without it, the tool estimates token counts (1 token is roughly 4 characters).
 
 ## Getting Started
 1.  **Clone the Repository:**
@@ -163,8 +142,9 @@ The tool installs these automatically when you follow the installation steps:
     git clone https://github.com/RainRat/rainrat_textutil.git
     cd rainrat_textutil
     ```
-2.  **Set Up a Virtual Environment (Recommended):**
-    Creating a virtual environment keeps your project dependencies separate and avoids conflicts with other Python packages on your computer.
+
+2.  **Create and Activate a Virtual Environment (Recommended):**
+    A virtual environment keeps your project packages isolated.
 
     *   **macOS / Linux:**
         ```bash
@@ -182,17 +162,17 @@ The tool installs these automatically when you follow the installation steps:
         .venv\Scripts\Activate.ps1
         ```
 
-3.  **Install Dependencies:**
+3.  **Install Required Dependencies:**
     ```bash
     pip install -r requirements.txt
     ```
-    *(Optional)* Install `tiktoken` for accurate token counting:
+    To enable exact token counting, install `tiktoken` as well:
     ```bash
     pip install tiktoken
     ```
 
-4.  **Running Tests (Optional):**
-    If you are contributing or want to verify your installation, install `pytest` and `pytest-mock` and run the test suite:
+4.  **Run the Test Suite (Optional):**
+    To verify your setup or run tests before contributing:
     ```bash
     pip install pytest pytest-mock
     pytest
@@ -200,23 +180,22 @@ The tool installs these automatically when you follow the installation steps:
 
 5.  **Run the Tool:**
     ```bash
-    # Combine files in the current folder (represented by '.') into combined.txt:
     python sourcecombine.py . --output combined.txt
     ```
-    *(Note)* You can replace `.` with any folder path on your system.
+    This command combines all text files in the current folder (`.`) into `combined.txt`. You can replace `.` with any folder path on your computer.
 
-6.  **Create a Config or Ignore File (Optional):**
+6.  **Create Configuration Files (Optional):**
+    To generate a starter configuration file (`sourcecombine.yml`):
     ```bash
     python sourcecombine.py --init
     ```
-    This command creates a `sourcecombine.yml` file with default settings to help you get started.
 
-    To create a standard `.sourcecombineignore` ignore file pre-filled with common exclude patterns:
+    To create a default ignore file (`.sourcecombineignore`):
     ```bash
     python sourcecombine.py --init-ignore
     ```
 
-    *(Note)* If you do not have the `PyYAML` library installed, you can also use JSON configurations (such as `sourcecombine.json` or `config.json`). They work immediately using Python's standard library.
+    *Note:* You can also use JSON configuration files (like `sourcecombine.json`). They work out of the box with Python's standard library.
 
 For more details, use `python sourcecombine.py --help` or check `config.template.yml`.
 
