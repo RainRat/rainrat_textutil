@@ -81,6 +81,12 @@ def _get_bool_arg(args, name: str) -> bool:
     return bool(val)
 
 
+def _handle_invalid_config_error(exc, verbose, message=None):
+    """Handle InvalidConfigError by logging it and exiting."""
+    logging.error(message or str(exc), exc_info=bool(verbose))
+    sys.exit(1)
+
+
 def _to_int_or_none(val: Any) -> int | None:
     """Safely convert a value to an integer, returning None on failure.
 
@@ -6169,11 +6175,7 @@ def main():
             json_format=is_json,
         )
     except utils.InvalidConfigError as exc:
-        if args.verbose:
-            logging.error(exc, exc_info=True)
-        else:
-            logging.error(exc)
-        sys.exit(1)
+        _handle_invalid_config_error(exc, args.verbose)
 
     if stats:
         # Determine source description
@@ -6643,12 +6645,6 @@ def verify_files(sources, root_folder=".", config=None, show_diff=False, repair=
         'repaired': repaired,
         'total': total
     }
-
-
-def _handle_invalid_config_error(exc, verbose, message=None):
-    """Handle InvalidConfigError by logging it and exiting."""
-    logging.error(message or str(exc), exc_info=bool(verbose))
-    sys.exit(1)
 
 
 def extract_files(sources, output_folder, dry_run=False, source_name="combined file", config=None, list_files=False, tree_view=False, limit=0, estimate_tokens=False, sort_by='name', sort_reverse=False, keep_line_numbers=False, show_diff=False, strip_components=0, json_format=False):
