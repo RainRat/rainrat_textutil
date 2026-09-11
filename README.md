@@ -22,10 +22,10 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--git-files` (`-G`): Use Git to find files and follow the `.gitignore` rules automatically.
 *   `--git-diff`: Include only files that have changed in Git (staged, unstaged, or untracked).
 *   `--staged`: Include only staged changes in Git (used with `--git-diff`).
-*   `--unstaged`: Include only unstaged and untracked changes in Git (enables Git diff mode).
+*   `--unstaged`: Include only unstaged and untracked changes in Git (used with `--git-diff`).
 *   `--no-recursive`: Skip searching subfolders and scan only top-level files in target folders.
-*   `--max-depth DEPTH`: Limit folder scanning to a specific depth (for example, `1` for top-level files only).
-*   `--files-from PATH`: Read file paths directly from a text file or standard input (`-`), skipping folder scanning.
+*   `--max-depth DEPTH` (`-D DEPTH`): Limit folder scanning to a specific depth (for example, `1` for top-level files only).
+*   `--files-from PATH`: Read a list of file paths from a text file or standard input (`-`), skipping folder scanning.
 *   `--ignore-file PATH`: Add an ignore file containing glob patterns to skip. Supports comma-separated lists (for example, `.ignore1,.ignore2`). Default is `.sourcecombineignore`.
 *   `--exclude-file` (`-x`): Skip files matching a glob pattern (for example, `-x "*.json"` or `--exclude-file "*.tmp"`). You can repeat this flag.
 *   `--exclude-folder` (`-X`): Skip folders matching a glob pattern (for example, `-X tests` or `--exclude-folder "build*"`). You can repeat this flag.
@@ -51,10 +51,10 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--reverse` (`-r`): Reverse the file sorting order.
 *   `--format FORMAT` (`-f FORMAT`): Set the output format (`text`, `markdown`, `json`, `jsonl`, `xml`, `manifest`, or `csv`). Case-insensitive and supports aliases like `txt` or `md`. You can also use shortcut flags like `--markdown`, `--json`, `--jsonl`, `--xml`, or `--csv`.
 *   `--toc` (`-T`): Add a Table of Contents with file sizes and token counts to the start of the output.
-*   `--grep PATTERN`: Only include files whose content matches this regular expression.
-*   `--exclude-grep PATTERN`: Skip files whose content matches this regular expression.
+*   `--grep PATTERN` (`-g PATTERN`): Only include files whose content matches this regular expression.
+*   `--exclude-grep PATTERN` (`-E PATTERN`): Skip files whose content matches this regular expression.
 *   `--grep-ignore-case` (`--grep-icase`): Perform case-insensitive matching for `--grep` and `--exclude-grep` patterns.
-*   `--skip-binary`: Skip files that appear to contain binary data automatically.
+*   `--skip-binary` (`-B`): Skip files that appear to contain binary data automatically.
 *   `--unique` (`-u`): Skip duplicate files by path or content (duplicate removal).
 *   `--pair SOURCE_EXT HEADER_EXT`: Pair related files matching source and header extensions (for example, `--pair .cpp .h`). You can repeat this flag.
 *   `--include-unpaired`: Include files that do not have a matching pair when file pairing is active.
