@@ -22,6 +22,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--git-files` (`-G`): Use Git to find files and follow the `.gitignore` rules automatically.
 *   `--git-diff`: Include only files that have changed in Git (staged, unstaged, or untracked).
 *   `--staged`: Include only staged changes in Git (used with `--git-diff`).
+*   `--unstaged`: Include only unstaged and untracked changes in Git (enables Git diff mode).
 *   `--no-recursive`: Skip searching subfolders and scan only top-level files in target folders.
 *   `--max-depth DEPTH`: Limit folder scanning to a specific depth (for example, `1` for top-level files only).
 *   `--files-from PATH`: Read file paths directly from a text file or standard input (`-`), skipping folder scanning.
@@ -38,27 +39,47 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--until TIME` (`-U TIME`): Include only files modified before this time (for example, `1d`, `2h`, or `2023-01-01`).
 *   `--min-size SIZE`: Include only files that are at least this size (for example, `10KB` or `1MB`).
 *   `--max-size SIZE`: Include only files that are at most this size (for example, `50KB` or `2MB`).
+*   `--min-tokens N`: Include only files that have at least `N` tokens.
+*   `--max-file-tokens N`: Include only files that have at most `N` tokens.
+*   `--min-lines N`: Include only files that have at least `N` lines.
+*   `--max-file-lines N`: Include only files that have at most `N` lines.
 *   `--limit` (`-L`): Stop processing once you reach this file limit.
+*   `--max-tokens N` (`-M N`): Stop processing once total combined output reaches `N` tokens.
+*   `--max-total-size SIZE`: Stop processing once total combined output reaches `SIZE` (for example, `1MB` or `500KB`).
+*   `--max-total-lines N`: Stop processing once total combined output reaches `N` lines.
 *   `--sort SORT_BY` (`-s SORT_BY`): Sort processed files by specific criteria (`name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`). Case-insensitive and supports aliases like `date`/`time` for `modified`, `token` for `tokens`, `line` for `lines`, and `lang` for `language`.
 *   `--reverse` (`-r`): Reverse the file sorting order.
 *   `--format FORMAT` (`-f FORMAT`): Set the output format (`text`, `markdown`, `json`, `jsonl`, `xml`, `manifest`, or `csv`). Case-insensitive and supports aliases like `txt` or `md`. You can also use shortcut flags like `--markdown`, `--json`, `--jsonl`, `--xml`, or `--csv`.
+*   `--toc` (`-T`): Add a Table of Contents with file sizes and token counts to the start of the output.
 *   `--grep PATTERN`: Only include files whose content matches this regular expression.
 *   `--exclude-grep PATTERN`: Skip files whose content matches this regular expression.
 *   `--grep-ignore-case` (`--grep-icase`): Perform case-insensitive matching for `--grep` and `--exclude-grep` patterns.
 *   `--skip-binary`: Skip files that appear to contain binary data automatically.
 *   `--unique` (`-u`): Skip duplicate files by path or content (duplicate removal).
+*   `--pair SOURCE_EXT HEADER_EXT`: Pair related files matching source and header extensions (for example, `--pair .cpp .h`). You can repeat this flag.
+*   `--include-unpaired`: Include files that do not have a matching pair when file pairing is active.
+*   `--pair-template TEMPLATE`: Set the output filename template for paired files (for example, `{{STEM}}.combined`).
 *   `--line-numbers` (`-n`): Add line numbers starting at 1 for each file in the output.
+*   `--header TEMPLATE`: Set a custom header template written before each file's content.
+*   `--footer TEMPLATE`: Set a custom footer template written after each file's content.
+*   `--global-header TEMPLATE`: Set a custom header template written at the start of the combined output.
+*   `--global-footer TEMPLATE`: Set a custom footer template written at the end of the combined output.
+*   `--max-size-placeholder TEMPLATE`: Set custom placeholder text displayed when a file exceeds the maximum size limit.
+*   `--max-lines N`: Limit each file to a maximum of `N` lines before combining.
+*   `--truncate-tokens N`: Limit each file to a maximum of `N` tokens before combining.
 *   `--replace PATTERN REPLACEMENT`: Find and replace content using regular expressions. You can repeat this flag.
 *   `--replace-line PATTERN REPLACEMENT`: Find and replace line patterns using regular expressions. You can repeat this flag.
 *   `--git-log`: Include recent Git commit history in project overview and templates (`{{GIT_LOG}}`).
 *   `--git-log-count COUNT`: Set the number of recent Git commits to include (for example, `--git-log-count 5`).
 *   `--include-diff`: Include Git diffs in project overview and templates (`{{GIT_DIFF}}` and `{{FILE_DIFF}}`).
+*   `--diff`: Display colored line differences when writing, extracting, verifying, or modifying files.
+*   `--json-summary PATH`: Save execution summary metrics (file counts, token counts, processing duration) to a JSON file. Use `-` to print the summary to standard output (`stdout`).
 *   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, skipping binary files, removing duplicates, and automatically including Git context like logs and diffs). This also copies to the system clipboard if you do not specify an output.
 *   `--analyze` (`-A`): Run complete project analysis (token counts, line counts, language breakdown, and folder tree) without generating output files.
 *   `--estimate-tokens` (`-e`): Calculate total tokens across matching files without writing any files to disk.
-*   `--list-files` (`-l`): Show a list of all files that match the current filters and exit without writing files. Supports `--json` for machine-readable JSON output format.
+*   `--list-files` (`-l`): Show a list of all files that match the current filters and exit without writing files. Supports structured formats (`--format json`, `--format csv`, `--format xml`, `--format markdown`) and `--json` for machine-readable output.
 *   `--list-excluded` (`--list-exc`): Show a list of all files excluded by filtering rules along with their specific exclusion reasons and exit. Use `--json` for machine-readable output format.
-*   `--tree` (`-t`): Show a visual folder tree of all included files with details and exit without writing files. Supports structured formats (`--format json`, `--format xml`, `--format markdown`).
+*   `--tree` (`-t`): Show a visual folder tree of all included files with details and exit without writing files. Supports structured formats (`--format json`, `--format csv`, `--format xml`, `--format markdown`).
 *   `--strip-components N`: Remove N leading components from file paths during extraction or verification.
 *   `--project-name NAME`: Override the project name used in templates and reports.
 *   `--project-version VERSION`: Override the project version.
@@ -206,6 +227,16 @@ Combine all files in the current directory into `combined_files.txt`:
 python sourcecombine.py
 ```
 
+### Save Execution Summary Statistics
+Save execution metrics (file counts, token totals, processing duration) to a JSON file or terminal output:
+```bash
+# Save execution metrics to a summary file
+python sourcecombine.py . --output combined.txt --json-summary summary.json
+
+# Print execution metrics directly to the terminal
+python sourcecombine.py . --output combined.txt --json-summary -
+```
+
 ### Reading File Paths from File or Stdin
 Combine files from an explicit list instead of scanning folders:
 ```bash
@@ -260,6 +291,14 @@ python sourcecombine.py . --review
 Combine related files (such as `.cpp` and `.h` pairs) into their own individual combined files in a separate folder:
 ```bash
 python sourcecombine.py . --pair .cpp .h --output combined_src/
+```
+You can customize the output filename template for paired files or keep unpaired files:
+```bash
+# Set a custom output filename template for paired files
+python sourcecombine.py . --pair .cpp .h --pair-template "{{STEM}}_combined.txt" --output combined_src/
+
+# Keep files that do not have a matching pair
+python sourcecombine.py . --pair .cpp .h --include-unpaired --output combined_src/
 ```
 
 ### Collapsible Markdown
@@ -355,6 +394,30 @@ python sourcecombine.py . --git-diff
 To combine only staged changes, add the `--staged` flag:
 ```bash
 python sourcecombine.py . --staged
+```
+To combine only unstaged and untracked changes, use the `--unstaged` flag:
+```bash
+python sourcecombine.py . --unstaged
+```
+
+#### Filter by Line and Token Limits
+Set minimum or maximum file limits based on lines and tokens:
+```bash
+# Include files that have at least 10 lines and at most 500 lines
+python sourcecombine.py . --min-lines 10 --max-file-lines 500
+
+# Include files that have between 50 and 2000 tokens
+python sourcecombine.py . --min-tokens 50 --max-file-tokens 2000
+```
+
+#### Truncate Content and Limit Processing
+Truncate long files or limit overall processing to stay under token budgets:
+```bash
+# Truncate each file to 100 lines and at most 500 tokens
+python sourcecombine.py . --max-lines 100 --truncate-tokens 500 --output compact.txt
+
+# Stop processing once total output reaches 100,000 tokens or 2 MB
+python sourcecombine.py . --max-tokens 100000 --max-total-size 2MB --output project.txt
 ```
 
 #### Filter by File Size and Age
@@ -476,7 +539,17 @@ If you do not have `PyYAML` installed or prefer JSON, you can use a JSON configu
 ```
 
 ## Template Customization
-You can customize the output by using templates in the configuration file. Templates support placeholders that are replaced with actual data when the tool runs. Both file-level and global templates support all project-level and Git placeholders.
+You can customize the output by using templates in the configuration file or command-line flags (`--header`, `--footer`, `--global-header`, `--global-footer`, `--pair-template`, `--max-size-placeholder`). Templates support placeholders that are replaced with actual data when the tool runs. Both file-level and global templates support all project-level and Git placeholders.
+
+### Command-Line Template Overrides
+You can override templates directly from the command line:
+```bash
+# Custom file header and global header
+python sourcecombine.py . --header "--- FILE: {{FILENAME}} ---" --global-header "Project Build Export"
+
+# Custom placeholder text for files exceeding maximum size limits
+python sourcecombine.py . --max-size 100KB --max-size-placeholder "[FILE TRUNCATED: Exceeds size limit]"
+```
 
 ### File-Level Placeholders
 Used in `header_template` and `footer_template`:
@@ -549,4 +622,3 @@ Used in `paired_filename_template`. Supports all project-level, system, and Git 
 *   `{{LANG}}`: Detected language tag of the pair (for example, `cpp`).
 *   `{{INDEX}}`: The current pair's position in the list (1, 2, 3...).
 *   `{{TOTAL}}`: The total number of pairs being processed.
-
