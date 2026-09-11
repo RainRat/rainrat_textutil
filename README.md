@@ -57,6 +57,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--analyze` (`-A`): Run complete project analysis (token counts, line counts, language breakdown, and folder tree) without generating output files.
 *   `--estimate-tokens` (`-e`): Calculate total tokens across matching files without writing any files to disk.
 *   `--list-files` (`-l`): Show a list of all files that match the current filters and exit without writing files. Supports structured formats (`--format json`, `--format csv`, `--format xml`, `--format markdown`).
+*   `--list-excluded` (`--list-exc`): Show a list of all files excluded by filtering rules along with their specific exclusion reasons and exit. Use `--json` for machine-readable output format.
 *   `--tree` (`-t`): Show a visual folder tree of all included files with details and exit without writing files. Supports structured formats (`--format json`, `--format xml`, `--format markdown`).
 *   `--strip-components N`: Remove N leading components from file paths during extraction or verification.
 *   `--project-name NAME`: Override the project name used in templates and reports.
