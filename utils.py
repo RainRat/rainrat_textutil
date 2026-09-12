@@ -509,7 +509,7 @@ def parse_ignore_file(file_path: str | Path) -> list[str]:
             if not line or line.startswith('#'):
                 continue
             patterns.append(line)
-    except Exception as e:
+    except (OSError, ValueError, RuntimeError) as e:
         logging.warning("Could not read ignore file '%s': %s", file_path, e)
 
     return patterns
