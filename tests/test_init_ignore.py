@@ -127,6 +127,35 @@ def test_init_ignore_stdout(monkeypatch, capsys):
     assert "node_modules/" in captured
 
 
+def test_init_ig_alias_stdout(monkeypatch, capsys):
+    test_args = ["sourcecombine.py", "--init-ig", "-"]
+    monkeypatch.setattr(sys, "argv", test_args)
+
+    with pytest.raises(SystemExit) as exc_info:
+        sourcecombine.main()
+
+    assert exc_info.value.code == 0
+    captured = capsys.readouterr().out
+    assert "# SourceCombine Ignore File (.sourcecombineignore)" in captured
+    assert "node_modules/" in captured
+
+
+def test_init_ig_alias_default(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    test_args = ["sourcecombine.py", "--init-ig"]
+    monkeypatch.setattr(sys, "argv", test_args)
+
+    with pytest.raises(SystemExit) as exc_info:
+        sourcecombine.main()
+
+    assert exc_info.value.code == 0
+    ignore_file = tmp_path / ".sourcecombineignore"
+    assert ignore_file.exists()
+    content = ignore_file.read_text(encoding="utf-8")
+    assert "# SourceCombine Ignore File (.sourcecombineignore)" in content
+    assert "node_modules/" in content
+
+
 def test_init_ignore_directory_trailing_slash(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     target_dir = tmp_path / "custom_dir"
