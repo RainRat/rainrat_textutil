@@ -47,6 +47,9 @@ def test_list_excluded_json(capsys, tmp_path):
     assert len(data) == 1
     assert data[0]["path"] == "excluded.txt"
     assert data[0]["reason"] == "excluded"
+    assert "EXCLUDED LISTING" not in captured.err
+    assert "EXCLUDED LISTING" not in captured.out
+    assert "Operation: Combine" not in captured.err
 
 
 def test_list_excluded_extension_and_size_filters(capsys, tmp_path):
