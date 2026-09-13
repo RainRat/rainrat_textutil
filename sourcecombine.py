@@ -4935,6 +4935,7 @@ def main():
     )
     utility_group.add_argument(
         "--export-config",
+        "--export-cfg",
         nargs="?",
         const="sourcecombine.yml",
         metavar="FILENAME",
