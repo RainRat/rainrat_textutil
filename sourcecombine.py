@@ -4942,6 +4942,7 @@ def main():
     )
     utility_group.add_argument(
         "--system-info",
+        "--sys-info",
         action="store_true",
         help="Show details about the system and environment. Use --json for machine-readable output.",
     )

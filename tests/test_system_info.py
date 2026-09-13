@@ -29,9 +29,24 @@ def test_system_info_flag():
     # Check exit code is 0
     assert result.returncode == 0
 
-def test_system_info_shortcut_not_exists():
-    """Verify that there is no shortcut for --system-info (as intended)."""
-    # Just checking the help text
+def test_sys_info_shortcut_alias():
+    """Verify that --sys-info shortcut alias prints environment details identically."""
+    result = subprocess.run(
+        [sys.executable, "sourcecombine.py", "--sys-info"],
+        capture_output=True,
+        text=True,
+        check=True
+    )
+
+    output = result.stdout
+    assert "=== SYSTEM INFORMATION ===" in output
+    assert "SourceCombine Version" in output
+    assert "Python Version" in output
+    assert result.returncode == 0
+
+
+def test_system_info_help_text():
+    """Verify that --system-info and --sys-info shortcut alias are present in help text."""
     result = subprocess.run(
         [sys.executable, "sourcecombine.py", "--help"],
         capture_output=True,
@@ -39,8 +54,7 @@ def test_system_info_shortcut_not_exists():
         check=True
     )
     assert "--system-info" in result.stdout
-    # Check that it doesn't have a short flag like -S or something (unless we added one)
-    # We didn't add a short flag.
+    assert "--sys-info" in result.stdout
 
 def test_print_system_info_with_and_without_optional_dependencies(capsys):
     from sourcecombine import print_system_info
