@@ -4802,6 +4802,7 @@ def main():
     )
     utility_group.add_argument(
         "--init-ignore",
+        "--init-ig",
         nargs="?",
         const=".sourcecombineignore",
         metavar="PATH",
