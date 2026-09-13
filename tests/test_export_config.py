@@ -208,3 +208,14 @@ def test_save_yaml_config_no_yaml(tmp_path, monkeypatch):
     monkeypatch.setattr(utils, "yaml", None)
     with pytest.raises(utils.InvalidConfigError, match="PyYAML' library is required"):
         utils.save_yaml_config("any.yml", {})
+
+
+def test_export_cfg_shortcut_alias_cli(tmp_path, monkeypatch):
+    """Test --export-cfg from CLI argv without mocking parse_args."""
+    monkeypatch.chdir(tmp_path)
+    with patch("sys.argv", ["sourcecombine.py", "--export-cfg", str(tmp_path / "exported_cfg.yml")]):
+        with pytest.raises(SystemExit) as excinfo:
+            sourcecombine.main()
+        assert excinfo.value.code == 0
+    assert (tmp_path / "exported_cfg.yml").exists()
+
