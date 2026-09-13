@@ -51,6 +51,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--reverse` (`-r`): Reverse the file sorting order.
 *   `--format FORMAT` (`-f FORMAT`): Set the output format (`text`, `markdown`, `json`, `jsonl`, `xml`, `manifest`, or `csv`). Case-insensitive and supports aliases like `txt` or `md`. You can also use shortcut flags like `--markdown`, `--json`, `--jsonl` (`-J`), `--xml`, or `--csv`.
 *   `--toc` (`-T`): Add a Table of Contents with file sizes and token counts to the start of the output.
+*   `--include-tree` (`-p`): Add a visual folder tree with file details to the start of the output.
 *   `--overview` (`-O`): Add a project overview summary with statistics and language breakdown to the start of the output.
 *   `--grep PATTERN` (`-g PATTERN`): Only include files whose content matches this regular expression.
 *   `--exclude-grep PATTERN` (`-E PATTERN`): Skip files whose content matches this regular expression.
