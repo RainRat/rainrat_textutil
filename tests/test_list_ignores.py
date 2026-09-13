@@ -1,4 +1,5 @@
 import sys, os; from pathlib import Path; sys.path.insert(0, os.fspath(Path(__file__).resolve().parent.parent))
+import copy
 import json
 import pytest
 from unittest.mock import patch
@@ -53,7 +54,38 @@ def test_print_ignore_patterns_json(capsys, tmp_path, monkeypatch):
     data = json.loads(captured.out)
     assert "ignore_patterns" in data
     assert "Ignore File (.sourcecombineignore)" in data["ignore_patterns"]
+
+
+def test_print_ignore_patterns_json_query(capsys, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    ignore_file = tmp_path / ".sourcecombineignore"
+    ignore_file.write_text("*.log\ntmp/*\n")
+
+    config = copy.deepcopy(sourcecombine.utils.DEFAULT_CONFIG)
+    config['filters']['exclusions'] = {}
+
+    sourcecombine.print_ignore_patterns(query="log", json_format=True, config=config)
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert "ignore_patterns" in data
+    assert "Ignore File (.sourcecombineignore)" in data["ignore_patterns"]
     assert "*.log" in data["ignore_patterns"]["Ignore File (.sourcecombineignore)"]
+    assert "tmp/*" not in data["ignore_patterns"]["Ignore File (.sourcecombineignore)"]
+    assert data["total"] == 1
+
+
+def test_cli_list_ignores_with_ignore_file(capsys, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    custom_ignore = tmp_path / "custom.ignore"
+    custom_ignore.write_text("custom_pattern/*\n")
+
+    with patch("sys.argv", ["sourcecombine", "--list-ignores", "--ignore-file", "custom.ignore"]):
+        with pytest.raises(SystemExit) as exc:
+            sourcecombine.main()
+        assert exc.value.code == 0
+    captured = capsys.readouterr()
+    assert "ACTIVE IGNORE PATTERNS" in captured.out
+    assert "custom_pattern/*" in captured.out
 
 
 def test_cli_list_ignores_main(capsys, tmp_path, monkeypatch):
