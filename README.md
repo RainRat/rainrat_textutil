@@ -28,7 +28,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--files-from PATH`: Read a list of file paths from a text file or standard input (`-`), skipping folder scanning.
 *   `--ignore-file PATH`: Add an ignore file containing glob patterns to skip. Supports comma-separated lists (for example, `.ignore1,.ignore2`). Default is `.sourcecombineignore`.
 *   `--exclude-file` (`-x`): Skip files matching a glob pattern (for example, `-x "*.json"` or `--exclude-file "*.tmp"`). You can repeat this flag.
-*   `--exclude-folder` (`-X`): Skip folders matching a glob pattern (for example, `-X tests` or `--exclude-folder "build*"`). You can repeat this flag.
+*   `--exclude-folder` (`-X`, `--exclude-dir`): Skip folders matching a glob pattern (for example, `-X tests` or `--exclude-folder "build*"`). You can repeat this flag.
 *   `--include-file` (`-i`): Include files matching a glob pattern regardless of other filter rules (for example, `-i "*.config"`). You can repeat this flag.
 *   `--extension` (`--ext`): Include only files with these extensions. You can repeat this flag or use a comma-separated list (for example, `--ext py,js` or `--ext py --ext js`).
 *   `--exclude-extension` (`--exclude-ext`): Skip files with these extensions. Supports comma-separated lists (for example, `--exclude-ext log,tmp`).
@@ -49,8 +49,9 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--max-total-lines N`: Stop processing once total combined output reaches `N` lines.
 *   `--sort SORT_BY` (`-s SORT_BY`): Sort processed files by specific criteria (`name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`). Case-insensitive and supports aliases like `date`/`time` for `modified`, `token` for `tokens`, `line` for `lines`, and `lang` for `language`.
 *   `--reverse` (`-r`): Reverse the file sorting order.
-*   `--format FORMAT` (`-f FORMAT`): Set the output format (`text`, `markdown`, `json`, `jsonl`, `xml`, `manifest`, or `csv`). Case-insensitive and supports aliases like `txt` or `md`. You can also use shortcut flags like `--markdown`, `--json`, `--jsonl`, `--xml`, or `--csv`.
+*   `--format FORMAT` (`-f FORMAT`): Set the output format (`text`, `markdown`, `json`, `jsonl`, `xml`, `manifest`, or `csv`). Case-insensitive and supports aliases like `txt` or `md`. You can also use shortcut flags like `--markdown`, `--json`, `--jsonl` (`-J`), `--xml`, or `--csv`.
 *   `--toc` (`-T`): Add a Table of Contents with file sizes and token counts to the start of the output.
+*   `--overview` (`-O`): Add a project overview summary with statistics and language breakdown to the start of the output.
 *   `--grep PATTERN` (`-g PATTERN`): Only include files whose content matches this regular expression.
 *   `--exclude-grep PATTERN` (`-E PATTERN`): Skip files whose content matches this regular expression.
 *   `--grep-ignore-case` (`--grep-icase`): Perform case-insensitive matching for `--grep` and `--exclude-grep` patterns.
