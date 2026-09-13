@@ -158,9 +158,9 @@ def _convert_to_json_friendly(obj):
     """Recursively convert objects (such as Path) to JSON-compatible types."""
     if isinstance(obj, dict):
         return {k: _convert_to_json_friendly(v) for k, v in obj.items()}
-    elif isinstance(obj, (list, tuple)):
+    if isinstance(obj, (list, tuple)):
         return [_convert_to_json_friendly(i) for i in obj]
-    elif isinstance(obj, Path):
+    if isinstance(obj, Path):
         return str(obj)
     return obj
 
@@ -6348,7 +6348,7 @@ def _parse_combined_content(content, source_name="combined file"):
                         'language': lang_val,
                     }
                     files_found.append((path, file_content, meta))
-            except (ValueError, TypeError, Exception) as exc:
+            except Exception as exc:
                 logging.debug("Skipping malformed XML file entry: %s", exc)
                 continue
 
