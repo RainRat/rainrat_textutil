@@ -6189,8 +6189,9 @@ def main():
         sys.exit(0)
 
     is_json = getattr(args, 'json', False)
+    is_listing_json = (args.list_files or getattr(args, 'list_excluded', False)) and is_json
 
-    if not (args.list_files and is_json):
+    if not is_listing_json:
         if mirror_enabled:
             action_desc = "Mirror"
         elif pairing_enabled:
@@ -6247,7 +6248,7 @@ def main():
         if resolved_path and resolved_path != '-' and not pairing_enabled:
             destination_desc = f"to '{resolved_path}'"
 
-        if not (args.list_files and is_json):
+        if not is_listing_json:
             _print_execution_summary(stats, args, pairing_enabled, destination_desc, duration=duration, source_desc=source_desc, mirror_enabled=mirror_enabled)
 
         summary_path = output_conf.get('summary_json')
