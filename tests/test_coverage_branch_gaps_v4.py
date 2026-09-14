@@ -53,6 +53,33 @@ Actual description line that should be extracted as project description.
     assert res["project_description"] == "Actual description line that should be extracted as project description."
 
 
+def test_readme_description_parsing_ignores_subheaders_and_dividers(tmp_path):
+    subheader_dir = tmp_path / "subheader_proj"
+    subheader_dir.mkdir()
+    (subheader_dir / "README.md").write_text('# Project Title\n\n## Subheader\nDescription line\n')
+    res_sub = utils.get_project_identity(str(subheader_dir))
+    assert res_sub["project_name"] == "Project Title"
+    assert res_sub["project_description"] == ""
+
+    divider_dir = tmp_path / "divider_proj"
+    divider_dir.mkdir()
+    (divider_dir / "README.md").write_text('# Project Title\n\n===\nDescription line\n')
+    res_div = utils.get_project_identity(str(divider_dir))
+    assert res_div["project_name"] == "Project Title"
+    assert res_div["project_description"] == ""
+
+
+def test_readme_description_parsing_truncates_long_description(tmp_path):
+    long_desc_dir = tmp_path / "long_desc_proj"
+    long_desc_dir.mkdir()
+    long_desc = "Word " * 50
+    (long_desc_dir / "README.md").write_text(f'# Project Title\n\n{long_desc}\n')
+    res_long = utils.get_project_identity(str(long_desc_dir))
+    assert res_long["project_name"] == "Project Title"
+    assert len(res_long["project_description"]) == 200
+    assert res_long["project_description"].endswith("...")
+
+
 def test_file_processor_header_footer_default_template_override(tmp_path):
     f1 = tmp_path / "file1.py"
     f1.write_text("print('hello')\n")
