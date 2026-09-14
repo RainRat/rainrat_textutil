@@ -8423,6 +8423,28 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         h = f"{label:>{width}}"
         return f"{C_BOLD}{h}{C_RESET}{C_DIM}" if metric_name == primary_metric else h
 
+    def _build_summary_metric_headers(has_tokens, has_lines, primary_metric, show_secondary, show_dist):
+        header_parts = []
+        if show_secondary:
+            if has_tokens and primary_metric != 'tokens':
+                header_parts.append(_format_header('TOKENS', 'tokens', primary_metric))
+            if has_lines and primary_metric != 'lines':
+                header_parts.append(_format_header('LINES', 'lines', primary_metric))
+            if primary_metric != 'size':
+                header_parts.append(_format_header('SIZE', 'size', primary_metric))
+
+        if has_tokens and primary_metric == 'tokens':
+            header_parts.append(_format_header('TOKENS', 'tokens', primary_metric))
+        elif has_lines and primary_metric == 'lines':
+            header_parts.append(_format_header('LINES', 'lines', primary_metric))
+        elif primary_metric == 'size':
+            header_parts.append(_format_header('SIZE', 'size', primary_metric))
+
+        header_parts.append(f"{'%':>6}")
+        if show_dist:
+            header_parts.append(f"{'DISTRIBUTION':<12}")
+        return header_parts
+
     # Determine available width for layout and truncation
     term_width = 80
     try:
@@ -8753,26 +8775,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         path_width = max(20, term_width - overhead)
 
         # Build dynamic header
-        header_parts = []
-        # Secondary metrics first
-        if show_secondary:
-            if has_tokens and primary_metric != 'tokens':
-                header_parts.append(_format_header('TOKENS', 'tokens', primary_metric))
-            if has_lines and primary_metric != 'lines':
-                header_parts.append(_format_header('LINES', 'lines', primary_metric))
-            if primary_metric != 'size':
-                header_parts.append(_format_header('SIZE', 'size', primary_metric))
-
-        # Primary metric last before %
-        if has_tokens and primary_metric == 'tokens':
-            header_parts.append(_format_header('TOKENS', 'tokens', primary_metric))
-        elif has_lines and primary_metric == 'lines':
-            header_parts.append(_format_header('LINES', 'lines', primary_metric))
-        elif primary_metric == 'size':
-            header_parts.append(_format_header('SIZE', 'size', primary_metric))
-
-        header_parts.append(f"{'%':>6}")
-        if show_dist: header_parts.append(f"{'DISTRIBUTION':<12}")
+        header_parts = _build_summary_metric_headers(has_tokens, has_lines, primary_metric, show_secondary, show_dist)
 
         # Empty space to match Files (%) column in other tables
         header_parts.append(f"{' ': <15}")
@@ -8884,26 +8887,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         path_width = max(20, term_width - overhead)
 
         # Build dynamic header
-        header_parts = []
-        # Secondary metrics first
-        if show_secondary:
-            if has_tokens and primary_metric != 'tokens':
-                header_parts.append(_format_header('TOKENS', 'tokens', primary_metric))
-            if has_lines and primary_metric != 'lines':
-                header_parts.append(_format_header('LINES', 'lines', primary_metric))
-            if primary_metric != 'size':
-                header_parts.append(_format_header('SIZE', 'size', primary_metric))
-
-        # Primary metric last before %
-        if has_tokens and primary_metric == 'tokens':
-            header_parts.append(_format_header('TOKENS', 'tokens', primary_metric))
-        elif has_lines and primary_metric == 'lines':
-            header_parts.append(_format_header('LINES', 'lines', primary_metric))
-        elif primary_metric == 'size':
-            header_parts.append(_format_header('SIZE', 'size', primary_metric))
-
-        header_parts.append(f"{'%':>6}")
-        if show_dist: header_parts.append(f"{'DISTRIBUTION':<12}")
+        header_parts = _build_summary_metric_headers(has_tokens, has_lines, primary_metric, show_secondary, show_dist)
 
         header_parts.append(f"{'FILES (%)':>15}")
         if any_has_status: header_parts.append(f"{' ': <6}") # Spacer to match largest files
@@ -9010,26 +8994,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
         lang_width = max(20, term_width - overhead)
 
         # Build dynamic header
-        header_parts = []
-        # Secondary metrics first
-        if show_secondary:
-            if has_lang_tokens and primary_metric != 'tokens':
-                header_parts.append(_format_header('TOKENS', 'tokens', primary_metric))
-            if has_lang_lines and primary_metric != 'lines':
-                header_parts.append(_format_header('LINES', 'lines', primary_metric))
-            if primary_metric != 'size':
-                header_parts.append(_format_header('SIZE', 'size', primary_metric))
-
-        # Primary metric last before %
-        if has_lang_tokens and primary_metric == 'tokens':
-            header_parts.append(_format_header('TOKENS', 'tokens', primary_metric))
-        elif has_lang_lines and primary_metric == 'lines':
-            header_parts.append(_format_header('LINES', 'lines', primary_metric))
-        elif primary_metric == 'size':
-            header_parts.append(_format_header('SIZE', 'size', primary_metric))
-
-        header_parts.append(f"{'%':>6}")
-        if show_dist: header_parts.append(f"{'DISTRIBUTION':<12}")
+        header_parts = _build_summary_metric_headers(has_lang_tokens, has_lang_lines, primary_metric, show_secondary, show_dist)
 
         header_parts.append(f"{'FILES (%)':>15}")
         if any_has_status: header_parts.append(f"{' ': <6}") # Spacer to match largest files
