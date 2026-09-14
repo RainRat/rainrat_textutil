@@ -71,8 +71,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--truncate-tokens N`: Limit each file to a maximum of `N` tokens before combining.
 *   `--replace PATTERN REPLACEMENT`: Find and replace content using regular expressions. You can repeat this flag.
 *   `--replace-line PATTERN REPLACEMENT`: Find and replace line patterns using regular expressions. You can repeat this flag.
-*   `--git-log`: Include recent Git commit history in project overview and templates (`{{GIT_LOG}}`).
-*   `--git-log-count COUNT`: Set the number of recent Git commits to include (for example, `--git-log-count 5`).
+*   `--git-log [N]`: Include recent Git commit history in project overview and templates (`{{GIT_LOG}}`). You can optionally specify the number of recent commits `N` to include (for example, `--git-log 10`). Defaults to 5 if `N` is not provided.
 *   `--include-diff`: Include Git diffs in project overview and templates (`{{GIT_DIFF}}` and `{{FILE_DIFF}}`).
 *   `--diff`: Display colored line differences when writing, extracting, verifying, or modifying files.
 *   `--json-summary PATH`: Save execution summary metrics (file counts, token counts, processing duration) to a JSON file. Use `-` to print the summary to standard output (`stdout`).
