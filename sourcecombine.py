@@ -4230,7 +4230,7 @@ def main():
         "--preview",
         "-d",
         action="store_true",
-        help="Show what would happen without making any changes.",
+        help="Show what would happen without making any changes. Supports combining, extracting (--extract), verifying (--verify), and backup operations.",
     )
     core_group.add_argument(
         "-v",
@@ -4867,7 +4867,7 @@ def main():
         action="store_true",
         help=(
             "Rebuild original files and folders from combined outputs (JSON, XML, JSONL, CSV, Markdown, or Text). "
-            "Supports filtering, sorting, and processing. Use --json for machine-readable output."
+            "Supports filtering, sorting, processing, and --dry-run previews. Use --json for machine-readable output."
         ),
     )
     utility_group.add_argument(
@@ -7146,8 +7146,11 @@ def extract_files(sources, output_folder, dry_run=False, source_name="combined f
         if not json_format:
             extraction_bar.set_postfix(size=utils.format_size(running_size), lines=f"{running_lines:,}", tokens=f"{running_tokens:,}")
 
-    if not json_format and not dry_run:
-        logging.info("Extraction complete. %d files created in %s", extracted_count, output_folder)
+    if not json_format:
+        if dry_run:
+            logging.info("Extraction dry run complete. %d file(s) would be created in %s", extracted_count, output_folder)
+        else:
+            logging.info("Extraction complete. %d files created in %s", extracted_count, output_folder)
 
     if json_format:
         output_report = {
