@@ -4085,6 +4085,9 @@ PRESET_ALIASES = {
     "--ai": "ai",
     "--analyze": "analyze",
     "--review": "review",
+    "--rev": "review",
+    "--pr": "review",
+    "rev": "review",
     "pr": "review",
     "pr-review": "review",
 }
@@ -4542,6 +4545,8 @@ def main():
     )
     output_group.add_argument(
         "--review",
+        "--rev",
+        "--pr",
         action="store_true",
         help=(
             "Enable preset for code reviews and Pull Requests (Markdown, line numbers, Table of Contents, "
@@ -8198,7 +8203,7 @@ def print_presets(query=None, json_format=False):
             "description": "Comprehensive project analysis without generating output files (dry run, token estimation, project overview, file tree preview)."
         },
         "review": {
-            "flag": "--review",
+            "flag": "--review, --rev, --pr",
             "flags": "--format markdown --line-numbers --toc --include-tree --overview --git-log 10 --include-diff --skip-binary",
             "description": "Preset for code reviews and Pull Requests (Markdown format, line numbers, Table of Contents, file tree, project overview, Git diffs and logs, skip binary)."
         }
