@@ -119,7 +119,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--list-placeholders` (`--list-ph`): Show all supported template placeholders and exit. Use `--json` for machine-readable output.
 *   `--list-formats` (`--list-fmt`): Show all supported output formats and aliases and exit. Use `--json` for machine-readable output.
 *   `--preset NAME`: Apply a built-in configuration preset by name (`ai`, `analyze`, or `review`).
-*   `--review`: Enable preset for code reviews and Pull Requests (Markdown format, line numbers, Table of Contents, file tree, project overview, Git logs and diffs, skip binary).
+*   `--review` (`--rev`, `--pr`): Enable preset for code reviews and Pull Requests (Markdown format, line numbers, Table of Contents, file tree, project overview, Git logs and diffs, skip binary).
 *   `--list-presets` (`--list-pre`): Show built-in presets and their expanded options and exit. Use `--json` for machine-readable output.
 *   `--list-ignores` (`--list-ig`): Show active ignore patterns from ignore files and configuration exclusions and exit. Use `--json` for machine-readable output.
 *   `--project-info` (`-I`): Display detected project details and Git repository status. Use `--json` for machine-readable output.
@@ -286,8 +286,10 @@ python sourcecombine.py . --preset ai
 Prepare a full context for code reviews and Pull Requests. This preset uses Markdown format and includes a Table of Contents, folder tree, project overview, line numbers, Git diffs, and the last 10 commits while skipping binary files:
 ```bash
 python sourcecombine.py . --preset review
-# or using the shortcut flag:
+# or using the shortcut flags:
 python sourcecombine.py . --review
+python sourcecombine.py . --rev
+python sourcecombine.py . --pr
 ```
 
 ### File Pairing
