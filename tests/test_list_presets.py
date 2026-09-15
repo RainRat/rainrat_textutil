@@ -11,6 +11,7 @@ def test_print_presets_text(capsys):
     assert "ai" in captured.out
     assert "analyze" in captured.out
     assert "review" in captured.out
+    assert "Expanded: --format markdown" in captured.out
     assert "Total: 3 built-in presets supported." in captured.out
 
 
