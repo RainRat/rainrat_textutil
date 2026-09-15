@@ -5,17 +5,18 @@ import yaml
 
 def test_show_config_defaults():
     """Test that --show-config displays default values and no stderr log clutter."""
-    result = subprocess.run(
-        ["python", "sourcecombine.py", "--show-config"],
-        capture_output=True,
-        text=True,
-        check=True
-    )
-    config = yaml.safe_load(result.stdout)
-    assert config["output"]["format"] == "text"
-    assert config["search"]["root_folders"] == ["."]
-    assert "Final merged configuration:" not in result.stderr
-    assert "No config file found" not in result.stderr
+    for flag in ["--show-config", "--show-cfg"]:
+        result = subprocess.run(
+            ["python", "sourcecombine.py", flag],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        config = yaml.safe_load(result.stdout)
+        assert config["output"]["format"] == "text"
+        assert config["search"]["root_folders"] == ["."]
+        assert "Final merged configuration:" not in result.stderr
+        assert "No config file found" not in result.stderr
 
 def test_stdout_streaming_config_commands_clean_stderr():
     """Test that stdout streaming configuration commands output clean text without INFO log clutter on stderr."""
