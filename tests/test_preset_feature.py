@@ -31,6 +31,15 @@ def test_review_flag_directly(tmp_path):
         sourcecombine.main()
 
 
+def test_review_flag_shortcuts(tmp_path):
+    f = tmp_path / "test.py"
+    f.write_text("print('hello')")
+    with patch("sys.argv", ["sourcecombine", str(tmp_path), "--rev", "--dry-run"]):
+        sourcecombine.main()
+    with patch("sys.argv", ["sourcecombine", str(tmp_path), "--pr", "--dry-run"]):
+        sourcecombine.main()
+
+
 def test_invalid_preset_name(caplog, tmp_path):
     with patch("sys.argv", ["sourcecombine", str(tmp_path), "--preset", "invalid_name"]):
         with pytest.raises(SystemExit) as exc:

@@ -4542,6 +4542,8 @@ def main():
     )
     output_group.add_argument(
         "--review",
+        "--rev",
+        "--pr",
         action="store_true",
         help=(
             "Enable preset for code reviews and Pull Requests (Markdown, line numbers, Table of Contents, "
