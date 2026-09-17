@@ -122,6 +122,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--review`: Enable preset for code reviews and Pull Requests (Markdown format, line numbers, Table of Contents, file tree, project overview, Git logs and diffs, skip binary).
 *   `--list-presets` (`--list-pre`): Show built-in presets and their expanded options and exit. Use `--json` for machine-readable output.
 *   `--list-ignores` (`--list-ig`): Show active ignore patterns from ignore files and configuration exclusions and exit. Use `--json` for machine-readable output.
+*   `--list-replacements` (`--list-rep`, `--list-rules`): Show active text and line search-and-replace rules from configuration and CLI arguments and exit. Use `--json` for machine-readable output.
 *   `--project-info` (`-I`): Display detected project details and Git repository status. Use `--json` for machine-readable output.
 *   `--explain PATH` (`--exp`): Analyze and explain whether the specified path(s) would be included or excluded by the current configuration and filters. Supports `--json` format.
 *   `--validate-config [PATH]` (`--validate`): Validate a specified or auto-discovered configuration file against syntax and schema rules without running file processing. Use `-` to read from standard input (`stdin`). Use `--json` for machine-readable output.
