@@ -6350,7 +6350,7 @@ def _parse_combined_content(content, source_name="combined file"):
                         'language': lang_val,
                     }
                     files_found.append((path, file_content, meta))
-            except Exception as exc:
+            except (ValueError, TypeError, AttributeError) as exc:
                 logging.debug("Skipping malformed XML file entry: %s", exc)
                 continue
 
