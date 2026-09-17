@@ -53,3 +53,15 @@ def test_show_config_with_file_override():
     config = yaml.safe_load(result.stdout)
     assert config["output"]["file"] == "test.json"
     assert config["output"]["format"] == "json"
+
+def test_show_cfg_alias():
+    """Test that --show-cfg works identically as an alias for --show-config."""
+    result = subprocess.run(
+        ["python", "sourcecombine.py", "--show-cfg"],
+        capture_output=True,
+        text=True,
+        check=True
+    )
+    config = yaml.safe_load(result.stdout)
+    assert config["output"]["format"] == "text"
+    assert config["search"]["root_folders"] == ["."]
