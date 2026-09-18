@@ -142,3 +142,33 @@ def test_cli_list_rules_alias_query(monkeypatch, capsys):
     captured = capsys.readouterr().out
     assert "dog" in captured
     assert "apple" not in captured
+
+
+def test_print_replacements_no_match(capsys):
+    config = {
+        "processing": {
+            "regex_replacements": [{"pattern": "apple", "replacement": "fruit"}],
+            "line_regex_replacements": [],
+        }
+    }
+    print_replacements(query="nonexistent", config=config, json_format=False)
+    captured = capsys.readouterr().out
+    assert "No search-and-replace rules matched the filter query 'nonexistent'" in captured
+
+
+def test_cli_list_replacements_config_target(tmp_path, monkeypatch, capsys):
+    cfg_file = tmp_path / "custom.yml"
+    cfg_file.write_text("processing:\n  regex_replacements:\n    - pattern: 'abc'\n      replacement: 'xyz'\n")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            str(cfg_file),
+            "--list-replacements",
+        ],
+    )
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 0
+    captured = capsys.readouterr().out
+    assert "Pattern: 'abc' -> Replacement: 'xyz'" in captured

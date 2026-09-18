@@ -44,14 +44,19 @@ def test_explain_paths_stat_os_error(tmp_path, capsys):
     }
 
     original_stat = Path.stat
-    call_count = 0
+
+    import inspect
 
     def mock_stat(self, *args, **kwargs):
-        nonlocal call_count
         if self.name == "dummy.py":
-            call_count += 1
-            if call_count == 3:
-                raise OSError("Disk failure")
+            f = inspect.currentframe().f_back
+            while f:
+                if f.f_code.co_name == "explain_paths":
+                    ctx = inspect.getframeinfo(f).code_context
+                    if ctx and "stat = file_path.stat()" in ctx[0]:
+                        raise OSError("Disk failure")
+                    break
+                f = f.f_back
         return original_stat(self, *args, **kwargs)
 
     with patch.object(Path, "stat", autospec=True, side_effect=mock_stat):

@@ -38,6 +38,10 @@ def test_review_flag_shortcuts(tmp_path):
         sourcecombine.main()
     with patch("sys.argv", ["sourcecombine", str(tmp_path), "--pr", "--dry-run"]):
         sourcecombine.main()
+    with patch("sys.argv", ["sourcecombine", str(tmp_path), "--preset=rev", "--dry-run"]):
+        sourcecombine.main()
+    with patch("sys.argv", ["sourcecombine", str(tmp_path), "--preset=pr", "--dry-run"]):
+        sourcecombine.main()
 
 
 def test_invalid_preset_name(caplog, tmp_path):

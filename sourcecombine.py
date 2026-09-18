@@ -4085,6 +4085,9 @@ PRESET_ALIASES = {
     "--ai": "ai",
     "--analyze": "analyze",
     "--review": "review",
+    "--rev": "review",
+    "--pr": "review",
+    "rev": "review",
     "pr": "review",
     "pr-review": "review",
 }
@@ -5226,6 +5229,13 @@ def main():
 
     if list_rep_val:
         config_path = args.config
+        if not config_path and args.targets:
+            first = args.targets[0]
+            is_config_ext = first.lower().endswith(('.yml', '.yaml')) or (
+                first.lower().endswith('.json') and not args.extract and not getattr(args, 'verify', False)
+            )
+            if is_config_ext and not Path(first).is_dir():
+                config_path = first
         if not config_path:
             defaults = [
                 'sourcecombine.yml', 'sourcecombine.yaml',
@@ -8330,9 +8340,11 @@ def print_replacements(query=None, json_format=False, config=None):
 
     if not text_rules and not line_rules:
         print("\n  No active search-and-replace rules configured.")
+    elif total_matched == 0 and query_lower:
+        print(f"\n  {C_YELLOW}No search-and-replace rules matched the filter query '{query}'.{C_RESET}")
 
     count_label = f"Matching: {total_matched}" if query_lower else f"Total: {total_available}"
-    print(f"\n  {C_BOLD}{count_label}{C_RESET} active search-and-replace rules supported.")
+    print(f"\n  {C_BOLD}{count_label}{C_RESET} active search-and-replace rules configured.")
 
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
@@ -8351,7 +8363,7 @@ def print_presets(query=None, json_format=False):
             "description": "Comprehensive project analysis without generating output files (dry run, token estimation, project overview, file tree preview)."
         },
         "review": {
-            "flag": "--review",
+            "flag": "--review, --rev, --pr",
             "flags": "--format markdown --line-numbers --toc --include-tree --overview --git-log 10 --include-diff --skip-binary",
             "description": "Preset for code reviews and Pull Requests (Markdown format, line numbers, Table of Contents, file tree, project overview, Git diffs and logs, skip binary)."
         }
