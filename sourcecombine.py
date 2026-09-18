@@ -4933,6 +4933,7 @@ def main():
     )
     utility_group.add_argument(
         "--show-config",
+        "--show-cfg",
         action="store_true",
         help="Show the final combined configuration (including defaults, files, and options) and exit. Use --json for machine-readable output.",
     )
