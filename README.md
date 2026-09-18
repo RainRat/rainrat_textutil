@@ -218,7 +218,7 @@ The tool installs these packages automatically during setup:
     python sourcecombine.py --init-ignore
     ```
 
-    *Note:* You can also use JSON configuration files (like `sourcecombine.json`). They work out of the box with Python's standard library.
+    *Note:* You can also use JSON configuration files (like `sourcecombine.json`). They work directly with Python's standard library without extra dependencies.
 
 For more details, use `python sourcecombine.py --help` or check `config.template.yml`.
 
@@ -333,15 +333,21 @@ Check if your files on disk match the content or SHA-256 hashes stored in a comb
 ### Backup and Restore (Safe Workflows)
 When modifying files, SourceCombine can create backups. If you run `--apply-in-place`, `--extract`, or `--repair`, the tool creates backups by default, saved with a `.bak` extension next to the original files.
 
-You can inspect, compare, restore, or clean up these backups:
+You can create, inspect, compare, restore, or clean up these backups:
 
-1. **List all backup files:**
+1. **Create backup copies:**
+   Create `.bak` copies of matching files before making manual edits (add `--json` for machine-readable summary output):
+   ```bash
+   python sourcecombine.py . --backup
+   ```
+
+2. **List all backup files:**
    See which backup files exist and check if they match your current files:
    ```bash
    python sourcecombine.py --list-backups
    ```
 
-2. **See the difference between original files and backups:**
+3. **See the difference between original files and backups:**
    Show a color-coded, line-by-line comparison of what has changed:
    ```bash
    python sourcecombine.py --diff-backups
@@ -349,13 +355,13 @@ You can inspect, compare, restore, or clean up these backups:
    python sourcecombine.py --diff-bak
    ```
 
-3. **Restore your original files:**
+4. **Restore your original files:**
    Undo your changes and bring back the original files from the backups (add `--json` for machine-readable summary output):
    ```bash
    python sourcecombine.py --restore
    ```
 
-4. **Delete backup files (Clean up):**
+5. **Delete backup files (Clean up):**
    When you are happy with your changes and no longer need the backups, remove all `.bak` files (add `--json` for machine-readable summary output):
    ```bash
    python sourcecombine.py --clean
