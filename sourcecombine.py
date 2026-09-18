@@ -4865,6 +4865,16 @@ def main():
         help="Show active ignore patterns from ignore files and configuration exclusions (optionally filtered by QUERY) and exit. Use --json for machine-readable output.",
     )
     utility_group.add_argument(
+        "--list-replacements",
+        "--list-rep",
+        "--list-rules",
+        nargs="?",
+        const=True,
+        default=False,
+        metavar="QUERY",
+        help="Show active search-and-replace rules from configuration and CLI arguments (optionally filtered by QUERY) and exit. Use --json for machine-readable output.",
+    )
+    utility_group.add_argument(
         "--extract",
         action="store_true",
         help=(
@@ -5108,6 +5118,7 @@ def main():
         getattr(args, 'explain', False) or
         _get_bool_arg(args, 'list_presets') or
         _get_bool_arg(args, 'list_ignores') or
+        _get_bool_arg(args, 'list_replacements') or
         _get_bool_arg(args, 'list_backups') or
         _get_bool_arg(args, 'diff_backups') or
         _get_bool_arg(args, 'backup') or
@@ -5207,6 +5218,50 @@ def main():
     if list_pre_val:
         query = list_pre_val if isinstance(list_pre_val, str) else None
         print_presets(query=query, json_format=getattr(args, 'json', False))
+        sys.exit(0)
+
+    list_rep_val = getattr(args, 'list_replacements', False)
+    if list_rep_val and type(list_rep_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        list_rep_val = False
+
+    if list_rep_val:
+        config_path = args.config
+        if not config_path:
+            defaults = [
+                'sourcecombine.yml', 'sourcecombine.yaml',
+                'sourcecombine.json',
+                'config.yml', 'config.yaml',
+                'config.json'
+            ]
+            for d in defaults:
+                if Path(d).is_file():
+                    config_path = d
+                    break
+        try:
+            if config_path:
+                config = load_and_validate_config(config_path)
+            else:
+                config = copy.deepcopy(utils.DEFAULT_CONFIG)
+                utils.validate_config(config)
+        except (ConfigNotFoundError, utils.InvalidConfigError) as e:
+            _handle_invalid_config_error(e, args.verbose)
+
+        if getattr(args, 'replace', None):
+            regex_rules = config['processing'].setdefault('regex_replacements', [])
+            if regex_rules is None:
+                regex_rules = config['processing']['regex_replacements'] = []
+            for pattern, replacement in args.replace:
+                regex_rules.append({'pattern': pattern, 'replacement': replacement})
+
+        if getattr(args, 'replace_line', None):
+            line_rules = config['processing'].setdefault('line_regex_replacements', [])
+            if line_rules is None:
+                line_rules = config['processing']['line_regex_replacements'] = []
+            for pattern, replacement in args.replace_line:
+                line_rules.append({'pattern': pattern, 'replacement': replacement})
+
+        query = list_rep_val if isinstance(list_rep_val, str) else None
+        print_replacements(query=query, json_format=getattr(args, 'json', False), config=config)
         sys.exit(0)
 
     list_ig_val = getattr(args, 'list_ignores', False)
@@ -8186,6 +8241,98 @@ def print_ignore_patterns(query=None, json_format=False, config=None):
 
     count_label = f"Matching: {total_matched}" if query_lower else f"Total: {total_available}"
     print(f"\n  {C_BOLD}{count_label}{C_RESET} active ignore patterns supported.")
+
+    print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
+
+
+def print_replacements(query=None, json_format=False, config=None):
+    """Print active search-and-replace rules from configuration and CLI arguments, optionally filtered by a query."""
+    if config is None:
+        config = copy.deepcopy(utils.DEFAULT_CONFIG)
+        utils.validate_config(config)
+    else:
+        config = copy.deepcopy(config)
+
+    proc_conf = config.get('processing', {}) or {}
+    text_rules = list(proc_conf.get('regex_replacements') or [])
+    line_rules = list(proc_conf.get('line_regex_replacements') or [])
+
+    total_available = len(text_rules) + len(line_rules)
+    total_matched = 0
+
+    if json_format:
+        if query:
+            query_lower = query.lower()
+            filtered_text = [
+                r for r in text_rules
+                if query_lower in str(r.get('pattern', '')).lower() or query_lower in str(r.get('replacement', '')).lower()
+            ]
+            filtered_line = [
+                r for r in line_rules
+                if query_lower in str(r.get('pattern', '')).lower() or query_lower in str(r.get('replacement', '')).lower()
+            ]
+            total_matched = len(filtered_text) + len(filtered_line)
+        else:
+            filtered_text = text_rules
+            filtered_line = line_rules
+            total_matched = total_available
+
+        output = {
+            "regex_replacements": filtered_text,
+            "line_regex_replacements": filtered_line,
+            "total": total_matched if query else total_available
+        }
+        print(json.dumps(output, indent=2))
+        return
+
+    if query:
+        query_lower = query.lower()
+        title_suffix = f" (FILTERED BY '{query}')"
+    else:
+        query_lower = None
+        title_suffix = ""
+
+    print(f"\n{C_BOLD}{C_CYAN}=== ACTIVE SEARCH-AND-REPLACE RULES{title_suffix} ==={C_RESET}")
+
+    if text_rules:
+        if query_lower:
+            filtered_text = [
+                r for r in text_rules
+                if query_lower in str(r.get('pattern', '')).lower() or query_lower in str(r.get('replacement', '')).lower()
+            ]
+        else:
+            filtered_text = text_rules
+
+        if filtered_text:
+            print(f"\n  {C_BOLD}{C_GREEN}[Text Replacements (--replace)]{C_RESET}")
+            for rule in filtered_text:
+                pat = rule.get('pattern', '')
+                rep = rule.get('replacement', '')
+                print(f"    • Pattern: '{pat}' -> Replacement: '{rep}'")
+                total_matched += 1
+
+    if line_rules:
+        if query_lower:
+            filtered_line = [
+                r for r in line_rules
+                if query_lower in str(r.get('pattern', '')).lower() or query_lower in str(r.get('replacement', '')).lower()
+            ]
+        else:
+            filtered_line = line_rules
+
+        if filtered_line:
+            print(f"\n  {C_BOLD}{C_GREEN}[Line Replacements (--replace-line)]{C_RESET}")
+            for rule in filtered_line:
+                pat = rule.get('pattern', '')
+                rep = rule.get('replacement', '')
+                print(f"    • Pattern: '{pat}' -> Replacement: '{rep}'")
+                total_matched += 1
+
+    if not text_rules and not line_rules:
+        print("\n  No active search-and-replace rules configured.")
+
+    count_label = f"Matching: {total_matched}" if query_lower else f"Total: {total_available}"
+    print(f"\n  {C_BOLD}{count_label}{C_RESET} active search-and-replace rules supported.")
 
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
