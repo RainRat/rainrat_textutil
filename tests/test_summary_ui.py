@@ -405,3 +405,35 @@ def test_summary_git_info(monkeypatch, capsys):
     # Check for Git info in header
     assert "SUCCESS: [MyProj (main:a1b2c3d)]" in stderr
     assert "Combined 1 file" in stderr
+
+
+def test_summary_footer_preserves_path_case(monkeypatch, capsys):
+    """Test that summary footer banner preserves destination path casing without forced uppercase."""
+    stats = {
+        'total_files': 1,
+        'total_discovered': 1,
+        'total_size_bytes': 100,
+        'files_by_language': {'.py': 1},
+        'total_tokens': 10,
+        'token_count_is_approx': False,
+        'top_files': []
+    }
+
+    args = MagicMock()
+    args.dry_run = False
+    args.estimate_tokens = False
+    args.list_files = False
+    args.tree = False
+    args.extract = False
+    args.format = 'text'
+
+    monkeypatch.setenv("NO_COLOR", "1")
+
+    sourcecombine._print_execution_summary(stats, args, pairing_enabled=False, destination_desc="to '/tmp/myMixedCasePath.txt'")
+
+    captured = capsys.readouterr()
+    stderr = captured.err
+
+    # Check footer line
+    assert "SAVED TO '/tmp/myMixedCasePath.txt'" in stderr
+    assert "SAVED TO '/TMP/MYMIXEDCASEPATH.TXT'" not in stderr

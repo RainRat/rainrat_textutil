@@ -9267,7 +9267,7 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             if len(dest) > dest_limit:
                 dest = _truncate_path(dest, dest_limit)
 
-            footer_label = f" SAVED TO {dest.upper()} "
+            footer_label = f" SAVED TO {dest} "
 
     footer_len = max(40, min(raw_title_len, term_width))
     if footer_label and len(footer_label) + 10 <= footer_len:
