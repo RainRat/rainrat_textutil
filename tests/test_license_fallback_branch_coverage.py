@@ -68,3 +68,28 @@ def test_sln_referencing_non_existent_csproj(tmp_path: Path):
     identity = get_project_identity(tmp_path)
     assert identity["project_name"] == tmp_path.name
     assert identity["manifest_source"] == "App.sln"
+
+
+def test_license_fallback_long_first_line(tmp_path: Path):
+    license_file = tmp_path / "LICENSE"
+    long_line = "This is a custom license agreement without any recognizable standard license name that exceeds fifty characters."
+    license_file.write_text(
+        f"{long_line}\n\nCopyright (c) 2025 Test Corp",
+        encoding="utf-8"
+    )
+
+    identity = get_project_identity(tmp_path)
+    assert identity["project_license"] == "LICENSE"
+    assert identity["project_author"] == "Test Corp"
+
+
+def test_license_fallback_copyright_without_author_match(tmp_path: Path):
+    license_file = tmp_path / "LICENSE"
+    license_file.write_text(
+        "MIT License\n\nCopyright (c) 2025 . All rights reserved.",
+        encoding="utf-8"
+    )
+
+    identity = get_project_identity(tmp_path)
+    assert identity["project_license"] == "MIT"
+    assert identity["project_author"] == ""
