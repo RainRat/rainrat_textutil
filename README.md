@@ -90,7 +90,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--project-license NAME`: Override the project license.
 *   `--project-url URL`: Override the project URL.
 *   `--json`: Output results in machine-readable JSON format (supported by listing options, verification, extraction, backups, system info, project info, and `--list-files`).
-*   `--dry-run` (`-d`): Show what would happen without making any changes.
+*   `--dry-run` (`-d`): Show what would happen without making any changes. Supports combining, extracting (`--extract`), verifying (`--verify`), and backup operations.
 *   `--verbose` (`-v`): Display detailed log messages to help troubleshoot issues.
 *   `--quiet` (`-q`): Suppress non-essential status messages and summary output.
 *   `--remove-comments` (`-R`): Remove both single-line and multi-line comments based on the detected language.
@@ -105,7 +105,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 ### Utility Commands
 *   `--init [PATH]`: Create a basic configuration file (`sourcecombine.yml` or `.json`) at `PATH` to get started. Defaults to `sourcecombine.yml` in the current folder. Use `-` to print the default configuration to standard output (`stdout`).
 *   `--init-ignore [PATH]`, `--init-ig [PATH]`: Create a default ignore file (`.sourcecombineignore` or custom `PATH`) populated with common exclude glob patterns (VCS metadata, dependencies, build outputs, log/temp files) and exit.
-*   `--extract`: Rebuild original files and folders from combined outputs (Text, JSON, XML, JSONL, CSV, or Markdown). You can read from files, folders, remote URLs (http/https), the terminal, or clipboard. Without an input file, it searches for `combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`. Supports `--json` for machine-readable output.
+*   `--extract`: Rebuild original files and folders from combined outputs (Text, JSON, XML, JSONL, CSV, or Markdown). You can read from files, folders, remote URLs (http/https), the terminal, or clipboard. Without an input file, it searches for `combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`. Supports `--dry-run` previews and `--json` for machine-readable output.
 *   `--verify` (`-y`): Verify that files on disk match the content or hashes in combined files or manifests. You can read from files, folders, remote URLs (http/https), the terminal, or clipboard. Without an input file, the tool searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`). For example: `python sourcecombine.py --verify combined_files.json`. Use `--json` for machine-readable output.
 *   `--repair` (`-P`): Automatically fix mismatched or missing files when verifying (requires source content).
 *   `--backup`: Create `.bak` backup files for matching files without modifying original files. Supports `--dry-run` and `--json`.
