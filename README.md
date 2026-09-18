@@ -25,7 +25,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--unstaged`: Include only unstaged and untracked changes in Git (used with `--git-diff`).
 *   `--no-recursive`: Skip searching subfolders and scan only top-level files in target folders.
 *   `--max-depth DEPTH` (`-D DEPTH`): Limit folder scanning to a specific depth (for example, `1` for top-level files only).
-*   `--files-from PATH`: Read a list of file paths from a text file or standard input (`-`), skipping folder scanning.
+*   `--files-from PATH`: Process a specific list of file paths from a text file or standard input (`-`) instead of scanning folders.
 *   `--ignore-file PATH`: Add an ignore file containing glob patterns to skip. Supports comma-separated lists (for example, `.ignore1,.ignore2`). Default is `.sourcecombineignore`.
 *   `--exclude-file` (`-x`): Skip files matching a glob pattern (for example, `-x "*.json"` or `--exclude-file "*.tmp"`). You can repeat this flag.
 *   `--exclude-folder` (`-X`, `--exclude-dir`): Skip folders matching a glob pattern (for example, `-X tests` or `--exclude-folder "build*"`). You can repeat this flag.
@@ -241,12 +241,12 @@ python sourcecombine.py . --output combined.txt --json-summary -
 ```
 
 ### Reading File Paths from File or Stdin
-Combine files from an explicit list instead of scanning folders:
+Combine files from a specific list instead of scanning entire folders:
 ```bash
 # Read file paths from a text file
 python sourcecombine.py --files-from file_list.txt --output combined.txt
 
-# Pipe file paths from another command via standard input
+# Pipe file paths from another command through standard input
 git diff --name-only | python sourcecombine.py --files-from - --output diff_files.txt
 ```
 
