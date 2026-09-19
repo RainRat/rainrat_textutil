@@ -16,6 +16,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   **AI Integration:** Include system info and Git context automatically with the `--ai` preset.
 
 ## Common Flags
+*   `TARGET ...`: Folders or files to scan. Defaults to the current folder (`.`) if not specified. If the first target is a configuration file (YAML or JSON), the tool uses it as the configuration file.
 *   `--config` (`-k`): Load settings from a YAML or JSON configuration file. Pass `-` to read configuration from standard input (`stdin`). The tool automatically checks for `sourcecombine.yml`, `sourcecombine.yaml`, `sourcecombine.json`, `config.yml`, `config.yaml`, or `config.json` in the current folder.
 *   `--output` (`-o`): Write output to a specific file or folder instead of printing to the terminal. Supports template placeholders (for example, `{{PROJECT_NAME}}_{{DATE}}.txt`).
 *   `--clipboard` (`-c`): Copy the combined output to the system clipboard.
@@ -27,9 +28,9 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--max-depth DEPTH` (`-D DEPTH`): Limit folder scanning to a specific depth (for example, `1` for top-level files only).
 *   `--files-from PATH`: Process a specific list of file paths from a text file or standard input (`-`) instead of scanning folders.
 *   `--ignore-file PATH`: Add an ignore file containing glob patterns to skip. Supports comma-separated lists (for example, `.ignore1,.ignore2`). Default is `.sourcecombineignore`.
-*   `--exclude-file` (`-x`): Skip files matching a glob pattern (for example, `-x "*.json"` or `--exclude-file "*.tmp"`). You can repeat this flag.
+*   `--exclude-file` (`-x`, `--exclude`): Skip files matching a glob pattern (for example, `-x "*.json"` or `--exclude "*.tmp"`). You can repeat this flag.
 *   `--exclude-folder` (`-X`, `--exclude-dir`): Skip folders matching a glob pattern (for example, `-X tests` or `--exclude-folder "build*"`). You can repeat this flag.
-*   `--include-file` (`-i`): Include files matching a glob pattern regardless of other filter rules (for example, `-i "*.config"`). You can repeat this flag.
+*   `--include-file` (`-i`, `--include`): Include files matching a glob pattern regardless of other filter rules (for example, `-i "*.config"` or `--include "*.env"`). You can repeat this flag.
 *   `--extension` (`--ext`): Include only files with these extensions. You can repeat this flag or use a comma-separated list (for example, `--ext py,js` or `--ext py --ext js`).
 *   `--exclude-extension` (`--exclude-ext`): Skip files with these extensions. Supports comma-separated lists (for example, `--exclude-ext log,tmp`).
 *   `--language` (`--lang`): Include only files matching these language identifiers. You can repeat this flag or use a comma-separated list (for example, `--lang python,javascript` or `--lang python --lang javascript`). Use `--list-languages` to see available identifiers.
@@ -49,7 +50,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--max-total-lines N`: Stop processing once total combined output reaches `N` lines.
 *   `--sort SORT_BY` (`-s SORT_BY`): Sort processed files by specific criteria (`name`, `size`, `modified`, `tokens`, `lines`, `depth`, or `language`). Case-insensitive and supports aliases like `date`/`time` for `modified`, `token` for `tokens`, `line` for `lines`, and `lang` for `language`.
 *   `--reverse` (`-r`): Reverse the file sorting order.
-*   `--format FORMAT` (`-f FORMAT`): Set the output format (`text`, `markdown`, `json`, `jsonl`, `xml`, `manifest`, or `csv`). Case-insensitive and supports aliases like `txt` or `md`. You can also use shortcut flags like `--markdown`, `--json`, `--jsonl` (`-J`), `--xml`, or `--csv`.
+*   `--format FORMAT` (`-f FORMAT`): Set the output format (`text`, `markdown`, `json`, `jsonl`, `xml`, `manifest`, or `csv`). Case-insensitive and supports aliases like `txt` or `md`. You can also use shortcut flags like `--markdown` (`-m`), `--json` (`-j`), `--jsonl` (`-J`), `--xml` (`-w`), or `--csv`.
 *   `--toc` (`-T`): Add a Table of Contents with file sizes and token counts to the start of the output.
 *   `--include-tree` (`-p`): Add a visual folder tree with file details to the start of the output.
 *   `--overview` (`-O`): Add a project overview summary with statistics and language breakdown to the start of the output.
@@ -88,7 +89,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--project-description TEXT`: Override the project description.
 *   `--project-license NAME`: Override the project license.
 *   `--project-url URL`: Override the project URL.
-*   `--json`: Output results in machine-readable JSON format (supported by listing options, verification, extraction, backups, system info, project info, and `--list-files`).
+*   `--json` (`-j`): Output results in machine-readable JSON format (supported by listing options, verification, extraction, backups, system info, project info, and `--list-files`).
 *   `--dry-run` (`-d`): Show what would happen without making any changes. Supports combining, extracting (`--extract`), verifying (`--verify`), and backup operations.
 *   `--verbose` (`-v`): Display detailed log messages to help troubleshoot issues.
 *   `--quiet` (`-q`): Suppress non-essential status messages and summary output.
@@ -228,6 +229,11 @@ For more details, use `python sourcecombine.py --help` or check `config.template
 Combine all files in the current directory into `combined_files.txt`:
 ```bash
 python sourcecombine.py
+```
+
+Combine files from specific target folders or files:
+```bash
+python sourcecombine.py src/ tests/ --output combined.txt
 ```
 
 ### Save Execution Summary Statistics
