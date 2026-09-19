@@ -64,6 +64,42 @@ def test_summary_redesign_largest_files(monkeypatch, capsys):
     assert "a/very/..." in stderr or "a/very/lo" in stderr
     assert "file.py" in stderr
 
+
+def test_summary_largest_files_no_redundant_spacer(monkeypatch, capsys):
+    """Test that Largest Files table removes redundant 15-character spacer column for non-existent FILES (%)."""
+    stats = {
+        'total_files': 2,
+        'total_size_bytes': 20000,
+        'files_by_language': {'python': 2},
+        'total_tokens': 1000,
+        'top_files': [
+            (500, 10000, "src/my_module.py", None, 100, "python"),
+            (500, 10000, "src/another_module.py", None, 100, "python")
+        ]
+    }
+
+    args = MagicMock()
+    args.dry_run = False
+    args.estimate_tokens = False
+    args.list_files = False
+    args.tree = False
+    args.extract = False
+    args.format = 'text'
+
+    monkeypatch.setenv("NO_COLOR", "1")
+
+    with patch('shutil.get_terminal_size', return_value=MagicMock(columns=80)):
+        sourcecombine._print_execution_summary(stats, args, pairing_enabled=False)
+
+    captured = capsys.readouterr()
+    stderr = captured.err
+
+    # Ensure no large 15-space gap exists between distribution bar and language/path
+    for line in stderr.splitlines():
+        if "src/my_module.py" in line:
+            assert "               " not in line  # No 15 consecutive spaces
+            assert "[#####-----] python      src/my_module.py" in line or "python" in line
+
 def test_summary_printing(monkeypatch, capsys):
     # Mock stats
     stats = {

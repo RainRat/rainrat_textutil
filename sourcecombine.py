@@ -8932,8 +8932,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
             if primary_metric != 'size': overhead += 13
         # Distribution (13)
         if show_dist: overhead += 13
-        # Spacer for aggregate FILES (%) column (16)
-        overhead += 16
         # Status (7)
         if any_has_status: overhead += 7
         # Language (12)
@@ -8943,9 +8941,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
         # Build dynamic header
         header_parts = _build_summary_metric_headers(has_tokens, has_lines, primary_metric, show_secondary, show_dist)
-
-        # Empty space to match Files (%) column in other tables
-        header_parts.append(f"{' ': <15}")
 
         if any_has_status: header_parts.append(f"{'STATUS':<6}")
         if show_lang_col: header_parts.append(f"{'LANGUAGE':<11}")
@@ -8999,9 +8994,6 @@ def _print_execution_summary(stats, args, pairing_enabled, destination_desc=None
 
             if show_dist:
                 row_parts.append(f"{C_DIM}[{C_RESET}{bar}{C_DIM}]{C_RESET}")
-
-            # Empty space for Files (%) alignment
-            row_parts.append(" " * 15)
 
             if any_has_status:
                 if status:
