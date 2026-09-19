@@ -4959,6 +4959,14 @@ def main():
         help="Save the final configuration to a YAML/JSON file (defaults to 'sourcecombine.yml'). Use '-' to output to standard output (stdout).",
     )
     utility_group.add_argument(
+        "--export-ignore",
+        "--export-ig",
+        nargs="?",
+        const=".sourcecombineignore",
+        metavar="PATH",
+        help="Export all active ignore patterns (from ignore files and configuration exclusions) to an ignore file (defaults to '.sourcecombineignore'). Use '-' to output to standard output (stdout).",
+    )
+    utility_group.add_argument(
         "--system-info",
         "--sys-info",
         action="store_true",
@@ -5099,9 +5107,14 @@ def main():
     if val_cfg_raw is not None and type(val_cfg_raw).__name__ not in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
         validate_config_val = val_cfg_raw
 
+    export_ignore_val = getattr(args, 'export_ignore', None)
+    if export_ignore_val and type(export_ignore_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        export_ignore_val = None
+
     is_stdout_stream_cmd = (
         args.show_config or
         args.export_config == '-' or
+        export_ignore_val == '-' or
         args.init == '-' or
         getattr(args, 'init_ignore', None) == '-'
     )
@@ -5119,6 +5132,7 @@ def main():
         args.verify or
         getattr(args, 'extract', False) or
         getattr(args, 'explain', False) or
+        export_ignore_val is not None or
         _get_bool_arg(args, 'list_presets') or
         _get_bool_arg(args, 'list_ignores') or
         _get_bool_arg(args, 'list_replacements') or
@@ -5131,8 +5145,6 @@ def main():
     ):
         root_logger.setLevel(logging.ERROR)
 
-
-
     if args.files_from and args.init:
         logging.error("You cannot use --init and --files-from at the same time.")
         sys.exit(1)
@@ -5143,6 +5155,10 @@ def main():
 
     if args.files_from and init_ignore_val:
         logging.error("You cannot use --init-ignore and --files-from at the same time.")
+        sys.exit(1)
+
+    if args.files_from and export_ignore_val:
+        logging.error("You cannot use --export-ignore and --files-from at the same time.")
         sys.exit(1)
 
     if args.system_info:
@@ -6091,6 +6107,14 @@ def main():
         except (OSError, utils.InvalidConfigError) as exc:
             logging.error("Could not export configuration: %s", exc)
             sys.exit(1)
+        sys.exit(0)
+
+    if export_ignore_val:
+        export_ignore_patterns(
+            target_path_str=export_ignore_val,
+            config=config,
+            json_format=getattr(args, 'json', False)
+        )
         sys.exit(0)
 
     explain_val = getattr(args, 'explain', None)
@@ -8253,6 +8277,103 @@ def print_ignore_patterns(query=None, json_format=False, config=None):
     print(f"\n  {C_BOLD}{count_label}{C_RESET} active ignore patterns supported.")
 
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
+
+
+def export_ignore_patterns(target_path_str=".sourcecombineignore", config=None, json_format=False):
+    """Export active ignore patterns from ignore files and configuration exclusions to an ignore file or stdout."""
+    if config is None:
+        config = copy.deepcopy(utils.DEFAULT_CONFIG)
+        utils.validate_config(config)
+    else:
+        config = copy.deepcopy(config)
+
+    search_opts = config.get('search', {}) or {}
+    filter_opts = config.get('filters', {}) or {}
+    exclusions = filter_opts.get('exclusions', {}) or {}
+
+    ignore_files = list(search_opts.get('ignore_files') or [])
+    default_ignore = ".sourcecombineignore"
+    if default_ignore not in ignore_files and Path(default_ignore).is_file():
+        ignore_files.append(default_ignore)
+
+    categories = {}
+
+    for ignore_file in ignore_files:
+        p = Path(ignore_file)
+        if p.is_file():
+            patterns = utils.parse_ignore_file(p)
+            if patterns:
+                categories[f"Ignore File ({ignore_file})"] = patterns
+
+    fn_ex = exclusions.get('filenames') or []
+    if fn_ex:
+        categories["Excluded Filenames (Config)"] = list(fn_ex)
+
+    fold_ex = exclusions.get('folders') or []
+    if fold_ex:
+        folder_pats = [f if f.endswith('/') else f + '/' for f in fold_ex]
+        categories["Excluded Folders (Config)"] = folder_pats
+
+    all_patterns = []
+    seen = set()
+    for pats in categories.values():
+        for pat in pats:
+            if pat not in seen:
+                seen.add(pat)
+                all_patterns.append(pat)
+
+    if json_format:
+        output_data = {
+            "categories": categories,
+            "patterns": all_patterns,
+            "total": len(all_patterns)
+        }
+        json_output = json.dumps(output_data, indent=2)
+        if target_path_str == '-':
+            sys.stdout.write(json_output + "\n")
+            return
+
+        target_path = Path(target_path_str)
+        if target_path.is_dir() or str(target_path_str).endswith(('/', '\\')):
+            target_path = target_path / ".sourcecombineignore"
+        try:
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+            target_path.write_text(json_output + "\n", encoding="utf-8")
+            logging.info("Exported active ignore patterns in JSON format to %s", target_path.resolve())
+        except OSError as exc:
+            logging.error("Could not write ignore file: %s", exc)
+            sys.exit(1)
+        return
+
+    lines = [
+        "# SourceCombine Ignore File (.sourcecombineignore)",
+        "# Exported active ignore patterns from project configuration and ignore files.",
+        ""
+    ]
+
+    for category, pats in categories.items():
+        lines.append(f"# {category}")
+        for pat in pats:
+            lines.append(pat)
+        lines.append("")
+
+    content = "\n".join(lines).rstrip() + "\n"
+
+    if target_path_str == '-':
+        sys.stdout.write(content)
+        return
+
+    target_path = Path(target_path_str)
+    if target_path.is_dir() or str(target_path_str).endswith(('/', '\\')):
+        target_path = target_path / ".sourcecombineignore"
+
+    try:
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        target_path.write_text(content, encoding="utf-8")
+        logging.info("Exported active ignore patterns to %s", target_path.resolve())
+    except OSError as exc:
+        logging.error("Could not write ignore file: %s", exc)
+        sys.exit(1)
 
 
 def print_replacements(query=None, json_format=False, config=None):
