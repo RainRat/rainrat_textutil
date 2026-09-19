@@ -172,3 +172,83 @@ def test_cli_list_replacements_config_target(tmp_path, monkeypatch, capsys):
     assert exc_info.value.code == 0
     captured = capsys.readouterr().out
     assert "Pattern: 'abc' -> Replacement: 'xyz'" in captured
+
+
+def test_cli_list_replacements_default_config_auto_detect(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    cfg_file = tmp_path / "sourcecombine.yml"
+    cfg_file.write_text("processing:\n  regex_replacements:\n    - pattern: 'autodetected'\n      replacement: 'val'\n")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            "--list-replacements",
+        ],
+    )
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 0
+    captured = capsys.readouterr().out
+    assert "Pattern: 'autodetected' -> Replacement: 'val'" in captured
+
+
+def test_cli_list_replacements_invalid_config(tmp_path, monkeypatch, capsys, caplog):
+    cfg_file = tmp_path / "invalid.yml"
+    cfg_file.write_text("invalid_yaml: [")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            "-k",
+            str(cfg_file),
+            "--list-replacements",
+        ],
+    )
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 1
+    assert "Error parsing YAML file" in caplog.text
+
+
+def test_cli_list_replacements_none_rules(tmp_path, monkeypatch, capsys):
+    cfg_file = tmp_path / "none_rules.yml"
+    cfg_file.write_text("processing:\n  regex_replacements: null\n  line_regex_replacements: null\n")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            "-k",
+            str(cfg_file),
+            "--replace",
+            "p1",
+            "r1",
+            "--replace-line",
+            "p2",
+            "r2",
+            "--list-replacements",
+        ],
+    )
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 0
+    captured = capsys.readouterr().out
+    assert "Pattern: 'p1' -> Replacement: 'r1'" in captured
+    assert "Pattern: 'p2' -> Replacement: 'r2'" in captured
+
+
+def test_cli_list_replacements_target_dir_not_config(tmp_path, monkeypatch, capsys):
+    target_dir = tmp_path / "subfolder.yml"
+    target_dir.mkdir()
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            str(target_dir),
+            "--list-replacements",
+        ],
+    )
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 0
+    captured = capsys.readouterr().out
+    assert "ACTIVE SEARCH-AND-REPLACE RULES" in captured
