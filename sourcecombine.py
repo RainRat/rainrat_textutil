@@ -160,9 +160,7 @@ def _convert_to_json_friendly(obj):
         return {k: _convert_to_json_friendly(v) for k, v in obj.items()}
     if isinstance(obj, (list, tuple)):
         return [_convert_to_json_friendly(i) for i in obj]
-    if isinstance(obj, Path):
-        return str(obj)
-    return obj
+    return str(obj) if isinstance(obj, Path) else obj
 
 
 def _write_json_summary(stats, file_path, duration=None, source_desc=None, destination_desc=None):
