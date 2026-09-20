@@ -172,3 +172,63 @@ def test_cli_list_replacements_config_target(tmp_path, monkeypatch, capsys):
     assert exc_info.value.code == 0
     captured = capsys.readouterr().out
     assert "Pattern: 'abc' -> Replacement: 'xyz'" in captured
+
+
+def test_cli_list_replacements_default_config(tmp_path, monkeypatch, capsys):
+    default_cfg = tmp_path / "sourcecombine.yml"
+    default_cfg.write_text("processing:\n  regex_replacements:\n    - pattern: 'def_p'\n      replacement: 'def_r'\n")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            "--list-replacements",
+        ],
+    )
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 0
+    captured = capsys.readouterr().out
+    assert "Pattern: 'def_p' -> Replacement: 'def_r'" in captured
+
+
+def test_cli_list_replacements_invalid_config(tmp_path, monkeypatch, capsys, caplog):
+    bad_cfg = tmp_path / "custom.yml"
+    bad_cfg.write_text("invalid_yaml: [unclosed")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            str(bad_cfg),
+            "--list-replacements",
+        ],
+    )
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 1
+    assert "Error parsing YAML file" in caplog.text or "Error loading config" in capsys.readouterr().err
+
+
+def test_cli_list_replacements_none_rules_init(tmp_path, monkeypatch, capsys):
+    cfg_file = tmp_path / "null_rules.yml"
+    cfg_file.write_text("processing:\n  regex_replacements: null\n  line_regex_replacements: null\n")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            str(cfg_file),
+            "--replace",
+            "p1",
+            "r1",
+            "--replace-line",
+            "p2",
+            "r2",
+            "--list-replacements",
+        ],
+    )
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 0
+    captured = capsys.readouterr().out
+    assert "Pattern: 'p1' -> Replacement: 'r1'" in captured
+    assert "Pattern: 'p2' -> Replacement: 'r2'" in captured
