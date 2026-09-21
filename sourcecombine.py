@@ -4959,6 +4959,14 @@ def main():
         help="Save the final configuration to a YAML/JSON file (defaults to 'sourcecombine.yml'). Use '-' to output to standard output (stdout).",
     )
     utility_group.add_argument(
+        "--export-ignore",
+        "--export-ig",
+        nargs="?",
+        const=".sourcecombineignore",
+        metavar="PATH",
+        help="Export all active ignore patterns (from loaded ignore files and configuration exclusions) to a '.sourcecombineignore' file (or custom PATH) and exit. Use '-' for standard output (stdout), or --json for machine-readable output.",
+    )
+    utility_group.add_argument(
         "--system-info",
         "--sys-info",
         action="store_true",
@@ -5099,9 +5107,14 @@ def main():
     if val_cfg_raw is not None and type(val_cfg_raw).__name__ not in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
         validate_config_val = val_cfg_raw
 
+    export_ig_check = getattr(args, 'export_ignore', None)
+    if export_ig_check and type(export_ig_check).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        export_ig_check = None
+
     is_stdout_stream_cmd = (
         args.show_config or
         args.export_config == '-' or
+        export_ig_check == '-' or
         args.init == '-' or
         getattr(args, 'init_ignore', None) == '-'
     )
@@ -5127,7 +5140,8 @@ def main():
         _get_bool_arg(args, 'backup') or
         _get_bool_arg(args, 'restore') or
         _get_bool_arg(args, 'delete_backups') or
-        _get_bool_arg(args, 'clean')
+        _get_bool_arg(args, 'clean') or
+        export_ig_check is not None
     ):
         root_logger.setLevel(logging.ERROR)
 
@@ -6090,6 +6104,18 @@ def main():
                 logging.info("Configuration exported to %s", Path(args.export_config).resolve())
         except (OSError, utils.InvalidConfigError) as exc:
             logging.error("Could not export configuration: %s", exc)
+            sys.exit(1)
+        sys.exit(0)
+
+    export_ig_val = getattr(args, 'export_ignore', None)
+    if export_ig_val and type(export_ig_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        export_ig_val = None
+
+    if export_ig_val is not None:
+        try:
+            export_ignore_patterns(export_ig_val, config=config, json_format=getattr(args, 'json', False))
+        except (OSError, utils.InvalidConfigError) as exc:
+            logging.error("Could not export ignore patterns: %s", exc)
             sys.exit(1)
         sys.exit(0)
 
@@ -8253,6 +8279,80 @@ def print_ignore_patterns(query=None, json_format=False, config=None):
     print(f"\n  {C_BOLD}{count_label}{C_RESET} active ignore patterns supported.")
 
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
+
+
+def export_ignore_patterns(output_path=None, config=None, json_format=False):
+    """Export all active ignore patterns to a file, standard output (-), or JSON."""
+    if not output_path:
+        output_path = ".sourcecombineignore"
+
+    if config is None:
+        config = copy.deepcopy(utils.DEFAULT_CONFIG)
+        utils.validate_config(config)
+    else:
+        config = copy.deepcopy(config)
+
+    search_opts = config.get('search', {}) or {}
+    filter_opts = config.get('filters', {}) or {}
+    exclusions = filter_opts.get('exclusions', {}) or {}
+
+    ignore_files = list(search_opts.get('ignore_files') or [])
+    default_ignore = ".sourcecombineignore"
+    if default_ignore not in ignore_files and Path(default_ignore).is_file():
+        ignore_files.append(default_ignore)
+
+    categories = {}
+
+    for ignore_file in ignore_files:
+        p = Path(ignore_file)
+        if p.is_file():
+            patterns = utils.parse_ignore_file(p)
+            if patterns:
+                categories[f"Ignore File ({ignore_file})"] = patterns
+
+    fn_ex = exclusions.get('filenames') or []
+    if fn_ex:
+        categories["Excluded Filenames (Config)"] = list(fn_ex)
+
+    fold_ex = exclusions.get('folders') or []
+    if fold_ex:
+        categories["Excluded Folders (Config)"] = list(fold_ex)
+
+    total_patterns = sum(len(pats) for pats in categories.values())
+
+    if json_format:
+        output = {
+            "output_path": output_path,
+            "ignore_patterns": categories,
+            "total": total_patterns
+        }
+        print(json.dumps(output, indent=2))
+        return total_patterns
+
+    lines = ["# Exported SourceCombine Ignore Patterns"]
+    lines.append(f"# Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+
+    for category, patterns in categories.items():
+        lines.append(f"# --- {category} ---")
+        for pat in patterns:
+            lines.append(pat)
+        lines.append("")
+
+    content = "\n".join(lines).rstrip() + "\n"
+
+    try:
+        if output_path == '-':
+            sys.stdout.write(content)
+        else:
+            out_file = Path(output_path)
+            out_file.parent.mkdir(parents=True, exist_ok=True)
+            out_file.write_text(content, encoding='utf-8')
+            logging.info("Active ignore patterns exported to '%s'.", output_path)
+    except OSError as e:
+        logging.error("Failed to export ignore patterns to '%s': %s", output_path, e)
+        raise utils.InvalidConfigError(f"Failed to export ignore patterns to '{output_path}': {e}") from e
+
+    return total_patterns
 
 
 def print_replacements(query=None, json_format=False, config=None):
