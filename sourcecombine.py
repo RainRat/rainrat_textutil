@@ -41,6 +41,7 @@ from utils import (
 
 # Export for backward compatibility and to handle module reloads correctly
 InvalidConfigError = utils.InvalidConfigError
+ConfigNotFoundError = utils.ConfigNotFoundError
 DEFAULT_CONFIG = utils.DEFAULT_CONFIG
 
 __version__ = "0.5.0"
@@ -5181,7 +5182,7 @@ def main():
             else:
                 config = copy.deepcopy(utils.DEFAULT_CONFIG)
                 utils.validate_config(config)
-        except (ConfigNotFoundError, utils.InvalidConfigError) as e:
+        except (utils.ConfigNotFoundError, utils.InvalidConfigError) as e:
             _handle_invalid_config_error(e, args.verbose)
 
         if remaining_targets:
@@ -5253,7 +5254,7 @@ def main():
             else:
                 config = copy.deepcopy(utils.DEFAULT_CONFIG)
                 utils.validate_config(config)
-        except (ConfigNotFoundError, utils.InvalidConfigError) as e:
+        except (utils.ConfigNotFoundError, utils.InvalidConfigError) as e:
             _handle_invalid_config_error(e, args.verbose)
 
         if getattr(args, 'replace', None):
@@ -5297,7 +5298,7 @@ def main():
             else:
                 config = copy.deepcopy(utils.DEFAULT_CONFIG)
                 utils.validate_config(config)
-        except (ConfigNotFoundError, utils.InvalidConfigError) as e:
+        except (utils.ConfigNotFoundError, utils.InvalidConfigError) as e:
             _handle_invalid_config_error(e, args.verbose)
 
         if getattr(args, 'ignore_file', None):

@@ -172,3 +172,64 @@ def test_cli_list_replacements_config_target(tmp_path, monkeypatch, capsys):
     assert exc_info.value.code == 0
     captured = capsys.readouterr().out
     assert "Pattern: 'abc' -> Replacement: 'xyz'" in captured
+
+
+def test_cli_list_replacements_default_config_auto_detection(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    cfg_file = tmp_path / "sourcecombine.yml"
+    cfg_file.write_text("processing:\n  regex_replacements:\n    - pattern: 'auto_pat'\n      replacement: 'auto_rep'\n")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            "--list-replacements",
+        ],
+    )
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 0
+    captured = capsys.readouterr().out
+    assert "Pattern: 'auto_pat' -> Replacement: 'auto_rep'" in captured
+
+
+def test_cli_list_replacements_invalid_config_error(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            "--config",
+            "nonexistent_config.yml",
+            "--list-replacements",
+        ],
+    )
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 1
+
+
+def test_cli_list_replacements_none_regex_rules(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    cfg_file = tmp_path / "custom.yml"
+    cfg_file.write_text("processing:\n  regex_replacements: null\n  line_regex_replacements: null\n")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            "--config",
+            str(cfg_file),
+            "--replace",
+            "pat1",
+            "rep1",
+            "--replace-line",
+            "pat2",
+            "rep2",
+            "--list-replacements",
+        ],
+    )
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 0
+    captured = capsys.readouterr().out
+    assert "Pattern: 'pat1' -> Replacement: 'rep1'" in captured
+    assert "Pattern: 'pat2' -> Replacement: 'rep2'" in captured
