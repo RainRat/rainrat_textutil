@@ -4897,6 +4897,7 @@ def main():
     )
     utility_group.add_argument(
         "--backup",
+        "--bak",
         action="store_true",
         help="Create '.bak' backup files of all files that match the active filters and configuration. Supports --dry-run and --json.",
     )
