@@ -389,6 +389,43 @@ Preview matching files or inspect your project structure without writing output 
    python sourcecombine.py . --tree --format markdown
    ```
 
+### Inspecting Active Settings and System Details
+Check active ignore rules, search-and-replace rules, template placeholders, supported languages, or system details:
+
+1. **Inspect active ignore rules:**
+   Show all active ignore patterns loaded from ignore files and configuration exclusions (add `--json` for machine-readable output):
+   ```bash
+   python sourcecombine.py --list-ignores
+   # Filter patterns by keyword
+   python sourcecombine.py --list-ignores py
+   ```
+
+2. **Inspect active search-and-replace rules:**
+   Display active regex replacement rules loaded from configuration or CLI arguments:
+   ```bash
+   python sourcecombine.py --list-replacements
+   ```
+
+3. **Inspect template placeholders:**
+   List supported placeholders for headers, footers, and templates (optionally filtered by keyword):
+   ```bash
+   python sourcecombine.py --list-placeholders git
+   ```
+
+4. **Inspect supported languages and file extensions:**
+   Filter supported language tags or extension mappings by keyword:
+   ```bash
+   python sourcecombine.py --list-languages python
+   python sourcecombine.py --list-extensions py
+   ```
+
+5. **Display system environment and project details:**
+   Check Python version, OS platform, optional dependencies, and detected project metadata:
+   ```bash
+   python sourcecombine.py --system-info
+   python sourcecombine.py --project-info
+   ```
+
 ### Advanced Filtering and AI Optimization
 
 #### Explain Exclusion/Inclusion
