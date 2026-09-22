@@ -109,6 +109,21 @@ def test_restore_cli_integration(tmp_path):
     assert file1.read_text() == "Original 1"
     assert not bak1.exists()
 
+def test_restore_cli_shortcut_integration(tmp_path):
+    """Test --rst CLI shortcut flag integration."""
+    file1 = tmp_path / "file1.txt"
+    bak1 = tmp_path / "file1.txt.bak"
+    file1.write_text("Modified 1")
+    bak1.write_text("Original 1")
+
+    with patch("sys.argv", ["sourcecombine.py", str(tmp_path), "--rst"]):
+        with pytest.raises(SystemExit) as excinfo:
+            main()
+        assert excinfo.value.code == 0
+
+    assert file1.read_text() == "Original 1"
+    assert not bak1.exists()
+
 def test_restore_backups_error_handling(tmp_path):
     """Test restoration error handling (for example, permission error)."""
     file1 = tmp_path / "file1.txt"

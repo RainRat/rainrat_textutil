@@ -4892,6 +4892,7 @@ def main():
     )
     utility_group.add_argument(
         "--restore",
+        "--rst",
         action="store_true",
         help="Undo 'apply-in-place' changes by restoring original files from their .bak copies. This command scans target folders recursively for backup files. Supports --dry-run and --json.",
     )
