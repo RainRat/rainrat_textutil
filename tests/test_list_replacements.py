@@ -172,3 +172,69 @@ def test_cli_list_replacements_config_target(tmp_path, monkeypatch, capsys):
     assert exc_info.value.code == 0
     captured = capsys.readouterr().out
     assert "Pattern: 'abc' -> Replacement: 'xyz'" in captured
+
+
+def test_cli_list_replacements_default_config_auto_detect(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    default_cfg = tmp_path / "sourcecombine.yml"
+    default_cfg.write_text("processing:\n  regex_replacements:\n    - pattern: 'auto_pat'\n      replacement: 'auto_rep'\n")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            "--list-replacements",
+        ],
+    )
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 0
+    captured = capsys.readouterr().out
+    assert "Pattern: 'auto_pat' -> Replacement: 'auto_rep'" in captured
+
+
+def test_cli_list_replacements_invalid_config_error(tmp_path, monkeypatch):
+    invalid_cfg = tmp_path / "invalid.yml"
+    invalid_cfg.write_text("processing: invalid_yaml_structure")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            "--config",
+            str(invalid_cfg),
+            "--list-replacements",
+        ],
+    )
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 1
+
+
+def test_cli_list_replacements_none_rule_collections(monkeypatch, capsys):
+    monkeypatch.setattr(
+        "utils.DEFAULT_CONFIG",
+        {
+            "processing": {
+                "regex_replacements": None,
+                "line_regex_replacements": None,
+            }
+        },
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            "--replace",
+            "pat1",
+            "rep1",
+            "--replace-line",
+            "pat2",
+            "rep2",
+            "--list-replacements",
+        ],
+    )
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 0
+    captured = capsys.readouterr().out
+    assert "Pattern: 'pat1' -> Replacement: 'rep1'" in captured
+    assert "Pattern: 'pat2' -> Replacement: 'rep2'" in captured
