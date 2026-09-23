@@ -8535,16 +8535,17 @@ def print_project_info(stats, json_format=False):
     label_width = 20
 
     for category, fields in categories.items():
-        print(f"\n  {C_BOLD}{category}{C_RESET}")
+        print(f"\n  {C_BOLD}{category}:{C_RESET}")
         for label, value in fields:
             display_value = str(value) if (value is not None and str(value).strip() != "") else "N/A"
+            label_str = f"{label}:"
             if "\n" in display_value:
                 lines = display_value.splitlines()
-                print(f"    {C_BOLD}{label:<{label_width}}{C_RESET} {C_DIM}{lines[0]}{C_RESET}")
+                print(f"    {C_DIM}{label_str:<{label_width}}{C_RESET}{lines[0]}")
                 for line in lines[1:]:
-                    print(f"    {' ':<{label_width}} {C_DIM}{line}{C_RESET}")
+                    print(f"    {' ':<{label_width}}{line}")
             else:
-                print(f"    {C_BOLD}{label:<{label_width}}{C_RESET} {C_DIM}{display_value}{C_RESET}")
+                print(f"    {C_DIM}{label_str:<{label_width}}{C_RESET}{display_value}")
 
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
