@@ -160,7 +160,7 @@ def _convert_to_json_friendly(obj):
         return {k: _convert_to_json_friendly(v) for k, v in obj.items()}
     if isinstance(obj, (list, tuple)):
         return [_convert_to_json_friendly(i) for i in obj]
-    if isinstance(obj, Path):
+    if isinstance(obj, PurePath):
         return str(obj)
     return obj
 
