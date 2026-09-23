@@ -23,7 +23,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--git-diff`: Include only files that have changed in Git (staged, unstaged, or untracked).
 *   `--staged`: Include only staged changes in Git (used with `--git-diff`).
 *   `--unstaged`: Include only unstaged and untracked changes in Git (used with `--git-diff`).
-*   `--no-recursive`: Skip searching subfolders and scan only top-level files in target folders.
+*   `--no-recursive` (`--no-rec`, `--nr`, `--flat`): Skip searching subfolders and scan only top-level files in target folders.
 *   `--max-depth DEPTH` (`-D DEPTH`): Limit folder scanning to a specific depth (for example, `1` for top-level files only).
 *   `--files-from PATH`: Process a specific list of file paths from a text file or standard input (`-`) instead of scanning folders.
 *   `--ignore-file PATH`: Add an ignore file containing glob patterns to skip. Supports comma-separated lists (for example, `.ignore1,.ignore2`). Default is `.sourcecombineignore`.

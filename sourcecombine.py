@@ -4243,6 +4243,9 @@ def main():
     )
     core_group.add_argument(
         "--no-recursive",
+        "--no-rec",
+        "--nr",
+        "--flat",
         action="store_true",
         help="Skip searching subfolders recursively and scan only top-level files in target folders.",
     )
