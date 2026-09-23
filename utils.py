@@ -770,9 +770,9 @@ def _normalize_extension_list(ext_list, context_prefix):
     """
     if ext_list is None:
         return []
-    _normalize_string_list(ext_list, context_prefix)
+    raw_strings = _normalize_string_list(ext_list, context_prefix)
 
-    normalized = [ext if ext.startswith('.') else '.' + ext for ext in ext_list]
+    normalized = [ext if ext.startswith('.') else '.' + ext for ext in raw_strings]
     ext_list[:] = normalized
     return normalized
 
@@ -994,20 +994,16 @@ def _validate_pairing_section(config):
         header_ext_list = pairing_conf.get('header_extensions')
         _normalize_extension_list(header_ext_list, 'pairing.header_extensions')
 
-        source_exts = tuple(e.lower() for e in (source_ext_list or []))
-        header_exts = tuple(e.lower() for e in (header_ext_list or []))
+        source_exts = tuple(source_ext_list or ())
+        header_exts = tuple(header_ext_list or ())
         if pairing_conf.get('include_mismatched'):
             effective_allowed_extensions = ()
         else:
             effective_allowed_extensions = source_exts + header_exts
         effective_exclude_extensions = ()
     else:
-        effective_allowed_extensions = tuple(
-            e.lower() for e in (search_conf.get('allowed_extensions') or [])
-        )
-        effective_exclude_extensions = tuple(
-            e.lower() for e in (search_conf.get('exclude_extensions') or [])
-        )
+        effective_allowed_extensions = tuple(search_conf.get('allowed_extensions') or ())
+        effective_exclude_extensions = tuple(search_conf.get('exclude_extensions') or ())
 
     search_conf['effective_allowed_extensions'] = effective_allowed_extensions
     search_conf['effective_exclude_extensions'] = effective_exclude_extensions
