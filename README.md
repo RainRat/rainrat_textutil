@@ -557,6 +557,27 @@ If you do not have `PyYAML` installed or prefer JSON, you can use a JSON configu
 }
 ```
 
+### Validating and Exporting Configuration
+You can check, inspect, or export your configuration settings without running file processing operations:
+
+1. **Validate a Configuration File:**
+   Check a configuration file for syntax or schema errors:
+   ```bash
+   python sourcecombine.py --validate-config sourcecombine.yml
+   ```
+
+2. **Inspect Final Merged Settings:**
+   Display the active configuration after combining default values, configuration files, and command-line flags:
+   ```bash
+   python sourcecombine.py --show-config
+   ```
+
+3. **Export Combined Configuration:**
+   Save the final combined settings to a new configuration file or print them to the terminal (`-`):
+   ```bash
+   python sourcecombine.py --export-config exported_config.yml
+   ```
+
 ## Template Customization
 You can customize the output by using templates in the configuration file or command-line flags (`--header`, `--footer`, `--global-header`, `--global-footer`, `--pair-template`, `--max-size-placeholder`). Templates support placeholders that are replaced with actual data when the tool runs. Both file-level and global templates support all project-level and Git placeholders.
 
