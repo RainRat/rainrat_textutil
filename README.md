@@ -110,7 +110,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--repair` (`-P`): Automatically fix mismatched or missing files when verifying (requires source content).
 *   `--backup` (`--bak`): Create `.bak` backup files for matching files without modifying original files. Supports `--dry-run` and `--json`.
 *   `--keep-line-numbers`: Keep existing line numbers when rebuilding files with `--extract`. By default, the tool removes line numbers automatically.
-*   `--restore`: Undo changes made by `--apply-in-place` using `.bak` backup files. Use `--json` for machine-readable output.
+*   `--restore` (`--rst`): Undo changes made by `--apply-in-place` using `.bak` backup files. Use `--json` for machine-readable output.
 *   `--delete-backups`: Remove all `.bak` files from the folders. Use `--json` for machine-readable output.
 *   `--list-backups` (`--list-bak`): List all `.bak` backup files in target folders along with their statuses relative to original files. Use `--json` for machine-readable output.
 *   `--diff-backups` (`--diff-bak`): Show a unified diff between current files on disk and their `.bak` backup files. Use `--json` for machine-readable output.
@@ -370,6 +370,8 @@ You can create, inspect, compare, restore, or clean up these backups:
    Undo your changes and bring back the original files from the backups (add `--json` for machine-readable summary output):
    ```bash
    python sourcecombine.py --restore
+   # or using the shortcut flag:
+   python sourcecombine.py --rst
    ```
 
 5. **Delete backup files (Clean up):**
