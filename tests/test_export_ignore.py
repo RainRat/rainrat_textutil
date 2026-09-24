@@ -118,6 +118,59 @@ def test_export_ignore_patterns_write_error(tmp_path, monkeypatch):
     assert exc_info.value.code == 1
 
 
+def test_export_ignore_patterns_config_none(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    target = tmp_path / "out_default.ignore"
+    sourcecombine.export_ignore_patterns(target, config=None)
+    assert target.is_file()
+    assert "# SourceCombine Exported Ignore Patterns" in target.read_text(encoding="utf-8")
+
+
+def test_export_ignore_patterns_auto_detect_default_ignore(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    default_ig = tmp_path / ".sourcecombineignore"
+    default_ig.write_text("*.default_ignore_pattern\n", encoding="utf-8")
+
+    target = tmp_path / "out_autodetect.ignore"
+    config = copy_config()
+    config['search']['ignore_files'] = []
+
+    sourcecombine.export_ignore_patterns(target, config=config)
+    assert target.is_file()
+    content = target.read_text(encoding="utf-8")
+    assert "*.default_ignore_pattern" in content
+
+
+def test_export_ignore_patterns_loaded_ignore_files(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    custom_ig = tmp_path / "custom.ignore"
+    custom_ig.write_text("*.custom_pattern\n", encoding="utf-8")
+
+    target = tmp_path / "out_loaded.ignore"
+    config = copy_config()
+    config['search']['ignore_files'] = [str(custom_ig)]
+
+    sourcecombine.export_ignore_patterns(target, config=config)
+    assert target.is_file()
+    content = target.read_text(encoding="utf-8")
+    assert "*.custom_pattern" in content
+
+
+def test_export_ignore_patterns_json_write_error(tmp_path, monkeypatch):
+    invalid_target = tmp_path / "nonexistent_dir" / "out.json"
+
+    def mock_mkdir(*args, **kwargs):
+        raise OSError("Permission denied")
+
+    monkeypatch.setattr(Path, "mkdir", mock_mkdir)
+
+    config = copy_config()
+
+    with pytest.raises(SystemExit) as exc_info:
+        sourcecombine.export_ignore_patterns(invalid_target, config=config, json_format=True)
+    assert exc_info.value.code == 1
+
+
 def test_cli_export_ignore_default(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(sys, "argv", ["sourcecombine", "--export-ignore"])
