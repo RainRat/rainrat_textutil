@@ -3889,6 +3889,8 @@ class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
     def add_usage(self, usage, actions, groups, prefix=None):
         if usage is None and actions:
             usage = f"%(prog)s [OPTIONS] [TARGET ...]"
+        if prefix is None:
+            prefix = f"{C_BOLD}{C_YELLOW}usage:{C_RESET} "
         super().add_usage(usage, actions, groups, prefix)
 
     def start_section(self, heading):
@@ -4149,15 +4151,16 @@ class ColoredArgumentParser(argparse.ArgumentParser):
         # Check for invalid choice errors
         elif "invalid choice:" in message:
             for action in self._actions:
-                if any(opt in message for opt in action.option_strings) and action.choices:
-                    m = re.search(r"invalid choice:\s*'([^']+)'", message)
+                if (not action.option_strings or any(opt in message for opt in action.option_strings)) and action.choices:
+                    m = re.search(r"invalid choice:\s*'?([^'\s,]+)'?", message)
                     if m:
                         invalid_val = m.group(1)
                         choices_list = [str(c) for c in action.choices]
                         matches = difflib.get_close_matches(invalid_val, choices_list, n=3, cutoff=0.5)
                         if matches:
                             colored_matches = ", ".join(f"{C_BOLD:only_stderr}{C_GREEN:only_stderr}{m}{C_RESET:only_stderr}" for m in matches)
-                            message += f"\n  Did you mean: {colored_matches}?"
+                            suggestion = f"  {C_BOLD:only_stderr}{C_RED:only_stderr}{invalid_val}{C_RESET:only_stderr} -> Did you mean: {colored_matches}?"
+                            message += f"\n\n{C_BOLD:only_stderr}{C_CYAN:only_stderr}Suggestions:{C_RESET:only_stderr}\n{suggestion}"
                     break
 
         # Display usage to stderr
