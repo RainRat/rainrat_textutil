@@ -129,6 +129,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--show-config` (`--show-cfg`): Display the final configuration being used and exit. Use `--json` for machine-readable output.
 *   `--export-config` (`--export-cfg`): Save the final combined configuration to a YAML file and exit. Use `-` to output to standard output (`stdout`).
 *   `--export-ignore` (`--export-ig`): Export all active ignore patterns (from ignore files and configuration exclusions) to an ignore file (defaults to `.sourcecombineignore`). Use `-` for standard output (`stdout`) and `--json` for machine-readable output.
+*   `--export-replacements` (`--export-rep`): Export all active search-and-replace rules (from configuration and CLI arguments) to a JSON file (defaults to `replacements.json`). Use `-` for standard output (`stdout`).
 *   `--system-info`, `--sys-info`: Show environment details (Python version, OS, and other system details). Use `--json` for machine-readable output.
 *   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without writing them to disk.
 *   `--analyze` (`-A`): Run project analysis without generating output files. Shortcut for `--dry-run --estimate-tokens --overview --include-tree --tree`.
@@ -618,6 +619,12 @@ You can check, inspect, or export your configuration settings without running fi
    Save the final combined settings to a new configuration file or print them to the terminal (`-`):
    ```bash
    python sourcecombine.py --export-config exported_config.yml
+   ```
+
+4. **Export Search-and-Replace Rules:**
+   Export active replacement rules from configuration and command-line flags to a JSON file or standard output (`-`):
+   ```bash
+   python sourcecombine.py --replace foo bar --export-replacements rules.json
    ```
 
 ## Template Customization
