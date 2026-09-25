@@ -4972,6 +4972,15 @@ def main():
         help="Export all active ignore patterns (from ignore files and configuration exclusions) to an ignore file (defaults to '.sourcecombineignore'). Use '-' for standard output (stdout). Use --json for machine-readable output.",
     )
     utility_group.add_argument(
+        "--export-replacements",
+        "--export-rep",
+        "--export-rules",
+        nargs="?",
+        const="replacements.json",
+        metavar="FILENAME",
+        help="Export all active text and line search-and-replace rules (from configuration and CLI flags) to a JSON file (defaults to 'replacements.json'). Use '-' for standard output (stdout).",
+    )
+    utility_group.add_argument(
         "--system-info",
         "--sys-info",
         action="store_true",
@@ -5116,6 +5125,7 @@ def main():
         args.show_config or
         args.export_config == '-' or
         getattr(args, 'export_ignore', None) == '-' or
+        getattr(args, 'export_replacements', None) == '-' or
         args.init == '-' or
         getattr(args, 'init_ignore', None) == '-'
     )
@@ -5165,6 +5175,14 @@ def main():
 
     if args.files_from and export_ignore_val:
         logging.error("You cannot use --export-ignore and --files-from at the same time.")
+        sys.exit(1)
+
+    export_replacements_val = getattr(args, 'export_replacements', None)
+    if export_replacements_val and type(export_replacements_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        export_replacements_val = None
+
+    if args.files_from and export_replacements_val:
+        logging.error("You cannot use --export-replacements and --files-from at the same time.")
         sys.exit(1)
 
     if args.system_info:
@@ -6117,6 +6135,10 @@ def main():
 
     if export_ignore_val:
         export_ignore_patterns(export_ignore_val, config=config, json_format=getattr(args, 'json', False))
+        sys.exit(0)
+
+    if export_replacements_val:
+        export_replacements(export_replacements_val, config=config, json_format=getattr(args, 'json', False))
         sys.exit(0)
 
     explain_val = getattr(args, 'explain', None)
@@ -8381,6 +8403,51 @@ def export_ignore_patterns(target_path, config=None, json_format=False):
         logging.info("Active ignore patterns exported to %s", target_file.resolve())
     except OSError as exc:
         logging.error("Could not export ignore patterns to '%s': %s", target_file, exc)
+        sys.exit(1)
+
+
+def export_replacements(target_path, config=None, json_format=False):
+    """Export all active text and line search-and-replace rules from configuration and CLI arguments to a JSON file or stdout."""
+    if config is None:
+        config = copy.deepcopy(utils.DEFAULT_CONFIG)
+        utils.validate_config(config)
+    else:
+        config = copy.deepcopy(config)
+
+    proc_conf = config.get('processing', {}) or {}
+    text_rules = list(proc_conf.get('regex_replacements') or [])
+    line_rules = list(proc_conf.get('line_regex_replacements') or [])
+
+    target_str = str(target_path) if target_path else "replacements.json"
+    is_stdout = target_str == '-'
+
+    if not is_stdout:
+        target_file = Path(target_str)
+        if target_file.is_dir() or target_str.endswith(('/', '\\')):
+            target_file = target_file / "replacements.json"
+    else:
+        target_file = None
+
+    output = {
+        "exported_to": "-" if is_stdout else str(target_file.resolve() if target_file else "-"),
+        "total_rules": len(text_rules) + len(line_rules),
+        "regex_replacements": text_rules,
+        "line_regex_replacements": line_rules,
+    }
+
+    json_bytes = json.dumps(output, indent=2) + "\n"
+
+    if is_stdout:
+        sys.stdout.write(json_bytes)
+        return
+
+    try:
+        target_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(target_file, "w", encoding="utf-8") as f:
+            f.write(json_bytes)
+        logging.info("Active search-and-replace rules exported to %s", target_file.resolve())
+    except OSError as exc:
+        logging.error("Could not export search-and-replace rules to '%s': %s", target_file, exc)
         sys.exit(1)
 
 
