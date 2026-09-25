@@ -164,6 +164,56 @@ def test_cli_export_ignore_and_files_from_conflict(monkeypatch, caplog):
     assert "cannot use --export-ignore and --files-from at the same time" in caplog.text
 
 
+def test_export_ignore_patterns_default_config_fallback(capsys):
+    sourcecombine.export_ignore_patterns("-", config=None)
+    captured = capsys.readouterr()
+    assert "# SourceCombine Exported Ignore Patterns" in captured.out
+
+
+def test_export_ignore_patterns_autodetect_default_ignore_file(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    ignore_file = tmp_path / ".sourcecombineignore"
+    ignore_file.write_text("*.tmp_auto\n", encoding="utf-8")
+
+    config = copy_config()
+    config['search']['ignore_files'] = []
+
+    sourcecombine.export_ignore_patterns("-", config=config)
+    captured = capsys.readouterr()
+    assert "*.tmp_auto" in captured.out
+
+
+def test_export_ignore_patterns_with_loaded_ignore_files(tmp_path, capsys):
+    custom_ignore = tmp_path / "custom_rules.txt"
+    custom_ignore.write_text("*.custom_ignore\nbuild_out/\n", encoding="utf-8")
+
+    config = copy_config()
+    config['search']['ignore_files'] = [str(custom_ignore)]
+
+    sourcecombine.export_ignore_patterns("-", config=config)
+    captured = capsys.readouterr()
+    assert "*.custom_ignore" in captured.out
+    assert "build_out/" in captured.out
+
+
+def test_export_ignore_patterns_json_write_error(tmp_path, monkeypatch, caplog):
+    target = tmp_path / "subdir" / "out.json"
+
+    def mock_mkdir(*args, **kwargs):
+        raise OSError("Directory creation failed")
+
+    monkeypatch.setattr(Path, "mkdir", mock_mkdir)
+
+    config = copy_config()
+
+    with caplog.at_level(logging.ERROR):
+        with pytest.raises(SystemExit) as exc_info:
+            sourcecombine.export_ignore_patterns(target, config=config, json_format=True)
+
+    assert exc_info.value.code == 1
+    assert "Could not export ignore patterns to" in caplog.text
+
+
 def copy_config():
     import copy
     cfg = copy.deepcopy(utils.DEFAULT_CONFIG)
