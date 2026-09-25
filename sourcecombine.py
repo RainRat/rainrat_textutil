@@ -4400,6 +4400,8 @@ def main():
     )
     filtering_group.add_argument(
         "--files-from",
+        "-F",
+        "--from-file",
         metavar="PATH",
         help="Read file paths from a text file or standard input ('-'), skipping folder scanning.",
     )

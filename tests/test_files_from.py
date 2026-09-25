@@ -39,7 +39,7 @@ def temp_cwd(tmp_path):
     os.chdir(original_cwd)
 
 def test_files_from_file(temp_cwd, mock_argv):
-    """Test reading file list from a text file."""
+    """Test reading file list from a text file using --files-from, -F, and --from-file."""
     # Create target files
     f1 = temp_cwd / "file1.txt"
     f1.write_text("content1", encoding="utf-8")
@@ -50,17 +50,18 @@ def test_files_from_file(temp_cwd, mock_argv):
     list_file = temp_cwd / "mylist.txt"
     list_file.write_text(f"{f1}\n{f2}\n", encoding="utf-8")
 
-    with patch('sourcecombine.find_and_combine_files') as mock_combine:
-        mock_combine.return_value = {}
-        with mock_argv(['--files-from', str(list_file)]):
-            main()
+    for flag in ['--files-from', '-F', '--from-file']:
+        with patch('sourcecombine.find_and_combine_files') as mock_combine:
+            mock_combine.return_value = {}
+            with mock_argv([flag, str(list_file)]):
+                main()
 
-        assert mock_combine.called
-        explicit_files = mock_combine.call_args.kwargs.get('explicit_files')
-        assert explicit_files is not None
-        assert f1.resolve() in explicit_files
-        assert f2.resolve() in explicit_files
-        assert len(explicit_files) == 2
+            assert mock_combine.called
+            explicit_files = mock_combine.call_args.kwargs.get('explicit_files')
+            assert explicit_files is not None
+            assert f1.resolve() in explicit_files
+            assert f2.resolve() in explicit_files
+            assert len(explicit_files) == 2
 
 def test_files_from_stdin(temp_cwd, mock_argv):
     """Test reading file list from stdin."""
