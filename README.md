@@ -400,6 +400,12 @@ Preview matching files or inspect your project structure without writing output 
    python sourcecombine.py . --tree --format markdown
    ```
 
+4. **Generate structural outlines without file contents:**
+   Build project documentation outlines (including Table of Contents and folder tree) while skipping file contents using `--no-content` (or `-N`):
+   ```bash
+   python sourcecombine.py . --no-content --toc --include-tree --output outline.md
+   ```
+
 ### Inspecting Active Settings and System Details
 Check active ignore rules, search-and-replace rules, template placeholders, supported languages, or system details:
 
@@ -491,6 +497,12 @@ python sourcecombine.py . --max-size 50KB --since 1d
 When sharing code with AI models, you can save tokens by removing source code comments and blank lines. Use the `--remove-comments` and `--compact` flags together:
 ```bash
 python sourcecombine.py . --remove-comments --compact --output compact_code.txt
+```
+
+#### Recreate Directory Structure (Mirror Mode)
+You can process files individually while preserving their original folder structure instead of combining them into a single output file. Use the `--mirror` flag along with an output folder:
+```bash
+python sourcecombine.py src/ --mirror --remove-comments --output processed_src/
 ```
 
 #### Filter by Content Patterns (Grep)
