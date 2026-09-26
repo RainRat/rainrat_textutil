@@ -4404,6 +4404,8 @@ def main():
     )
     filtering_group.add_argument(
         "--files-from",
+        "-F",
+        "--from-file",
         metavar="PATH",
         help="Process a list of file paths from a text file or standard input ('-') instead of scanning folders.",
     )
