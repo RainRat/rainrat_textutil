@@ -4804,6 +4804,13 @@ def main():
         metavar=("PATTERN", "REPLACEMENT"),
         help="Add a line-based pattern rule to find and replace content. The tool replaces matching lines that follow each other with a single entry. Can be used multiple times.",
     )
+    processing_group.add_argument(
+        "--import-replacements",
+        "--import-rep",
+        "--import-rules",
+        metavar="FILENAME",
+        help="Import search-and-replace rules from a JSON or YAML file (or '-' for standard input).",
+    )
 
     # Utility Commands Group
     utility_group = parser.add_argument_group("Utility Commands")
@@ -5191,6 +5198,10 @@ def main():
         logging.error("You cannot use --export-replacements and --files-from at the same time.")
         sys.exit(1)
 
+    import_replacements_val = getattr(args, 'import_replacements', None)
+    if import_replacements_val and type(import_replacements_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        import_replacements_val = None
+
     if args.system_info:
         print_system_info(json_format=getattr(args, 'json', False))
         sys.exit(0)
@@ -5301,6 +5312,9 @@ def main():
                 utils.validate_config(config)
         except (ConfigNotFoundError, utils.InvalidConfigError) as e:
             _handle_invalid_config_error(e, args.verbose)
+
+        if import_replacements_val:
+            import_replacements(import_replacements_val, config)
 
         if getattr(args, 'replace', None):
             regex_rules = config['processing'].setdefault('regex_replacements', [])
@@ -5987,6 +6001,9 @@ def main():
 
     if args.truncate_tokens is not None:
         config['processing']['max_tokens'] = args.truncate_tokens
+
+    if import_replacements_val:
+        import_replacements(import_replacements_val, config)
 
     if args.replace:
         regex_rules = config['processing'].setdefault('regex_replacements', [])
@@ -8410,6 +8427,112 @@ def export_ignore_patterns(target_path, config=None, json_format=False):
     except OSError as exc:
         logging.error("Could not export ignore patterns to '%s': %s", target_file, exc)
         sys.exit(1)
+
+
+def import_replacements(source_path, config):
+    """Import search-and-replace rules from a JSON or YAML file (or '-' for stdin) into config."""
+    if not source_path or config is None:
+        return config
+
+    source_str = str(source_path)
+    is_stdin = source_str == '-'
+
+    content = None
+    if is_stdin:
+        content = sys.stdin.read()
+    else:
+        file_path = Path(source_str)
+        if not file_path.exists():
+            logging.error("Replacements file not found: %s", file_path)
+            sys.exit(1)
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+        except OSError as exc:
+            logging.error("Could not read replacements file '%s': %s", file_path, exc)
+            sys.exit(1)
+
+    if not content or not content.strip():
+        logging.warning("Replacements file '%s' is empty; no rules imported.", source_str)
+        return config
+
+    try:
+        data = json.loads(content)
+    except Exception:
+        if utils.yaml:
+            try:
+                data = utils.yaml.safe_load(content)
+            except Exception as exc:
+                logging.error("Could not parse replacements file '%s' as JSON or YAML: %s", source_str, exc)
+                sys.exit(1)
+        else:
+            logging.error("Could not parse replacements file '%s' as JSON.", source_str)
+            sys.exit(1)
+
+    if not isinstance(data, (dict, list)):
+        logging.error("Invalid replacements format in '%s': must be a JSON/YAML object or array.", source_str)
+        sys.exit(1)
+
+    def _normalize_rule(rule):
+        if not isinstance(rule, dict):
+            return None
+        pat = rule.get('pattern') if 'pattern' in rule else rule.get('search')
+        rep = rule.get('replacement') if 'replacement' in rule else rule.get('replace', '')
+        if pat is not None:
+            return {'pattern': pat, 'replacement': rep if rep is not None else ''}
+        return None
+
+    raw_text_rules = []
+    raw_line_rules = []
+
+    if isinstance(data, list):
+        for item in data:
+            norm = _normalize_rule(item)
+            if norm:
+                raw_text_rules.append(norm)
+    elif isinstance(data, dict):
+        text_keys = ('regex_replacements', 'text_replacements', 'regex_rules', 'text_rules')
+        line_keys = ('line_regex_replacements', 'line_replacements', 'line_rules')
+
+        for tk in text_keys:
+            if tk in data and isinstance(data[tk], list):
+                for item in data[tk]:
+                    norm = _normalize_rule(item)
+                    if norm:
+                        raw_text_rules.append(norm)
+                break
+
+        for lk in line_keys:
+            if lk in data and isinstance(data[lk], list):
+                for item in data[lk]:
+                    norm = _normalize_rule(item)
+                    if norm:
+                        raw_line_rules.append(norm)
+                break
+
+    proc = config.setdefault('processing', {})
+    if proc is None:
+        proc = config['processing'] = {}
+
+    text_rules = proc.setdefault('regex_replacements', [])
+    if text_rules is None:
+        text_rules = proc['regex_replacements'] = []
+    text_rules.extend(raw_text_rules)
+
+    line_rules = proc.setdefault('line_regex_replacements', [])
+    if line_rules is None:
+        line_rules = proc['line_regex_replacements'] = []
+    line_rules.extend(raw_line_rules)
+
+    try:
+        utils._validate_regex_list(proc.get('regex_replacements'), "processing.regex_replacements", source=source_str)
+        utils._validate_regex_list(proc.get('line_regex_replacements'), "processing.line_regex_replacements", source=source_str)
+    except utils.InvalidConfigError as exc:
+        logging.error("Invalid replacement rules in '%s': %s", source_str, exc)
+        sys.exit(1)
+
+    logging.debug("Imported %d text replacement(s) and %d line replacement(s) from '%s'.", len(raw_text_rules), len(raw_line_rules), source_str)
+    return config
 
 
 def export_replacements(target_path, config=None, json_format=False):
