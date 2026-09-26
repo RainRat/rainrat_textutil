@@ -203,7 +203,7 @@ class _LazyColor:
         self.code = code
 
     def __str__(self):
-        return self._render(only_stderr=False)
+        return self._render()
 
     def _render(self, only_stderr=False):
         # We check isatty and NO_COLOR on every string conversion so it
