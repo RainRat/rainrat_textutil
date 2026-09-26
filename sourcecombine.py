@@ -103,11 +103,12 @@ def _to_int_or_none(val: Any) -> int | None:
 
 def _normalize_extension_list_v2(ext_list) -> list[str]:
     """Normalize a list of file extensions."""
-    return [
-        ext.lower() if ext.startswith('.') else '.' + ext.lower()
-        for ext in (ext_list or [])
-        if isinstance(ext, str)
-    ]
+    result = []
+    for ext in ext_list or []:
+        if isinstance(ext, str):
+            lowered = ext.lower()
+            result.append(lowered if lowered.startswith('.') else '.' + lowered)
+    return result
 
 
 def _plural(count: int, singular: str, plural_form: str | None = None) -> str:
