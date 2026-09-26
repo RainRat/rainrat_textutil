@@ -4224,13 +4224,13 @@ def main():
         "--config",
         "-k",
         metavar="PATH",
-        help="Use a specific configuration file (YAML or JSON). Use '-' to read from standard input (stdin).",
+        help="Load settings from a YAML or JSON configuration file. Use '-' to read from standard input (stdin).",
     )
     core_group.add_argument(
         "--output",
         "-o",
         metavar="PATH",
-        help="Save the result to a specific file or folder. This takes priority over the path in the settings. Supports template placeholders (for example, '{{PROJECT_NAME}}_{{DATE}}.txt').",
+        help="Save output to a specific file or folder. This overrides configuration file settings. Supports template placeholders like '{{PROJECT_NAME}}_{{DATE}}.txt'.",
     )
     core_group.add_argument(
         "--dry-run",
@@ -4405,7 +4405,7 @@ def main():
     filtering_group.add_argument(
         "--files-from",
         metavar="PATH",
-        help="Read file paths from a text file or standard input ('-'), skipping folder scanning.",
+        help="Process a list of file paths from a text file or standard input ('-') instead of scanning folders.",
     )
     filtering_group.add_argument(
         "--grep",
@@ -4423,20 +4423,20 @@ def main():
         "--grep-ignore-case",
         "--grep-icase",
         action="store_true",
-        help="Perform case-insensitive matching for content grep patterns (--grep and --exclude-grep).",
+        help="Use case-insensitive matching for content grep patterns (--grep and --exclude-grep).",
     )
     filtering_group.add_argument(
         "--skip-binary",
         "-B",
         action="store_true",
-        help="Skip files that contain binary data automatically.",
+        help="Automatically skip files that contain binary data.",
     )
     filtering_group.add_argument(
         "--max-depth",
         "-D",
         type=int,
         metavar="N",
-        help="Limit folder scanning to a specific depth (for example, 1 for top-level files only).",
+        help="Limit folder scanning to a maximum depth (for example, 1 for top-level files only).",
     )
     filtering_group.add_argument(
         "--git-files",
@@ -4810,7 +4810,7 @@ def main():
         nargs="?",
         const="sourcecombine.yml",
         metavar="PATH",
-        help="Create a basic configuration file (YAML or JSON) at PATH. Defaults to 'sourcecombine.yml'. Use '-' to print to standard output (stdout).",
+        help="Create a starter configuration file (YAML or JSON) at PATH. Defaults to 'sourcecombine.yml'. Use '-' to print to standard output (stdout).",
     )
     utility_group.add_argument(
         "--init-ignore",
