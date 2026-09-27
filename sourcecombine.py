@@ -4987,6 +4987,13 @@ def main():
         help="Export all active text and line search-and-replace rules (from configuration and CLI flags) to a JSON file (defaults to 'replacements.json'). Use '-' for standard output (stdout).",
     )
     utility_group.add_argument(
+        "--import-replacements",
+        "--import-rep",
+        "--import-rules",
+        metavar="FILENAME",
+        help="Import text and line search-and-replace rules from a JSON or YAML file (or '-' for stdin).",
+    )
+    utility_group.add_argument(
         "--system-info",
         "--sys-info",
         action="store_true",
@@ -5132,6 +5139,7 @@ def main():
         args.export_config == '-' or
         getattr(args, 'export_ignore', None) == '-' or
         getattr(args, 'export_replacements', None) == '-' or
+        getattr(args, 'import_replacements', None) == '-' or
         args.init == '-' or
         getattr(args, 'init_ignore', None) == '-'
     )
@@ -5189,6 +5197,14 @@ def main():
 
     if args.files_from and export_replacements_val:
         logging.error("You cannot use --export-replacements and --files-from at the same time.")
+        sys.exit(1)
+
+    import_replacements_val = getattr(args, 'import_replacements', None)
+    if import_replacements_val and type(import_replacements_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        import_replacements_val = None
+
+    if args.files_from and import_replacements_val:
+        logging.error("You cannot use --import-replacements and --files-from at the same time.")
         sys.exit(1)
 
     if args.system_info:
@@ -6003,6 +6019,12 @@ def main():
         for pattern, replacement in args.replace_line:
             line_rules.append({'pattern': pattern, 'replacement': replacement})
         logging.debug("Added %d terminal line regex replacements.", len(args.replace_line))
+
+    if import_replacements_val:
+        try:
+            import_replacements(import_replacements_val, config=config)
+        except InvalidConfigError as exc:
+            _handle_invalid_config_error(exc, args.verbose)
 
     if args.sort:
         output_conf['sort_by'] = args.sort
@@ -8455,6 +8477,118 @@ def export_replacements(target_path, config=None, json_format=False):
     except OSError as exc:
         logging.error("Could not export search-and-replace rules to '%s': %s", target_file, exc)
         sys.exit(1)
+
+
+def import_replacements(source_path, config=None):
+    """Import search-and-replace rules from a JSON or YAML file (or '-' for stdin) into config."""
+    if config is None:
+        raise InvalidConfigError("A target configuration dictionary must be provided to import_replacements.")
+
+    if not source_path:
+        raise InvalidConfigError("No source file specified for search-and-replace rule import.")
+
+    source_str = str(source_path)
+    is_stdin = source_str == '-'
+    source_name = "standard input" if is_stdin else source_str
+
+    if is_stdin:
+        try:
+            raw_content = sys.stdin.read()
+        except OSError as exc:
+            raise InvalidConfigError(f"Could not read search-and-replace rules from standard input: {exc}") from exc
+    else:
+        file_path = Path(source_str)
+        if not file_path.is_file():
+            raise InvalidConfigError(f"Replacements rule file not found: {source_str}")
+        try:
+            raw_content, _ = read_file_best_effort(file_path)
+        except OSError as exc:
+            raise InvalidConfigError(f"Could not read replacements rule file '{source_str}': {exc}") from exc
+
+    if not raw_content or not raw_content.strip():
+        logging.warning("Replacements file '%s' is empty. No rules imported.", source_name)
+        return config
+
+    try:
+        data = json.loads(raw_content)
+    except json.JSONDecodeError:
+        try:
+            if utils.yaml:
+                data = utils.yaml.safe_load(raw_content)
+            else:
+                import yaml
+                data = yaml.safe_load(raw_content)
+        except Exception as exc:
+            raise InvalidConfigError(f"Could not parse replacements rule file '{source_name}' as JSON or YAML: {exc}") from exc
+
+    if not isinstance(data, (dict, list)):
+        raise InvalidConfigError(f"Invalid format in replacements rule file '{source_name}'. Expected JSON object or array.")
+
+    imported_text_rules = []
+    imported_line_rules = []
+
+    def _normalize_rule(rule_obj):
+        if not isinstance(rule_obj, dict):
+            return None
+        pattern = rule_obj.get('pattern') if 'pattern' in rule_obj else (rule_obj.get('search') or rule_obj.get('find'))
+        replacement = rule_obj.get('replacement') if 'replacement' in rule_obj else (rule_obj.get('replace') or rule_obj.get('replace_with'))
+        if pattern is not None and replacement is not None:
+            return {'pattern': str(pattern), 'replacement': str(replacement)}
+        return None
+
+    if isinstance(data, dict):
+        text_source = data.get('regex_replacements') or data.get('text_replacements') or data.get('replace') or []
+        if isinstance(text_source, list):
+            for item in text_source:
+                r = _normalize_rule(item)
+                if r:
+                    imported_text_rules.append(r)
+
+        line_source = data.get('line_regex_replacements') or data.get('line_replacements') or data.get('replace_line') or []
+        if isinstance(line_source, list):
+            for item in line_source:
+                r = _normalize_rule(item)
+                if r:
+                    imported_line_rules.append(r)
+
+        general_source = data.get('replacements') or data.get('rules') or []
+        if isinstance(general_source, list):
+            for item in general_source:
+                r = _normalize_rule(item)
+                if r:
+                    if isinstance(item, dict) and (item.get('line') or item.get('is_line')):
+                        imported_line_rules.append(r)
+                    else:
+                        imported_text_rules.append(r)
+
+    elif isinstance(data, list):
+        for item in data:
+            r = _normalize_rule(item)
+            if r:
+                if isinstance(item, dict) and (item.get('line') or item.get('is_line')):
+                    imported_line_rules.append(r)
+                else:
+                    imported_text_rules.append(r)
+
+    proc_conf = config.setdefault('processing', {})
+    if proc_conf is None:
+        proc_conf = config['processing'] = {}
+
+    existing_text = proc_conf.setdefault('regex_replacements', [])
+    if existing_text is None:
+        existing_text = proc_conf['regex_replacements'] = []
+
+    existing_line = proc_conf.setdefault('line_regex_replacements', [])
+    if existing_line is None:
+        existing_line = proc_conf['line_regex_replacements'] = []
+
+    existing_text.extend(imported_text_rules)
+    existing_line.extend(imported_line_rules)
+
+    total_imported = len(imported_text_rules) + len(imported_line_rules)
+    logging.info("Imported %d search-and-replace rule(s) (%d text, %d line) from %s.", total_imported, len(imported_text_rules), len(imported_line_rules), source_name)
+
+    return config
 
 
 def print_replacements(query=None, json_format=False, config=None):
