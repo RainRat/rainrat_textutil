@@ -8298,7 +8298,7 @@ def print_ignore_patterns(query=None, json_format=False, config=None):
             total_matched += len(filtered_pats)
             print(f"\n  {C_BOLD}{category}{C_RESET}")
             for pat in filtered_pats:
-                print(f"    {C_BOLD}{C_CYAN}{pat}{C_RESET}")
+                print(f"    {pat}")
 
     if query_lower and total_matched == 0:
         print(f"\n  {C_YELLOW}No ignore patterns matched the filter query '{query}'.{C_RESET}")
