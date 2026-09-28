@@ -130,6 +130,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--export-config` (`--export-cfg`): Save the final combined configuration to a YAML file and exit. Use `-` to output to standard output (`stdout`).
 *   `--export-ignore` (`--export-ig`): Export all active ignore patterns (from ignore files and configuration exclusions) to an ignore file (defaults to `.sourcecombineignore`). Use `-` for standard output (`stdout`) and `--json` for machine-readable output.
 *   `--export-replacements` (`--export-rep`, `--export-rules`): Export all active search-and-replace rules (from configuration files and CLI flags) to a JSON file (defaults to `replacements.json`). Use `-` for standard output (`stdout`).
+*   `--import-replacements` (`--import-rep`, `--import-rules`): Import search-and-replace rules from a JSON or YAML file (or `-` for standard input) and merge them into the active configuration.
 *   `--system-info`, `--sys-info`: Show environment details (Python version, OS, and other system details). Use `--json` for machine-readable output.
 *   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without writing them to disk.
 *   `--analyze` (`-A`): Run project analysis without generating output files. Shortcut for `--dry-run --estimate-tokens --overview --include-tree --tree`.
@@ -430,7 +431,13 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
    python sourcecombine.py --export-replacements rules.json
    ```
 
-4. **Inspect template placeholders:**
+4. **Import search-and-replace rules:**
+   Import external search-and-replace rules from JSON/YAML files or standard input (`-`):
+   ```bash
+   python sourcecombine.py . -o output.txt --import-replacements rules.json
+   ```
+
+5. **Inspect template placeholders:**
    List supported placeholders for headers, footers, and templates (optionally filtered by keyword):
    ```bash
    python sourcecombine.py --list-placeholders git

@@ -4987,6 +4987,13 @@ def main():
         help="Export all active text and line search-and-replace rules (from configuration and CLI flags) to a JSON file (defaults to 'replacements.json'). Use '-' for standard output (stdout).",
     )
     utility_group.add_argument(
+        "--import-replacements",
+        "--import-rep",
+        "--import-rules",
+        metavar="FILENAME",
+        help="Import search-and-replace rules from a JSON or YAML file (or '-' for standard input) and merge them into the active configuration.",
+    )
+    utility_group.add_argument(
         "--system-info",
         "--sys-info",
         action="store_true",
@@ -5187,6 +5194,10 @@ def main():
     if export_replacements_val and type(export_replacements_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
         export_replacements_val = None
 
+    import_replacements_val = getattr(args, 'import_replacements', None)
+    if import_replacements_val and type(import_replacements_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        import_replacements_val = None
+
     if args.files_from and export_replacements_val:
         logging.error("You cannot use --export-replacements and --files-from at the same time.")
         sys.exit(1)
@@ -5316,6 +5327,10 @@ def main():
             for pattern, replacement in args.replace_line:
                 line_rules.append({'pattern': pattern, 'replacement': replacement})
 
+    if import_replacements_val:
+        import_replacements(import_replacements_val, config=config)
+
+    if list_rep_val:
         query = list_rep_val if isinstance(list_rep_val, str) else None
         print_replacements(query=query, json_format=getattr(args, 'json', False), config=config)
         sys.exit(0)
@@ -6003,6 +6018,9 @@ def main():
         for pattern, replacement in args.replace_line:
             line_rules.append({'pattern': pattern, 'replacement': replacement})
         logging.debug("Added %d terminal line regex replacements.", len(args.replace_line))
+
+    if import_replacements_val:
+        import_replacements(import_replacements_val, config=config)
 
     if args.sort:
         output_conf['sort_by'] = args.sort
@@ -8410,6 +8428,92 @@ def export_ignore_patterns(target_path, config=None, json_format=False):
     except OSError as exc:
         logging.error("Could not export ignore patterns to '%s': %s", target_file, exc)
         sys.exit(1)
+
+
+def import_replacements(source_path, config=None):
+    """Import search-and-replace rules from a JSON or YAML file (or stdin '-') into the configuration."""
+    if config is None:
+        return 0
+
+    proc_conf = config.setdefault('processing', {})
+    if proc_conf is None:
+        proc_conf = config['processing'] = {}
+
+    text_rules = proc_conf.setdefault('regex_replacements', [])
+    if text_rules is None:
+        text_rules = proc_conf['regex_replacements'] = []
+
+    line_rules = proc_conf.setdefault('line_regex_replacements', [])
+    if line_rules is None:
+        line_rules = proc_conf['line_regex_replacements'] = []
+
+    source_str = str(source_path).strip() if source_path else ""
+    if not source_str:
+        logging.error("No import file specified for search-and-replace rules.")
+        sys.exit(1)
+
+    content = ""
+    if source_str == '-':
+        try:
+            content = sys.stdin.read()
+        except Exception as exc:
+            logging.error("Could not read search-and-replace rules from stdin: %s", exc)
+            sys.exit(1)
+    else:
+        src_file = Path(source_str)
+        if not src_file.exists() or not src_file.is_file():
+            logging.error("Search-and-replace import file not found: '%s'", source_str)
+            sys.exit(1)
+        try:
+            with open(src_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+        except Exception as exc:
+            logging.error("Could not read search-and-replace rules from '%s': %s", source_str, exc)
+            sys.exit(1)
+
+    data = None
+    if content.strip():
+        try:
+            data = json.loads(content)
+        except Exception:
+            try:
+                import yaml
+                data = yaml.safe_load(content)
+            except Exception as exc:
+                logging.error("Could not parse search-and-replace import file (expected JSON or YAML): %s", exc)
+                sys.exit(1)
+
+    if not isinstance(data, dict):
+        if isinstance(data, list):
+            data = {"regex_replacements": data}
+        else:
+            logging.error("Invalid format in search-and-replace import file: root must be an object or array.")
+            sys.exit(1)
+
+    imported_count = 0
+
+    new_text_rules = data.get('regex_replacements') or data.get('text_rules') or []
+    if isinstance(new_text_rules, list):
+        for rule in new_text_rules:
+            if isinstance(rule, dict) and 'pattern' in rule and 'replacement' in rule:
+                text_rules.append({'pattern': str(rule['pattern']), 'replacement': str(rule['replacement'])})
+                imported_count += 1
+            elif isinstance(rule, (list, tuple)) and len(rule) >= 2:
+                text_rules.append({'pattern': str(rule[0]), 'replacement': str(rule[1])})
+                imported_count += 1
+
+    new_line_rules = data.get('line_regex_replacements') or data.get('line_rules') or []
+    if isinstance(new_line_rules, list):
+        for rule in new_line_rules:
+            if isinstance(rule, dict) and 'pattern' in rule and 'replacement' in rule:
+                line_rules.append({'pattern': str(rule['pattern']), 'replacement': str(rule['replacement'])})
+                imported_count += 1
+            elif isinstance(rule, (list, tuple)) and len(rule) >= 2:
+                line_rules.append({'pattern': str(rule[0]), 'replacement': str(rule[1])})
+                imported_count += 1
+
+    logging.info("Imported %d search-and-replace rule(s) from %s.", imported_count, "stdin" if source_str == '-' else source_str)
+    return imported_count
 
 
 def export_replacements(target_path, config=None, json_format=False):
