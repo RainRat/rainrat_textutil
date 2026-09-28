@@ -79,6 +79,15 @@ def test_export_replacements_stdout(capsys):
     assert data["regex_replacements"] == [{'pattern': 'x', 'replacement': 'y'}]
 
 
+def test_export_replacements_none_config(capsys):
+    sourcecombine.export_replacements("-", config=None)
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert data["exported_to"] == "-"
+    assert "total_rules" in data
+
+
 def test_export_replacements_write_error(tmp_path, monkeypatch):
     invalid_target = tmp_path / "nonexistent_dir" / "out.json"
 
