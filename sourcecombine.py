@@ -4485,6 +4485,8 @@ def main():
     )
     filtering_group.add_argument(
         "--ignore-file",
+        "--ignore",
+        "--ig",
         action="append",
         metavar="PATH",
         help="Add an ignore file containing glob patterns to skip. Supports comma-separated lists (default: '.sourcecombineignore'). Can be used multiple times.",
