@@ -1634,6 +1634,30 @@ def _format_author(author_data: Any) -> str:
     return str(author_data)
 
 
+def _update_identity_from_dict(data: dict, identity: dict) -> None:
+    """Helper to update identity dictionary from a parsed manifest dictionary."""
+    if data.get('name'):
+        identity["project_name"] = str(data['name'])
+    if data.get('version'):
+        identity["project_version"] = str(data['version'])
+    if data.get('author'):
+        identity["project_author"] = _format_author(data['author'])
+    elif data.get('authors'):
+        identity["project_author"] = _format_author(data['authors'])
+    if data.get('description'):
+        identity["project_description"] = str(data['description'])
+    if data.get('license'):
+        identity["project_license"] = str(data['license'])
+    if data.get('homepage'):
+        identity["project_url"] = str(data['homepage'])
+    elif data.get('repository'):
+        repo = data.get('repository')
+        if isinstance(repo, dict) and repo.get('url'):
+            identity["project_url"] = str(repo['url'])
+        elif isinstance(repo, str):
+            identity["project_url"] = repo
+
+
 def _parse_json_manifest(manifest_path: Path, identity: dict) -> bool:
     """Read a JSON manifest and update identity; return True if successful."""
     if not manifest_path.is_file():
@@ -1641,26 +1665,7 @@ def _parse_json_manifest(manifest_path: Path, identity: dict) -> bool:
     try:
         data = json.loads(manifest_path.read_text(encoding='utf-8'))
         if isinstance(data, dict):
-            if data.get('name'):
-                identity["project_name"] = str(data['name'])
-            if data.get('version'):
-                identity["project_version"] = str(data['version'])
-            if data.get('author'):
-                identity["project_author"] = _format_author(data['author'])
-            elif data.get('authors'):
-                identity["project_author"] = _format_author(data['authors'])
-            if data.get('description'):
-                identity["project_description"] = str(data['description'])
-            if data.get('license'):
-                identity["project_license"] = str(data['license'])
-            if data.get('homepage'):
-                identity["project_url"] = str(data['homepage'])
-            elif data.get('repository'):
-                repo = data.get('repository')
-                if isinstance(repo, dict) and repo.get('url'):
-                    identity["project_url"] = str(repo['url'])
-                elif isinstance(repo, str):
-                    identity["project_url"] = repo
+            _update_identity_from_dict(data, identity)
             return True
     except (OSError, ValueError, TypeError):
         pass
@@ -2142,19 +2147,7 @@ def get_project_identity(root_folder: str | Path) -> dict:
 
                     data = json.loads(content)
                     if isinstance(data, dict):
-                        if data.get('name'):
-                            identity["project_name"] = str(data['name'])
-                        if data.get('version'):
-                            identity["project_version"] = str(data['version'])
-                        if data.get('author'):
-                            identity["project_author"] = _format_author(data['author'])
-                        elif data.get('authors'):
-                            identity["project_author"] = _format_author(data['authors'])
-                        if data.get('description'):
-                            identity["project_description"] = str(data['description'])
-                        if data.get('license'):
-                            identity["project_license"] = str(data['license'])
-
+                        _update_identity_from_dict(data, identity)
                         identity["manifest_source"] = deno_manifest.name
                         manifest_found = True
                 except Exception:
