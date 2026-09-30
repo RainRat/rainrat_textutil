@@ -15,6 +15,16 @@ def copy_config():
     return cfg
 
 
+def test_export_replacements_none_config(tmp_path):
+    target = tmp_path / "replacements_none_cfg.json"
+    sourcecombine.export_replacements(target, config=None)
+    assert target.is_file()
+    data = json.loads(target.read_text(encoding="utf-8"))
+    assert "total_rules" in data
+    assert "regex_replacements" in data
+    assert "line_regex_replacements" in data
+
+
 def test_export_replacements_default_file(tmp_path, monkeypatch, caplog):
     monkeypatch.chdir(tmp_path)
     config = copy_config()
