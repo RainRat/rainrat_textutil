@@ -408,8 +408,14 @@ Preview matching files or inspect your project structure without writing output 
    python sourcecombine.py . --no-content --toc --include-tree --output outline.md
    ```
 
+5. **Inspect excluded files and exclusion reasons:**
+   List all files skipped by active filter rules along with their specific exclusion reasons:
+   ```bash
+   python sourcecombine.py . --list-excluded
+   ```
+
 ### Inspecting Active Settings and System Details
-Check active ignore rules, search-and-replace rules, template placeholders, supported languages, or system details:
+Check active ignore rules, search-and-replace rules, template placeholders, supported languages, output formats, configuration presets, or system details:
 
 1. **Inspect active ignore rules:**
    Show all active ignore patterns loaded from ignore files and configuration exclusions (add `--json` for machine-readable output):
@@ -450,7 +456,14 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
    python sourcecombine.py --list-extensions py
    ```
 
-7. **Display system environment and project details:**
+7. **Inspect supported output formats and presets:**
+   Show all available output formats or built-in configuration presets:
+   ```bash
+   python sourcecombine.py --list-formats
+   python sourcecombine.py --list-presets
+   ```
+
+8. **Display system environment and project details:**
    Check Python version, OS platform, optional dependencies, and detected project metadata:
    ```bash
    python sourcecombine.py --system-info
