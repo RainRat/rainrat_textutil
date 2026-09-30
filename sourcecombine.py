@@ -7929,17 +7929,19 @@ def print_system_info(json_format=False):
     config_status = f"{'Found' if config_file.exists() else 'Not found'} ({config_file.resolve() if config_file.exists() else 'N/A'})"
 
     sys_info = [
-        ("SourceCombine Version:", __version__),
-        ("Python Version:", sys.version.split()[0]),
-        ("Platform:", platform.platform()),
-        ("Executable:", sys.executable),
-        ("Current Folder:", str(Path.cwd())),
-        ("Local Config:", config_status),
+        ("SourceCombine Version", __version__),
+        ("Python Version", sys.version.split()[0]),
+        ("Platform", platform.platform()),
+        ("Executable", sys.executable),
+        ("Current Folder", str(Path.cwd())),
+        ("Local Config", config_status),
     ]
 
-    label_width = 22
+    label_width = 24
+    print(f"\n  {C_BOLD}System & Environment:{C_RESET}")
     for label, value in sys_info:
-        print(f"  {C_BOLD}{label:<{label_width}}{C_RESET} {value}")
+        label_str = f"{label}:"
+        print(f"    {C_DIM}{label_str:<{label_width}}{C_RESET}{value}")
 
     print(f"\n  {C_BOLD}Optional Dependencies:{C_RESET}")
 
@@ -7947,7 +7949,8 @@ def print_system_info(json_format=False):
         installed = info["installed"]
         purpose = info["purpose"]
         status = f"{C_GREEN}Installed{C_RESET}" if installed else f"{C_YELLOW}Not found{C_RESET}"
-        print(f"    {C_BOLD}{dep_name:<20}{C_RESET} {status:<20} {C_DIM}({purpose}){C_RESET}")
+        label_str = f"{dep_name}:"
+        print(f"    {C_DIM}{label_str:<{label_width}}{C_RESET}{status:<20} {C_DIM}({purpose}){C_RESET}")
 
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
