@@ -27,7 +27,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--no-recursive` (`--no-rec`, `--nr`, `--flat`): Skip searching subfolders and scan only top-level files in target folders.
 *   `--max-depth DEPTH` (`-D DEPTH`): Limit folder scanning to a specific depth (for example, `1` for top-level files only).
 *   `--files-from PATH` (`-F`, `--from-file`): Process a specific list of file paths from a text file or standard input (`-`) instead of scanning folders.
-*   `--ignore-file PATH`: Add an ignore file containing glob patterns to skip. Supports comma-separated lists (for example, `.ignore1,.ignore2`). Default is `.sourcecombineignore`.
+*   `--ignore-file PATH` (`--ignore`, `--ig`): Add an ignore file containing glob patterns to skip. Supports comma-separated lists (for example, `.ignore1,.ignore2`). Default is `.sourcecombineignore`.
 *   `--exclude-file` (`-x`, `--exclude`): Skip files matching a glob pattern (for example, `-x "*.json"` or `--exclude "*.tmp"`). You can repeat this flag.
 *   `--exclude-folder` (`-X`, `--exclude-dir`): Skip folders matching a glob pattern (for example, `-X tests` or `--exclude-folder "build*"`). You can repeat this flag.
 *   `--include-file` (`-i`, `--include`): Include files matching a glob pattern regardless of other filter rules (for example, `-i "*.config"` or `--include "*.env"`). You can repeat this flag.
