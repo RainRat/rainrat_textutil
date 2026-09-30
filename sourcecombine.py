@@ -8211,11 +8211,16 @@ def print_formats(query=None, json_format=False):
     if query_lower and len(items) == 0:
         print(f"\n  {C_YELLOW}No output formats matched the filter query '{query}'.{C_RESET}")
     else:
-        print(f"  {C_DIM}{'FORMAT':<{fmt_width}}  {'ALIASES':<{alias_width}}  DESCRIPTION{C_RESET}")
+        print(f"  {C_BOLD}{C_YELLOW}{'FORMAT':<{fmt_width}}  {'ALIASES':<{alias_width}}  DESCRIPTION{C_RESET}")
         for fmt in items:
-            aliases_str = ", ".join(formats_info[fmt]["aliases"]) if formats_info[fmt]["aliases"] else "-"
+            aliases = formats_info[fmt]["aliases"]
+            if aliases:
+                aliases_str = ", ".join(aliases)
+                aliases_formatted = f"{C_DIM}{aliases_str:<{alias_width}}{C_RESET}"
+            else:
+                aliases_formatted = f"{C_DIM}{'-':<{alias_width}}{C_RESET}"
             desc = formats_info[fmt]["description"]
-            print(f"  {C_BOLD}{C_CYAN}{fmt:<{fmt_width}}{C_RESET}  {C_DIM}{aliases_str:<{alias_width}}  {desc}{C_RESET}")
+            print(f"  {C_BOLD}{C_CYAN}{fmt:<{fmt_width}}{C_RESET}  {aliases_formatted}  {C_DIM}{desc}{C_RESET}")
 
     count_label = f"Matching: {len(items)}" if query_lower else f"Total: {len(formats_info)}"
     print(f"\n  {C_BOLD}{count_label}{C_RESET} output formats supported.")
