@@ -72,6 +72,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--truncate-tokens N`: Limit each file to a maximum of `N` tokens before combining.
 *   `--replace PATTERN REPLACEMENT`: Find and replace content using regular expressions. You can repeat this flag.
 *   `--replace-line PATTERN REPLACEMENT`: Find and replace line patterns using regular expressions. You can repeat this flag.
+*   `--import-replacements FILENAME` (`--import-rep`, `--import-rules`): Import search-and-replace rules from a JSON or YAML file (or `-` for standard input).
 *   `--git-log [N]`: Include recent Git commit history in project overview and templates (`{{GIT_LOG}}`). Accepts an optional commit count `N` (default is 5).
 *   `--include-diff`: Include Git diffs in project overview and templates (`{{GIT_DIFF}}` and `{{FILE_DIFF}}`).
 *   `--diff`: Display colored line differences when writing, extracting, verifying, or modifying files.
@@ -428,6 +429,12 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
    Save active regex replacement rules to a JSON file or output to stdout (`-`):
    ```bash
    python sourcecombine.py --export-replacements rules.json
+   ```
+
+4. **Import search-and-replace rules:**
+   Load search-and-replace rules from a JSON or YAML file (or standard input `-`):
+   ```bash
+   python sourcecombine.py --import-replacements rules.json --list-replacements
    ```
 
 4. **Inspect template placeholders:**
