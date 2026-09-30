@@ -157,3 +157,70 @@ def test_import_replacements_empty_file_and_none(tmp_path):
     invalid_fmt.write_text("12345", encoding="utf-8")
     with pytest.raises(SystemExit):
         import_replacements(invalid_fmt, config)
+
+
+def test_cli_import_replacements(tmp_path, monkeypatch):
+    """Test CLI execution with --import-replacements."""
+    test_dir = tmp_path / "src"
+    test_dir.mkdir()
+    sample_file = test_dir / "sample.txt"
+    sample_file.write_text("Hello OLD_WORD World!", encoding="utf-8")
+
+    rules_file = tmp_path / "rules.json"
+    rules_file.write_text(json.dumps({
+        "regex_replacements": [{"pattern": "OLD_WORD", "replacement": "NEW_WORD"}]
+    }), encoding="utf-8")
+
+    out_file = tmp_path / "output.txt"
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            str(test_dir),
+            "--import-replacements",
+            str(rules_file),
+            "--output",
+            str(out_file),
+        ],
+    )
+
+    from sourcecombine import main
+    main()
+
+    assert out_file.exists()
+    assert "Hello NEW_WORD World!" in out_file.read_text(encoding="utf-8")
+
+
+def test_cli_import_rep_alias(tmp_path, monkeypatch):
+    """Test CLI execution with --import-rep alias."""
+    test_dir = tmp_path / "src"
+    test_dir.mkdir()
+    sample_file = test_dir / "sample.txt"
+    sample_file.write_text("FOO_BAR", encoding="utf-8")
+
+    rules_file = tmp_path / "rules.json"
+    rules_file.write_text(json.dumps({
+        "regex_replacements": [{"pattern": "FOO_BAR", "replacement": "BAZ"}]
+    }), encoding="utf-8")
+
+    out_file = tmp_path / "output.txt"
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            str(test_dir),
+            "--import-rep",
+            str(rules_file),
+            "--output",
+            str(out_file),
+        ],
+    )
+
+    from sourcecombine import main
+    main()
+
+    assert out_file.exists()
+    assert "BAZ" in out_file.read_text(encoding="utf-8")
+

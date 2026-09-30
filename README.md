@@ -437,20 +437,20 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
    python sourcecombine.py --import-replacements rules.json --list-replacements
    ```
 
-4. **Inspect template placeholders:**
+5. **Inspect template placeholders:**
    List supported placeholders for headers, footers, and templates (optionally filtered by keyword):
    ```bash
    python sourcecombine.py --list-placeholders git
    ```
 
-5. **Inspect supported languages and file extensions:**
+6. **Inspect supported languages and file extensions:**
    Filter supported language tags or extension mappings by keyword:
    ```bash
    python sourcecombine.py --list-languages python
    python sourcecombine.py --list-extensions py
    ```
 
-6. **Display system environment and project details:**
+7. **Display system environment and project details:**
    Check Python version, OS platform, optional dependencies, and detected project metadata:
    ```bash
    python sourcecombine.py --system-info
