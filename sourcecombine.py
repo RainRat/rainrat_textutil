@@ -8095,7 +8095,7 @@ def print_placeholders(query=None, json_format=False):
         if filtered_placeholders:
             print(f"\n  {C_BOLD}{category}{C_RESET}")
             for placeholder, description in filtered_placeholders:
-                print(f"    {C_BOLD}{C_CYAN}{placeholder:<{placeholder_width}}{C_RESET} {C_DIM}{description}{C_RESET}")
+                print(f"    {C_BOLD}{placeholder:<{placeholder_width}}{C_RESET} {C_DIM}{description}{C_RESET}")
 
     if query_lower and total_matched == 0:
         print(f"\n  {C_YELLOW}No template placeholders matched the filter query '{query}'.{C_RESET}")
