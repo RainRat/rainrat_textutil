@@ -17,6 +17,7 @@ def test_print_ignore_patterns_text(capsys, tmp_path, monkeypatch):
     assert "Ignore File (.sourcecombineignore)" in captured.out
     assert "*.log" in captured.out
     assert "tmp/*" in captured.out
+    assert "    *.log\n" in captured.out
     assert "Excluded Filenames (Config)" in captured.out
     assert "Excluded Folders (Config)" in captured.out
 
