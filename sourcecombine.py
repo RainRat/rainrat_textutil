@@ -586,10 +586,12 @@ def _render_single_pass(template, replacements):
     # Sort keys by length descending to prevent partial prefix matching
     sorted_keys = tuple(sorted(replacements.keys(), key=len, reverse=True))
     pattern = re.compile("|".join(re.escape(k) for k in sorted_keys))
-    return pattern.sub(
-        lambda m: str(replacements[m.group(0)]) if replacements[m.group(0)] is not None else "",
-        template
-    )
+
+    def _replace(match):
+        val = replacements[match.group(0)]
+        return str(val) if val is not None else ""
+
+    return pattern.sub(_replace, template)
 
 
 def _resolve_information_placeholders(template, replacements, data):
