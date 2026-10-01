@@ -8744,7 +8744,7 @@ def print_presets(query=None, json_format=False):
         ]
 
     preset_width = 10
-    flag_width = 15
+    flag_width = max(15, max(len(details["flag"]) for details in presets_info.values()))
 
     if query_lower and len(items) == 0:
         print(f"\n  {C_YELLOW}No presets matched the filter query '{query}'.{C_RESET}")
