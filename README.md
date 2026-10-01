@@ -130,6 +130,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--show-config` (`--show-cfg`): Display the final configuration being used and exit. Use `--json` for machine-readable output.
 *   `--export-config` (`--export-cfg`): Save the final combined configuration to a YAML file and exit. Use `-` to output to standard output (`stdout`).
 *   `--export-ignore` (`--export-ig`): Export all active ignore patterns (from ignore files and configuration exclusions) to an ignore file (defaults to `.sourcecombineignore`). Use `-` for standard output (`stdout`) and `--json` for machine-readable output.
+*   `--import-ignore FILENAME` (`--import-ig`): Import ignore patterns from a text, JSON, or YAML file (or `-` for standard input).
 *   `--export-replacements` (`--export-rep`, `--export-rules`): Export all active search-and-replace rules (from configuration files and CLI flags) to a JSON file (defaults to `replacements.json`). Use `-` for standard output (`stdout`).
 *   `--system-info`, `--sys-info`: Show environment details (Python version, OS, and other system details). Use `--json` for machine-readable output.
 *   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without writing them to disk.
