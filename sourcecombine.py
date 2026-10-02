@@ -8819,11 +8819,11 @@ def print_languages(query=None, json_format=False):
 
             # Print the first line with the tag
             first_line = wrapped[0] if wrapped else ""
-            print(f"  {C_BOLD}{C_CYAN}{tag:<{tag_width}}{C_RESET}  {C_DIM}{first_line}{C_RESET}")
+            print(f"  {C_BOLD}{C_CYAN}{tag:<{tag_width}}{C_RESET}  {first_line}")
 
             # Print subsequent lines indented
             for line in wrapped[1:]:
-                print(f"  {' ':<{tag_width}}  {C_DIM}{line}{C_RESET}")
+                print(f"  {' ':<{tag_width}}  {line}")
 
     count_label = f"Matching: {len(lang_tags)}" if query_lower else f"Total: {len(lang_groups)}"
     print(f"\n  {C_BOLD}{count_label}{C_RESET} languages supported.")

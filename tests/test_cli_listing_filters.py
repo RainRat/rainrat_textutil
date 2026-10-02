@@ -19,6 +19,19 @@ def test_print_languages_unfiltered():
     assert "python" in output
     assert "javascript" in output
 
+def test_print_languages_formatting_contrast():
+    captured_output = io.StringIO()
+    sys.stdout = captured_output
+    try:
+        print_languages(query="python")
+    finally:
+        sys.stdout = sys.__stdout__
+    output = captured_output.getvalue()
+    assert ".py" in output
+    # Ensure mapping lines are not dimmed with C_DIM (\033[2m or \x1b[2m)
+    py_line = [line for line in output.splitlines() if ".py" in line][0]
+    assert "\033[2m" not in py_line and "\x1b[2m" not in py_line
+
 def test_print_languages_filtered_match():
     captured_output = io.StringIO()
     sys.stdout = captured_output
