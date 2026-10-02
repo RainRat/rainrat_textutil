@@ -391,25 +391,31 @@ Preview matching files or inspect your project structure without writing output 
    python sourcecombine.py . --list-files
    ```
 
-2. **Display a visual folder tree:**
+2. **Inspect excluded files and exclusion reasons:**
+   See which files were excluded by filtering rules along with their specific exclusion reasons:
+   ```bash
+   python sourcecombine.py . --list-excluded
+   ```
+
+3. **Display a visual folder tree:**
    ```bash
    python sourcecombine.py . --tree
    ```
 
-3. **Export structured lists or trees (JSON, CSV, XML, or Markdown):**
+4. **Export structured lists or trees (JSON, CSV, XML, or Markdown):**
    ```bash
    python sourcecombine.py . --list-files --format json
    python sourcecombine.py . --tree --format markdown
    ```
 
-4. **Generate structural outlines without file contents:**
+5. **Generate structural outlines without file contents:**
    Build project documentation outlines (including Table of Contents and folder tree) while skipping file contents using `--no-content` (or `-N`):
    ```bash
    python sourcecombine.py . --no-content --toc --include-tree --output outline.md
    ```
 
 ### Inspecting Active Settings and System Details
-Check active ignore rules, search-and-replace rules, template placeholders, supported languages, or system details:
+Check active ignore rules, search-and-replace rules, template placeholders, supported languages, output formats, built-in presets, or system details:
 
 1. **Inspect active ignore rules:**
    Show all active ignore patterns loaded from ignore files and configuration exclusions (add `--json` for machine-readable output):
@@ -450,7 +456,14 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
    python sourcecombine.py --list-extensions py
    ```
 
-7. **Display system environment and project details:**
+7. **Inspect supported output formats and built-in presets:**
+   List supported output formats or built-in configuration presets:
+   ```bash
+   python sourcecombine.py --list-formats
+   python sourcecombine.py --list-presets
+   ```
+
+8. **Display system environment and project details:**
    Check Python version, OS platform, optional dependencies, and detected project metadata:
    ```bash
    python sourcecombine.py --system-info
