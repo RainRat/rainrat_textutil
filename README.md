@@ -419,38 +419,44 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
    python sourcecombine.py --list-ignores py
    ```
 
-2. **Inspect active search-and-replace rules:**
+2. **Export active ignore rules:**
+   Export all active ignore patterns from ignore files and configuration exclusions to an ignore file (defaults to `.sourcecombineignore`) or standard output (`-`):
+   ```bash
+   python sourcecombine.py --export-ignore .sourcecombineignore
+   ```
+
+3. **Inspect active search-and-replace rules:**
    Display active regex replacement rules loaded from configuration or CLI arguments:
    ```bash
    python sourcecombine.py --list-replacements
    ```
 
-3. **Export active search-and-replace rules:**
+4. **Export active search-and-replace rules:**
    Save active regex replacement rules to a JSON file or output to stdout (`-`):
    ```bash
    python sourcecombine.py --export-replacements rules.json
    ```
 
-4. **Import search-and-replace rules:**
+5. **Import search-and-replace rules:**
    Load search-and-replace rules from a JSON or YAML file (or standard input `-`):
    ```bash
    python sourcecombine.py --import-replacements rules.json --list-replacements
    ```
 
-5. **Inspect template placeholders:**
+6. **Inspect template placeholders:**
    List supported placeholders for headers, footers, and templates (optionally filtered by keyword):
    ```bash
    python sourcecombine.py --list-placeholders git
    ```
 
-6. **Inspect supported languages and file extensions:**
+7. **Inspect supported languages and file extensions:**
    Filter supported language tags or extension mappings by keyword:
    ```bash
    python sourcecombine.py --list-languages python
    python sourcecombine.py --list-extensions py
    ```
 
-7. **Display system environment and project details:**
+8. **Display system environment and project details:**
    Check Python version, OS platform, optional dependencies, and detected project metadata:
    ```bash
    python sourcecombine.py --system-info
