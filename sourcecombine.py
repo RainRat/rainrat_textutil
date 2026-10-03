@@ -8649,7 +8649,7 @@ def print_replacements(query=None, json_format=False, config=None):
             filtered_text = text_rules
 
         if filtered_text:
-            print(f"\n  {C_BOLD}{C_GREEN}[Text Replacements (--replace)]{C_RESET}")
+            print(f"\n  {C_BOLD}[Text Replacements (--replace)]{C_RESET}")
             for rule in filtered_text:
                 pat = rule.get('pattern', '')
                 rep = rule.get('replacement', '')
@@ -8666,7 +8666,7 @@ def print_replacements(query=None, json_format=False, config=None):
             filtered_line = line_rules
 
         if filtered_line:
-            print(f"\n  {C_BOLD}{C_GREEN}[Line Replacements (--replace-line)]{C_RESET}")
+            print(f"\n  {C_BOLD}[Line Replacements (--replace-line)]{C_RESET}")
             for rule in filtered_line:
                 pat = rule.get('pattern', '')
                 rep = rule.get('replacement', '')
