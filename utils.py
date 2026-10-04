@@ -317,23 +317,19 @@ def load_yaml_config(config_file_path):
         if yaml is not None:
             try:
                 config = yaml.safe_load(content)
-                if config is None:
-                    raise InvalidConfigError("Configuration from stdin is empty or invalid.")
-                if not isinstance(config, dict):
-                    raise InvalidConfigError("Configuration from stdin must be a dictionary.")
-                return config
             except (AttributeError, yaml.YAMLError) as e:
                 raise InvalidConfigError(f"Error parsing YAML from stdin: {e}") from e
         else:
             try:
                 config = json.loads(content)
-                if config is None:
-                    raise InvalidConfigError("Configuration from stdin is empty or invalid.")
-                if not isinstance(config, dict):
-                    raise InvalidConfigError("Configuration from stdin must be a dictionary.")
-                return config
             except json.JSONDecodeError as e:
                 raise InvalidConfigError(f"Error parsing JSON from stdin: {e}") from e
+
+        if config is None:
+            raise InvalidConfigError("Configuration from stdin is empty or invalid.")
+        if not isinstance(config, dict):
+            raise InvalidConfigError("Configuration from stdin must be a dictionary.")
+        return config
 
     path = Path(config_file_path)
     is_json = path.suffix.lower() == '.json'
