@@ -4456,12 +4456,12 @@ def main():
     filtering_group.add_argument(
         "--staged",
         action="store_true",
-        help="Include only staged changes in Git (used with --git-diff).",
+        help="Include only staged Git changes (used with --git-diff).",
     )
     filtering_group.add_argument(
         "--unstaged",
         action="store_true",
-        help="Include only unstaged and untracked changes in Git.",
+        help="Include only unstaged and untracked Git changes.",
     )
     filtering_group.add_argument(
         "--unique",
@@ -4656,17 +4656,17 @@ def main():
     output_group.add_argument(
         "--global-header",
         metavar="TEMPLATE",
-        help="Override the template written at the very beginning of the output.",
+        help="Set a custom header template written at the start of the combined output.",
     )
     output_group.add_argument(
         "--global-footer",
         metavar="TEMPLATE",
-        help="Override the template written at the very end of the output.",
+        help="Set a custom footer template written at the end of the combined output.",
     )
     output_group.add_argument(
         "--max-size-placeholder",
         metavar="TEMPLATE",
-        help="Override the placeholder written when a file exceeds the size limit.",
+        help="Set a custom placeholder template written when a file exceeds the maximum size limit.",
     )
     output_group.add_argument(
         "--json-summary",
@@ -4697,7 +4697,7 @@ def main():
         nargs=2,
         action="append",
         metavar=("SOURCE_EXT", "HEADER_EXT"),
-        help="Enable file pairing by matching source and header extensions (for example, '.cpp' '.h'). Can be used multiple times.",
+        help="Pair related files matching source and header extensions (for example, '.cpp' '.h'). Can be used multiple times.",
     )
     pairing_group.add_argument(
         "--include-unpaired",
@@ -4804,7 +4804,7 @@ def main():
         nargs=2,
         action="append",
         metavar=("PATTERN", "REPLACEMENT"),
-        help="Add a line-based pattern rule to find and replace content. The tool replaces matching lines that follow each other with a single entry. Can be used multiple times.",
+        help="Find and replace line patterns using regular expressions. Replaces consecutive matching lines with a single replacement. Can be used multiple times.",
     )
     processing_group.add_argument(
         "--import-replacements",
