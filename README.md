@@ -28,6 +28,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--max-depth DEPTH` (`-D DEPTH`): Limit folder scanning to a specific depth (for example, `1` for top-level files only).
 *   `--files-from PATH` (`-F`, `--from-file`): Process a specific list of file paths from a text file or standard input (`-`) instead of scanning folders.
 *   `--ignore-file PATH` (`--ignore`, `--ig`): Add an ignore file containing glob patterns to skip. Supports comma-separated lists (for example, `.ignore1,.ignore2`). Default is `.sourcecombineignore`.
+*   `--import-ignore FILENAME` (`--import-ig`): Import ignore patterns from a text, JSON, or YAML file (or standard input `-`) into active exclusion filters.
 *   `--exclude-file` (`-x`, `--exclude`): Skip files matching a glob pattern (for example, `-x "*.json"` or `--exclude "*.tmp"`). You can repeat this flag.
 *   `--exclude-folder` (`-X`, `--exclude-dir`): Skip folders matching a glob pattern (for example, `-X tests` or `--exclude-folder "build*"`). You can repeat this flag.
 *   `--include-file` (`-i`, `--include`): Include files matching a glob pattern regardless of other filter rules (for example, `-i "*.config"` or `--include "*.env"`). You can repeat this flag.
@@ -419,38 +420,44 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
    python sourcecombine.py --list-ignores py
    ```
 
-2. **Inspect active search-and-replace rules:**
+2. **Import ignore patterns:**
+   Import ignore patterns from a text file, JSON/YAML file, or standard input (`-`) into active exclusion filters:
+   ```bash
+   python sourcecombine.py --import-ignore my_patterns.txt --list-ignores
+   ```
+
+3. **Inspect active search-and-replace rules:**
    Display active regex replacement rules loaded from configuration or CLI arguments:
    ```bash
    python sourcecombine.py --list-replacements
    ```
 
-3. **Export active search-and-replace rules:**
+4. **Export active search-and-replace rules:**
    Save active regex replacement rules to a JSON file or output to stdout (`-`):
    ```bash
    python sourcecombine.py --export-replacements rules.json
    ```
 
-4. **Import search-and-replace rules:**
+5. **Import search-and-replace rules:**
    Load search-and-replace rules from a JSON or YAML file (or standard input `-`):
    ```bash
    python sourcecombine.py --import-replacements rules.json --list-replacements
    ```
 
-5. **Inspect template placeholders:**
+6. **Inspect template placeholders:**
    List supported placeholders for headers, footers, and templates (optionally filtered by keyword):
    ```bash
    python sourcecombine.py --list-placeholders git
    ```
 
-6. **Inspect supported languages and file extensions:**
+7. **Inspect supported languages and file extensions:**
    Filter supported language tags or extension mappings by keyword:
    ```bash
    python sourcecombine.py --list-languages python
    python sourcecombine.py --list-extensions py
    ```
 
-7. **Display system environment and project details:**
+8. **Display system environment and project details:**
    Check Python version, OS platform, optional dependencies, and detected project metadata:
    ```bash
    python sourcecombine.py --system-info
