@@ -8147,7 +8147,7 @@ def print_extensions(query=None, json_format=False):
     if query_lower and len(items) == 0:
         print(f"\n  {C_YELLOW}No extensions or filenames matched the filter query '{query}'.{C_RESET}")
     else:
-        print(f"  {C_DIM}{'EXTENSION / FILENAME':<{ext_width}}  LANGUAGE TAG{C_RESET}")
+        print(f"  {C_BOLD}{C_YELLOW}{'EXTENSION / FILENAME':<{ext_width}}  LANGUAGE TAG{C_RESET}")
         for item in items:
             lang = ext_map[item]
             print(f"  {C_BOLD}{C_CYAN}{item:<{ext_width}}{C_RESET}  {C_DIM}{lang}{C_RESET}")
