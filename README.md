@@ -8,7 +8,8 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   **Remove Duplicates:** Skip duplicate files by path or content.
 *   **Include Groups:** Keep specific files regardless of other filters.
 *   **Pair Files:** Link related files (like `.cpp` and `.h`) into single output files.
-*   **Restore Files:** Rebuild original files and folders from combined Text, JSON, JSONL, XML, CSV, or Markdown outputs. Read from files, folders, URLs, standard input (`stdin`), or system clipboard.
+*   **Extract Files:** Rebuild original files and folders from combined Text, JSON, JSONL, XML, CSV, or Markdown outputs. Read from files, folders, URLs, standard input (`stdin`), or system clipboard.
+*   **Restore Backups:** Revert in-place changes and restore original files from `.bak` backup copies.
 *   **Sort Results:** Organize files by name, size, date, tokens, lines, depth, or language.
 *   **Apply Limits:** Stop processing when reaching file, token, size, or line limits.
 *   **Choose Output:** Save to the terminal, a file, or the system clipboard.
