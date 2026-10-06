@@ -8242,7 +8242,7 @@ def print_formats(query=None, json_format=False):
             else:
                 aliases_formatted = f"{C_DIM}{'-':<{alias_width}}{C_RESET}"
             desc = formats_info[fmt]["description"]
-            print(f"  {C_BOLD}{C_CYAN}{fmt:<{fmt_width}}{C_RESET}  {aliases_formatted}  {C_DIM}{desc}{C_RESET}")
+            print(f"  {C_BOLD}{C_CYAN}{fmt:<{fmt_width}}{C_RESET}  {aliases_formatted}  {desc}")
 
     count_label = f"Matching: {len(items)}" if query_lower else f"Total: {len(formats_info)}"
     print(f"\n  {C_BOLD}{count_label}{C_RESET} output formats supported.")
