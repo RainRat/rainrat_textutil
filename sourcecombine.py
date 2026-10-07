@@ -8809,7 +8809,7 @@ def print_languages(query=None, json_format=False):
     if query_lower and len(lang_tags) == 0:
         print(f"\n  {C_YELLOW}No languages matched the filter query '{query}'.{C_RESET}")
     else:
-        print(f"  {C_DIM}{'LANGUAGE TAG':<{tag_width}}  EXTENSION / FILENAME MAPPINGS{C_RESET}")
+        print(f"  {C_BOLD}{C_YELLOW}{'LANGUAGE TAG':<{tag_width}}  EXTENSION / FILENAME MAPPINGS{C_RESET}")
         for tag in lang_tags:
             items = sorted(lang_groups[tag])
             items_str = ", ".join(items)
