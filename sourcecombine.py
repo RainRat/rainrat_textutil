@@ -4491,6 +4491,12 @@ def main():
         metavar="PATH",
         help="Add an ignore file containing glob patterns to skip. Supports comma-separated lists (default: '.sourcecombineignore'). Can be used multiple times.",
     )
+    filtering_group.add_argument(
+        "--import-ignore",
+        "--import-ig",
+        metavar="FILENAME",
+        help="Import ignore patterns from a text, JSON, or YAML file (or '-' for standard input).",
+    )
 
     # Sorting & Limiting Group
     sorting_group = parser.add_argument_group("Sorting & Limiting")
@@ -5200,6 +5206,10 @@ def main():
         logging.error("You cannot use --export-replacements and --files-from at the same time.")
         sys.exit(1)
 
+    import_ignore_val = getattr(args, 'import_ignore', None)
+    if import_ignore_val and type(import_ignore_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        import_ignore_val = None
+
     import_replacements_val = getattr(args, 'import_replacements', None)
     if import_replacements_val and type(import_replacements_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
         import_replacements_val = None
@@ -5315,6 +5325,9 @@ def main():
         except (ConfigNotFoundError, utils.InvalidConfigError) as e:
             _handle_invalid_config_error(e, args.verbose)
 
+        if import_ignore_val:
+            import_ignore_patterns(import_ignore_val, config)
+
         if import_replacements_val:
             import_replacements(import_replacements_val, config)
 
@@ -5361,6 +5374,9 @@ def main():
                 utils.validate_config(config)
         except (ConfigNotFoundError, utils.InvalidConfigError) as e:
             _handle_invalid_config_error(e, args.verbose)
+
+        if import_ignore_val:
+            import_ignore_patterns(import_ignore_val, config)
 
         if getattr(args, 'ignore_file', None):
             search = config.setdefault('search', {})
@@ -6003,6 +6019,9 @@ def main():
 
     if args.truncate_tokens is not None:
         config['processing']['max_tokens'] = args.truncate_tokens
+
+    if import_ignore_val:
+        import_ignore_patterns(import_ignore_val, config)
 
     if import_replacements_val:
         import_replacements(import_replacements_val, config)
@@ -8437,6 +8456,86 @@ def export_ignore_patterns(target_path, config=None, json_format=False):
     except OSError as exc:
         logging.error("Could not export ignore patterns to '%s': %s", target_file, exc)
         sys.exit(1)
+
+
+def import_ignore_patterns(source_path, config):
+    """Import ignore patterns from a text, JSON, or YAML file (or '-' for stdin) into config exclusions."""
+    if not source_path or config is None:
+        return config
+
+    source_str = str(source_path)
+    is_stdin = source_str == '-'
+
+    content = None
+    if is_stdin:
+        content = sys.stdin.read()
+    else:
+        file_path = Path(source_str)
+        if not file_path.exists():
+            logging.error("Ignore file not found: %s", file_path)
+            sys.exit(1)
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+        except OSError as exc:
+            logging.error("Could not read ignore file '%s': %s", file_path, exc)
+            sys.exit(1)
+
+    if not content or not content.strip():
+        logging.warning("Ignore file '%s' is empty; no patterns imported.", source_str)
+        return config
+
+    imported_patterns = []
+
+    parsed_structured = False
+    try:
+        data = json.loads(content)
+        parsed_structured = True
+    except Exception:
+        if utils.yaml and (content.strip().startswith('{') or content.strip().startswith('[') or 'patterns:' in content or 'exclusions:' in content):
+            try:
+                data = utils.yaml.safe_load(content)
+                parsed_structured = True
+            except Exception:
+                parsed_structured = False
+
+    if parsed_structured:
+        if isinstance(data, list):
+            imported_patterns = [str(item).strip() for item in data if item and isinstance(item, (str, int, float))]
+        elif isinstance(data, dict):
+            pats = data.get('patterns') or data.get('ignore_patterns') or data.get('exclusions') or data.get('filenames')
+            if isinstance(pats, list):
+                imported_patterns = [str(item).strip() for item in pats if item and isinstance(item, (str, int, float))]
+            elif isinstance(pats, dict):
+                p_fn = pats.get('filenames') or pats.get('patterns')
+                if isinstance(p_fn, list):
+                    imported_patterns = [str(item).strip() for item in p_fn if item and isinstance(item, (str, int, float))]
+
+    if not imported_patterns:
+        for line in content.splitlines():
+            line = line.strip()
+            if line and not line.startswith('#'):
+                imported_patterns.append(line)
+
+    if not imported_patterns:
+        return config
+
+    filters = config.setdefault('filters', {})
+    if filters is None:
+        filters = config['filters'] = {}
+    exclusions = filters.setdefault('exclusions', {})
+    if exclusions is None:
+        exclusions = filters['exclusions'] = {}
+    filenames = exclusions.setdefault('filenames', [])
+    if filenames is None:
+        filenames = exclusions['filenames'] = []
+
+    for pat in imported_patterns:
+        if pat and pat not in filenames:
+            filenames.append(pat)
+
+    logging.debug("Imported %d ignore pattern(s) from '%s'.", len(imported_patterns), source_str)
+    return config
 
 
 def import_replacements(source_path, config):
