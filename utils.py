@@ -805,6 +805,16 @@ def _validate_positive_number(
             _raise_validation_error(key, context, "must be 0 or more")
 
 
+def _validate_string(container: Mapping[str, Any], key: str, context: str) -> None:
+    """Ensure the value at ``key`` in ``container`` is a string if present."""
+    val = container.get(key)
+    if val is not None and not isinstance(val, str):
+        if context in ('search', 'filters'):
+            raise InvalidConfigError(f"{context}.{key} must be text or nothing")
+        else:
+            raise InvalidConfigError(f"'{context}.{key}' must be text or nothing.")
+
+
 def _validate_search_section(config):
     """Validate the 'search' section of the configuration."""
     search = config.get('search')
@@ -814,12 +824,7 @@ def _validate_search_section(config):
     _validate_positive_number(search, 'max_depth', 'search')
     _validate_bool(search, 'use_git', 'search')
     _validate_bool(search, 'use_git_diff', 'search')
-
-    git_diff_ref = search.get('git_diff_ref')
-    if git_diff_ref is not None and not isinstance(git_diff_ref, str):
-        raise InvalidConfigError(
-            "search.git_diff_ref must be text or nothing"
-        )
+    _validate_string(search, 'git_diff_ref', 'search')
 
     _validate_bool(search, 'git_staged', 'search')
     _validate_bool(search, 'git_unstaged', 'search')
@@ -1020,9 +1025,7 @@ def _validate_project_section(config):
 
     fields = ['name', 'version', 'description', 'license', 'url']
     for field in fields:
-        val = project.get(field)
-        if val is not None and not isinstance(val, str):
-            raise InvalidConfigError(f"'project.{field}' must be text or nothing.")
+        _validate_string(project, field, 'project')
 
 
 def _validate_output_section(config):
@@ -1045,9 +1048,7 @@ def _validate_output_section(config):
     ]
 
     for field in string_fields:
-        value = output_conf.get(field)
-        if value is not None and not isinstance(value, str):
-            raise InvalidConfigError(f"'output.{field}' must be text or nothing.")
+        _validate_string(output_conf, field, 'output')
 
     _validate_bool(output_conf, 'table_of_contents', 'output')
     _validate_bool(output_conf, 'project_overview', 'output')
