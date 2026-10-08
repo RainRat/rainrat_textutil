@@ -4897,6 +4897,8 @@ def main():
     )
     utility_group.add_argument(
         "--extract",
+        "--extr",
+        "--xtr",
         action="store_true",
         help=(
             "Rebuild original files and folders from combined outputs (JSON, XML, JSONL, CSV, Markdown, or Text). "
