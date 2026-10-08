@@ -4491,6 +4491,12 @@ def main():
         metavar="PATH",
         help="Add an ignore file containing glob patterns to skip. Supports comma-separated lists (default: '.sourcecombineignore'). Can be used multiple times.",
     )
+    filtering_group.add_argument(
+        "--import-ignore",
+        "--import-ig",
+        metavar="FILENAME",
+        help="Import ignore patterns from a text, JSON, or YAML file (or '-' for standard input) into active exclusion filters.",
+    )
 
     # Sorting & Limiting Group
     sorting_group = parser.add_argument_group("Sorting & Limiting")
@@ -5204,6 +5210,10 @@ def main():
     if import_replacements_val and type(import_replacements_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
         import_replacements_val = None
 
+    import_ignore_val = getattr(args, 'import_ignore', None)
+    if import_ignore_val and type(import_ignore_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        import_ignore_val = None
+
     if args.system_info:
         print_system_info(json_format=getattr(args, 'json', False))
         sys.exit(0)
@@ -5371,6 +5381,9 @@ def main():
                     p = p.strip()
                     if p and p not in search['ignore_files']:
                         search['ignore_files'].append(p)
+
+        if import_ignore_val:
+            import_ignore_patterns(import_ignore_val, config)
 
         query = list_ig_val if isinstance(list_ig_val, str) else None
         print_ignore_patterns(query=query, json_format=getattr(args, 'json', False), config=config)
@@ -6006,6 +6019,9 @@ def main():
 
     if import_replacements_val:
         import_replacements(import_replacements_val, config)
+
+    if import_ignore_val:
+        import_ignore_patterns(import_ignore_val, config)
 
     if args.replace:
         regex_rules = config['processing'].setdefault('regex_replacements', [])
@@ -8334,6 +8350,91 @@ def print_ignore_patterns(query=None, json_format=False, config=None):
     print(f"\n  {C_BOLD}{count_label}{C_RESET} active ignore patterns supported.")
 
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
+
+
+def import_ignore_patterns(source_path, config):
+    """Import ignore patterns from a text, JSON, or YAML file (or '-' for stdin) into config."""
+    if not source_path or config is None:
+        return config
+
+    source_str = str(source_path)
+    is_stdin = source_str == '-'
+
+    content = None
+    if is_stdin:
+        content = sys.stdin.read()
+    else:
+        file_path = Path(source_str)
+        if not file_path.exists():
+            logging.error("Ignore pattern file not found: %s", file_path)
+            sys.exit(1)
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+        except OSError as exc:
+            logging.error("Could not read ignore pattern file '%s': %s", file_path, exc)
+            sys.exit(1)
+
+    if not content or not content.strip():
+        logging.warning("Ignore pattern file '%s' is empty; no patterns imported.", source_str)
+        return config
+
+    imported_patterns = []
+
+    data = None
+    try:
+        data = json.loads(content)
+    except Exception:
+        if utils.yaml:
+            try:
+                data = utils.yaml.safe_load(content)
+            except Exception:
+                data = None
+
+    def _extract_patterns(obj):
+        pats = []
+        if isinstance(obj, str):
+            pats.append(obj)
+        elif isinstance(obj, list):
+            for item in obj:
+                pats.extend(_extract_patterns(item))
+        elif isinstance(obj, dict):
+            if 'patterns' in obj:
+                pats.extend(_extract_patterns(obj['patterns']))
+            elif 'categories' in obj and isinstance(obj['categories'], dict):
+                for cat_list in obj['categories'].values():
+                    pats.extend(_extract_patterns(cat_list))
+            elif 'exclusions' in obj:
+                pats.extend(_extract_patterns(obj['exclusions']))
+            else:
+                for val in obj.values():
+                    pats.extend(_extract_patterns(val))
+        return pats
+
+    if data is not None and isinstance(data, (dict, list)):
+        imported_patterns = _extract_patterns(data)
+
+    if not imported_patterns:
+        for line in content.splitlines():
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            imported_patterns.append(line)
+
+    filters = config.setdefault('filters', {})
+    if filters is None:
+        filters = config['filters'] = {}
+    exclusions = filters.setdefault('exclusions', {})
+    if exclusions is None:
+        exclusions = filters['exclusions'] = {}
+    fn_list = exclusions.setdefault('filenames', [])
+    if fn_list is None:
+        fn_list = exclusions['filenames'] = []
+
+    fn_list.extend(imported_patterns)
+
+    logging.debug("Imported %d ignore pattern(s) from '%s'.", len(imported_patterns), source_str)
+    return config
 
 
 def export_ignore_patterns(target_path, config=None, json_format=False):

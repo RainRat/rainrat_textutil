@@ -73,6 +73,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--replace PATTERN REPLACEMENT`: Find and replace content using regular expressions. You can repeat this flag.
 *   `--replace-line PATTERN REPLACEMENT`: Find and replace line patterns using regular expressions. You can repeat this flag.
 *   `--import-replacements FILENAME` (`--import-rep`, `--import-rules`): Import search-and-replace rules from a JSON or YAML file (or `-` for standard input).
+*   `--import-ignore FILENAME` (`--import-ig`): Import ignore patterns from a text, JSON, or YAML file (or `-` for standard input) into active exclusion filters.
 *   `--git-log [N]`: Include recent Git commit history in project overview and templates (`{{GIT_LOG}}`). Accepts an optional commit count `N` (default is 5).
 *   `--include-diff`: Include Git diffs in project overview and templates (`{{GIT_DIFF}}` and `{{FILE_DIFF}}`).
 *   `--diff`: Display colored line differences when writing, extracting, verifying, or modifying files.
@@ -437,20 +438,26 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
    python sourcecombine.py --import-replacements rules.json --list-replacements
    ```
 
-5. **Inspect template placeholders:**
+5. **Import ignore patterns:**
+   Load ignore patterns from a text ignore file, JSON, or YAML (or standard input `-`):
+   ```bash
+   python sourcecombine.py --import-ignore active_ignores.json --list-ignores
+   ```
+
+6. **Inspect template placeholders:**
    List supported placeholders for headers, footers, and templates (optionally filtered by keyword):
    ```bash
    python sourcecombine.py --list-placeholders git
    ```
 
-6. **Inspect supported languages and file extensions:**
+7. **Inspect supported languages and file extensions:**
    Filter supported language tags or extension mappings by keyword:
    ```bash
    python sourcecombine.py --list-languages python
    python sourcecombine.py --list-extensions py
    ```
 
-7. **Display system environment and project details:**
+8. **Display system environment and project details:**
    Check Python version, OS platform, optional dependencies, and detected project metadata:
    ```bash
    python sourcecombine.py --system-info
