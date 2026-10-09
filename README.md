@@ -28,6 +28,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--max-depth DEPTH` (`-D DEPTH`): Limit folder scanning to a specific depth (for example, `1` for top-level files only).
 *   `--files-from PATH` (`-F`, `--from-file`): Process a specific list of file paths from a text file or standard input (`-`) instead of scanning folders.
 *   `--ignore-file PATH` (`--ignore`, `--ig`): Add an ignore file containing glob patterns to skip. Supports comma-separated lists (for example, `.ignore1,.ignore2`). Default is `.sourcecombineignore`.
+*   `--import-ignore FILENAME` (`--import-ig`, `--import-rules-ignore`): Import glob ignore patterns from an ignore file, JSON/YAML file, or standard input (`-`) into active configuration exclusions.
 *   `--exclude-file` (`-x`, `--exclude`): Skip files matching a glob pattern (for example, `-x "*.json"` or `--exclude "*.tmp"`). You can repeat this flag.
 *   `--exclude-folder` (`-X`, `--exclude-dir`): Skip folders matching a glob pattern (for example, `-X tests` or `--exclude-folder "build*"`). You can repeat this flag.
 *   `--include-file` (`-i`, `--include`): Include files matching a glob pattern regardless of other filter rules (for example, `-i "*.config"` or `--include "*.env"`). You can repeat this flag.
@@ -130,6 +131,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--show-config` (`--show-cfg`): Display the final configuration being used and exit. Use `--json` for machine-readable output.
 *   `--export-config` (`--export-cfg`): Save the final combined configuration to a YAML file and exit. Use `-` to output to standard output (`stdout`).
 *   `--export-ignore` (`--export-ig`): Export all active ignore patterns (from ignore files and configuration exclusions) to an ignore file (defaults to `.sourcecombineignore`). Use `-` for standard output (`stdout`) and `--json` for machine-readable output.
+*   `--import-ignore FILENAME` (`--import-ig`, `--import-rules-ignore`): Import glob ignore patterns from an ignore file, JSON or YAML file (or `-` for standard input).
 *   `--export-replacements` (`--export-rep`, `--export-rules`): Export all active search-and-replace rules (from configuration files and CLI flags) to a JSON file (defaults to `replacements.json`). Use `-` for standard output (`stdout`).
 *   `--system-info`, `--sys-info`: Show environment details (Python version, OS, and other system details). Use `--json` for machine-readable output.
 *   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without writing them to disk.
@@ -417,6 +419,8 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
    python sourcecombine.py --list-ignores
    # Filter patterns by keyword
    python sourcecombine.py --list-ignores py
+   # Import ignore patterns from a file or JSON
+   python sourcecombine.py --import-ignore ignore.json --list-ignores
    ```
 
 2. **Inspect active search-and-replace rules:**
