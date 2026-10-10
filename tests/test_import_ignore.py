@@ -200,3 +200,50 @@ def test_cli_import_ig_alias(tmp_path, monkeypatch):
     content = out_file.read_text(encoding="utf-8")
     assert "index.js" in content
     assert "data.temp" not in content
+
+
+def test_import_ignore_patterns_no_valid_patterns_returns_config(tmp_path):
+    ignore_file = tmp_path / "comments_only.ignore"
+    ignore_file.write_text("# only comment line\n# another comment\n", encoding="utf-8")
+
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+    result = import_ignore_patterns(ignore_file, config)
+    assert result is config
+
+
+def test_import_ignore_patterns_none_config_sections(tmp_path):
+    rules_file = tmp_path / "rules.txt"
+    rules_file.write_text("*.log\n", encoding="utf-8")
+
+    config_none_filters = {"filters": None}
+    import_ignore_patterns(rules_file, config_none_filters)
+    assert config_none_filters["filters"]["exclusions"]["filenames"] == ["*.log"]
+
+    config_none_exclusions = {"filters": {"exclusions": None}}
+    import_ignore_patterns(rules_file, config_none_exclusions)
+    assert config_none_exclusions["filters"]["exclusions"]["filenames"] == ["*.log"]
+
+    config_none_filenames = {"filters": {"exclusions": {"filenames": None}}}
+    import_ignore_patterns(rules_file, config_none_filenames)
+    assert config_none_filenames["filters"]["exclusions"]["filenames"] == ["*.log"]
+
+
+def test_cli_list_replacements_with_import_ignore(tmp_path, monkeypatch):
+    ignore_file = tmp_path / "ignore.txt"
+    ignore_file.write_text("*.tmp\n", encoding="utf-8")
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            "--list-replacements",
+            "--import-ignore",
+            str(ignore_file),
+        ],
+    )
+
+    from sourcecombine import main
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+
+    assert exc_info.value.code == 0
