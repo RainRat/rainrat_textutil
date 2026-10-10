@@ -8488,8 +8488,8 @@ def import_replacements(source_path, config):
     def _normalize_rule(rule):
         if not isinstance(rule, dict):
             return None
-        pat = rule.get('pattern') if 'pattern' in rule else rule.get('search')
-        rep = rule.get('replacement') if 'replacement' in rule else rule.get('replace', '')
+        pat = rule.get('pattern', rule.get('search'))
+        rep = rule.get('replacement', rule.get('replace', ''))
         if pat is not None:
             return {'pattern': pat, 'replacement': rep if rep is not None else ''}
         return None
