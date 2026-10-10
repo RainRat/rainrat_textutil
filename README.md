@@ -426,8 +426,6 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
    python sourcecombine.py --list-ignores
    # Filter patterns by keyword
    python sourcecombine.py --list-ignores py
-   # Import ignore patterns from a file or JSON
-   python sourcecombine.py --import-ignore ignore.json --list-ignores
    ```
 
 2. **Export active ignore rules:**
@@ -436,50 +434,56 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
    python sourcecombine.py --export-ignore .sourcecombineignore
    ```
 
-3. **Inspect active search-and-replace rules:**
+3. **Import ignore rules:**
+   Load glob ignore patterns from an ignore file, JSON or YAML file, or standard input (`-`) into active configuration exclusions:
+   ```bash
+   python sourcecombine.py --import-ignore ignore_rules.json --list-ignores
+   ```
+
+4. **Inspect active search-and-replace rules:**
    Display active regex replacement rules loaded from configuration or CLI arguments:
    ```bash
    python sourcecombine.py --list-replacements
    ```
 
-4. **Export active search-and-replace rules:**
+5. **Export active search-and-replace rules:**
    Save active regex replacement rules to a JSON file or output to stdout (`-`):
    ```bash
    python sourcecombine.py --export-replacements rules.json
    ```
 
-5. **Import search-and-replace rules:**
+6. **Import search-and-replace rules:**
    Load search-and-replace rules from a JSON or YAML file (or standard input `-`):
    ```bash
    python sourcecombine.py --import-replacements rules.json --list-replacements
    ```
 
-6. **Inspect template placeholders:**
+7. **Inspect template placeholders:**
    List supported placeholders for headers, footers, and templates (optionally filtered by keyword):
    ```bash
    python sourcecombine.py --list-placeholders git
    ```
 
-7. **Inspect supported languages and file extensions:**
+8. **Inspect supported languages and file extensions:**
    Filter supported language tags or extension mappings by keyword:
    ```bash
    python sourcecombine.py --list-languages python
    python sourcecombine.py --list-extensions py
    ```
 
-8. **Inspect supported output formats and built-in presets:**
+9. **Inspect supported output formats and built-in presets:**
    List supported output formats or built-in configuration presets:
    ```bash
    python sourcecombine.py --list-formats
    python sourcecombine.py --list-presets
    ```
 
-9. **Display system environment and project details:**
-   Check Python version, OS platform, optional dependencies, and detected project metadata:
-   ```bash
-   python sourcecombine.py --system-info
-   python sourcecombine.py --project-info
-   ```
+10. **Display system environment and project details:**
+    Check Python version, OS platform, optional dependencies, and detected project metadata:
+    ```bash
+    python sourcecombine.py --system-info
+    python sourcecombine.py --project-info
+    ```
 
 ### Advanced Filtering and AI Optimization
 
