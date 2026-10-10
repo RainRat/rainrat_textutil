@@ -8751,7 +8751,7 @@ def print_presets(query=None, json_format=False):
     if query_lower and len(items) == 0:
         print(f"\n  {C_YELLOW}No presets matched the filter query '{query}'.{C_RESET}")
     else:
-        print(f"  {C_DIM}{'PRESET':<{preset_width}}  {'FLAG':<{flag_width}}  DESCRIPTION{C_RESET}")
+        print(f"  {C_BOLD}{C_YELLOW}{'PRESET':<{preset_width}}  {'FLAG':<{flag_width}}  DESCRIPTION{C_RESET}")
         for preset in items:
             flag = presets_info[preset]["flag"]
             desc = presets_info[preset]["description"]
