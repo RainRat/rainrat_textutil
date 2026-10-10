@@ -4,8 +4,9 @@ import logging
 import platform
 import re
 import sys
+import time
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -1523,9 +1524,6 @@ def parse_time_value(value: str) -> float:
     """
     if not value:
         return 0.0
-
-    import time
-    from datetime import datetime, timedelta
 
     value = value.lower().strip()
 
