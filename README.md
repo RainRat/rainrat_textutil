@@ -131,6 +131,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--validate-config [PATH]` (`--validate`): Validate a specified or auto-discovered configuration file against syntax and schema rules without running file processing. Use `-` to read from standard input (`stdin`). Use `--json` for machine-readable output.
 *   `--show-config` (`--show-cfg`): Display the final configuration being used and exit. Use `--json` for machine-readable output.
 *   `--export-config` (`--export-cfg`): Save the final combined configuration to a YAML file and exit. Use `-` to output to standard output (`stdout`).
+*   `--import-config FILENAME` (`--import-cfg`): Import and merge additional configuration settings from a YAML or JSON file (or `-` for standard input).
 *   `--export-ignore` (`--export-ig`): Export all active ignore patterns (from ignore files and configuration exclusions) to an ignore file (defaults to `.sourcecombineignore`). Use `-` for standard output (`stdout`) and `--json` for machine-readable output.
 *   `--import-ignore FILENAME` (`--import-ig`, `--import-rules-ignore`): Import glob ignore patterns from an ignore file, JSON or YAML file (or `-` for standard input).
 *   `--export-replacements` (`--export-rep`, `--export-rules`): Export all active search-and-replace rules (from configuration files and CLI flags) to a JSON file (defaults to `replacements.json`). Use `-` for standard output (`stdout`).
@@ -668,6 +669,12 @@ You can check, inspect, or export your configuration settings without running fi
    Save the final combined settings to a new configuration file or print them to the terminal (`-`):
    ```bash
    python sourcecombine.py --export-config exported_config.yml
+   ```
+
+4. **Import Configuration Settings:**
+   Import and merge configuration settings from a YAML or JSON file (or standard input `-`):
+   ```bash
+   python sourcecombine.py --import-config custom_settings.json --show-config
    ```
 
 ## Template Customization
