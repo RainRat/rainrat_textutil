@@ -200,3 +200,59 @@ def test_cli_import_ig_alias(tmp_path, monkeypatch):
     content = out_file.read_text(encoding="utf-8")
     assert "index.js" in content
     assert "data.temp" not in content
+
+
+def test_import_ignore_patterns_no_valid_patterns(tmp_path, caplog):
+    """Test import_ignore_patterns with a file containing no valid ignore patterns."""
+    import logging
+    comments_file = tmp_path / "comments_only.ignore"
+    comments_file.write_text("# Only comment line 1\n# Only comment line 2\n", encoding="utf-8")
+
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+    with caplog.at_level(logging.WARNING):
+        res = import_ignore_patterns(comments_file, config)
+
+    assert res is config
+    assert "No valid ignore patterns found" in caplog.text
+
+
+def test_import_ignore_patterns_none_config_sections(tmp_path):
+    """Test import_ignore_patterns when config sections or filenames are None."""
+    rules_file = tmp_path / "rules.txt"
+    rules_file.write_text("*.tmp\n", encoding="utf-8")
+
+    config_none_filters = {"filters": None}
+    import_ignore_patterns(rules_file, config_none_filters)
+    assert "*.tmp" in config_none_filters["filters"]["exclusions"]["filenames"]
+
+    config_none_exclusions = {"filters": {"exclusions": None}}
+    import_ignore_patterns(rules_file, config_none_exclusions)
+    assert "*.tmp" in config_none_exclusions["filters"]["exclusions"]["filenames"]
+
+    config_none_filenames = {"filters": {"exclusions": {"filenames": None}}}
+    import_ignore_patterns(rules_file, config_none_filenames)
+    assert "*.tmp" in config_none_filenames["filters"]["exclusions"]["filenames"]
+
+
+def test_cli_list_replacements_with_import_ignore(tmp_path, monkeypatch, capsys):
+    """Test combining --list-replacements with --import-ignore flag."""
+    rules_file = tmp_path / "ignore.txt"
+    rules_file.write_text("*.log\n", encoding="utf-8")
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            "--list-replacements",
+            "--import-ignore",
+            str(rules_file),
+        ],
+    )
+
+    from sourcecombine import main
+    with pytest.raises(SystemExit) as excinfo:
+        main()
+
+    assert excinfo.value.code == 0
+    captured = capsys.readouterr()
+    assert "ACTIVE SEARCH-AND-REPLACE RULES" in captured.out
