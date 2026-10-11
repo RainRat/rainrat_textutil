@@ -4040,7 +4040,7 @@ def explain_paths(paths, config=None, json_format=False):
     if json_format:
         print(json.dumps(results, indent=2))
     else:
-        print(f"{C_BOLD}{C_CYAN}PATH MATCH ANALYSIS & EXPLANATION{C_RESET}\n")
+        print(f"{C_BOLD}{C_YELLOW}PATH MATCH ANALYSIS & EXPLANATION{C_RESET}\n")
 
         for item in results:
             status_color = C_GREEN if item['included'] else C_RED
