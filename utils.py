@@ -784,18 +784,27 @@ def _raise_validation_error(key: str, context: str, requirement: str) -> None:
     raise InvalidConfigError(message)
 
 
+def _validate_type(
+    container: Mapping[str, Any],
+    key: str,
+    context: str,
+    expected_type: type,
+    requirement: str,
+) -> None:
+    """Ensure the value at ``key`` in ``container`` is of ``expected_type`` if present."""
+    val = container.get(key)
+    if val is not None and not isinstance(val, expected_type):
+        _raise_validation_error(key, context, requirement)
+
+
 def _validate_bool(container: Mapping[str, Any], key: str, context: str) -> None:
     """Ensure the value at ``key`` in ``container`` is a boolean if present."""
-    val = container.get(key)
-    if val is not None and not isinstance(val, bool):
-        _raise_validation_error(key, context, "must be true or false")
+    _validate_type(container, key, context, bool, "must be true or false")
 
 
 def _validate_string(container: Mapping[str, Any], key: str, context: str) -> None:
     """Ensure the value at ``key`` in ``container`` is a string if present."""
-    val = container.get(key)
-    if val is not None and not isinstance(val, str):
-        _raise_validation_error(key, context, "must be text or nothing")
+    _validate_type(container, key, context, str, "must be text or nothing")
 
 
 def _validate_positive_number(
