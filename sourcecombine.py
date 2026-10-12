@@ -4982,6 +4982,12 @@ def main():
         help="Show the final combined configuration (including defaults, files, and options) and exit. Use --json for machine-readable output.",
     )
     utility_group.add_argument(
+        "--import-config",
+        "--import-cfg",
+        metavar="FILENAME",
+        help="Import and deep-merge configuration settings from a JSON or YAML file (or '-' for standard input).",
+    )
+    utility_group.add_argument(
         "--export-config",
         "--export-cfg",
         nargs="?",
@@ -5215,6 +5221,10 @@ def main():
     if import_replacements_val and type(import_replacements_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
         import_replacements_val = None
 
+    import_config_val = getattr(args, 'import_config', None)
+    if import_config_val and type(import_config_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        import_config_val = None
+
     import_ignore_val = getattr(args, 'import_ignore', None)
     if import_ignore_val and type(import_ignore_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
         import_ignore_val = None
@@ -5329,6 +5339,9 @@ def main():
                 utils.validate_config(config)
         except (ConfigNotFoundError, utils.InvalidConfigError) as e:
             _handle_invalid_config_error(e, args.verbose)
+
+        if import_config_val:
+            import_config(import_config_val, config)
 
         if import_ignore_val:
             import_ignore_patterns(import_ignore_val, config)
@@ -6021,6 +6034,9 @@ def main():
 
     if args.truncate_tokens is not None:
         config['processing']['max_tokens'] = args.truncate_tokens
+
+    if import_config_val:
+        import_config(import_config_val, config)
 
     if import_ignore_val:
         import_ignore_patterns(import_ignore_val, config)
@@ -8553,6 +8569,74 @@ def import_ignore_patterns(source_path, config):
             added_count += 1
 
     logging.debug("Imported %d ignore pattern(s) from '%s'.", added_count, source_str)
+    return config
+
+
+def _deep_merge_dict(target, source):
+    """Recursively merge source dictionary into target dictionary."""
+    if not isinstance(target, dict) or not isinstance(source, dict):
+        return target
+    for key, value in source.items():
+        if key in target and isinstance(target[key], dict) and isinstance(value, dict):
+            _deep_merge_dict(target[key], value)
+        else:
+            target[key] = copy.deepcopy(value)
+    return target
+
+
+def import_config(source_path, config):
+    """Import and deep-merge configuration settings from a JSON or YAML file (or '-' for stdin) into config."""
+    if not source_path or config is None:
+        return config
+
+    source_str = str(source_path)
+    is_stdin = source_str == '-'
+
+    content = None
+    if is_stdin:
+        content = sys.stdin.read()
+    else:
+        file_path = Path(source_str)
+        if not file_path.exists():
+            logging.error("Configuration import file not found: %s", file_path)
+            sys.exit(1)
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+        except OSError as exc:
+            logging.error("Could not read configuration import file '%s': %s", file_path, exc)
+            sys.exit(1)
+
+    if not content or not content.strip():
+        logging.warning("Configuration import file '%s' is empty; no settings imported.", source_str)
+        return config
+
+    try:
+        imported = json.loads(content)
+    except Exception:
+        if utils.yaml:
+            try:
+                imported = utils.yaml.safe_load(content)
+            except Exception as exc:
+                logging.error("Could not parse configuration import file '%s' as JSON or YAML: %s", source_str, exc)
+                sys.exit(1)
+        else:
+            logging.error("Could not parse configuration import file '%s' as JSON.", source_str)
+            sys.exit(1)
+
+    if not isinstance(imported, dict):
+        logging.error("Invalid configuration import format in '%s': must be a JSON/YAML dictionary.", source_str)
+        sys.exit(1)
+
+    _deep_merge_dict(config, imported)
+
+    try:
+        utils.validate_config(config, source=source_str)
+    except utils.InvalidConfigError as exc:
+        logging.error("Invalid configuration settings in '%s': %s", source_str, exc)
+        sys.exit(1)
+
+    logging.debug("Imported configuration settings from '%s'.", source_str)
     return config
 
 
