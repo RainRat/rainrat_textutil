@@ -7944,7 +7944,18 @@ def print_system_info(json_format=False):
             "purpose": purpose
         }
 
-    config_file = Path("sourcecombine.yml")
+    config_defaults = [
+        'sourcecombine.yml', 'sourcecombine.yaml',
+        'sourcecombine.json',
+        'config.yml', 'config.yaml',
+        'config.json'
+    ]
+    config_file = None
+    for candidate in config_defaults:
+        p = Path(candidate)
+        if p.is_file():
+            config_file = p
+            break
 
     if json_format:
         output = {
@@ -7954,8 +7965,8 @@ def print_system_info(json_format=False):
             "executable": sys.executable,
             "current_folder": str(Path.cwd()),
             "local_config": {
-                "found": config_file.exists(),
-                "path": str(config_file.resolve()) if config_file.exists() else None
+                "found": config_file is not None,
+                "path": str(config_file.resolve()) if config_file is not None else None
             },
             "dependencies": dep_info
         }
@@ -7964,7 +7975,7 @@ def print_system_info(json_format=False):
 
     print(f"\n{C_BOLD}{C_CYAN}=== SYSTEM INFORMATION ==={C_RESET}")
 
-    config_status = f"{'Found' if config_file.exists() else 'Not found'} ({config_file.resolve() if config_file.exists() else 'N/A'})"
+    config_status = f"{'Found' if config_file is not None else 'Not found'} ({config_file.resolve() if config_file is not None else 'N/A'})"
 
     sys_info = [
         ("SourceCombine Version", __version__),
