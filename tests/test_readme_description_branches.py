@@ -22,3 +22,28 @@ def test_readme_description_h1_followed_only_by_headers(tmp_path):
     identity = utils.get_project_identity(tmp_path)
     assert identity["project_name"] == "Header Only"
     assert identity["project_description"] == ""
+
+
+def test_readme_description_leading_blank_lines(tmp_path):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text(
+        "# Project Title\n\n  \n\nThis is the description after leading blank lines.",
+        encoding="utf-8",
+    )
+    identity = utils.get_project_identity(tmp_path)
+    assert identity["project_name"] == "Project Title"
+    assert (
+        identity["project_description"]
+        == "This is the description after leading blank lines."
+    )
+
+
+def test_readme_description_blank_lines_only(tmp_path):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text(
+        "# Project Title\n\n   \n\t\n",
+        encoding="utf-8",
+    )
+    identity = utils.get_project_identity(tmp_path)
+    assert identity["project_name"] == "Project Title"
+    assert identity["project_description"] == ""
