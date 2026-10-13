@@ -696,7 +696,7 @@ def _replace_line_block(text, regex, replacement=None):
 
     ``regex`` should be a compiled search pattern that matches an entire
     line. Lines that follow each other and match are treated as a single block.
-    If ``replacement`` is ``None`` the block is simply removed; otherwise
+    If ``replacement`` is ``None`` the block is removed; otherwise
     ``replacement`` is inserted once for each block.
     """
     lines = text.splitlines()
