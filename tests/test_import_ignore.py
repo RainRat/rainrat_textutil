@@ -200,3 +200,55 @@ def test_cli_import_ig_alias(tmp_path, monkeypatch):
     content = out_file.read_text(encoding="utf-8")
     assert "index.js" in content
     assert "data.temp" not in content
+
+
+def test_import_ignore_patterns_no_valid_patterns_warning(tmp_path, caplog):
+    ignore_file = tmp_path / "comments_only.ignore"
+    ignore_file.write_text("# Only comment line\n# Another comment\n", encoding="utf-8")
+
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+    initial_filenames = list(config["filters"]["exclusions"]["filenames"])
+
+    import_ignore_patterns(ignore_file, config)
+
+    assert config["filters"]["exclusions"]["filenames"] == initial_filenames
+    assert "No valid ignore patterns found" in caplog.text
+
+
+def test_import_ignore_patterns_none_config_sections(tmp_path):
+    ignore_file = tmp_path / "rules.txt"
+    ignore_file.write_text("*.tmp\n", encoding="utf-8")
+
+    config_filters_none = {"filters": None}
+    import_ignore_patterns(ignore_file, config_filters_none)
+    assert "*.tmp" in config_filters_none["filters"]["exclusions"]["filenames"]
+
+    config_exclusions_none = {"filters": {"exclusions": None}}
+    import_ignore_patterns(ignore_file, config_exclusions_none)
+    assert "*.tmp" in config_exclusions_none["filters"]["exclusions"]["filenames"]
+
+    config_filenames_none = {"filters": {"exclusions": {"filenames": None}}}
+    import_ignore_patterns(ignore_file, config_filenames_none)
+    assert "*.tmp" in config_filenames_none["filters"]["exclusions"]["filenames"]
+
+
+def test_cli_import_ignore_with_list_replacements(tmp_path, monkeypatch, capsys):
+    rules_file = tmp_path / "ignore.txt"
+    rules_file.write_text("*.log\n", encoding="utf-8")
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            "--list-replacements",
+            "--import-ignore",
+            str(rules_file),
+        ],
+    )
+
+    from sourcecombine import main
+    with pytest.raises(SystemExit):
+        main()
+
+    captured = capsys.readouterr()
+    assert "ACTIVE SEARCH-AND-REPLACE RULES" in captured.out
