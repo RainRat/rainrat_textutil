@@ -200,3 +200,54 @@ def test_cli_import_ig_alias(tmp_path, monkeypatch):
     content = out_file.read_text(encoding="utf-8")
     assert "index.js" in content
     assert "data.temp" not in content
+
+
+def test_import_ignore_patterns_no_valid_patterns_comments_only(tmp_path):
+    comments_file = tmp_path / "comments.ignore"
+    comments_file.write_text("# Line 1\n# Line 2\n\n", encoding="utf-8")
+
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+    result = import_ignore_patterns(comments_file, config)
+
+    assert result is config
+    assert config['filters']['exclusions']['filenames'] == utils.DEFAULT_CONFIG['filters']['exclusions']['filenames']
+
+
+def test_import_ignore_patterns_none_config_sections(tmp_path):
+    ignore_file = tmp_path / "valid.ignore"
+    ignore_file.write_text("*.log\n", encoding="utf-8")
+
+    config1 = {'filters': None}
+    import_ignore_patterns(ignore_file, config1)
+    assert "*.log" in config1['filters']['exclusions']['filenames']
+
+    config2 = {'filters': {'exclusions': None}}
+    import_ignore_patterns(ignore_file, config2)
+    assert "*.log" in config2['filters']['exclusions']['filenames']
+
+    config3 = {'filters': {'exclusions': {'filenames': None}}}
+    import_ignore_patterns(ignore_file, config3)
+    assert "*.log" in config3['filters']['exclusions']['filenames']
+
+
+def test_cli_import_ignore_with_list_replacements(tmp_path, monkeypatch, capsys):
+    rules_file = tmp_path / "ignore.txt"
+    rules_file.write_text("*.skip_me\n", encoding="utf-8")
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            "--import-ignore",
+            str(rules_file),
+            "--list-replacements",
+        ],
+    )
+
+    from sourcecombine import main
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+
+    assert exc_info.value.code == 0
+    captured = capsys.readouterr()
+    assert "ACTIVE SEARCH-AND-REPLACE RULES" in captured.out
