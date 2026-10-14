@@ -205,7 +205,7 @@ The tool installs these packages automatically during setup:
 4.  **Run the Test Suite (Optional):**
     To verify your setup or run tests before contributing:
     ```bash
-    pip install pytest pytest-mock
+    pip install pytest pytest-mock pytest-cov
     python -m pytest
     ```
 
