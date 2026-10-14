@@ -4063,10 +4063,10 @@ def explain_paths(paths, config=None, json_format=False):
                 tokens_str = f"{meta['tokens']:,}" if meta['tokens'] is not None else "Unknown"
                 lines_str = f"{meta['lines']:,}" if meta['lines'] is not None else "Unknown"
                 print(f"  {C_DIM}Metadata:{C_RESET}")
-                print(f"    - Language: {meta['language']}")
-                print(f"    - Size:     {size_str}")
-                print(f"    - Lines:    {lines_str}")
-                print(f"    - Tokens:   {tokens_str}")
+                print(f"    {C_DIM}- Language:{C_RESET} {meta['language']}")
+                print(f"    {C_DIM}- Size:    {C_RESET} {size_str}")
+                print(f"    {C_DIM}- Lines:   {C_RESET} {lines_str}")
+                print(f"    {C_DIM}- Tokens:  {C_RESET} {tokens_str}")
             print()
 
 
