@@ -135,6 +135,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--export-ignore` (`--export-ig`): Export all active ignore patterns (from ignore files and configuration exclusions) to an ignore file (defaults to `.sourcecombineignore`). Use `-` for standard output (`stdout`) and `--json` for machine-readable output.
 *   `--import-ignore FILENAME` (`--import-ig`, `--import-rules-ignore`): Import glob ignore patterns from an ignore file, JSON or YAML file (or `-` for standard input).
 *   `--export-replacements` (`--export-rep`, `--export-rules`): Export all active search-and-replace rules (from configuration files and CLI flags) to a JSON file (defaults to `replacements.json`). Use `-` for standard output (`stdout`).
+*   `--export-presets` (`--export-pre`): Export all built-in configuration preset definitions and expanded options to a JSON file (defaults to `presets.json`). Use `-` for standard output (`stdout`).
 *   `--system-info`, `--sys-info`: Show environment details (Python version, OS, and other system details). Use `--json` for machine-readable output.
 *   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without writing them to disk.
 *   `--analyze` (`-A`): Run project analysis without generating output files. Shortcut for `--dry-run --estimate-tokens --overview --include-tree --tree`.
@@ -479,7 +480,19 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
    python sourcecombine.py --list-presets
    ```
 
-10. **Display system environment and project details:**
+10. **Export built-in presets:**
+    Save built-in preset definitions and expanded options to a JSON file or output to stdout (`-`):
+    ```bash
+    python sourcecombine.py --export-presets presets.json
+    ```
+
+11. **Override project metadata:**
+    Pass explicit metadata values (such as name, version, and author) to override auto-detected project details in reports and templates:
+    ```bash
+    python sourcecombine.py --project-info --project-name "MyProject" --project-version "2.0.0" --project-author "Jane Doe"
+    ```
+
+12. **Display system environment and project details:**
     Check Python version, OS platform, optional dependencies, and detected project metadata:
     ```bash
     python sourcecombine.py --system-info
