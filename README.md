@@ -130,6 +130,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--explain PATH` (`--exp`): Analyze and explain whether the specified path(s) would be included or excluded by the current configuration and filters. Supports `--json` format.
 *   `--validate-config [PATH]` (`--validate`): Validate a specified or auto-discovered configuration file against syntax and schema rules without running file processing. Use `-` to read from standard input (`stdin`). Use `--json` for machine-readable output.
 *   `--show-config` (`--show-cfg`): Display the final configuration being used and exit. Use `--json` for machine-readable output.
+*   `--import-config FILENAME` (`--import-cfg`): Import and deep-merge configuration settings from a JSON or YAML file (or `-` for standard input).
 *   `--export-config` (`--export-cfg`): Save the final combined configuration to a YAML file and exit. Use `-` to output to standard output (`stdout`).
 *   `--export-ignore` (`--export-ig`): Export all active ignore patterns (from ignore files and configuration exclusions) to an ignore file (defaults to `.sourcecombineignore`). Use `-` for standard output (`stdout`) and `--json` for machine-readable output.
 *   `--import-ignore FILENAME` (`--import-ig`, `--import-rules-ignore`): Import glob ignore patterns from an ignore file, JSON or YAML file (or `-` for standard input).
@@ -664,7 +665,13 @@ You can check, inspect, or export your configuration settings without running fi
    python sourcecombine.py --show-config
    ```
 
-3. **Export Combined Configuration:**
+3. **Import Configuration Settings:**
+   Import and deep-merge additional configuration settings from a JSON/YAML file or standard input (`-`):
+   ```bash
+   python sourcecombine.py --import-config custom_settings.yml
+   ```
+
+4. **Export Combined Configuration:**
    Save the final combined settings to a new configuration file or print them to the terminal (`-`):
    ```bash
    python sourcecombine.py --export-config exported_config.yml
