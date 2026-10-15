@@ -4,8 +4,9 @@ import logging
 import platform
 import re
 import sys
+import time
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -696,7 +697,7 @@ def _replace_line_block(text, regex, replacement=None):
 
     ``regex`` should be a compiled search pattern that matches an entire
     line. Lines that follow each other and match are treated as a single block.
-    If ``replacement`` is ``None`` the block is simply removed; otherwise
+    If ``replacement`` is ``None`` the block is removed; otherwise
     ``replacement`` is inserted once for each block.
     """
     lines = text.splitlines()
@@ -784,18 +785,27 @@ def _raise_validation_error(key: str, context: str, requirement: str) -> None:
     raise InvalidConfigError(message)
 
 
+def _validate_type(
+    container: Mapping[str, Any],
+    key: str,
+    context: str,
+    expected_type: type,
+    requirement: str,
+) -> None:
+    """Ensure the value at ``key`` in ``container`` is of ``expected_type`` if present."""
+    val = container.get(key)
+    if val is not None and not isinstance(val, expected_type):
+        _raise_validation_error(key, context, requirement)
+
+
 def _validate_bool(container: Mapping[str, Any], key: str, context: str) -> None:
     """Ensure the value at ``key`` in ``container`` is a boolean if present."""
-    val = container.get(key)
-    if val is not None and not isinstance(val, bool):
-        _raise_validation_error(key, context, "must be true or false")
+    _validate_type(container, key, context, bool, "must be true or false")
 
 
 def _validate_string(container: Mapping[str, Any], key: str, context: str) -> None:
     """Ensure the value at ``key`` in ``container`` is a string if present."""
-    val = container.get(key)
-    if val is not None and not isinstance(val, str):
-        _raise_validation_error(key, context, "must be text or nothing")
+    _validate_type(container, key, context, str, "must be text or nothing")
 
 
 def _validate_positive_number(
@@ -1524,9 +1534,6 @@ def parse_time_value(value: str) -> float:
     if not value:
         return 0.0
 
-    import time
-    from datetime import datetime, timedelta
-
     value = value.lower().strip()
 
     # Try absolute date YYYY-MM-DD
@@ -2221,17 +2228,11 @@ def get_project_identity(root_folder: str | Path) -> dict:
                         # We look for the first non-empty line after the H1 that isn't another header
                         remaining = content[m.end():].strip()
                         if remaining:
-                            lines = remaining.splitlines()
-                            for line in lines:
-                                line = line.strip()
-                                if line:
-                                    if not line.startswith('#') and not (line.startswith('===') or line.startswith('---')):
-                                        # Limit description length
-                                        desc = line
-                                        if len(desc) > 200:
-                                            desc = desc[:197] + "..."
-                                        identity["project_description"] = desc
-                                    break
+                            first_line = remaining.splitlines()[0].strip()
+                            if not first_line.startswith('#') and not (first_line.startswith('===') or first_line.startswith('---')):
+                                if len(first_line) > 200:
+                                    first_line = first_line[:197] + "..."
+                                identity["project_description"] = first_line
                 except Exception:
                     pass
 

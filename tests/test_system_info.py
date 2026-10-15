@@ -81,3 +81,37 @@ def test_print_system_info_handles_find_spec_exception(capsys):
         captured_json = capsys.readouterr()
         data = json.loads(captured_json.out)
         assert data["dependencies"]["tiktoken"]["installed"] is False
+
+def test_print_system_info_config_autodiscovery(tmp_path, monkeypatch, capsys):
+    import json
+    from sourcecombine import print_system_info
+
+    monkeypatch.chdir(tmp_path)
+
+    # 1. When no config file exists
+    print_system_info(json_format=False)
+    out1 = capsys.readouterr().out
+    assert "Local Config:" in out1
+    assert "Not found (N/A)" in out1
+
+    print_system_info(json_format=True)
+    out_json1 = capsys.readouterr().out
+    data1 = json.loads(out_json1)
+    assert data1["local_config"]["found"] is False
+    assert data1["local_config"]["path"] is None
+
+    # 2. When sourcecombine.yaml exists
+    yaml_config = tmp_path / "sourcecombine.yaml"
+    yaml_config.write_text("output:\n  format: text\n")
+
+    print_system_info(json_format=False)
+    out2 = capsys.readouterr().out
+    assert "Local Config:" in out2
+    assert "Found" in out2
+    assert "sourcecombine.yaml" in out2
+
+    print_system_info(json_format=True)
+    out_json2 = capsys.readouterr().out
+    data2 = json.loads(out_json2)
+    assert data2["local_config"]["found"] is True
+    assert "sourcecombine.yaml" in data2["local_config"]["path"]

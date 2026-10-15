@@ -130,6 +130,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--explain PATH` (`--exp`): Analyze and explain whether the specified path(s) would be included or excluded by the current configuration and filters. Supports `--json` format.
 *   `--validate-config [PATH]` (`--validate`): Validate a specified or auto-discovered configuration file against syntax and schema rules without running file processing. Use `-` to read from standard input (`stdin`). Use `--json` for machine-readable output.
 *   `--show-config` (`--show-cfg`): Display the final configuration being used and exit. Use `--json` for machine-readable output.
+*   `--import-config FILENAME` (`--import-cfg`): Import and deep-merge configuration settings from a JSON or YAML file (or `-` for standard input).
 *   `--export-config` (`--export-cfg`): Save the final combined configuration to a YAML file and exit. Use `-` to output to standard output (`stdout`).
 *   `--export-ignore` (`--export-ig`): Export all active ignore patterns (from ignore files and configuration exclusions) to an ignore file (defaults to `.sourcecombineignore`). Use `-` for standard output (`stdout`) and `--json` for machine-readable output.
 *   `--import-ignore FILENAME` (`--import-ig`, `--import-rules-ignore`): Import glob ignore patterns from an ignore file, JSON or YAML file (or `-` for standard input).
@@ -195,18 +196,18 @@ The tool installs these packages automatically during setup:
 
 3.  **Install Required Dependencies:**
     ```bash
-    pip install -r requirements.txt
+    python3 -m pip install -r requirements.txt
     ```
     To enable exact token counting, install `tiktoken` as well:
     ```bash
-    pip install tiktoken
+    python3 -m pip install tiktoken
     ```
 
 4.  **Run the Test Suite (Optional):**
     To verify your setup or run tests before contributing:
     ```bash
-    pip install pytest pytest-mock
-    python -m pytest
+    python3 -m pip install pytest pytest-mock pytest-cov
+    python3 -m pytest
     ```
 
 5.  **Run the Tool:**
@@ -426,8 +427,6 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
    python sourcecombine.py --list-ignores
    # Filter patterns by keyword
    python sourcecombine.py --list-ignores py
-   # Import ignore patterns from a file or JSON
-   python sourcecombine.py --import-ignore ignore.json --list-ignores
    ```
 
 2. **Export active ignore rules:**
@@ -436,50 +435,56 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
    python sourcecombine.py --export-ignore .sourcecombineignore
    ```
 
-3. **Inspect active search-and-replace rules:**
+3. **Import ignore rules:**
+   Load glob ignore patterns from an ignore file, JSON or YAML file (or standard input `-`):
+   ```bash
+   python sourcecombine.py --import-ignore ignore.json --list-ignores
+   ```
+
+4. **Inspect active search-and-replace rules:**
    Display active regex replacement rules loaded from configuration or CLI arguments:
    ```bash
    python sourcecombine.py --list-replacements
    ```
 
-4. **Export active search-and-replace rules:**
+5. **Export active search-and-replace rules:**
    Save active regex replacement rules to a JSON file or output to stdout (`-`):
    ```bash
    python sourcecombine.py --export-replacements rules.json
    ```
 
-5. **Import search-and-replace rules:**
+6. **Import search-and-replace rules:**
    Load search-and-replace rules from a JSON or YAML file (or standard input `-`):
    ```bash
    python sourcecombine.py --import-replacements rules.json --list-replacements
    ```
 
-6. **Inspect template placeholders:**
+7. **Inspect template placeholders:**
    List supported placeholders for headers, footers, and templates (optionally filtered by keyword):
    ```bash
    python sourcecombine.py --list-placeholders git
    ```
 
-7. **Inspect supported languages and file extensions:**
+8. **Inspect supported languages and file extensions:**
    Filter supported language tags or extension mappings by keyword:
    ```bash
    python sourcecombine.py --list-languages python
    python sourcecombine.py --list-extensions py
    ```
 
-8. **Inspect supported output formats and built-in presets:**
+9. **Inspect supported output formats and built-in presets:**
    List supported output formats or built-in configuration presets:
    ```bash
    python sourcecombine.py --list-formats
    python sourcecombine.py --list-presets
    ```
 
-9. **Display system environment and project details:**
-   Check Python version, OS platform, optional dependencies, and detected project metadata:
-   ```bash
-   python sourcecombine.py --system-info
-   python sourcecombine.py --project-info
-   ```
+10. **Display system environment and project details:**
+    Check Python version, OS platform, optional dependencies, and detected project metadata:
+    ```bash
+    python sourcecombine.py --system-info
+    python sourcecombine.py --project-info
+    ```
 
 ### Advanced Filtering and AI Optimization
 
@@ -664,7 +669,13 @@ You can check, inspect, or export your configuration settings without running fi
    python sourcecombine.py --show-config
    ```
 
-3. **Export Combined Configuration:**
+3. **Import Configuration Settings:**
+   Import and deep-merge additional configuration settings from a JSON/YAML file or standard input (`-`):
+   ```bash
+   python sourcecombine.py --import-config custom_settings.yml
+   ```
+
+4. **Export Combined Configuration:**
    Save the final combined settings to a new configuration file or print them to the terminal (`-`):
    ```bash
    python sourcecombine.py --export-config exported_config.yml

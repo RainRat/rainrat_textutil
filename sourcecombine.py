@@ -4040,7 +4040,7 @@ def explain_paths(paths, config=None, json_format=False):
     if json_format:
         print(json.dumps(results, indent=2))
     else:
-        print(f"{C_BOLD}{C_CYAN}PATH MATCH ANALYSIS & EXPLANATION{C_RESET}\n")
+        print(f"{C_BOLD}{C_YELLOW}PATH MATCH ANALYSIS & EXPLANATION{C_RESET}\n")
 
         for item in results:
             status_color = C_GREEN if item['included'] else C_RED
@@ -4063,10 +4063,10 @@ def explain_paths(paths, config=None, json_format=False):
                 tokens_str = f"{meta['tokens']:,}" if meta['tokens'] is not None else "Unknown"
                 lines_str = f"{meta['lines']:,}" if meta['lines'] is not None else "Unknown"
                 print(f"  {C_DIM}Metadata:{C_RESET}")
-                print(f"    - Language: {meta['language']}")
-                print(f"    - Size:     {size_str}")
-                print(f"    - Lines:    {lines_str}")
-                print(f"    - Tokens:   {tokens_str}")
+                print(f"    {C_DIM}- Language:{C_RESET} {meta['language']}")
+                print(f"    {C_DIM}- Size:    {C_RESET} {size_str}")
+                print(f"    {C_DIM}- Lines:   {C_RESET} {lines_str}")
+                print(f"    {C_DIM}- Tokens:  {C_RESET} {tokens_str}")
             print()
 
 
@@ -4098,31 +4098,28 @@ PRESET_ALIASES = {
 }
 
 
-def parse_sort_choice(val: str) -> str:
-    """Normalize and map CLI --sort choice values and aliases."""
+def _parse_choice_alias(val: Any, aliases: Mapping[str, str]) -> Any:
+    """Normalize string input and look up CLI choice aliases."""
     if not isinstance(val, str):
         return val
-    v = val.lower()
-    return SORT_ALIASES.get(v, v)
+    v = val.strip()
+    v_lower = v.lower()
+    return aliases.get(v, aliases.get(v_lower, v_lower))
+
+
+def parse_sort_choice(val: str) -> str:
+    """Normalize and map CLI --sort choice values and aliases."""
+    return _parse_choice_alias(val, SORT_ALIASES)
 
 
 def parse_format_choice(val: str) -> str:
     """Normalize and map CLI --format choice values and aliases."""
-    if not isinstance(val, str):
-        return val
-    v = val.lower()
-    return FORMAT_ALIASES.get(v, v)
+    return _parse_choice_alias(val, FORMAT_ALIASES)
 
 
 def parse_preset_choice(val: str) -> str:
     """Normalize and map CLI --preset choice values and aliases."""
-    if not isinstance(val, str):
-        return val
-    v = val.strip()
-    if v == "-A":
-        return "analyze"
-    v_lower = v.lower()
-    return PRESET_ALIASES.get(v_lower, v_lower)
+    return _parse_choice_alias(val, PRESET_ALIASES)
 
 
 class ColoredArgumentParser(argparse.ArgumentParser):
@@ -4982,6 +4979,12 @@ def main():
         help="Show the final combined configuration (including defaults, files, and options) and exit. Use --json for machine-readable output.",
     )
     utility_group.add_argument(
+        "--import-config",
+        "--import-cfg",
+        metavar="FILENAME",
+        help="Import and deep-merge configuration settings from a JSON or YAML file (or '-' for standard input).",
+    )
+    utility_group.add_argument(
         "--export-config",
         "--export-cfg",
         nargs="?",
@@ -5215,6 +5218,10 @@ def main():
     if import_replacements_val and type(import_replacements_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
         import_replacements_val = None
 
+    import_config_val = getattr(args, 'import_config', None)
+    if import_config_val and type(import_config_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        import_config_val = None
+
     import_ignore_val = getattr(args, 'import_ignore', None)
     if import_ignore_val and type(import_ignore_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
         import_ignore_val = None
@@ -5329,6 +5336,9 @@ def main():
                 utils.validate_config(config)
         except (ConfigNotFoundError, utils.InvalidConfigError) as e:
             _handle_invalid_config_error(e, args.verbose)
+
+        if import_config_val:
+            import_config(import_config_val, config)
 
         if import_ignore_val:
             import_ignore_patterns(import_ignore_val, config)
@@ -6021,6 +6031,9 @@ def main():
 
     if args.truncate_tokens is not None:
         config['processing']['max_tokens'] = args.truncate_tokens
+
+    if import_config_val:
+        import_config(import_config_val, config)
 
     if import_ignore_val:
         import_ignore_patterns(import_ignore_val, config)
@@ -7944,7 +7957,18 @@ def print_system_info(json_format=False):
             "purpose": purpose
         }
 
-    config_file = Path("sourcecombine.yml")
+    config_defaults = [
+        'sourcecombine.yml', 'sourcecombine.yaml',
+        'sourcecombine.json',
+        'config.yml', 'config.yaml',
+        'config.json'
+    ]
+    config_file = None
+    for candidate in config_defaults:
+        p = Path(candidate)
+        if p.is_file():
+            config_file = p
+            break
 
     if json_format:
         output = {
@@ -7954,8 +7978,8 @@ def print_system_info(json_format=False):
             "executable": sys.executable,
             "current_folder": str(Path.cwd()),
             "local_config": {
-                "found": config_file.exists(),
-                "path": str(config_file.resolve()) if config_file.exists() else None
+                "found": config_file is not None,
+                "path": str(config_file.resolve()) if config_file is not None else None
             },
             "dependencies": dep_info
         }
@@ -7964,7 +7988,7 @@ def print_system_info(json_format=False):
 
     print(f"\n{C_BOLD}{C_CYAN}=== SYSTEM INFORMATION ==={C_RESET}")
 
-    config_status = f"{'Found' if config_file.exists() else 'Not found'} ({config_file.resolve() if config_file.exists() else 'N/A'})"
+    config_status = f"{'Found' if config_file is not None else 'Not found'} ({config_file.resolve() if config_file is not None else 'N/A'})"
 
     sys_info = [
         ("SourceCombine Version", __version__),
@@ -8116,7 +8140,7 @@ def print_placeholders(query=None, json_format=False):
         if filtered_placeholders:
             print(f"\n  {C_BOLD}{category}{C_RESET}")
             for placeholder, description in filtered_placeholders:
-                print(f"    {C_BOLD}{C_CYAN}{placeholder:<{placeholder_width}}{C_RESET} {C_DIM}{description}{C_RESET}")
+                print(f"    {C_BOLD}{placeholder:<{placeholder_width}}{C_RESET} {description}")
 
     if query_lower and total_matched == 0:
         print(f"\n  {C_YELLOW}No template placeholders matched the filter query '{query}'.{C_RESET}")
@@ -8556,6 +8580,74 @@ def import_ignore_patterns(source_path, config):
     return config
 
 
+def _deep_merge_dict(target, source):
+    """Recursively merge source dictionary into target dictionary."""
+    if not isinstance(target, dict) or not isinstance(source, dict):
+        return target
+    for key, value in source.items():
+        if key in target and isinstance(target[key], dict) and isinstance(value, dict):
+            _deep_merge_dict(target[key], value)
+        else:
+            target[key] = copy.deepcopy(value)
+    return target
+
+
+def import_config(source_path, config):
+    """Import and deep-merge configuration settings from a JSON or YAML file (or '-' for stdin) into config."""
+    if not source_path or config is None:
+        return config
+
+    source_str = str(source_path)
+    is_stdin = source_str == '-'
+
+    content = None
+    if is_stdin:
+        content = sys.stdin.read()
+    else:
+        file_path = Path(source_str)
+        if not file_path.exists():
+            logging.error("Configuration import file not found: %s", file_path)
+            sys.exit(1)
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+        except OSError as exc:
+            logging.error("Could not read configuration import file '%s': %s", file_path, exc)
+            sys.exit(1)
+
+    if not content or not content.strip():
+        logging.warning("Configuration import file '%s' is empty; no settings imported.", source_str)
+        return config
+
+    try:
+        imported = json.loads(content)
+    except Exception:
+        if utils.yaml:
+            try:
+                imported = utils.yaml.safe_load(content)
+            except Exception as exc:
+                logging.error("Could not parse configuration import file '%s' as JSON or YAML: %s", source_str, exc)
+                sys.exit(1)
+        else:
+            logging.error("Could not parse configuration import file '%s' as JSON.", source_str)
+            sys.exit(1)
+
+    if not isinstance(imported, dict):
+        logging.error("Invalid configuration import format in '%s': must be a JSON/YAML dictionary.", source_str)
+        sys.exit(1)
+
+    _deep_merge_dict(config, imported)
+
+    try:
+        utils.validate_config(config, source=source_str)
+    except utils.InvalidConfigError as exc:
+        logging.error("Invalid configuration settings in '%s': %s", source_str, exc)
+        sys.exit(1)
+
+    logging.debug("Imported configuration settings from '%s'.", source_str)
+    return config
+
+
 def import_replacements(source_path, config):
     """Import search-and-replace rules from a JSON or YAML file (or '-' for stdin) into config."""
     if not source_path or config is None:
@@ -8989,15 +9081,17 @@ def print_project_info(stats, json_format=False):
     for category, fields in categories.items():
         print(f"\n  {C_BOLD}{category}:{C_RESET}")
         for label, value in fields:
-            display_value = str(value) if (value is not None and str(value).strip() != "") else "N/A"
+            is_missing = value is None or str(value).strip() == "" or str(value) == "N/A"
+            display_value = "N/A" if is_missing else str(value)
+            formatted_value = f"{C_DIM}{display_value}{C_RESET}" if is_missing else display_value
             label_str = f"{label}:"
-            if "\n" in display_value:
-                lines = display_value.splitlines()
+            if "\n" in formatted_value:
+                lines = formatted_value.splitlines()
                 print(f"    {C_DIM}{label_str:<{label_width}}{C_RESET}{lines[0]}")
                 for line in lines[1:]:
                     print(f"    {' ':<{label_width}}{line}")
             else:
-                print(f"    {C_DIM}{label_str:<{label_width}}{C_RESET}{display_value}")
+                print(f"    {C_DIM}{label_str:<{label_width}}{C_RESET}{formatted_value}")
 
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
