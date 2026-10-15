@@ -8963,7 +8963,7 @@ def print_presets(query=None, json_format=False):
             flag = presets_info[preset]["flag"]
             desc = presets_info[preset]["description"]
             flags = presets_info[preset]["flags"]
-            print(f"  {C_BOLD}{C_CYAN}{preset:<{preset_width}}{C_RESET}  {C_DIM}{flag:<{flag_width}}  {desc}{C_RESET}")
+            print(f"  {C_BOLD}{C_CYAN}{preset:<{preset_width}}{C_RESET}  {C_DIM}{flag:<{flag_width}}{C_RESET}  {desc}")
             print(f"  {'':<{preset_width}}  {C_DIM}Expanded: {flags}{C_RESET}")
 
     count_label = f"Matching: {len(items)}" if query_lower else f"Total: {len(presets_info)}"
