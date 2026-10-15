@@ -196,18 +196,18 @@ The tool installs these packages automatically during setup:
 
 3.  **Install Required Dependencies:**
     ```bash
-    pip install -r requirements.txt
+    python3 -m pip install -r requirements.txt
     ```
     To enable exact token counting, install `tiktoken` as well:
     ```bash
-    pip install tiktoken
+    python3 -m pip install tiktoken
     ```
 
 4.  **Run the Test Suite (Optional):**
     To verify your setup or run tests before contributing:
     ```bash
-    pip install pytest pytest-mock pytest-cov
-    python -m pytest
+    python3 -m pip install pytest pytest-mock pytest-cov
+    python3 -m pytest
     ```
 
 5.  **Run the Tool:**
