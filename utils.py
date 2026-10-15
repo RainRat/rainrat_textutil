@@ -2228,17 +2228,11 @@ def get_project_identity(root_folder: str | Path) -> dict:
                         # We look for the first non-empty line after the H1 that isn't another header
                         remaining = content[m.end():].strip()
                         if remaining:
-                            lines = remaining.splitlines()
-                            for line in lines:
-                                line = line.strip()
-                                if line:
-                                    if not line.startswith('#') and not (line.startswith('===') or line.startswith('---')):
-                                        # Limit description length
-                                        desc = line
-                                        if len(desc) > 200:
-                                            desc = desc[:197] + "..."
-                                        identity["project_description"] = desc
-                                    break
+                            first_line = remaining.splitlines()[0].strip()
+                            if not first_line.startswith('#') and not (first_line.startswith('===') or first_line.startswith('---')):
+                                if len(first_line) > 200:
+                                    first_line = first_line[:197] + "..."
+                                identity["project_description"] = first_line
                 except Exception:
                     pass
 
