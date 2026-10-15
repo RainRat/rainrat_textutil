@@ -486,6 +486,12 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
     python sourcecombine.py --project-info
     ```
 
+11. **Override project metadata:**
+    Pass explicit metadata values (such as name, version, and author) to override auto-detected project details in reports and templates:
+    ```bash
+    python sourcecombine.py --project-info --project-name "MyProject" --project-version "2.0.0" --project-author "Jane Doe"
+    ```
+
 ### Advanced Filtering and AI Optimization
 
 #### Explain Exclusion/Inclusion
