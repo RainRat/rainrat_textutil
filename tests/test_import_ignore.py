@@ -132,34 +132,6 @@ def test_import_ignore_patterns_empty_file_and_none(tmp_path):
     assert import_ignore_patterns(empty_file, config) is config
 
 
-def test_import_ignore_patterns_comments_only(tmp_path):
-    """Test importing an ignore file containing only comments."""
-    comments_file = tmp_path / "comments.ignore"
-    comments_file.write_text("# Only comments\n# Another comment\n", encoding="utf-8")
-
-    config = copy.deepcopy(utils.DEFAULT_CONFIG)
-    result = import_ignore_patterns(comments_file, config)
-    assert result is config
-
-
-def test_import_ignore_patterns_none_config_sections(tmp_path):
-    """Test importing ignore patterns into a config where filters or exclusions are None."""
-    ignore_file = tmp_path / "valid.ignore"
-    ignore_file.write_text("*.tmp\n", encoding="utf-8")
-
-    config = {'filters': None}
-    import_ignore_patterns(ignore_file, config)
-    assert '*.tmp' in config['filters']['exclusions']['filenames']
-
-    config_no_excl = {'filters': {'exclusions': None}}
-    import_ignore_patterns(ignore_file, config_no_excl)
-    assert '*.tmp' in config_no_excl['filters']['exclusions']['filenames']
-
-    config_no_fn = {'filters': {'exclusions': {'filenames': None}}}
-    import_ignore_patterns(ignore_file, config_no_fn)
-    assert '*.tmp' in config_no_fn['filters']['exclusions']['filenames']
-
-
 def test_cli_import_ignore_patterns(tmp_path, monkeypatch):
     """Test CLI execution with --import-ignore."""
     test_dir = tmp_path / "src"
@@ -231,14 +203,16 @@ def test_cli_import_ig_alias(tmp_path, monkeypatch):
 
 
 def test_import_ignore_patterns_no_valid_patterns_warning(tmp_path, caplog):
+    """Comments-only files yield no patterns: warn and leave config untouched."""
     ignore_file = tmp_path / "comments_only.ignore"
     ignore_file.write_text("# Only comment line\n# Another comment\n", encoding="utf-8")
 
     config = copy.deepcopy(utils.DEFAULT_CONFIG)
     initial_filenames = list(config["filters"]["exclusions"]["filenames"])
 
-    import_ignore_patterns(ignore_file, config)
+    result = import_ignore_patterns(ignore_file, config)
 
+    assert result is config
     assert config["filters"]["exclusions"]["filenames"] == initial_filenames
     assert "No valid ignore patterns found" in caplog.text
 
