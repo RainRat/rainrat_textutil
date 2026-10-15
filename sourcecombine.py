@@ -4098,31 +4098,28 @@ PRESET_ALIASES = {
 }
 
 
-def parse_sort_choice(val: str) -> str:
-    """Normalize and map CLI --sort choice values and aliases."""
+def _parse_choice_alias(val: Any, aliases: Mapping[str, str]) -> Any:
+    """Normalize string input and look up CLI choice aliases."""
     if not isinstance(val, str):
         return val
-    v = val.lower()
-    return SORT_ALIASES.get(v, v)
+    v = val.strip()
+    v_lower = v.lower()
+    return aliases.get(v, aliases.get(v_lower, v_lower))
+
+
+def parse_sort_choice(val: str) -> str:
+    """Normalize and map CLI --sort choice values and aliases."""
+    return _parse_choice_alias(val, SORT_ALIASES)
 
 
 def parse_format_choice(val: str) -> str:
     """Normalize and map CLI --format choice values and aliases."""
-    if not isinstance(val, str):
-        return val
-    v = val.lower()
-    return FORMAT_ALIASES.get(v, v)
+    return _parse_choice_alias(val, FORMAT_ALIASES)
 
 
 def parse_preset_choice(val: str) -> str:
     """Normalize and map CLI --preset choice values and aliases."""
-    if not isinstance(val, str):
-        return val
-    v = val.strip()
-    if v == "-A":
-        return "analyze"
-    v_lower = v.lower()
-    return PRESET_ALIASES.get(v_lower, v_lower)
+    return _parse_choice_alias(val, PRESET_ALIASES)
 
 
 class ColoredArgumentParser(argparse.ArgumentParser):
