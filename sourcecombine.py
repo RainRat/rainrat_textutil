@@ -5010,6 +5010,14 @@ def main():
         help="Export all active text and line search-and-replace rules (from configuration and CLI flags) to a JSON file (defaults to 'replacements.json'). Use '-' for standard output (stdout).",
     )
     utility_group.add_argument(
+        "--export-presets",
+        "--export-pre",
+        nargs="?",
+        const="presets.json",
+        metavar="FILENAME",
+        help="Export all built-in configuration preset definitions and expanded options to a JSON file (defaults to 'presets.json'). Use '-' for standard output (stdout).",
+    )
+    utility_group.add_argument(
         "--system-info",
         "--sys-info",
         action="store_true",
@@ -5155,6 +5163,7 @@ def main():
         args.export_config == '-' or
         getattr(args, 'export_ignore', None) == '-' or
         getattr(args, 'export_replacements', None) == '-' or
+        getattr(args, 'export_presets', None) == '-' or
         args.init == '-' or
         getattr(args, 'init_ignore', None) == '-'
     )
@@ -5212,6 +5221,14 @@ def main():
 
     if args.files_from and export_replacements_val:
         logging.error("You cannot use --export-replacements and --files-from at the same time.")
+        sys.exit(1)
+
+    export_presets_val = getattr(args, 'export_presets', None)
+    if export_presets_val and type(export_presets_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        export_presets_val = None
+
+    if args.files_from and export_presets_val:
+        logging.error("You cannot use --export-presets and --files-from at the same time.")
         sys.exit(1)
 
     import_replacements_val = getattr(args, 'import_replacements', None)
@@ -6198,6 +6215,10 @@ def main():
 
     if export_replacements_val:
         export_replacements(export_replacements_val, config=config, json_format=getattr(args, 'json', False))
+        sys.exit(0)
+
+    if export_presets_val:
+        export_presets(export_presets_val)
         sys.exit(0)
 
     explain_val = getattr(args, 'explain', None)
@@ -8893,25 +8914,64 @@ def print_replacements(query=None, json_format=False, config=None):
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
 
+BUILTIN_PRESETS = {
+    "ai": {
+        "flag": "--ai, -a",
+        "flags": "--format markdown --line-numbers --toc --include-tree --overview --git-log 5 --include-diff --skip-binary --unique",
+        "description": "Preset for AI models / LLMs (Markdown format, line numbers, Table of Contents, file tree, project overview, Git context, duplicate removal, skip binary)."
+    },
+    "analyze": {
+        "flag": "--analyze, -A",
+        "flags": "--dry-run --estimate-tokens --overview --include-tree --tree",
+        "description": "Comprehensive project analysis without generating output files (dry run, token estimation, project overview, file tree preview)."
+    },
+    "review": {
+        "flag": "--review, --rev, --pr",
+        "flags": "--format markdown --line-numbers --toc --include-tree --overview --git-log 10 --include-diff --skip-binary",
+        "description": "Preset for code reviews and Pull Requests (Markdown format, line numbers, Table of Contents, file tree, project overview, Git diffs and logs, skip binary)."
+    }
+}
+
+
+def export_presets(target_path):
+    """Export all built-in configuration preset definitions and expanded options to a JSON file or stdout."""
+    presets_info = BUILTIN_PRESETS
+
+    target_str = str(target_path) if target_path else "presets.json"
+    is_stdout = target_str == '-'
+
+    if not is_stdout:
+        target_file = Path(target_str)
+        if target_file.is_dir() or target_str.endswith(('/', '\\')):
+            target_file = target_file / "presets.json"
+    else:
+        target_file = None
+
+    output = {
+        "exported_to": "-" if is_stdout else str(target_file.resolve() if target_file else "-"),
+        "total_presets": len(presets_info),
+        "presets": presets_info,
+    }
+
+    json_bytes = json.dumps(output, indent=2) + "\n"
+
+    if is_stdout:
+        sys.stdout.write(json_bytes)
+        return
+
+    try:
+        target_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(target_file, "w", encoding="utf-8") as f:
+            f.write(json_bytes)
+        logging.info("Built-in presets exported to %s", target_file.resolve())
+    except OSError as exc:
+        logging.error("Could not export presets to '%s': %s", target_file, exc)
+        sys.exit(1)
+
+
 def print_presets(query=None, json_format=False):
     """Print all built-in presets and their expanded CLI options, optionally filtered by a query."""
-    presets_info = {
-        "ai": {
-            "flag": "--ai, -a",
-            "flags": "--format markdown --line-numbers --toc --include-tree --overview --git-log 5 --include-diff --skip-binary --unique",
-            "description": "Preset for AI models / LLMs (Markdown format, line numbers, Table of Contents, file tree, project overview, Git context, duplicate removal, skip binary)."
-        },
-        "analyze": {
-            "flag": "--analyze, -A",
-            "flags": "--dry-run --estimate-tokens --overview --include-tree --tree",
-            "description": "Comprehensive project analysis without generating output files (dry run, token estimation, project overview, file tree preview)."
-        },
-        "review": {
-            "flag": "--review, --rev, --pr",
-            "flags": "--format markdown --line-numbers --toc --include-tree --overview --git-log 10 --include-diff --skip-binary",
-            "description": "Preset for code reviews and Pull Requests (Markdown format, line numbers, Table of Contents, file tree, project overview, Git diffs and logs, skip binary)."
-        }
-    }
+    presets_info = BUILTIN_PRESETS
 
     if json_format:
         if query:
@@ -8963,7 +9023,7 @@ def print_presets(query=None, json_format=False):
             flag = presets_info[preset]["flag"]
             desc = presets_info[preset]["description"]
             flags = presets_info[preset]["flags"]
-            print(f"  {C_BOLD}{C_CYAN}{preset:<{preset_width}}{C_RESET}  {C_DIM}{flag:<{flag_width}}  {desc}{C_RESET}")
+            print(f"  {C_BOLD}{C_CYAN}{preset:<{preset_width}}{C_RESET}  {C_DIM}{flag:<{flag_width}}{C_RESET}  {desc}")
             print(f"  {'':<{preset_width}}  {C_DIM}Expanded: {flags}{C_RESET}")
 
     count_label = f"Matching: {len(items)}" if query_lower else f"Total: {len(presets_info)}"

@@ -223,3 +223,24 @@ def test_import_cfg_alias(tmp_path, monkeypatch):
     assert exc_info.value.code == 0
     out_json = json.loads(captured_out.getvalue())
     assert out_json["filters"]["min_lines"] == 15
+
+
+def test_deep_merge_dict_non_dict_inputs():
+    assert sourcecombine._deep_merge_dict("not_a_dict", {"a": 1}) == "not_a_dict"
+    assert sourcecombine._deep_merge_dict({"a": 1}, "not_a_dict") == {"a": 1}
+
+
+def test_main_invalid_config_error_handling(tmp_path, monkeypatch):
+    invalid_config = tmp_path / "invalid_config.json"
+    invalid_config.write_text(json.dumps({"search": {"max_depth": -10}}), encoding="utf-8")
+
+    monkeypatch.setattr("sys.argv", [
+        "sourcecombine.py",
+        str(tmp_path),
+        "--config", str(invalid_config)
+    ])
+
+    with pytest.raises(SystemExit) as exc_info:
+        sourcecombine.main()
+
+    assert exc_info.value.code == 1
