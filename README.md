@@ -75,6 +75,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--replace PATTERN REPLACEMENT`: Find and replace content using regular expressions. You can repeat this flag.
 *   `--replace-line PATTERN REPLACEMENT`: Find and replace line patterns using regular expressions. You can repeat this flag.
 *   `--import-replacements FILENAME` (`--import-rep`, `--import-rules`): Import search-and-replace rules from a JSON or YAML file (or `-` for standard input).
+*   `--import-presets FILENAME` (`--import-pre`, `--import-preset`): Import custom configuration preset definitions from a JSON or YAML file (or `-` for standard input).
 *   `--git-log [N]`: Include recent Git commit history in project overview and templates (`{{GIT_LOG}}`). Accepts an optional commit count `N` (default is 5).
 *   `--include-diff`: Include Git diffs in project overview and templates (`{{GIT_DIFF}}` and `{{FILE_DIFF}}`).
 *   `--diff`: Display colored line differences when writing, extracting, verifying, or modifying files.
@@ -136,6 +137,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--import-ignore FILENAME` (`--import-ig`, `--import-rules-ignore`): Import glob ignore patterns from an ignore file, JSON or YAML file (or `-` for standard input).
 *   `--export-replacements` (`--export-rep`, `--export-rules`): Export all active search-and-replace rules (from configuration files and CLI flags) to a JSON file (defaults to `replacements.json`). Use `-` for standard output (`stdout`).
 *   `--export-presets` (`--export-pre`): Export all built-in configuration preset definitions and expanded options to a JSON file (defaults to `presets.json`). Use `-` for standard output (`stdout`).
+*   `--import-presets FILENAME` (`--import-pre`, `--import-preset`): Import custom configuration preset definitions from a JSON or YAML file (or `-` for standard input).
 *   `--system-info`, `--sys-info`: Show environment details (Python version, OS, and other system details). Use `--json` for machine-readable output.
 *   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without writing them to disk.
 *   `--analyze` (`-A`): Run project analysis without generating output files. Shortcut for `--dry-run --estimate-tokens --overview --include-tree --tree`.
@@ -486,13 +488,19 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
     python sourcecombine.py --export-presets presets.json
     ```
 
-11. **Override project metadata:**
+11. **Import custom presets:**
+    Load custom preset definitions from a JSON or YAML file (or standard input `-`):
+    ```bash
+    python sourcecombine.py --import-presets custom_presets.json --list-presets
+    ```
+
+12. **Override project metadata:**
     Pass explicit metadata values (such as name, version, and author) to override auto-detected project details in reports and templates:
     ```bash
     python sourcecombine.py --project-info --project-name "MyProject" --project-version "2.0.0" --project-author "Jane Doe"
     ```
 
-12. **Display system environment and project details:**
+13. **Display system environment and project details:**
     Check Python version, OS platform, optional dependencies, and detected project metadata:
     ```bash
     python sourcecombine.py --system-info
