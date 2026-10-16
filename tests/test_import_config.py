@@ -244,3 +244,23 @@ def test_main_invalid_config_error_handling(tmp_path, monkeypatch):
         sourcecombine.main()
 
     assert exc_info.value.code == 1
+
+
+def test_cli_list_replacements_with_import_config(tmp_path, monkeypatch):
+    cfg_file = tmp_path / "config.json"
+    cfg_file.write_text(json.dumps({
+        "processing": {
+            "regex_replacements": [{"pattern": "FOO", "replacement": "BAR"}]
+        }
+    }), encoding="utf-8")
+
+    monkeypatch.setattr("sys.argv", [
+        "sourcecombine.py",
+        "--list-replacements",
+        "--import-config", str(cfg_file)
+    ])
+
+    with pytest.raises(SystemExit) as exc_info:
+        sourcecombine.main()
+
+    assert exc_info.value.code == 0
