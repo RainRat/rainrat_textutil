@@ -4767,6 +4767,8 @@ def main():
     )
     processing_group.add_argument(
         "--apply-in-place",
+        "--in-place",
+        "--inplace",
         action="store_true",
         help="Save processed changes directly back to the original source files.",
     )
