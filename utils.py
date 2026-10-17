@@ -1050,11 +1050,23 @@ def _validate_output_section(config):
         'summary_json',
     ]
 
+    bool_fields = [
+        'table_of_contents',
+        'project_overview',
+        'sort_reverse',
+        'show_diff',
+        'include_diff',
+        'mirror',
+        'skip_content',
+        'collapsible',
+    ]
+
     for field in string_fields:
         _validate_string(output_conf, field, 'output')
 
-    _validate_bool(output_conf, 'table_of_contents', 'output')
-    _validate_bool(output_conf, 'project_overview', 'output')
+    for field in bool_fields:
+        _validate_bool(output_conf, field, 'output')
+
     _validate_positive_number(output_conf, 'git_log_count', 'output')
 
     placeholder = output_conf.get('max_size_placeholder')
@@ -1074,13 +1086,6 @@ def _validate_output_section(config):
         raise InvalidConfigError(
             "'output.sort_by' must be one of: name, size, modified, tokens, lines, depth, language"
         )
-
-    _validate_bool(output_conf, 'sort_reverse', 'output')
-    _validate_bool(output_conf, 'show_diff', 'output')
-    _validate_bool(output_conf, 'include_diff', 'output')
-    _validate_bool(output_conf, 'mirror', 'output')
-    _validate_bool(output_conf, 'skip_content', 'output')
-    _validate_bool(output_conf, 'collapsible', 'output')
 
 
 def apply_line_regex_replacements(text, rules):
