@@ -575,6 +575,16 @@ To perform case-insensitive matching with `--grep` or `--exclude-grep`, add `--g
 python sourcecombine.py . --grep "fixme" --grep-ignore-case
 ```
 
+#### Search and Replace Content
+You can find and replace text or entire lines using regular expressions when combining files. Use `--replace` to swap matching text, or `--replace-line` to replace or remove matching line blocks:
+```bash
+# Find and replace text patterns
+python sourcecombine.py . --replace "INTERNAL_API" "PUBLIC_API" --output combined.txt
+
+# Remove or replace matching lines
+python sourcecombine.py . --replace-line "^// TODO.*" "" --output combined.txt
+```
+
 ## Configuration Guide
 You can configure SourceCombine using a configuration file instead of passing many options via the command line.
 
