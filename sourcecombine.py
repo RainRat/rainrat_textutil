@@ -588,7 +588,8 @@ def _render_single_pass(template, replacements):
     pattern = re.compile("|".join(re.escape(k) for k in sorted_keys))
 
     def _replace(match):
-        val = replacements[match.group(0)]
+        key = match.group(0)
+        val = replacements.get(key)
         return str(val) if val is not None else ""
 
     return pattern.sub(_replace, template)
