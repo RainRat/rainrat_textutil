@@ -1026,7 +1026,7 @@ def _validate_project_section(config):
     if not isinstance(project, dict):
         raise InvalidConfigError("'project' section must be a dictionary.")
 
-    fields = ['name', 'version', 'description', 'license', 'url']
+    fields = ['name', 'version', 'author', 'description', 'license', 'url']
     for field in fields:
         _validate_string(project, field, 'project')
 
