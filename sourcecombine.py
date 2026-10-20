@@ -4913,6 +4913,8 @@ def main():
     )
     utility_group.add_argument(
         "--keep-line-numbers",
+        "--keep-lines",
+        "--keep-ln",
         action="store_true",
         help="Keep line numbers when extracting files. By default, the tool removes them automatically if detected.",
     )
