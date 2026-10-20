@@ -238,3 +238,30 @@ def test_cli_list_replacements_none_rule_collections(monkeypatch, capsys):
     captured = capsys.readouterr().out
     assert "Pattern: 'pat1' -> Replacement: 'rep1'" in captured
     assert "Pattern: 'pat2' -> Replacement: 'rep2'" in captured
+
+
+def test_cli_list_replacements_import_config(tmp_path, monkeypatch, capsys):
+    cfg_file = tmp_path / "imported.json"
+    cfg_file.write_text(
+        json.dumps(
+            {
+                "processing": {
+                    "regex_replacements": [{"pattern": "imp_pat", "replacement": "imp_rep"}]
+                }
+            }
+        )
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            "--import-config",
+            str(cfg_file),
+            "--list-replacements",
+        ],
+    )
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 0
+    captured = capsys.readouterr().out
+    assert "Pattern: 'imp_pat' -> Replacement: 'imp_rep'" in captured
