@@ -124,6 +124,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--preset NAME`: Apply a built-in configuration preset by name (`ai`, `analyze`, or `review`).
 *   `--review` (`--rev`, `--pr`): Enable preset for code reviews and Pull Requests (Markdown format, line numbers, Table of Contents, file tree, project overview, Git logs and diffs, skip binary).
 *   `--list-presets` (`--list-pre`): Show built-in presets and their expanded options and exit. Use `--json` for machine-readable output.
+*   `--import-presets FILENAME` (`--import-pre`, `--import-preset`): Import custom configuration preset definitions from a JSON or YAML file (or `-` for standard input).
 *   `--list-ignores` (`--list-ig`): Show active ignore patterns from ignore files and configuration exclusions and exit. Use `--json` for machine-readable output.
 *   `--list-replacements` (`--list-rep`, `--list-rules`): Show active text and line search-and-replace rules from configuration and CLI arguments and exit. Use `--json` for machine-readable output.
 *   `--project-info` (`-I`): Display detected project details and Git repository status. Use `--json` for machine-readable output.
@@ -486,13 +487,19 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
     python sourcecombine.py --export-presets presets.json
     ```
 
-11. **Override project metadata:**
+11. **Import custom presets:**
+    Load custom configuration preset definitions from a JSON or YAML file (or standard input `-`):
+    ```bash
+    python sourcecombine.py --import-presets presets.json --list-presets
+    ```
+
+12. **Override project metadata:**
     Pass explicit metadata values (such as name, version, and author) to override auto-detected project details in reports and templates:
     ```bash
     python sourcecombine.py --project-info --project-name "MyProject" --project-version "2.0.0" --project-author "Jane Doe"
     ```
 
-12. **Display system environment and project details:**
+13. **Display system environment and project details:**
     Check Python version, OS platform, optional dependencies, and detected project metadata:
     ```bash
     python sourcecombine.py --system-info
