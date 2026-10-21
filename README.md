@@ -105,6 +105,36 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--apply-in-place`: Save processed changes back to the original source files.
 *   `--create-backups`: Create `.bak` copies of original files when using `--apply-in-place`, `--extract`, or `--repair`.
 
+### Configuration precedence
+
+The tool loads `--config` first. If you omit it, a first positional YAML or JSON file is treated as the config; otherwise, the tool checks its standard config filenames in order. `utils.DEFAULT_CONFIG` supplies values that are missing or null in the loaded file.
+
+Presets expand into command-line options before the config is loaded. Preset and CLI options are then applied after the config, with behavior depending on the option:
+
+- Scalar options such as `--max-depth` replace the configured value.
+- Enabling flags such as `--skip-binary` turn a setting on; they do not turn off a setting already enabled in the config. Options such as `--no-recursive` explicitly turn a setting off.
+- List options may add entries to configured lists.
+
+`--import-config` deep-merges its values later, replacing earlier values for matching keys. Options applied during final output-format resolution can still take precedence over imported values.
+
+For example, save this as `sourcecombine.yml`:
+
+```yaml
+search:
+  max_depth: 5
+output:
+  file: from-config.txt
+  format: text
+```
+
+Then run:
+
+```sh
+python sourcecombine.py . --config sourcecombine.yml --preset ai --max-depth 2 --output result.txt --show-config
+```
+
+The resolved depth is `2`, the output file is `result.txt`, and the format is Markdown from the `ai` preset. `--show-config` displays the resolved configuration.
+
 ### Utility Commands
 *   `--init [PATH]`: Create a basic configuration file (`sourcecombine.yml` or `.json`) at `PATH` to get started. Defaults to `sourcecombine.yml` in the current folder. Use `-` to print the default configuration to standard output (`stdout`).
 *   `--init-ignore [PATH]`, `--init-ig [PATH]`: Create a default ignore file (`.sourcecombineignore` or custom `PATH`) populated with common exclude glob patterns (VCS metadata, dependencies, build outputs, log/temp files) and exit.
