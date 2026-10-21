@@ -135,6 +135,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--export-ignore` (`--export-ig`): Export all active ignore patterns (from ignore files and configuration exclusions) to an ignore file (defaults to `.sourcecombineignore`). Use `-` for standard output (`stdout`) and `--json` for machine-readable output.
 *   `--import-ignore FILENAME` (`--import-ig`, `--import-rules-ignore`): Import glob ignore patterns from an ignore file, JSON or YAML file (or `-` for standard input).
 *   `--export-replacements` (`--export-rep`, `--export-rules`): Export all active search-and-replace rules (from configuration files and CLI flags) to a JSON file (defaults to `replacements.json`). Use `-` for standard output (`stdout`).
+*   `--import-presets FILENAME` (`--import-pre`, `--import-preset`): Import custom configuration preset definitions from a JSON or YAML file (or `-` for standard input).
 *   `--export-presets` (`--export-pre`): Export all built-in configuration preset definitions and expanded options to a JSON file (defaults to `presets.json`). Use `-` for standard output (`stdout`).
 *   `--system-info`, `--sys-info`: Show environment details (Python version, OS, and other system details). Use `--json` for machine-readable output.
 *   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without writing them to disk.
@@ -480,10 +481,11 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
    python sourcecombine.py --list-presets
    ```
 
-10. **Export built-in presets:**
-    Save built-in preset definitions and expanded options to a JSON file or output to stdout (`-`):
+10. **Export and import configuration presets:**
+    Save built-in preset definitions to a JSON file or import custom presets from a JSON/YAML file:
     ```bash
     python sourcecombine.py --export-presets presets.json
+    python sourcecombine.py --import-presets presets.json --preset custom
     ```
 
 11. **Override project metadata:**
