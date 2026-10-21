@@ -1,3 +1,5 @@
+"""SourceCombine is a command-line tool to find, filter, and combine source code files into a single output file or directory."""
+
 import argparse
 import copy
 import csv
