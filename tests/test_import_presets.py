@@ -214,3 +214,27 @@ def test_import_presets_files_from_conflict(tmp_path, monkeypatch):
         sourcecombine.main()
 
     assert exc_info.value.code == 1
+
+
+def test_import_presets_invalid_and_empty_names(tmp_path):
+    preset_file = tmp_path / "invalid_names.yml"
+    yaml_content = """
+presets:
+  "":
+    flags: "--compact"
+  "   ":
+    flags: "--toc"
+  123:
+    flags: "--tree"
+  valid_preset:
+    flags: "--dry-run"
+    description: "Valid preset"
+"""
+    preset_file.write_text(yaml_content, encoding="utf-8")
+
+    presets = sourcecombine.import_presets(preset_file)
+    assert "valid_preset" in presets
+    assert "" not in presets
+    assert "   " not in presets
+    assert "123" not in presets
+    assert 123 not in presets
