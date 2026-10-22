@@ -825,13 +825,9 @@ def _validate_search_section(config):
         raise InvalidConfigError("'search' section must be a dictionary.")
 
     _validate_positive_number(search, 'max_depth', 'search')
-    _validate_bool(search, 'use_git', 'search')
-    _validate_bool(search, 'use_git_diff', 'search')
+    for key in ('use_git', 'use_git_diff', 'git_staged', 'git_unstaged', 'recursive'):
+        _validate_bool(search, key, 'search')
     _validate_string(search, 'git_diff_ref', 'search')
-
-    _validate_bool(search, 'git_staged', 'search')
-    _validate_bool(search, 'git_unstaged', 'search')
-    _validate_bool(search, 'recursive', 'search')
 
     root_folders = search.get('root_folders')
     if root_folders is not None and not isinstance(root_folders, list):
