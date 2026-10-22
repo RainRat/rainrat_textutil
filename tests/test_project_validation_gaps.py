@@ -19,6 +19,14 @@ def test_validate_project_section_invalid_field_type():
     with pytest.raises(utils.InvalidConfigError, match="'project.name' must be text or nothing."):
         utils.validate_config(config)
 
+def test_validate_project_section_invalid_author_type():
+    config = {
+        'project': {'author': 123},
+        'search': {'root_folders': ['.']}
+    }
+    with pytest.raises(utils.InvalidConfigError, match="'project.author' must be text or nothing."):
+        utils.validate_config(config)
+
 def test_apply_project_overrides_with_none_config():
     config = {'project': None}
     args = MagicMock()
