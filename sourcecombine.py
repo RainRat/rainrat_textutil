@@ -4359,23 +4359,23 @@ def main():
         "--since",
         "-S",
         metavar="TIME",
-        help="Include files modified since this time (for example, '1d', '2h', 'YYYY-MM-DD').",
+        help="Include only files modified since this time (for example, '1d', '2h', or 'YYYY-MM-DD').",
     )
     filtering_group.add_argument(
         "--until",
         "-U",
         metavar="TIME",
-        help="Include files modified before this time (for example, '1d', '2h', 'YYYY-MM-DD').",
+        help="Include only files modified before this time (for example, '1d', '2h', or 'YYYY-MM-DD').",
     )
     filtering_group.add_argument(
         "--min-size",
         metavar="SIZE",
-        help="Include only files at least this size (for example, '10KB', '1MB').",
+        help="Include only files that are at least this size (for example, '10KB' or '1MB').",
     )
     filtering_group.add_argument(
         "--max-size",
         metavar="SIZE",
-        help="Include only files at most this size (for example, '10KB', '1MB').",
+        help="Include only files that are at most this size (for example, '10KB' or '1MB').",
     )
     filtering_group.add_argument(
         "--min-tokens",
