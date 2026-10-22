@@ -15,7 +15,7 @@ def test_print_ignore_patterns_empty(capsys, tmp_path, monkeypatch):
     captured = capsys.readouterr()
     assert "ACTIVE IGNORE PATTERNS" in captured.out
     assert "No active ignore patterns configured." in captured.out
-    assert "Total: 0 active ignore patterns supported." in captured.out
+    assert "Total: 0 active ignore patterns configured." in captured.out
 
 
 def test_print_ignore_patterns_text(capsys, tmp_path, monkeypatch):
@@ -54,7 +54,7 @@ def test_print_ignore_patterns_filter_no_matches(capsys, tmp_path, monkeypatch):
     sourcecombine.print_ignore_patterns(query="xyz_nonexistent_pattern")
     captured = capsys.readouterr()
     assert "No ignore patterns matched the filter query 'xyz_nonexistent_pattern'" in captured.out
-    assert "Matching: 0 active ignore patterns supported." in captured.out
+    assert "Matching: 0 active ignore patterns configured." in captured.out
 
 
 def test_print_ignore_patterns_json(capsys, tmp_path, monkeypatch):

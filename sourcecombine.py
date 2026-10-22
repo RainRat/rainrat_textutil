@@ -8438,7 +8438,7 @@ def print_ignore_patterns(query=None, json_format=False, config=None):
         print(f"\n  {C_YELLOW}No ignore patterns matched the filter query '{query}'.{C_RESET}")
 
     count_label = f"Matching: {total_matched}" if query_lower else f"Total: {total_available}"
-    print(f"\n  {C_BOLD}{count_label}{C_RESET} active ignore patterns supported.")
+    print(f"\n  {C_BOLD}{count_label}{C_RESET} active ignore patterns configured.")
 
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
