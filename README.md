@@ -138,7 +138,7 @@ The resolved depth is `2`, the output file is `result.txt`, and the format is Ma
 ### Utility Commands
 *   `--init [PATH]`: Create a basic configuration file (`sourcecombine.yml` or `.json`) at `PATH` to get started. Defaults to `sourcecombine.yml` in the current folder. Use `-` to print the default configuration to standard output (`stdout`).
 *   `--init-ignore [PATH]`, `--init-ig [PATH]`: Create a default ignore file (`.sourcecombineignore` or custom `PATH`) populated with common exclude glob patterns (VCS metadata, dependencies, build outputs, log/temp files) and exit.
-*   `--extract`: Rebuild original files and folders from combined outputs (Text, JSON, XML, JSONL, CSV, or Markdown). You can read from files, folders, remote URLs (http/https), the terminal, or clipboard. Without an input file, it searches for `combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`. Supports `--dry-run` previews and `--json` for machine-readable output.
+*   `--extract` (`--extr`, `--xtr`): Rebuild original files and folders from combined outputs (Text, JSON, XML, JSONL, CSV, or Markdown). You can read from files, folders, remote URLs (http/https), the terminal, or clipboard. Without an input file, it searches for `combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`. Supports `--dry-run` previews and `--json` for machine-readable output.
 *   `--verify` (`-y`): Verify that files on disk match the content or hashes in combined files or manifests. You can read from files, folders, remote URLs (http/https), the terminal, or clipboard. Without an input file, the tool searches for standard defaults (`combined_files.txt`, `combined_files.md`, `combined_files.json`, `combined_files.xml`, `combined_files.jsonl`, or `combined_files.csv`). For example: `python sourcecombine.py --verify combined_files.json`. Use `--json` for machine-readable output.
 *   `--repair` (`-P`): Automatically fix mismatched or missing files when verifying (requires source content).
 *   `--backup` (`--bak`): Create `.bak` backup files for matching files without modifying original files. Supports `--dry-run` and `--json`.
@@ -311,14 +311,27 @@ python sourcecombine.py . --map-lang .mjml html --map-lang .env bash
 ```
 
 ### File Extraction
-Rebuild the original project structure from a combined Markdown file:
-```bash
-python sourcecombine.py --extract combined_files.md --output restored_project/
-```
-Output a JSON extraction summary in preview mode:
-```bash
-python sourcecombine.py --extract combined_files.json --json --dry-run
-```
+Rebuild original source files and folder structures from combined outputs (Text, JSON, XML, JSONL, CSV, or Markdown):
+
+1. **Extract from a combined file:**
+   ```bash
+   python sourcecombine.py --extract combined_files.md --output restored_project/
+   # Or using shortcut aliases:
+   python sourcecombine.py --extr combined_files.json --output restored_project/
+   python sourcecombine.py --xtr combined_files.xml --output restored_project/
+   ```
+
+2. **Strip leading directory components:**
+   Remove leading folder levels from file paths during extraction (for example, strip `root/src/file.py` down to `file.py` using `--strip-components 2`):
+   ```bash
+   python sourcecombine.py --extract combined_files.json --strip-components 2 --output restored_project/
+   ```
+
+3. **Extract in preview mode (Dry Run):**
+   See what files would be extracted without writing changes to disk, or generate a machine-readable summary:
+   ```bash
+   python sourcecombine.py --extract combined_files.json --json --dry-run
+   ```
 
 ### AI Model Context
 Prepare a full project context for AI models. This preset uses Markdown format and includes a Table of Contents, folder tree, project overview, line numbers, and Git context (logs and diffs). It also removes duplicates and skips binary files. If you do not specify an output file, the tool copies the result to the system clipboard:
