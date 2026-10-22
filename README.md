@@ -81,7 +81,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--json-summary PATH`: Save execution summary metrics (file counts, token counts, processing duration) to a JSON file. Use `-` to print the summary to standard output (`stdout`).
 *   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, skipping binary files, removing duplicates, and automatically including Git context like logs and diffs). This also copies to the system clipboard if you do not specify an output.
 *   `--analyze` (`-A`): Run complete project analysis (token counts, line counts, language breakdown, and folder tree) without generating output files.
-*   `--estimate-tokens` (`-e`): Calculate total tokens across matching files without writing any files to disk.
+*   `--estimate-tokens` (`--tokens`, `--tok`, `--est`, `-e`): Calculate total tokens across matching files without writing any files to disk.
 *   `--list-files` (`--list-inc`, `-l`): Show a list of all files that match the current filters and exit without writing files. Supports structured formats (`--format json`, `--format csv`, `--format xml`, `--format markdown`) and `--json` for machine-readable output.
 *   `--list-excluded` (`--list-exc`): Show a list of all files excluded by filtering rules along with their specific exclusion reasons and exit. Use `--json` for machine-readable output format.
 *   `--tree` (`-t`): Show a visual folder tree of all included files with details and exit without writing files. Supports structured formats (`--format json`, `--format csv`, `--format xml`, `--format markdown`).
