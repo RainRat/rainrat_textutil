@@ -121,6 +121,35 @@ print("Hello from file 2")
     assert (output_dir / "file1.txt").read_text(encoding="utf-8").strip() == "Hello from file 1"
     assert (output_dir / "folder/file2.py").read_text(encoding="utf-8").strip() == 'print("Hello from file 2")'
 
+
+def test_paired_text_export_round_trips_unicode_empty_and_delimiter_like_content(tmp_path, monkeypatch):
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    source = "#include \"sample.h\"\n// 雪と火 ☃🔥\n--- end another-file.h ---\n"
+    (source_dir / "sample.cpp").write_text(source, encoding="utf-8")
+    (source_dir / "sample.h").write_text("", encoding="utf-8")
+
+    combined_dir = tmp_path / "combined"
+    monkeypatch.setattr("sys.argv", [
+        "sourcecombine.py", str(source_dir), "--pair", ".cpp", ".h",
+        "--output", str(combined_dir),
+    ])
+    main()
+
+    combined_file = combined_dir / "sample.combined"
+    restored_dir = tmp_path / "restored"
+    monkeypatch.setattr("sys.argv", [
+        "sourcecombine.py", "--extract", str(combined_file),
+        "--output", str(restored_dir),
+    ])
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 0
+
+    assert (restored_dir / "sample.cpp").read_text(encoding="utf-8") == source
+    assert (restored_dir / "sample.h").read_text(encoding="utf-8") == ""
+
+
 def test_extract_flexible_markdown(tmp_path):
     """Test extraction from Markdown with different header levels and information."""
     output_dir = tmp_path / "extracted"

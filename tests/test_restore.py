@@ -63,6 +63,23 @@ def test_restore_backups_single_bak_target(tmp_path):
     assert file1.read_text() == "Original 1"
     assert not bak1.exists()
 
+
+def test_restore_overwrites_edits_made_after_backup(tmp_path):
+    """Restore treats the backup as authoritative and consumes it on success."""
+    file1 = tmp_path / "file1.txt"
+    bak1 = tmp_path / "file1.txt.bak"
+    file1.write_text("Processed output", encoding="utf-8")
+    bak1.write_text("Original source", encoding="utf-8")
+
+    # Simulate a user edit made after the backup was created.
+    file1.write_text("Later user edit", encoding="utf-8")
+    restored, errors = restore_backups([str(file1)])
+
+    assert restored == 1
+    assert errors == 0
+    assert file1.read_text(encoding="utf-8") == "Original source"
+    assert not bak1.exists()
+
 def test_restore_backups_dry_run(tmp_path):
     """Test restoration with dry_run=True."""
     file1 = tmp_path / "file1.txt"

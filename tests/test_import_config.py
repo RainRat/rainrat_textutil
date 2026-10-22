@@ -198,6 +198,29 @@ def test_import_config_cli_flags(tmp_path, monkeypatch):
     assert out_json["filters"]["min_tokens"] == 42
 
 
+def test_import_config_is_applied_after_cli_and_format_is_resolved_last(tmp_path, monkeypatch):
+    imported = tmp_path / "late.json"
+    imported.write_text(json.dumps({
+        "search": {"max_depth": 7},
+        "output": {"format": "text"},
+    }), encoding="utf-8")
+
+    monkeypatch.setattr("sys.argv", [
+        "sourcecombine.py", str(tmp_path), "--max-depth", "2",
+        "--import-config", str(imported), "--markdown", "--show-config", "--json",
+    ])
+    captured_out = io.StringIO()
+    monkeypatch.setattr("sys.stdout", captured_out)
+
+    with pytest.raises(SystemExit) as exc_info:
+        sourcecombine.main()
+
+    assert exc_info.value.code == 0
+    config = json.loads(captured_out.getvalue())
+    assert config["search"]["max_depth"] == 7  # The late import replaces the earlier CLI value.
+    assert config["output"]["format"] == "markdown"  # Final CLI format resolution wins.
+
+
 def test_import_cfg_alias(tmp_path, monkeypatch):
     import_file = tmp_path / "alias_import.json"
     import_file.write_text(json.dumps({
