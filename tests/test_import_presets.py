@@ -214,3 +214,24 @@ def test_import_presets_files_from_conflict(tmp_path, monkeypatch):
         sourcecombine.main()
 
     assert exc_info.value.code == 1
+
+
+def test_import_presets_invalid_and_empty_names(tmp_path, monkeypatch):
+    preset_file = tmp_path / "invalid_names.json"
+    preset_file.write_text("{}", encoding="utf-8")
+
+    preset_data = {
+        None: {"flags": "--toc"},
+        123: {"flags": "--quiet"},
+        "": {"flags": "--compact"},
+        "   ": {"flags": "--dry-run"},
+        "valid_preset_key": {"flags": "--line-numbers"}
+    }
+    monkeypatch.setattr(sourcecombine.json, "loads", lambda content: preset_data)
+
+    presets = sourcecombine.import_presets(preset_file)
+    assert "valid_preset_key" in presets
+    assert None not in presets
+    assert 123 not in presets
+    assert "" not in presets
+    assert "   " not in presets
