@@ -43,6 +43,11 @@ def test_shortcuts():
     combined_output = result.stdout + result.stderr
     assert "WARNING: Output shortened due to: token limit" in combined_output
 
+    # Test token estimation shortcuts: --tokens, --tok, --est
+    for flag in ["--tokens", "--tok", "--est"]:
+        res = subprocess.run([sys.executable, "sourcecombine.py", test_dir, flag], capture_output=True, text=True)
+        assert "COMBINE ESTIMATION" in res.stderr
+
     # Cleanup
     shutil.rmtree(test_dir)
 

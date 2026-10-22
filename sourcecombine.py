@@ -4720,6 +4720,9 @@ def main():
     display_group = parser.add_argument_group("Display & Preview")
     display_group.add_argument(
         "--estimate-tokens",
+        "--tokens",
+        "--tok",
+        "--est",
         "-e",
         action="store_true",
         help="Calculate total tokens without writing any files. This is slower because every file must be read.",
