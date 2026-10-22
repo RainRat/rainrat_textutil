@@ -258,3 +258,18 @@ def test_list_files_json(tmp_path, capsys):
     # stderr should not contain execution summary headers
     assert "COMBINE LISTING" not in captured_main.err
     assert "Operation: Combine" not in captured_main.err
+
+
+def test_list_inc_alias(capsys, tmp_path):
+    """Verify --list-inc works identically to --list-files as a shortcut alias."""
+    (tmp_path / "sample.py").write_text("x = 42")
+
+    with patch.object(sys, 'argv', ["sourcecombine.py", str(tmp_path), "--list-inc"]):
+        try:
+            main()
+        except SystemExit:
+            pass
+
+    captured = capsys.readouterr()
+    assert "sample.py" in captured.out
+    assert "COMBINE LISTING" in captured.err

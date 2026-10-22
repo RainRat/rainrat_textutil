@@ -4729,6 +4729,7 @@ def main():
     )
     display_group.add_argument(
         "--list-files",
+        "--list-inc",
         "-l",
         action="store_true",
         help="Show a list of all files that would be included and exit.",
