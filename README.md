@@ -175,6 +175,7 @@ The resolved depth is `2`, the output file is `result.txt`, and the format is Ma
 
 ## Prerequisites
 *   **Python 3.10 or newer:** Make sure you have Python 3.10 or higher installed.
+*   **Git (Optional):** Required to use Git integration features (such as `--git-files`, `--git-diff`, `--git-log`, or `--include-diff`).
 
 ### Standard Dependencies
 Install these packages using `requirements.txt`:
