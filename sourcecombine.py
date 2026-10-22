@@ -5031,6 +5031,13 @@ def main():
         help="Export all built-in configuration preset definitions and expanded options to a JSON file (defaults to 'presets.json'). Use '-' for standard output (stdout).",
     )
     utility_group.add_argument(
+        "--import-presets",
+        "--import-pre",
+        "--import-preset",
+        metavar="FILENAME",
+        help="Import custom configuration preset definitions from a JSON or YAML file or standard input ('-') into active preset definitions.",
+    )
+    utility_group.add_argument(
         "--system-info",
         "--sys-info",
         action="store_true",
@@ -5071,6 +5078,14 @@ def main():
         root_logger.addHandler(handler)
         root_logger.setLevel(prelim_level)
 
+    # Handle imported custom presets first so they are available for --preset and --list-presets
+    import_presets_val = getattr(args, 'import_presets', None)
+    if import_presets_val and type(import_presets_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        import_presets_val = None
+
+    if import_presets_val:
+        import_presets(import_presets_val)
+
     # Handle the preset option by name
     preset_val = getattr(args, 'preset', None)
     if preset_val and type(preset_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
@@ -5084,8 +5099,14 @@ def main():
             args.ai = True
         elif preset_key == 'review':
             args.review = True
+        elif preset_key in BUILTIN_PRESETS:
+            flags_str = BUILTIN_PRESETS[preset_key].get("flags", "")
+            if flags_str:
+                import shlex
+                parser.parse_args(shlex.split(flags_str), namespace=args)
         else:
-            logging.error("Unknown preset '%s'. Supported presets: ai, analyze, review. Use --list-presets to view details.", preset_val)
+            supported = ", ".join(sorted(BUILTIN_PRESETS.keys()))
+            logging.error("Unknown preset '%s'. Supported presets: %s. Use --list-presets to view details.", preset_val, supported)
             sys.exit(1)
 
     # Handle the analyze preset option
@@ -5177,6 +5198,7 @@ def main():
         getattr(args, 'export_ignore', None) == '-' or
         getattr(args, 'export_replacements', None) == '-' or
         getattr(args, 'export_presets', None) == '-' or
+        getattr(args, 'import_presets', None) == '-' or
         args.init == '-' or
         getattr(args, 'init_ignore', None) == '-'
     )
@@ -5242,6 +5264,10 @@ def main():
 
     if args.files_from and export_presets_val:
         logging.error("You cannot use --export-presets and --files-from at the same time.")
+        sys.exit(1)
+
+    if args.files_from and import_presets_val:
+        logging.error("You cannot use --import-presets and --files-from at the same time.")
         sys.exit(1)
 
     import_replacements_val = getattr(args, 'import_replacements', None)
@@ -8946,6 +8972,91 @@ BUILTIN_PRESETS = {
         "description": "Preset for code reviews and Pull Requests (Markdown format, line numbers, Table of Contents, file tree, project overview, Git diffs and logs, skip binary)."
     }
 }
+
+
+def import_presets(source_path):
+    """Import custom configuration preset definitions from a JSON or YAML file or stdin into active preset definitions."""
+    if not source_path:
+        return BUILTIN_PRESETS
+
+    source_str = str(source_path)
+    is_stdin = source_str == '-'
+
+    content = None
+    if is_stdin:
+        content = sys.stdin.read()
+    else:
+        file_path = Path(source_str)
+        if not file_path.exists():
+            logging.error("Preset import file not found: %s", file_path)
+            sys.exit(1)
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+        except OSError as exc:
+            logging.error("Could not read preset import file '%s': %s", file_path, exc)
+            sys.exit(1)
+
+    if not content or not content.strip():
+        logging.warning("Preset import file '%s' is empty; no presets imported.", source_str)
+        return BUILTIN_PRESETS
+
+    try:
+        data = json.loads(content)
+    except Exception:
+        if utils.yaml:
+            try:
+                data = utils.yaml.safe_load(content)
+            except Exception as exc:
+                logging.error("Could not parse preset import file '%s' as JSON or YAML: %s", source_str, exc)
+                sys.exit(1)
+        else:
+            logging.error("Could not parse preset import file '%s' as JSON.", source_str)
+            sys.exit(1)
+
+    if not isinstance(data, (dict, list)):
+        logging.error("Invalid preset import format in '%s': must be a JSON/YAML dictionary or list.", source_str)
+        sys.exit(1)
+
+    presets_dict = {}
+    if isinstance(data, dict):
+        if "presets" in data and isinstance(data["presets"], dict):
+            presets_dict = data["presets"]
+        else:
+            presets_dict = data
+    elif isinstance(data, list):
+        for item in data:
+            if isinstance(item, dict) and "name" in item:
+                presets_dict[str(item["name"])] = item
+
+    imported_count = 0
+    for name, details in presets_dict.items():
+        if not name or not isinstance(name, str):
+            continue
+        preset_key = name.strip().lower()
+        if not preset_key:
+            continue
+
+        if isinstance(details, dict):
+            flags = str(details.get("flags") or details.get("options") or "").strip()
+            flag = str(details.get("flag") or f"--{preset_key}").strip()
+            desc = str(details.get("description") or details.get("desc") or f"Custom preset '{preset_key}'").strip()
+
+            BUILTIN_PRESETS[preset_key] = {
+                "flag": flag,
+                "flags": flags,
+                "description": desc,
+            }
+            PRESET_ALIASES[preset_key] = preset_key
+            PRESET_ALIASES[f"--{preset_key}"] = preset_key
+            imported_count += 1
+
+    if is_stdin:
+        logging.info("Imported %d preset definition(s) from standard input.", imported_count)
+    else:
+        logging.info("Imported %d preset definition(s) from %s.", imported_count, Path(source_str).resolve())
+
+    return BUILTIN_PRESETS
 
 
 def export_presets(target_path):
