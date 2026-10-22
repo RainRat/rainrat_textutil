@@ -6,6 +6,18 @@ from unittest.mock import patch
 import sourcecombine
 
 
+def test_print_ignore_patterns_empty(capsys, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    config = copy.deepcopy(sourcecombine.utils.DEFAULT_CONFIG)
+    config['filters']['exclusions'] = {}
+
+    sourcecombine.print_ignore_patterns(config=config)
+    captured = capsys.readouterr()
+    assert "ACTIVE IGNORE PATTERNS" in captured.out
+    assert "No active ignore patterns configured." in captured.out
+    assert "Total: 0 active ignore patterns supported." in captured.out
+
+
 def test_print_ignore_patterns_text(capsys, tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     ignore_file = tmp_path / ".sourcecombineignore"

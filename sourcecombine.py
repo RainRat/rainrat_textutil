@@ -8393,7 +8393,9 @@ def print_ignore_patterns(query=None, json_format=False, config=None):
             for pat in filtered_pats:
                 print(f"    {pat}")
 
-    if query_lower and total_matched == 0:
+    if not categories:
+        print("\n  No active ignore patterns configured.")
+    elif query_lower and total_matched == 0:
         print(f"\n  {C_YELLOW}No ignore patterns matched the filter query '{query}'.{C_RESET}")
 
     count_label = f"Matching: {total_matched}" if query_lower else f"Total: {total_available}"
