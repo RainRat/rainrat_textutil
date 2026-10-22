@@ -176,7 +176,7 @@ The resolved depth is `2`, the output file is `result.txt`, and the format is Ma
 *   **Python 3.10 or newer:** Make sure you have Python 3.10 or higher installed.
 
 ### Standard Dependencies
-The tool installs these packages automatically during setup:
+Install these packages using `requirements.txt`:
 *   **PyYAML:** Reads and writes YAML configuration files.
 *   **charset-normalizer:** Detects file character encodings.
 *   **tqdm:** Displays progress bars during long tasks.
