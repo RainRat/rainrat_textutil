@@ -144,7 +144,6 @@ The resolved depth is `2`, the output file is `result.txt`, and the format is Ma
 *   `--backup` (`--bak`): Create `.bak` backup files for matching files without modifying original files. Supports `--dry-run` and `--json`.
 *   `--keep-line-numbers` (`--keep-lines`, `--keep-ln`): Keep existing line numbers when rebuilding files with `--extract`. By default, the tool removes line numbers automatically.
 *   `--restore` (`--rst`): Restore files from `.bak` backups. The backup replaces the current file and is removed after a successful restore, so edits made after the backup are discarded. Use `--json` for machine-readable output.
-
 *   `--delete-backups`: Remove all `.bak` files from the folders. Use `--json` for machine-readable output.
 *   `--list-backups` (`--list-bak`): List all `.bak` backup files in target folders along with their statuses relative to original files. Use `--json` for machine-readable output.
 *   `--diff-backups` (`--diff-bak`): Show a unified diff between current files on disk and their `.bak` backup files. Use `--json` for machine-readable output.
@@ -158,7 +157,6 @@ The resolved depth is `2`, the output file is `result.txt`, and the format is Ma
 *   `--list-ignores` (`--list-ig`): Show active ignore patterns from ignore files and configuration exclusions and exit. Use `--json` for machine-readable output.
 *   `--list-replacements` (`--list-rep`, `--list-rules`): Show active text and line search-and-replace rules from configuration and CLI arguments and exit. Use `--json` for machine-readable output.
 
-Text exports can restore Unicode, empty files, and delimiter-like content. A content line exactly equal to that file's text end marker (`--- end PATH ---`) is ambiguous with the export boundary and cannot be round-tripped exactly. Paired-file exports use this text format.
 *   `--project-info` (`-I`): Display detected project details and Git repository status. Use `--json` for machine-readable output.
 *   `--explain PATH` (`--exp`): Analyze and explain whether the specified path(s) would be included or excluded by the current configuration and filters. Supports `--json` format.
 *   `--validate-config [PATH]` (`--validate`): Validate a specified or auto-discovered configuration file against syntax and schema rules without running file processing. Use `-` to read from standard input (`stdin`). Use `--json` for machine-readable output.
@@ -175,6 +173,8 @@ Text exports can restore Unicode, empty files, and delimiter-like content. A con
 *   `--analyze` (`-A`): Run project analysis without generating output files. Shortcut for `--dry-run --estimate-tokens --overview --include-tree --tree`.
 *   `--clean`: (Alias for `--delete-backups`) Remove all `.bak` backup files from the current directory and its subfolders. Use `--json` for machine-readable output.
 *   `--version` (`-V`): Show the application version and exit.
+
+Text exports can restore Unicode, empty files, and delimiter-like content. A content line exactly equal to that file's text end marker (`--- end PATH ---`) is ambiguous with the export boundary and cannot be round-tripped exactly. Paired-file exports use this text format.
 
 ## Prerequisites
 *   **Python 3.10 or newer:** Make sure you have Python 3.10 or higher installed.
