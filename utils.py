@@ -884,9 +884,8 @@ def _validate_filters_section(config):
     for key in ('modified_since', 'modified_until'):
         _validate_positive_number(filters, key, 'filters', types=(int, float))
 
-    _validate_bool(filters, 'unique', 'filters')
-    _validate_bool(filters, 'skip_binary', 'filters')
-    _validate_bool(filters, 'grep_ignore_case', 'filters')
+    for key in ('unique', 'skip_binary', 'grep_ignore_case'):
+        _validate_bool(filters, key, 'filters')
 
     grep_pattern = filters.get('grep')
     if grep_pattern:
@@ -939,11 +938,16 @@ def _validate_processing_section(config, *, source=None):
     if not isinstance(processing_conf, dict):
         raise InvalidConfigError("'processing' section must be a dictionary.")
 
-    _validate_bool(processing_conf, 'apply_in_place', 'processing')
-    _validate_bool(processing_conf, 'compact_whitespace', 'processing')
-    _validate_bool(processing_conf, 'create_backups', 'processing')
-    _validate_bool(processing_conf, 'remove_comments', 'processing')
-    _validate_bool(processing_conf, 'remove_single_line_comments', 'processing')
+    bool_fields = [
+        'apply_in_place',
+        'compact_whitespace',
+        'create_backups',
+        'remove_comments',
+        'remove_single_line_comments',
+    ]
+
+    for key in bool_fields:
+        _validate_bool(processing_conf, key, 'processing')
 
     _validate_compact_whitespace_groups(
         processing_conf.get('compact_whitespace_groups'),
