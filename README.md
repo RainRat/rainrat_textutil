@@ -168,6 +168,8 @@ The resolved depth is `2`, the output file is `result.txt`, and the format is Ma
 *   `--export-replacements` (`--export-rep`, `--export-rules`): Export all active search-and-replace rules (from configuration files and CLI flags) to a JSON file (defaults to `replacements.json`). Use `-` for standard output (`stdout`).
 *   `--export-presets` (`--export-pre`): Export all built-in configuration preset definitions and expanded options to a JSON file (defaults to `presets.json`). Use `-` for standard output (`stdout`).
 *   `--import-presets FILENAME` (`--import-pre`, `--import-preset`): Import custom configuration preset definitions from a JSON or YAML file (or `-` for standard input).
+*   `--export-lang-map` (`--export-lang`): Export all active custom language mappings to a JSON file (defaults to `lang_map.json`). Use `-` for standard output (`stdout`).
+*   `--import-lang-map FILENAME` (`--import-lang`): Import custom language mappings from a JSON or YAML file (or `-` for standard input).
 *   `--system-info`, `--sys-info`: Show environment details (Python version, OS, and other system details). Use `--json` for machine-readable output.
 *   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without writing them to disk.
 *   `--analyze` (`-A`): Run project analysis without generating output files. Shortcut for `--dry-run --estimate-tokens --overview --include-tree --tree`.
@@ -540,7 +542,19 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
     python sourcecombine.py --import-presets custom_presets.json --preset my_custom_preset
     ```
 
-12. **Override project metadata:**
+12. **Export custom language mappings:**
+    Save active custom language mappings to a JSON file or output to stdout (`-`):
+    ```bash
+    python sourcecombine.py --export-lang-map lang_map.json
+    ```
+
+13. **Import custom language mappings:**
+    Load custom language mappings from a JSON or YAML file (or standard input `-`):
+    ```bash
+    python sourcecombine.py --import-lang-map lang_map.json
+    ```
+
+14. **Override project metadata:**
     Pass explicit metadata values (such as name, version, and author) to override auto-detected project details in reports and templates:
     ```bash
     python sourcecombine.py --project-info --project-name "MyProject" --project-version "2.0.0" --project-author "Jane Doe"
