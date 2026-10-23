@@ -1550,20 +1550,18 @@ def parse_time_value(value: str) -> float:
     if match:
         amount = int(match.group(1))
         unit = match.group(2)
-
-        if unit == 's':
-            delta = timedelta(seconds=amount)
-        elif unit == 'm':
-            delta = timedelta(minutes=amount)
-        elif unit == 'h':
-            delta = timedelta(hours=amount)
-        elif unit == 'd':
-            delta = timedelta(days=amount)
-        elif unit == 'w':
-            delta = timedelta(weeks=amount)
-        else:
+        unit_kwargs = {
+            's': 'seconds',
+            'm': 'minutes',
+            'h': 'hours',
+            'd': 'days',
+            'w': 'weeks',
+        }
+        kw = unit_kwargs.get(unit)
+        if kw is None:
             raise InvalidConfigError(f"Unknown time unit: '{unit}' in '{value}'")
 
+        delta = timedelta(**{kw: amount})
         return time.time() - delta.total_seconds()
 
     # Try raw number (seconds)
