@@ -238,3 +238,38 @@ presets:
     assert "   " not in presets
     assert "123" not in presets
     assert 123 not in presets
+
+
+def test_import_presets_list_format_mixed_items(tmp_path):
+    preset_file = tmp_path / "mixed_list.json"
+    list_data = [
+        123,
+        "string_item",
+        {"flags": "--compact"},
+        {
+            "name": "valid_list_p",
+            "flags": "--toc",
+            "description": "Valid list preset"
+        }
+    ]
+    preset_file.write_text(json.dumps(list_data), encoding="utf-8")
+
+    presets = sourcecombine.import_presets(preset_file)
+    assert "valid_list_p" in presets
+    assert presets["valid_list_p"]["flags"] == "--toc"
+
+
+def test_import_presets_dict_format_non_dict_details(tmp_path):
+    preset_file = tmp_path / "mixed_dict.json"
+    dict_data = {
+        "invalid_p": "not_a_dict_value",
+        "valid_dict_p": {
+            "flags": "--tree",
+            "description": "Valid dict preset"
+        }
+    }
+    preset_file.write_text(json.dumps(dict_data), encoding="utf-8")
+
+    presets = sourcecombine.import_presets(preset_file)
+    assert "valid_dict_p" in presets
+    assert "invalid_p" not in presets
