@@ -178,6 +178,7 @@ Text exports can restore Unicode, empty files, and delimiter-like content. A con
 
 ## Prerequisites
 *   **Python 3.10 or newer:** Make sure you have Python 3.10 or higher installed.
+*   **Git (Optional):** Required to use Git integration features (such as `--git-files`, `--git-diff`, `--git-log`, or `--include-diff`).
 
 ### Standard Dependencies
 Install these packages using `requirements.txt`:
