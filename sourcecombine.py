@@ -4065,11 +4065,12 @@ def explain_paths(paths, config=None, json_format=False):
                 size_str = utils.format_size(meta['size_bytes']) if meta['size_bytes'] is not None else "Unknown"
                 tokens_str = f"{meta['tokens']:,}" if meta['tokens'] is not None else "Unknown"
                 lines_str = f"{meta['lines']:,}" if meta['lines'] is not None else "Unknown"
+                label_width = 12
                 print(f"  {C_DIM}Metadata:{C_RESET}")
-                print(f"    {C_DIM}- Language:{C_RESET} {meta['language']}")
-                print(f"    {C_DIM}- Size:    {C_RESET} {size_str}")
-                print(f"    {C_DIM}- Lines:   {C_RESET} {lines_str}")
-                print(f"    {C_DIM}- Tokens:  {C_RESET} {tokens_str}")
+                print(f"    {C_DIM}{'- Language:':<{label_width}}{C_RESET}{meta['language']}")
+                print(f"    {C_DIM}{'- Size:':<{label_width}}{C_RESET}{size_str}")
+                print(f"    {C_DIM}{'- Lines:':<{label_width}}{C_RESET}{lines_str}")
+                print(f"    {C_DIM}{'- Tokens:':<{label_width}}{C_RESET}{tokens_str}")
             print()
 
         print(f"{C_BOLD}{'=' * 40}{C_RESET}\n")
