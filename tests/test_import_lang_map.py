@@ -260,3 +260,88 @@ def test_cli_import_lang_map_and_files_from_conflict(monkeypatch, caplog):
 
     assert exc_info.value.code == 1
     assert "cannot use --import-lang-map and --files-from at the same time" in caplog.text
+
+
+def test_import_lang_map_oserror(tmp_path, monkeypatch):
+    """Test OSError when reading language map file."""
+    map_file = tmp_path / "lang.json"
+    map_file.write_text("{}", encoding="utf-8")
+
+    def mock_open(*args, **kwargs):
+        raise OSError("Permission denied")
+
+    monkeypatch.setattr("builtins.open", mock_open)
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+
+    with pytest.raises(SystemExit):
+        import_lang_map(map_file, config)
+
+
+def test_import_lang_map_json_parse_error_no_yaml(tmp_path, monkeypatch):
+    """Test JSON parsing error when utils.yaml is None."""
+    bad_file = tmp_path / "bad.json"
+    bad_file.write_text("{ invalid json", encoding="utf-8")
+
+    monkeypatch.setattr(utils, "yaml", None)
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+
+    with pytest.raises(SystemExit):
+        import_lang_map(bad_file, config)
+
+
+def test_import_lang_map_invalid_raw_mappings_type(tmp_path, monkeypatch):
+    """Test error handling when raw_mappings is not a dict."""
+    map_file = tmp_path / "lang.json"
+    map_file.write_text("{}", encoding="utf-8")
+
+    real_isinstance = isinstance
+
+    def mock_isinstance(obj, class_or_tuple):
+        import inspect
+        frame = inspect.currentframe().f_back
+        if frame and frame.f_code.co_name == "import_lang_map":
+            if class_or_tuple == dict and frame.f_locals.get("raw_mappings") is obj:
+                return False
+        return real_isinstance(obj, class_or_tuple)
+
+    monkeypatch.setattr("builtins.isinstance", mock_isinstance)
+
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+    with pytest.raises(SystemExit):
+        import_lang_map(map_file, config)
+
+
+def test_import_lang_map_custom_languages_non_dict_in_config(tmp_path):
+    """Test custom_languages re-initialization when search.custom_languages is not a dict in config."""
+    map_file = tmp_path / "lang.json"
+    map_file.write_text(json.dumps({".mjml": "html"}), encoding="utf-8")
+
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+    config["search"]["custom_languages"] = "invalid_non_dict"
+
+    import_lang_map(map_file, config)
+    assert config["search"]["custom_languages"] == {".mjml": "html"}
+
+
+def test_cli_list_replacements_with_import_lang_map(tmp_path, monkeypatch, capsys):
+    """Test CLI execution combining --list-replacements with --import-lang-map."""
+    map_file = tmp_path / "lang.json"
+    map_file.write_text(json.dumps({".mjml": "html"}), encoding="utf-8")
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            "--list-replacements",
+            "--import-lang-map",
+            str(map_file),
+        ],
+    )
+
+    from sourcecombine import main
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+
+    assert exc_info.value.code == 0
+    captured = capsys.readouterr()
+    assert "ACTIVE SEARCH-AND-REPLACE RULES" in captured.out
