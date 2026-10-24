@@ -5039,6 +5039,20 @@ def main():
         help="Import custom configuration preset definitions from a JSON or YAML file or standard input ('-') into active preset definitions.",
     )
     utility_group.add_argument(
+        "--export-lang-map",
+        "--export-lang",
+        nargs="?",
+        const="lang_map.json",
+        metavar="FILENAME",
+        help="Export all active custom language mappings to a JSON file (defaults to 'lang_map.json'). Use '-' for standard output (stdout).",
+    )
+    utility_group.add_argument(
+        "--import-lang-map",
+        "--import-lang",
+        metavar="FILENAME",
+        help="Import custom language mappings from a JSON or YAML file or standard input ('-') into active configuration.",
+    )
+    utility_group.add_argument(
         "--system-info",
         "--sys-info",
         action="store_true",
@@ -5199,7 +5213,9 @@ def main():
         getattr(args, 'export_ignore', None) == '-' or
         getattr(args, 'export_replacements', None) == '-' or
         getattr(args, 'export_presets', None) == '-' or
+        getattr(args, 'export_lang_map', None) == '-' or
         getattr(args, 'import_presets', None) == '-' or
+        getattr(args, 'import_lang_map', None) == '-' or
         args.init == '-' or
         getattr(args, 'init_ignore', None) == '-'
     )
@@ -5269,6 +5285,22 @@ def main():
 
     if args.files_from and import_presets_val:
         logging.error("You cannot use --import-presets and --files-from at the same time.")
+        sys.exit(1)
+
+    export_lang_map_val = getattr(args, 'export_lang_map', None)
+    if export_lang_map_val and type(export_lang_map_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        export_lang_map_val = None
+
+    if args.files_from and export_lang_map_val:
+        logging.error("You cannot use --export-lang-map and --files-from at the same time.")
+        sys.exit(1)
+
+    import_lang_map_val = getattr(args, 'import_lang_map', None)
+    if import_lang_map_val and type(import_lang_map_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        import_lang_map_val = None
+
+    if args.files_from and import_lang_map_val:
+        logging.error("You cannot use --import-lang-map and --files-from at the same time.")
         sys.exit(1)
 
     import_replacements_val = getattr(args, 'import_replacements', None)
@@ -5402,6 +5434,9 @@ def main():
 
         if import_replacements_val:
             import_replacements(import_replacements_val, config)
+
+        if import_lang_map_val:
+            import_lang_map(import_lang_map_val, config)
 
         if getattr(args, 'replace', None):
             regex_rules = config['processing'].setdefault('regex_replacements', [])
@@ -6098,6 +6133,9 @@ def main():
     if import_replacements_val:
         import_replacements(import_replacements_val, config)
 
+    if import_lang_map_val:
+        import_lang_map(import_lang_map_val, config)
+
     if args.replace:
         regex_rules = config['processing'].setdefault('regex_replacements', [])
         if regex_rules is None:
@@ -6259,6 +6297,10 @@ def main():
 
     if export_presets_val:
         export_presets(export_presets_val)
+        sys.exit(0)
+
+    if export_lang_map_val:
+        export_lang_map(export_lang_map_val, config=config, json_format=getattr(args, 'json', False))
         sys.exit(0)
 
     explain_val = getattr(args, 'explain', None)
@@ -8859,6 +8901,140 @@ def export_replacements(target_path, config=None, json_format=False):
         logging.info("Active search-and-replace rules exported to %s", target_file.resolve())
     except OSError as exc:
         logging.error("Could not export search-and-replace rules to '%s': %s", target_file, exc)
+        sys.exit(1)
+
+
+def import_lang_map(source_path, config):
+    """Import custom language mappings from a JSON or YAML file (or '-' for stdin) into config."""
+    if not source_path or config is None:
+        return config
+
+    source_str = str(source_path)
+    is_stdin = source_str == '-'
+
+    content = None
+    if is_stdin:
+        content = sys.stdin.read()
+    else:
+        file_path = Path(source_str)
+        if not file_path.exists():
+            logging.error("Language map file not found: %s", file_path)
+            sys.exit(1)
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+        except OSError as exc:
+            logging.error("Could not read language map file '%s': %s", file_path, exc)
+            sys.exit(1)
+
+    if not content or not content.strip():
+        logging.warning("Language map file '%s' is empty; no mappings imported.", source_str)
+        return config
+
+    try:
+        data = json.loads(content)
+    except Exception:
+        if utils.yaml:
+            try:
+                data = utils.yaml.safe_load(content)
+            except Exception as exc:
+                logging.error("Could not parse language map file '%s' as JSON or YAML: %s", source_str, exc)
+                sys.exit(1)
+        else:
+            logging.error("Could not parse language map file '%s' as JSON.", source_str)
+            sys.exit(1)
+
+    if not isinstance(data, (dict, list)):
+        logging.error("Invalid language map format in '%s': must be a JSON/YAML object or array.", source_str)
+        sys.exit(1)
+
+    raw_mappings = {}
+    if isinstance(data, dict):
+        if "custom_languages" in data and isinstance(data["custom_languages"], dict):
+            raw_mappings = data["custom_languages"]
+        elif "language_mappings" in data and isinstance(data["language_mappings"], dict):
+            raw_mappings = data["language_mappings"]
+        elif "lang_map" in data and isinstance(data["lang_map"], dict):
+            raw_mappings = data["lang_map"]
+        else:
+            raw_mappings = data
+    elif isinstance(data, list):
+        for item in data:
+            if isinstance(item, dict):
+                ext = item.get("extension") or item.get("pattern") or item.get("ext")
+                lang = item.get("language") or item.get("lang")
+                if ext and lang:
+                    raw_mappings[str(ext)] = str(lang)
+            elif isinstance(item, (list, tuple)) and len(item) == 2:
+                raw_mappings[str(item[0])] = str(item[1])
+
+    if not isinstance(raw_mappings, dict):
+        logging.error("Invalid language map mappings in '%s'.", source_str)
+        sys.exit(1)
+
+    search_opts = config.setdefault('search', {})
+    if 'custom_languages' not in search_opts or not isinstance(search_opts['custom_languages'], dict):
+        search_opts['custom_languages'] = {}
+
+    imported_count = 0
+    for key, val in raw_mappings.items():
+        if isinstance(key, str) and isinstance(val, str):
+            k_norm = key.strip().lower()
+            v_norm = val.strip().lower()
+            if k_norm and v_norm:
+                search_opts['custom_languages'][k_norm] = v_norm
+                imported_count += 1
+
+    utils.validate_config(config)
+
+    if is_stdin:
+        logging.info("Imported %d custom language mapping(s) from standard input.", imported_count)
+    else:
+        logging.info("Imported %d custom language mapping(s) from %s.", imported_count, Path(source_str).resolve())
+
+    return config
+
+
+def export_lang_map(target_path, config=None, json_format=False):
+    """Export all active custom language mappings from configuration to a JSON file or stdout."""
+    if config is None:
+        config = copy.deepcopy(utils.DEFAULT_CONFIG)
+        utils.validate_config(config)
+    else:
+        config = copy.deepcopy(config)
+
+    search_opts = config.get('search', {}) or {}
+    custom_languages = search_opts.get('custom_languages') or {}
+
+    target_str = str(target_path) if target_path else "lang_map.json"
+    is_stdout = target_str == '-'
+
+    if not is_stdout:
+        target_file = Path(target_str)
+        if target_file.is_dir() or target_str.endswith(('/', '\\')):
+            target_file = target_file / "lang_map.json"
+    else:
+        target_file = None
+
+    output = {
+        "exported_to": "-" if is_stdout else str(target_file.resolve() if target_file else "-"),
+        "total_mappings": len(custom_languages),
+        "custom_languages": custom_languages,
+    }
+
+    json_bytes = json.dumps(output, indent=2) + "\n"
+
+    if is_stdout:
+        sys.stdout.write(json_bytes)
+        return
+
+    try:
+        target_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(target_file, "w", encoding="utf-8") as f:
+            f.write(json_bytes)
+        logging.info("Custom language mappings exported to %s", target_file.resolve())
+    except OSError as exc:
+        logging.error("Could not export custom language mappings to '%s': %s", target_file, exc)
         sys.exit(1)
 
 
