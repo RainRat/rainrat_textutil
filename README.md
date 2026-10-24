@@ -250,24 +250,24 @@ Install these packages using `requirements.txt`:
 
 5.  **Run the Tool:**
     ```bash
-    python sourcecombine.py . --output combined.txt
+    python3 sourcecombine.py . --output combined.txt
     ```
     This command combines all text files in the current folder (`.`) into `combined.txt`. You can replace `.` with any folder path on your computer.
 
 6.  **Create Configuration Files (Optional):**
     To generate a starter configuration file (`sourcecombine.yml`):
     ```bash
-    python sourcecombine.py --init
+    python3 sourcecombine.py --init
     ```
 
     To create a default ignore file (`.sourcecombineignore`):
     ```bash
-    python sourcecombine.py --init-ignore
+    python3 sourcecombine.py --init-ignore
     ```
 
     *Note:* You can also use JSON configuration files (like `sourcecombine.json`). They work directly with Python's standard library without extra dependencies.
 
-For more details, use `python sourcecombine.py --help` or check `config.template.yml`.
+For more details, use `python3 sourcecombine.py --help` or check `config.template.yml`.
 
 ## Usage Examples
 ### Basic Combination
@@ -340,6 +340,19 @@ Rebuild original source files and folder structures from combined outputs (Text,
    python sourcecombine.py --extract combined_files.json --json --dry-run
    ```
 
+4. **Extract from standard input, clipboard, or URLs:**
+   Read combined data directly from standard input (`stdin`), system clipboard (`--clipboard`), or a remote URL:
+   ```bash
+   # Extract from standard input
+   cat combined_files.json | python3 sourcecombine.py --extract - --output restored_project/
+
+   # Extract from a remote URL
+   python3 sourcecombine.py --extract https://example.com/combined_files.json --output restored_project/
+
+   # Extract from system clipboard
+   python3 sourcecombine.py --extract --clipboard --output restored_project/
+   ```
+
 ### AI Model Context
 Prepare a full project context for AI models. This preset uses Markdown format and includes a Table of Contents, folder tree, project overview, line numbers, and Git context (logs and diffs). It also removes duplicates and skips binary files. If you do not specify an output file, the tool copies the result to the system clipboard:
 ```bash
@@ -388,7 +401,17 @@ Check if your files on disk match the content or SHA-256 hashes stored in a comb
    python sourcecombine.py -y combined_files.json
    ```
 
-2. **Repair missing or mismatched files:**
+2. **Verify files from standard input or remote URLs:**
+   Read combined data directly from standard input (`stdin`), system clipboard (`--clipboard`), or a remote URL to check matching files:
+   ```bash
+   # Verify using standard input
+   cat combined_files.json | python3 sourcecombine.py --verify -
+
+   # Verify using a remote URL
+   python3 sourcecombine.py --verify https://example.com/combined_files.json
+   ```
+
+3. **Repair missing or mismatched files:**
    ```bash
    python sourcecombine.py --repair combined_files.json
    ```
