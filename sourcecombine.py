@@ -8288,7 +8288,7 @@ def print_extensions(query=None, json_format=False):
         print(f"  {C_BOLD}{C_YELLOW}{'EXTENSION / FILENAME':<{ext_width}}  LANGUAGE TAG{C_RESET}")
         for item in items:
             lang = ext_map[item]
-            print(f"  {C_BOLD}{C_CYAN}{item:<{ext_width}}{C_RESET}  {C_DIM}{lang}{C_RESET}")
+            print(f"  {C_BOLD}{C_CYAN}{item:<{ext_width}}{C_RESET}  {lang}")
 
     count_label = f"Matching: {len(items)}" if query_lower else f"Total: {len(ext_map)}"
     print(f"\n  {C_BOLD}{count_label}{C_RESET} extensions and filenames supported.")
