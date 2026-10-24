@@ -6240,13 +6240,7 @@ def main():
         sys.exit(0)
 
     if args.export_config:
-        try:
-            utils.save_yaml_config(args.export_config, _convert_to_json_friendly(config))
-            if args.export_config != '-':
-                logging.info("Configuration exported to %s", Path(args.export_config).resolve())
-        except (OSError, utils.InvalidConfigError) as exc:
-            logging.error("Could not export configuration: %s", exc)
-            sys.exit(1)
+        export_config(args.export_config, config=config, json_format=_get_bool_arg(args, 'json'))
         sys.exit(0)
 
     if export_ignore_val:
@@ -8709,6 +8703,48 @@ def import_config(source_path, config):
 
     logging.debug("Imported configuration settings from '%s'.", source_str)
     return config
+
+
+def export_config(target_path, config=None, json_format=False):
+    """Export the active configuration settings to a YAML or JSON file or stdout."""
+    if config is None:
+        config = copy.deepcopy(utils.DEFAULT_CONFIG)
+        utils.validate_config(config)
+    else:
+        config = copy.deepcopy(config)
+
+    target_str = str(target_path) if target_path else "sourcecombine.yml"
+    is_stdout = target_str == '-'
+    is_json = json_format or target_str.lower().endswith('.json')
+
+    json_friendly_config = _convert_to_json_friendly(config)
+
+    try:
+        if is_stdout:
+            if is_json:
+                sys.stdout.write(json.dumps(json_friendly_config, indent=2) + "\n")
+            else:
+                utils.save_yaml_config("-", json_friendly_config)
+        else:
+            target_file = Path(target_str)
+            if target_file.is_dir() or target_str.endswith(('/', '\\')):
+                target_file = target_file / ("sourcecombine.json" if is_json else "sourcecombine.yml")
+            target_arg = target_str if target_file == Path(target_str) else target_file
+
+            if is_json:
+                target_path_obj = Path(target_arg)
+                target_path_obj.parent.mkdir(parents=True, exist_ok=True)
+                with open(target_path_obj, "w", encoding="utf-8") as f:
+                    json.dump(json_friendly_config, f, indent=2)
+                    f.write("\n")
+                logging.info("Configuration exported to %s", target_path_obj.resolve())
+            else:
+                utils.save_yaml_config(target_arg, json_friendly_config)
+                if target_str != '-':
+                    logging.info("Configuration exported to %s", Path(target_arg).resolve())
+    except (OSError, utils.InvalidConfigError) as exc:
+        logging.error("Could not export configuration: %s", exc)
+        sys.exit(1)
 
 
 def import_replacements(source_path, config):
