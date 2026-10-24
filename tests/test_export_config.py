@@ -219,3 +219,83 @@ def test_export_cfg_shortcut_alias_cli(tmp_path, monkeypatch):
         assert excinfo.value.code == 0
     assert (tmp_path / "exported_cfg.yml").exists()
 
+
+def test_export_config_helper_default_config(tmp_path):
+    """Test export_config helper function with default config fallback."""
+    out_file = tmp_path / "default_export.yml"
+    sourcecombine.export_config(out_file)
+    assert out_file.exists()
+    content = out_file.read_text(encoding="utf-8")
+    assert "search:" in content
+
+
+def test_export_config_helper_json_file(tmp_path):
+    """Test export_config helper function saving JSON format based on file extension."""
+    out_file = tmp_path / "custom.json"
+    custom_cfg = copy.deepcopy(utils.DEFAULT_CONFIG)
+    custom_cfg["logging"]["level"] = "DEBUG"
+
+    sourcecombine.export_config(out_file, config=custom_cfg)
+    assert out_file.exists()
+    import json
+    data = json.loads(out_file.read_text(encoding="utf-8"))
+    assert data["logging"]["level"] == "DEBUG"
+
+
+def test_export_config_helper_json_format_flag(tmp_path):
+    """Test export_config helper function with explicit json_format=True."""
+    out_file = tmp_path / "custom.config"
+    custom_cfg = copy.deepcopy(utils.DEFAULT_CONFIG)
+    custom_cfg["search"]["max_depth"] = 42
+
+    sourcecombine.export_config(out_file, config=custom_cfg, json_format=True)
+    assert out_file.exists()
+    import json
+    data = json.loads(out_file.read_text(encoding="utf-8"))
+    assert data["search"]["max_depth"] == 42
+
+
+def test_export_config_helper_stdout_yaml(capsys):
+    """Test export_config helper function streaming YAML to stdout (-)."""
+    custom_cfg = copy.deepcopy(utils.DEFAULT_CONFIG)
+    custom_cfg["logging"]["level"] = "WARNING"
+
+    sourcecombine.export_config("-", config=custom_cfg)
+    captured = capsys.readouterr().out
+    assert "level: WARNING" in captured
+
+
+def test_export_config_helper_stdout_json(capsys):
+    """Test export_config helper function streaming JSON to stdout (-) with json_format=True."""
+    import json
+    custom_cfg = copy.deepcopy(utils.DEFAULT_CONFIG)
+    custom_cfg["search"]["max_depth"] = 7
+
+    sourcecombine.export_config("-", config=custom_cfg, json_format=True)
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert data["search"]["max_depth"] == 7
+
+
+def test_export_config_helper_directory_target(tmp_path):
+    """Test export_config helper function targeting a directory."""
+    target_dir = tmp_path / "subfolder"
+    target_dir.mkdir()
+    custom_cfg = copy.deepcopy(utils.DEFAULT_CONFIG)
+
+    sourcecombine.export_config(target_dir, config=custom_cfg, json_format=True)
+    exported_file = target_dir / "sourcecombine.json"
+    assert exported_file.exists()
+
+
+def test_export_config_helper_os_error_handling(tmp_path, caplog):
+    """Test export_config helper function handling OSError exceptions."""
+    import logging
+    invalid_path = tmp_path / "nonexistent_dir" / "nested" / "file.json"
+
+    with patch("builtins.open", side_effect=OSError("Permission denied")):
+        with caplog.at_level(logging.ERROR):
+            with pytest.raises(SystemExit) as excinfo:
+                sourcecombine.export_config(invalid_path)
+            assert excinfo.value.code == 1
+    assert "Could not export configuration" in caplog.text
