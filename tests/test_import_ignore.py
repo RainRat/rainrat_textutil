@@ -254,3 +254,37 @@ def test_cli_import_ignore_with_list_replacements(tmp_path, monkeypatch, capsys)
 
     captured = capsys.readouterr()
     assert "ACTIVE SEARCH-AND-REPLACE RULES" in captured.out
+
+
+def test_import_ignore_patterns_json_list_mixed_types(tmp_path):
+    ignore_file = tmp_path / "mixed_list.json"
+    data = [123, None, "", "   ", "*.py_test"]
+    ignore_file.write_text(json.dumps(data), encoding="utf-8")
+
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+    import_ignore_patterns(ignore_file, config)
+
+    imported = config['filters']['exclusions']['filenames']
+    assert "*.py_test" in imported
+    assert 123 not in imported
+    assert None not in imported
+
+
+def test_import_ignore_patterns_dict_non_list_sections(tmp_path):
+    ignore_file = tmp_path / "invalid_sections.json"
+    data = {
+        "patterns": [123, "", "*.js_test"],
+        "exclusions": {"filenames": "not_a_list"},
+        "categories": {
+            "cat1": "not_a_list",
+            "cat2": [456, "", "*.md_test"],
+        },
+    }
+    ignore_file.write_text(json.dumps(data), encoding="utf-8")
+
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+    import_ignore_patterns(ignore_file, config)
+
+    imported = config['filters']['exclusions']['filenames']
+    assert "*.js_test" in imported
+    assert "*.md_test" in imported
