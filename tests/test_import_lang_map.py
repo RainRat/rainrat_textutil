@@ -260,3 +260,90 @@ def test_cli_import_lang_map_and_files_from_conflict(monkeypatch, caplog):
 
     assert exc_info.value.code == 1
     assert "cannot use --import-lang-map and --files-from at the same time" in caplog.text
+
+
+def test_import_lang_map_oserror(tmp_path, monkeypatch):
+    map_file = tmp_path / "read_error.json"
+    map_file.write_text("{}", encoding="utf-8")
+
+    def mock_open(*args, **kwargs):
+        raise OSError("Permission denied")
+
+    monkeypatch.setattr("builtins.open", mock_open)
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+
+    with pytest.raises(SystemExit) as exc_info:
+        import_lang_map(map_file, config)
+    assert exc_info.value.code == 1
+
+
+def test_import_lang_map_no_yaml_json_error(tmp_path, monkeypatch):
+    bad_file = tmp_path / "bad.json"
+    bad_file.write_text("{invalid json", encoding="utf-8")
+
+    monkeypatch.setattr(utils, "yaml", None)
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+
+    with pytest.raises(SystemExit) as exc_info:
+        import_lang_map(bad_file, config)
+    assert exc_info.value.code == 1
+
+
+def test_import_lang_map_invalid_raw_mappings(tmp_path, monkeypatch):
+    map_file = tmp_path / "bad_mappings.json"
+    map_file.write_text("{}", encoding="utf-8")
+
+    orig_isinstance = isinstance
+
+    class RawMappingsObj:
+        pass
+
+    raw_obj = RawMappingsObj()
+    call_count = [0]
+
+    def mock_isinstance(obj, cls):
+        if obj is raw_obj and cls == dict:
+            call_count[0] += 1
+            if call_count[0] == 1:
+                return True
+            return False
+        return orig_isinstance(obj, cls)
+
+    monkeypatch.setattr("builtins.isinstance", mock_isinstance)
+    monkeypatch.setattr("json.loads", lambda content: {"custom_languages": raw_obj})
+
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+    with pytest.raises(SystemExit) as exc_info:
+        import_lang_map(map_file, config)
+    assert exc_info.value.code == 1
+
+
+def test_import_lang_map_non_dict_config_search(tmp_path):
+    map_file = tmp_path / "valid.json"
+    map_file.write_text(json.dumps({".vue": "html"}), encoding="utf-8")
+
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+    config['search']['custom_languages'] = "invalid_string_type"
+
+    import_lang_map(map_file, config)
+    assert config['search']['custom_languages']['.vue'] == 'html'
+
+
+def test_cli_list_replacements_import_lang_map(tmp_path, monkeypatch):
+    map_file = tmp_path / "lang.json"
+    map_file.write_text(json.dumps({".vue": "html"}), encoding="utf-8")
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sourcecombine",
+            "--list-replacements",
+            "--import-lang-map",
+            str(map_file)
+        ]
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sourcecombine.main()
+    assert exc_info.value.code == 0
