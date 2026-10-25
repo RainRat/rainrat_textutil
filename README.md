@@ -130,7 +130,7 @@ output:
 Then run:
 
 ```sh
-python sourcecombine.py . --config sourcecombine.yml --preset ai --max-depth 2 --output result.txt --show-config
+python3 sourcecombine.py . --config sourcecombine.yml --preset ai --max-depth 2 --output result.txt --show-config
 ```
 
 The resolved depth is `2`, the output file is `result.txt`, and the format is Markdown from the `ai` preset. `--show-config` displays the resolved configuration.
@@ -273,48 +273,48 @@ For more details, use `python3 sourcecombine.py --help` or check `config.templat
 ### Basic Combination
 Combine all files in the current directory into `combined_files.txt`:
 ```bash
-python sourcecombine.py
+python3 sourcecombine.py
 ```
 
 Combine files from specific target folders or files:
 ```bash
-python sourcecombine.py src/ tests/ --output combined.txt
+python3 sourcecombine.py src/ tests/ --output combined.txt
 ```
 
 ### Save Execution Summary Statistics
 Save execution metrics (file counts, token totals, processing duration) to a JSON file or terminal output:
 ```bash
 # Save execution metrics to a summary file
-python sourcecombine.py . --output combined.txt --json-summary summary.json
+python3 sourcecombine.py . --output combined.txt --json-summary summary.json
 
 # Print execution metrics directly to the terminal
-python sourcecombine.py . --output combined.txt --json-summary -
+python3 sourcecombine.py . --output combined.txt --json-summary -
 ```
 
 ### Reading File Paths from File or Stdin
 Combine files from a specific list instead of scanning entire folders:
 ```bash
 # Read file paths from a text file
-python sourcecombine.py --files-from file_list.txt --output combined.txt
+python3 sourcecombine.py --files-from file_list.txt --output combined.txt
 
 # Pipe file paths from another command through standard input
-git diff --name-only | python sourcecombine.py -F - --output diff_files.txt
+git diff --name-only | python3 sourcecombine.py -F - --output diff_files.txt
 ```
 
 ### Filtering by Language
 Combine only Python and JavaScript files from the current folder (`.`). You can repeat the language flag or use a simpler comma-separated list:
 ```bash
 # Using comma-separated lists
-python sourcecombine.py . --language python,javascript --output project_context.txt
+python3 sourcecombine.py . --language python,javascript --output project_context.txt
 
 # Or repeating the flag
-python sourcecombine.py . --language python --language javascript --output project_context.txt
+python3 sourcecombine.py . --language python --language javascript --output project_context.txt
 ```
 
 ### Custom Language Mapping
 Map unrecognized file extensions or special filenames to specific language identifiers:
 ```bash
-python sourcecombine.py . --map-lang .mjml html --map-lang .env bash
+python3 sourcecombine.py . --map-lang .mjml html --map-lang .env bash
 ```
 
 ### File Extraction
@@ -322,22 +322,22 @@ Rebuild original source files and folder structures from combined outputs (Text,
 
 1. **Extract from a combined file:**
    ```bash
-   python sourcecombine.py --extract combined_files.md --output restored_project/
+   python3 sourcecombine.py --extract combined_files.md --output restored_project/
    # Or using shortcut aliases:
-   python sourcecombine.py --extr combined_files.json --output restored_project/
-   python sourcecombine.py --xtr combined_files.xml --output restored_project/
+   python3 sourcecombine.py --extr combined_files.json --output restored_project/
+   python3 sourcecombine.py --xtr combined_files.xml --output restored_project/
    ```
 
 2. **Strip leading directory components:**
    Remove leading folder levels from file paths during extraction (for example, strip `root/src/file.py` down to `file.py` using `--strip-components 2`):
    ```bash
-   python sourcecombine.py --extract combined_files.json --strip-components 2 --output restored_project/
+   python3 sourcecombine.py --extract combined_files.json --strip-components 2 --output restored_project/
    ```
 
 3. **Extract in preview mode (Dry Run):**
    See what files would be extracted without writing changes to disk, or generate a machine-readable summary:
    ```bash
-   python sourcecombine.py --extract combined_files.json --json --dry-run
+   python3 sourcecombine.py --extract combined_files.json --json --dry-run
    ```
 
 4. **Extract from standard input, clipboard, or URLs:**
@@ -356,37 +356,37 @@ Rebuild original source files and folder structures from combined outputs (Text,
 ### AI Model Context
 Prepare a full project context for AI models. This preset uses Markdown format and includes a Table of Contents, folder tree, project overview, line numbers, and Git context (logs and diffs). It also removes duplicates and skips binary files. If you do not specify an output file, the tool copies the result to the system clipboard:
 ```bash
-python sourcecombine.py . --preset ai
+python3 sourcecombine.py . --preset ai
 ```
 
 ### Code Review & Pull Request Context
 Prepare a full context for code reviews and Pull Requests. This preset uses Markdown format and includes a Table of Contents, folder tree, project overview, line numbers, Git diffs, and the last 10 commits while skipping binary files:
 ```bash
-python sourcecombine.py . --preset review
+python3 sourcecombine.py . --preset review
 # or using shortcut flags:
-python sourcecombine.py . --review
-python sourcecombine.py . --rev
-python sourcecombine.py . --pr
+python3 sourcecombine.py . --review
+python3 sourcecombine.py . --rev
+python3 sourcecombine.py . --pr
 ```
 
 ### File Pairing
 Combine related files (such as `.cpp` and `.h` pairs) into their own individual combined files in a separate folder:
 ```bash
-python sourcecombine.py . --pair .cpp .h --output combined_src/
+python3 sourcecombine.py . --pair .cpp .h --output combined_src/
 ```
 You can customize the output filename template for paired files or keep unpaired files:
 ```bash
 # Set a custom output filename template for paired files
-python sourcecombine.py . --pair .cpp .h --pair-template "{{STEM}}_combined.txt" --output combined_src/
+python3 sourcecombine.py . --pair .cpp .h --pair-template "{{STEM}}_combined.txt" --output combined_src/
 
 # Keep files that do not have a matching pair
-python sourcecombine.py . --pair .cpp .h --include-unpaired --output combined_src/
+python3 sourcecombine.py . --pair .cpp .h --include-unpaired --output combined_src/
 ```
 
 ### Collapsible Markdown
 Combine files into collapsible Markdown blocks to reduce clutter when sharing large code bases with AI models:
 ```bash
-python sourcecombine.py . --format markdown --collapsible --output project_context.md
+python3 sourcecombine.py . --format markdown --collapsible --output project_context.md
 ```
 
 ### File Verification and Repair
@@ -394,11 +394,11 @@ Check if your files on disk match the content or SHA-256 hashes stored in a comb
 
 1. **Verify files on disk:**
    ```bash
-   python sourcecombine.py --verify combined_files.json
+   python3 sourcecombine.py --verify combined_files.json
    ```
    *(or use the short-hand `-y`)*:
    ```bash
-   python sourcecombine.py -y combined_files.json
+   python3 sourcecombine.py -y combined_files.json
    ```
 
 2. **Verify files from standard input or remote URLs:**
@@ -413,11 +413,11 @@ Check if your files on disk match the content or SHA-256 hashes stored in a comb
 
 3. **Repair missing or mismatched files:**
    ```bash
-   python sourcecombine.py --repair combined_files.json
+   python3 sourcecombine.py --repair combined_files.json
    ```
    *(or use the short-hand `-P`)*:
    ```bash
-   python sourcecombine.py -P combined_files.json
+   python3 sourcecombine.py -P combined_files.json
    ```
 
 ### Backup and Restore (Safe Workflows)
@@ -428,37 +428,37 @@ You can create, inspect, compare, restore, or clean up these backups:
 1. **Create backup copies:**
    Create `.bak` copies of matching files before making manual edits (add `--json` for machine-readable summary output):
    ```bash
-   python sourcecombine.py . --backup
+   python3 sourcecombine.py . --backup
    # or using the shortcut flag:
-   python sourcecombine.py . --bak
+   python3 sourcecombine.py . --bak
    ```
 
 2. **List all backup files:**
    See which backup files exist and check if they match your current files:
    ```bash
-   python sourcecombine.py --list-backups
+   python3 sourcecombine.py --list-backups
    ```
 
 3. **See the difference between original files and backups:**
    Show a color-coded, line-by-line comparison of what has changed:
    ```bash
-   python sourcecombine.py --diff-backups
+   python3 sourcecombine.py --diff-backups
    # or using the shortcut flag:
-   python sourcecombine.py --diff-bak
+   python3 sourcecombine.py --diff-bak
    ```
 
 4. **Restore your original files:**
    Undo your changes and bring back the original files from the backups (add `--json` for machine-readable summary output):
    ```bash
-   python sourcecombine.py --restore
+   python3 sourcecombine.py --restore
    # or using the shortcut flag:
-   python sourcecombine.py --rst
+   python3 sourcecombine.py --rst
    ```
 
 5. **Delete backup files (Clean up):**
    When you are happy with your changes and no longer need the backups, remove all `.bak` files (add `--json` for machine-readable summary output):
    ```bash
-   python sourcecombine.py --clean
+   python3 sourcecombine.py --clean
    ```
 
 ### File Listing and Folder Tree Preview
@@ -466,30 +466,30 @@ Preview matching files or inspect your project structure without writing output 
 
 1. **List all matching files:**
    ```bash
-   python sourcecombine.py . --list-files
+   python3 sourcecombine.py . --list-files
    ```
 
 2. **Inspect excluded files and exclusion reasons:**
    See which files were excluded by filtering rules along with their specific exclusion reasons:
    ```bash
-   python sourcecombine.py . --list-excluded
+   python3 sourcecombine.py . --list-excluded
    ```
 
 3. **Display a visual folder tree:**
    ```bash
-   python sourcecombine.py . --tree
+   python3 sourcecombine.py . --tree
    ```
 
 4. **Export structured lists or trees (JSON, CSV, XML, or Markdown):**
    ```bash
-   python sourcecombine.py . --list-files --format json
-   python sourcecombine.py . --tree --format markdown
+   python3 sourcecombine.py . --list-files --format json
+   python3 sourcecombine.py . --tree --format markdown
    ```
 
 5. **Generate structural outlines without file contents:**
    Build project documentation outlines (including Table of Contents and folder tree) while skipping file contents using `--no-content` (or `-N`):
    ```bash
-   python sourcecombine.py . --no-content --toc --include-tree --output outline.md
+   python3 sourcecombine.py . --no-content --toc --include-tree --output outline.md
    ```
 
 ### Inspecting Active Settings and System Details
@@ -498,96 +498,96 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
 1. **Inspect active ignore rules:**
    Show all active ignore patterns loaded from ignore files and configuration exclusions (add `--json` for machine-readable output):
    ```bash
-   python sourcecombine.py --list-ignores
+   python3 sourcecombine.py --list-ignores
    # Filter patterns by keyword
-   python sourcecombine.py --list-ignores py
+   python3 sourcecombine.py --list-ignores py
    ```
 
 2. **Export active ignore rules:**
    Save active ignore patterns from ignore files and configuration exclusions to an ignore file (defaults to `.sourcecombineignore`) or standard output (`-`):
    ```bash
-   python sourcecombine.py --export-ignore .sourcecombineignore
+   python3 sourcecombine.py --export-ignore .sourcecombineignore
    ```
 
 3. **Import ignore rules:**
    Load glob ignore patterns from an ignore file, JSON or YAML file (or standard input `-`):
    ```bash
-   python sourcecombine.py --import-ignore ignore.json --list-ignores
+   python3 sourcecombine.py --import-ignore ignore.json --list-ignores
    ```
 
 4. **Inspect active search-and-replace rules:**
    Display active regex replacement rules loaded from configuration or CLI arguments:
    ```bash
-   python sourcecombine.py --list-replacements
+   python3 sourcecombine.py --list-replacements
    ```
 
 5. **Export active search-and-replace rules:**
    Save active regex replacement rules to a JSON file or output to stdout (`-`):
    ```bash
-   python sourcecombine.py --export-replacements rules.json
+   python3 sourcecombine.py --export-replacements rules.json
    ```
 
 6. **Import search-and-replace rules:**
    Load search-and-replace rules from a JSON or YAML file (or standard input `-`):
    ```bash
-   python sourcecombine.py --import-replacements rules.json --list-replacements
+   python3 sourcecombine.py --import-replacements rules.json --list-replacements
    ```
 
 7. **Inspect template placeholders:**
    List supported placeholders for headers, footers, and templates (optionally filtered by keyword):
    ```bash
-   python sourcecombine.py --list-placeholders git
+   python3 sourcecombine.py --list-placeholders git
    ```
 
 8. **Inspect supported languages and file extensions:**
    Filter supported language tags or extension mappings by keyword:
    ```bash
-   python sourcecombine.py --list-languages python
-   python sourcecombine.py --list-extensions py
+   python3 sourcecombine.py --list-languages python
+   python3 sourcecombine.py --list-extensions py
    ```
 
 9. **Inspect supported output formats and built-in presets:**
    List supported output formats or built-in configuration presets:
    ```bash
-   python sourcecombine.py --list-formats
-   python sourcecombine.py --list-presets
+   python3 sourcecombine.py --list-formats
+   python3 sourcecombine.py --list-presets
    ```
 
 10. **Export built-in presets:**
     Save built-in preset definitions and expanded options to a JSON file or output to stdout (`-`):
     ```bash
-    python sourcecombine.py --export-presets presets.json
+    python3 sourcecombine.py --export-presets presets.json
     ```
 
 11. **Import custom presets:**
     Import custom configuration preset definitions from a JSON or YAML file or standard input (`-`):
     ```bash
-    python sourcecombine.py --import-presets custom_presets.json --preset my_custom_preset
+    python3 sourcecombine.py --import-presets custom_presets.json --preset my_custom_preset
     ```
 
 12. **Export custom language mappings:**
     Save active custom language mappings to a JSON file or output to stdout (`-`):
     ```bash
-    python sourcecombine.py --export-lang-map lang_map.json
+    python3 sourcecombine.py --export-lang-map lang_map.json
     ```
 
 13. **Import custom language mappings:**
     Load custom language mappings from a JSON or YAML file (or standard input `-`):
     ```bash
-    python sourcecombine.py --import-lang-map lang_map.json
+    python3 sourcecombine.py --import-lang-map lang_map.json
     ```
 
 14. **Override project metadata:**
     Pass explicit metadata values (such as name, version, and author) to override auto-detected project details in reports and templates:
     ```bash
-    python sourcecombine.py --project-info --project-name "MyProject" --project-version "2.0.0" --project-author "Jane Doe"
+    python3 sourcecombine.py --project-info --project-name "MyProject" --project-version "2.0.0" --project-author "Jane Doe"
     ```
 
-13. **Display system environment and project details:**
+15. **Display system environment and project details:**
     Check Python version, OS platform, optional dependencies, and detected project metadata:
     ```bash
-    python sourcecombine.py --system-info
-    python sourcecombine.py --project-info
+    python3 sourcecombine.py --system-info
+    python3 sourcecombine.py --project-info
     ```
 
 ### Advanced Filtering and AI Optimization
@@ -595,85 +595,85 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
 #### Explain Exclusion/Inclusion
 If you are unsure why a file is being skipped or included, you can check using the `--explain` (or `--exp`) command:
 ```bash
-python sourcecombine.py --explain utils.py
+python3 sourcecombine.py --explain utils.py
 # or using the shortcut alias
-python sourcecombine.py --exp utils.py
+python3 sourcecombine.py --exp utils.py
 ```
 
 #### Combine Only Changed Git Files
 You can choose to combine only files with staged or unstaged changes in Git using the `--git-diff` flag. This is great for reviewing code changes before committing:
 ```bash
-python sourcecombine.py . --git-diff
+python3 sourcecombine.py . --git-diff
 ```
 To combine only staged changes, add the `--staged` flag:
 ```bash
-python sourcecombine.py . --staged
+python3 sourcecombine.py . --staged
 ```
 To combine only unstaged and untracked changes, use the `--unstaged` flag:
 ```bash
-python sourcecombine.py . --unstaged
+python3 sourcecombine.py . --unstaged
 ```
 
 #### Filter by Line and Token Limits
 Set minimum or maximum file limits based on lines and tokens:
 ```bash
 # Include files that have at least 10 lines and at most 500 lines
-python sourcecombine.py . --min-lines 10 --max-file-lines 500
+python3 sourcecombine.py . --min-lines 10 --max-file-lines 500
 
 # Include files that have between 50 and 2000 tokens
-python sourcecombine.py . --min-tokens 50 --max-file-tokens 2000
+python3 sourcecombine.py . --min-tokens 50 --max-file-tokens 2000
 ```
 
 #### Truncate Content and Limit Processing
 Truncate long files or limit overall processing to stay under token budgets:
 ```bash
 # Truncate each file to 100 lines and at most 500 tokens
-python sourcecombine.py . --max-lines 100 --truncate-tokens 500 --output compact.txt
+python3 sourcecombine.py . --max-lines 100 --truncate-tokens 500 --output compact.txt
 
 # Stop processing once total output reaches 100,000 tokens or 2 MB
-python sourcecombine.py . --max-tokens 100000 --max-total-size 2MB --output project.txt
+python3 sourcecombine.py . --max-tokens 100000 --max-total-size 2MB --output project.txt
 ```
 
 #### Filter by File Size and Age
 Skip large or old files to keep output concise. For example, to only include files smaller than 50 Kilobytes modified in the last 24 hours:
 ```bash
-python sourcecombine.py . --max-size 50KB --since 1d
+python3 sourcecombine.py . --max-size 50KB --since 1d
 ```
 
 #### Optimize Files for AI (Remove Comments and Whitespace)
 When sharing code with AI models, you can save tokens by removing source code comments and blank lines. Use the `--remove-comments` and `--compact` flags together:
 ```bash
-python sourcecombine.py . --remove-comments --compact --output compact_code.txt
+python3 sourcecombine.py . --remove-comments --compact --output compact_code.txt
 ```
 
 #### Recreate Directory Structure (Mirror Mode)
 You can process files individually while preserving their original folder structure instead of combining them into a single output file. Use the `--mirror` flag along with an output folder:
 ```bash
-python sourcecombine.py src/ --mirror --remove-comments --output processed_src/
+python3 sourcecombine.py src/ --mirror --remove-comments --output processed_src/
 ```
 
 #### Filter by Content Patterns (Grep)
 You can filter files by matching patterns in their content. For example, to include only files containing the word "TODO":
 ```bash
-python sourcecombine.py . --grep "TODO"
+python3 sourcecombine.py . --grep "TODO"
 ```
 Or to skip files containing "DEPRECATED":
 ```bash
-python sourcecombine.py . --exclude-grep "DEPRECATED"
+python3 sourcecombine.py . --exclude-grep "DEPRECATED"
 ```
 To perform case-insensitive matching with `--grep` or `--exclude-grep`, add `--grep-ignore-case` (or `--grep-icase`):
 ```bash
-python sourcecombine.py . --grep "fixme" --grep-ignore-case
+python3 sourcecombine.py . --grep "fixme" --grep-ignore-case
 ```
 
 #### Search and Replace Content
 You can find and replace text or line patterns using regular expressions before combining files. Use `--replace` to swap matching text patterns, or `--replace-line` to replace matching contiguous lines:
 ```bash
 # Replace internal domain names with placeholder text
-python sourcecombine.py . --replace "https://internal\.company\.com" "https://example.com"
+python3 sourcecombine.py . --replace "https://internal\.company\.com" "https://example.com"
 
 # Replace multiline header blocks or comment lines with a single notice
-python sourcecombine.py . --replace-line "^\s*//\s*Copyright.*$" "// [License Header Removed]"
+python3 sourcecombine.py . --replace-line "^\s*//\s*Copyright.*$" "// [License Header Removed]"
 ```
 
 ## Configuration Guide
@@ -688,7 +688,7 @@ When you run SourceCombine, it automatically searches for these configuration fi
 
 If the tool finds one of these files, it loads your settings automatically. You can also specify a custom configuration file using the `--config` or `-k` flag:
 ```bash
-python sourcecombine.py --config my_custom_config.yml
+python3 sourcecombine.py --config my_custom_config.yml
 ```
 
 ### YAML Configuration Example
@@ -774,25 +774,25 @@ You can check, inspect, or export your configuration settings without running fi
 1. **Validate a Configuration File:**
    Check a configuration file for syntax or schema errors:
    ```bash
-   python sourcecombine.py --validate-config sourcecombine.yml
+   python3 sourcecombine.py --validate-config sourcecombine.yml
    ```
 
 2. **Inspect Final Merged Settings:**
    Display the active configuration after combining default values, configuration files, and command-line flags:
    ```bash
-   python sourcecombine.py --show-config
+   python3 sourcecombine.py --show-config
    ```
 
 3. **Import Configuration Settings:**
    Import and deep-merge additional configuration settings from a JSON/YAML file or standard input (`-`):
    ```bash
-   python sourcecombine.py --import-config custom_settings.yml
+   python3 sourcecombine.py --import-config custom_settings.yml
    ```
 
 4. **Export Combined Configuration:**
    Save the final combined settings to a new configuration file or print them to the terminal (`-`):
    ```bash
-   python sourcecombine.py --export-config exported_config.yml
+   python3 sourcecombine.py --export-config exported_config.yml
    ```
 
 ## Template Customization
@@ -802,10 +802,10 @@ You can customize the output by using templates in the configuration file or com
 You can override templates directly from the command line:
 ```bash
 # Custom file header and global header
-python sourcecombine.py . --header "--- FILE: {{FILENAME}} ---" --global-header "Project Build Export"
+python3 sourcecombine.py . --header "--- FILE: {{FILENAME}} ---" --global-header "Project Build Export"
 
 # Custom placeholder text for files exceeding maximum size limits
-python sourcecombine.py . --max-size 100KB --max-size-placeholder "[FILE TRUNCATED: Exceeds size limit]"
+python3 sourcecombine.py . --max-size 100KB --max-size-placeholder "[FILE TRUNCATED: Exceeds size limit]"
 ```
 
 ### File-Level Placeholders
