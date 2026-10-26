@@ -169,7 +169,6 @@ The resolved depth is `2`, the output file is `result.txt`, and the format is Ma
 *   `--export-presets` (`--export-pre`): Export all built-in configuration preset definitions and expanded options to a JSON file (defaults to `presets.json`). Use `-` for standard output (`stdout`).
 *   `--import-presets FILENAME` (`--import-pre`, `--import-preset`): Import custom configuration preset definitions from a JSON or YAML file (or `-` for standard input).
 *   `--export-lang-map` (`--export-lang`): Export all active custom language mappings to a JSON file (defaults to `lang_map.json`). Use `-` for standard output (`stdout`).
-*   `--export-extensions` (`--export-ext`): Export all supported file extension and special filename language mappings to a JSON file (defaults to `extensions.json`). Use `-` for standard output (`stdout`).
 *   `--import-lang-map FILENAME` (`--import-lang`): Import custom language mappings from a JSON or YAML file (or `-` for standard input).
 *   `--system-info`, `--sys-info`: Show environment details (Python version, OS, and other system details). Use `--json` for machine-readable output.
 *   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without writing them to disk.
@@ -572,19 +571,13 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
     python sourcecombine.py --export-lang-map lang_map.json
     ```
 
-13. **Export supported extensions and filenames:**
-    Save all built-in extension and filename language mappings to a JSON file or stdout (`-`):
-    ```bash
-    python sourcecombine.py --export-extensions extensions.json
-    ```
-
-14. **Import custom language mappings:**
+13. **Import custom language mappings:**
     Load custom language mappings from a JSON or YAML file (or standard input `-`):
     ```bash
     python sourcecombine.py --import-lang-map lang_map.json
     ```
 
-15. **Override project metadata:**
+14. **Override project metadata:**
     Pass explicit metadata values (such as name, version, and author) to override auto-detected project details in reports and templates:
     ```bash
     python sourcecombine.py --project-info --project-name "MyProject" --project-version "2.0.0" --project-author "Jane Doe"
