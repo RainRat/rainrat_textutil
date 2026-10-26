@@ -260,3 +260,76 @@ def test_cli_import_lang_map_and_files_from_conflict(monkeypatch, caplog):
 
     assert exc_info.value.code == 1
     assert "cannot use --import-lang-map and --files-from at the same time" in caplog.text
+
+
+def test_import_lang_map_os_error(tmp_path, monkeypatch, caplog):
+    map_file = tmp_path / "read_error.json"
+    map_file.write_text("{}", encoding="utf-8")
+
+    def mock_open(file, *args, **kwargs):
+        if str(file) == str(map_file):
+            raise OSError("Permission denied")
+        return open(file, *args, **kwargs)
+
+    monkeypatch.setattr("builtins.open", mock_open)
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+
+    with pytest.raises(SystemExit):
+        import_lang_map(map_file, config)
+
+    assert "Could not read language map file" in caplog.text
+
+
+def test_import_lang_map_no_yaml_fallback_error(tmp_path, monkeypatch, caplog):
+    bad_file = tmp_path / "bad.json"
+    bad_file.write_text("{invalid json", encoding="utf-8")
+
+    monkeypatch.setattr(utils, "yaml", None)
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+
+    with pytest.raises(SystemExit):
+        import_lang_map(bad_file, config)
+
+    assert "Could not parse language map file" in caplog.text
+
+
+def test_import_lang_map_non_dict_raw_mappings(tmp_path, caplog):
+    bad_file = tmp_path / "bad_mappings.json"
+    bad_file.write_text(json.dumps({"custom_languages": "not-a-dict"}), encoding="utf-8")
+
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+
+    with pytest.raises(SystemExit):
+        import_lang_map(bad_file, config)
+
+    assert "Invalid language map mappings" in caplog.text
+
+
+def test_import_lang_map_reinitialize_non_dict_custom_languages(tmp_path):
+    map_file = tmp_path / "valid.json"
+    map_file.write_text(json.dumps({".vue": "html"}), encoding="utf-8")
+
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+    config['search']['custom_languages'] = None
+
+    import_lang_map(map_file, config)
+
+    assert config['search']['custom_languages'] == {".vue": "html"}
+
+
+def test_cli_list_replacements_with_import_lang_map(tmp_path, monkeypatch, capsys):
+    map_file = tmp_path / "lang.json"
+    map_file.write_text(json.dumps({".vue": "html"}), encoding="utf-8")
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["sourcecombine", "--list-replacements", "--import-lang-map", str(map_file)]
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sourcecombine.main()
+
+    assert exc_info.value.code == 0
+    captured = capsys.readouterr()
+    assert "ACTIVE SEARCH-AND-REPLACE RULES" in captured.out
