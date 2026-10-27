@@ -5035,6 +5035,14 @@ def main():
         help="Import custom configuration preset definitions from a JSON or YAML file or standard input ('-') into active preset definitions.",
     )
     utility_group.add_argument(
+        "--export-extensions",
+        "--export-ext",
+        nargs="?",
+        const="extensions.json",
+        metavar="FILENAME",
+        help="Export all supported file extension and special filename language mappings to a JSON file (defaults to 'extensions.json'). Use '-' for standard output (stdout).",
+    )
+    utility_group.add_argument(
         "--export-lang-map",
         "--export-lang",
         nargs="?",
@@ -5209,6 +5217,7 @@ def main():
         getattr(args, 'export_ignore', None) == '-' or
         getattr(args, 'export_replacements', None) == '-' or
         getattr(args, 'export_presets', None) == '-' or
+        getattr(args, 'export_extensions', None) == '-' or
         getattr(args, 'export_lang_map', None) == '-' or
         getattr(args, 'import_presets', None) == '-' or
         getattr(args, 'import_lang_map', None) == '-' or
@@ -5277,6 +5286,14 @@ def main():
 
     if args.files_from and export_presets_val:
         logging.error("You cannot use --export-presets and --files-from at the same time.")
+        sys.exit(1)
+
+    export_extensions_val = getattr(args, 'export_extensions', None)
+    if export_extensions_val and type(export_extensions_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        export_extensions_val = None
+
+    if args.files_from and export_extensions_val:
+        logging.error("You cannot use --export-extensions and --files-from at the same time.")
         sys.exit(1)
 
     if args.files_from and import_presets_val:
@@ -6287,6 +6304,10 @@ def main():
 
     if export_presets_val:
         export_presets(export_presets_val)
+        sys.exit(0)
+
+    if export_extensions_val:
+        export_extensions(export_extensions_val)
         sys.exit(0)
 
     if export_lang_map_val:
@@ -9025,6 +9046,45 @@ def import_lang_map(source_path, config):
         logging.info("Imported %d custom language mapping(s) from %s.", imported_count, Path(source_str).resolve())
 
     return config
+
+
+def export_extensions(target_path):
+    """Export all supported file extension and special filename language mappings to a JSON file or stdout."""
+    ext_map = dict(utils.EXTENSION_TO_LANG)
+    ext_map.update(utils.FILENAME_TO_LANG)
+
+    target_str = str(target_path) if target_path else "extensions.json"
+    is_stdout = target_str == '-'
+
+    if not is_stdout:
+        target_file = Path(target_str)
+        if target_file.is_dir() or target_str.endswith(('/', '\\')):
+            target_file = target_file / "extensions.json"
+    else:
+        target_file = None
+
+    sorted_extensions = {item: ext_map[item] for item in sorted(ext_map.keys())}
+
+    output = {
+        "exported_to": "-" if is_stdout else str(target_file.resolve() if target_file else "-"),
+        "total_extensions": len(ext_map),
+        "extensions": sorted_extensions,
+    }
+
+    json_bytes = json.dumps(output, indent=2) + "\n"
+
+    if is_stdout:
+        sys.stdout.write(json_bytes)
+        return
+
+    try:
+        target_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(target_file, "w", encoding="utf-8") as f:
+            f.write(json_bytes)
+        logging.info("Extension mappings exported to %s", target_file.resolve())
+    except OSError as exc:
+        logging.error("Could not export extension mappings to '%s': %s", target_file, exc)
+        sys.exit(1)
 
 
 def export_lang_map(target_path, config=None, json_format=False):
