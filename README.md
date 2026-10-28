@@ -21,7 +21,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--config` (`-k`): Load settings from a YAML or JSON configuration file. Pass `-` to read configuration from standard input (`stdin`). The tool automatically checks for `sourcecombine.yml`, `sourcecombine.yaml`, `sourcecombine.json`, `config.yml`, `config.yaml`, or `config.json` in the current folder.
 *   `--output` (`-o`): Write output to a specific file or folder instead of printing to the terminal. Supports template placeholders (for example, `{{PROJECT_NAME}}_{{DATE}}.txt`).
 *   `--clipboard` (`-c`): Copy the combined output to the system clipboard.
-*   `--git-files` (`-G`): Use Git to find files and follow the `.gitignore` rules automatically.
+*   `--git-files` (`--use-git`, `--git`, `-G`): Use Git to find files and follow the `.gitignore` rules automatically.
 *   `--git-diff`: Include only files that have changed in Git (staged, unstaged, or untracked).
 *   `--staged`: Include only staged changes in Git (used with `--git-diff`).
 *   `--unstaged`: Include only unstaged and untracked changes in Git (used with `--git-diff`).
