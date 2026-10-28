@@ -260,3 +260,75 @@ def test_cli_import_lang_map_and_files_from_conflict(monkeypatch, caplog):
 
     assert exc_info.value.code == 1
     assert "cannot use --import-lang-map and --files-from at the same time" in caplog.text
+
+
+def test_import_lang_map_os_error(tmp_path, monkeypatch):
+    """Test OSError handling when reading language map file."""
+    map_file = tmp_path / "lang.json"
+    map_file.write_text(json.dumps({".mjml": "html"}), encoding="utf-8")
+
+    def mock_open(*args, **kwargs):
+        raise OSError("Permission denied")
+
+    monkeypatch.setattr("builtins.open", mock_open)
+
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+    with pytest.raises(SystemExit):
+        import_lang_map(map_file, config)
+
+
+def test_import_lang_map_no_yaml(tmp_path, monkeypatch):
+    """Test parse error fallback when utils.yaml is None."""
+    bad_file = tmp_path / "bad.json"
+    bad_file.write_text("not json content", encoding="utf-8")
+
+    monkeypatch.setattr(utils, "yaml", None)
+
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+    with pytest.raises(SystemExit):
+        import_lang_map(bad_file, config)
+
+
+def test_import_lang_map_non_dict_custom_languages(tmp_path):
+    """Test custom_languages re-initialization when config['search']['custom_languages'] is not a dict."""
+    map_file = tmp_path / "lang.json"
+    map_file.write_text(json.dumps({".mjml": "html"}), encoding="utf-8")
+
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+    config['search']['custom_languages'] = "not a dict"
+
+    import_lang_map(map_file, config)
+    assert config['search']['custom_languages'] == {".mjml": "html"}
+
+
+def test_import_lang_map_non_dict_raw_mappings(tmp_path):
+    """Test error handling when raw_mappings is not a dict."""
+    map_file = tmp_path / "lang.json"
+    map_file.write_text(json.dumps({"custom_languages": "not_a_dict"}), encoding="utf-8")
+
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+    with pytest.raises(SystemExit):
+        import_lang_map(map_file, config)
+
+
+def test_cli_import_lang_map_with_list_replacements(tmp_path, monkeypatch, capsys):
+    """Test CLI combining --import-lang-map with --list-replacements."""
+    map_file = tmp_path / "lang.json"
+    map_file.write_text(json.dumps({".mjml": "html"}), encoding="utf-8")
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            str(tmp_path),
+            "--import-lang-map",
+            str(map_file),
+            "--list-replacements",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        from sourcecombine import main
+        main()
+
+    assert exc_info.value.code == 0
