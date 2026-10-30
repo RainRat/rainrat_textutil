@@ -260,3 +260,82 @@ def test_cli_import_lang_map_and_files_from_conflict(monkeypatch, caplog):
 
     assert exc_info.value.code == 1
     assert "cannot use --import-lang-map and --files-from at the same time" in caplog.text
+
+
+def test_import_lang_map_oserror(tmp_path, monkeypatch, caplog):
+    """Test handling OSError when reading language map file."""
+    map_file = tmp_path / "lang.json"
+    map_file.write_text("{}", encoding="utf-8")
+
+    def mock_open(*args, **kwargs):
+        raise OSError("Permission denied")
+
+    monkeypatch.setattr("builtins.open", mock_open)
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+
+    with pytest.raises(SystemExit) as exc_info:
+        import_lang_map(map_file, config)
+
+    assert exc_info.value.code == 1
+    assert "Could not read language map file" in caplog.text
+
+
+def test_import_lang_map_no_yaml_json_error(tmp_path, monkeypatch, caplog):
+    """Test parsing error message when utils.yaml is disabled."""
+    map_file = tmp_path / "bad.json"
+    map_file.write_text("{ invalid json }", encoding="utf-8")
+
+    monkeypatch.setattr(utils, "yaml", None)
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+
+    with pytest.raises(SystemExit) as exc_info:
+        import_lang_map(map_file, config)
+
+    assert exc_info.value.code == 1
+    assert "Could not parse language map file" in caplog.text
+
+
+def test_import_lang_map_non_dict_mappings(tmp_path, caplog):
+    """Test error handling when custom_languages value is not a dictionary."""
+    map_file = tmp_path / "non_dict.json"
+    map_file.write_text(json.dumps({"custom_languages": "invalid_string"}), encoding="utf-8")
+
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+
+    with pytest.raises(SystemExit) as exc_info:
+        import_lang_map(map_file, config)
+
+    assert exc_info.value.code == 1
+    assert "Invalid language map mappings" in caplog.text
+
+
+def test_import_lang_map_non_dict_custom_languages_config(tmp_path):
+    """Test re-initialization when search.custom_languages is non-dict in config."""
+    map_file = tmp_path / "valid.json"
+    map_file.write_text(json.dumps({".vue": "html"}), encoding="utf-8")
+
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+    config['search']['custom_languages'] = None
+
+    import_lang_map(map_file, config)
+    assert config['search']['custom_languages'] == {".vue": "html"}
+
+
+def test_cli_list_replacements_and_import_lang_map(tmp_path, monkeypatch, capsys):
+    """Test combining --list-replacements with --import-lang-map."""
+    map_file = tmp_path / "lang.json"
+    map_file.write_text(json.dumps({".vue": "html"}), encoding="utf-8")
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["sourcecombine.py", "--list-replacements", "--import-lang-map", str(map_file)]
+    )
+
+    from sourcecombine import main
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+
+    assert exc_info.value.code == 0
+    captured = capsys.readouterr().out
+    assert "ACTIVE SEARCH-AND-REPLACE RULES" in captured
