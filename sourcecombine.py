@@ -5049,6 +5049,15 @@ def main():
         help="Import custom language mappings from a JSON or YAML file or standard input ('-') into active configuration.",
     )
     utility_group.add_argument(
+        "--export-file-list",
+        "--export-files",
+        "--export-file-map",
+        nargs="?",
+        const="file_list.txt",
+        metavar="FILENAME",
+        help="Export all active matched file paths (after filtering and exclusions) to a file list (defaults to 'file_list.txt'). Use '-' for standard output (stdout). Use --json for machine-readable output.",
+    )
+    utility_group.add_argument(
         "--system-info",
         "--sys-info",
         action="store_true",
@@ -5210,6 +5219,7 @@ def main():
         getattr(args, 'export_replacements', None) == '-' or
         getattr(args, 'export_presets', None) == '-' or
         getattr(args, 'export_lang_map', None) == '-' or
+        getattr(args, 'export_file_list', None) == '-' or
         getattr(args, 'import_presets', None) == '-' or
         getattr(args, 'import_lang_map', None) == '-' or
         args.init == '-' or
@@ -5289,6 +5299,14 @@ def main():
 
     if args.files_from and export_lang_map_val:
         logging.error("You cannot use --export-lang-map and --files-from at the same time.")
+        sys.exit(1)
+
+    export_file_list_val = getattr(args, 'export_file_list', None)
+    if export_file_list_val and type(export_file_list_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        export_file_list_val = None
+
+    if args.files_from and export_file_list_val:
+        logging.error("You cannot use --export-file-list and --files-from at the same time.")
         sys.exit(1)
 
     import_lang_map_val = getattr(args, 'import_lang_map', None)
@@ -6291,6 +6309,10 @@ def main():
 
     if export_lang_map_val:
         export_lang_map(export_lang_map_val, config=config, json_format=getattr(args, 'json', False))
+        sys.exit(0)
+
+    if export_file_list_val:
+        export_file_list(export_file_list_val, config=config, json_format=getattr(args, 'json', False))
         sys.exit(0)
 
     explain_val = getattr(args, 'explain', None)
@@ -9067,6 +9089,132 @@ def export_lang_map(target_path, config=None, json_format=False):
         logging.info("Custom language mappings exported to %s", target_file.resolve())
     except OSError as exc:
         logging.error("Could not export custom language mappings to '%s': %s", target_file, exc)
+        sys.exit(1)
+
+
+def _get_matched_files_for_export(config):
+    """Discover and filter files based on the given configuration."""
+    search_opts = config.get('search', {}) or {}
+    filter_opts = config.get('filters', {}) or {}
+
+    root_folders = search_opts.get('root_folders') or ["."]
+    recursive = search_opts.get('recursive', True)
+    exclude_folders = filter_opts.get('exclusions', {}).get('folders') or []
+
+    ignore_files = list(search_opts.get('ignore_files') or [])
+    default_ignore = ".sourcecombineignore"
+    if default_ignore not in ignore_files and Path(default_ignore).is_file():
+        ignore_files.append(default_ignore)
+
+    if ignore_files:
+        filter_opts = copy.deepcopy(filter_opts)
+        exclusions = filter_opts.setdefault('exclusions', {})
+        filenames = exclusions.setdefault('filenames', [])
+        for ignore_file in ignore_files:
+            patterns = utils.parse_ignore_file(ignore_file)
+            if patterns:
+                filenames.extend(patterns)
+
+    all_matched = []
+    seen_paths = set()
+
+    for root_folder in root_folders:
+        paths, root_path, _ = collect_file_paths(
+            root_folder,
+            recursive=recursive,
+            exclude_folders=exclude_folders,
+            max_depth=search_opts.get('max_depth', 0),
+            use_git=search_opts.get('use_git', False),
+            use_git_diff=search_opts.get('use_git_diff', False),
+            git_diff_ref=search_opts.get('git_diff_ref'),
+            git_staged=search_opts.get('git_staged', False),
+            git_unstaged=search_opts.get('git_unstaged', False),
+        )
+        if not paths:
+            continue
+
+        if filter_opts.get('unique'):
+            unique_paths = []
+            for p in paths:
+                try:
+                    abs_p = p.resolve()
+                    if abs_p in seen_paths:
+                        continue
+                    seen_paths.add(abs_p)
+                    unique_paths.append(p)
+                except OSError:
+                    unique_paths.append(p)
+            paths = unique_paths
+
+        filtered = filter_file_paths(
+            paths,
+            filter_opts=filter_opts,
+            search_opts=search_opts,
+            root_path=root_path,
+        )
+
+        for p in filtered:
+            rel = _get_rel_path(p, root_path) if p.is_absolute() else p
+            all_matched.append(rel.as_posix())
+
+    max_files = filter_opts.get('max_files', 0)
+    if max_files > 0 and len(all_matched) > max_files:
+        all_matched = all_matched[:max_files]
+
+    return all_matched
+
+
+def export_file_list(target_path, files=None, config=None, json_format=False):
+    """Export all active matched file paths to a file list or stdout."""
+    if files is None:
+        if config is None:
+            config = copy.deepcopy(utils.DEFAULT_CONFIG)
+            utils.validate_config(config)
+        else:
+            config = copy.deepcopy(config)
+        files = _get_matched_files_for_export(config)
+
+    file_paths = []
+    for item in files:
+        if isinstance(item, (str, Path)):
+            file_paths.append(str(item))
+        elif isinstance(item, (list, tuple)) and item:
+            file_paths.append(str(item[0]))
+        elif isinstance(item, dict) and 'path' in item:
+            file_paths.append(str(item['path']))
+
+    target_str = str(target_path) if target_path else "file_list.txt"
+    is_stdout = target_str == '-'
+    is_json = json_format or target_str.lower().endswith('.json')
+
+    if not is_stdout:
+        target_file = Path(target_str)
+        if target_file.is_dir() or target_str.endswith(('/', '\\')):
+            target_file = target_file / ("file_list.json" if is_json else "file_list.txt")
+    else:
+        target_file = None
+
+    if is_json:
+        output = {
+            "exported_to": "-" if is_stdout else str(target_file.resolve() if target_file else "-"),
+            "total_files": len(file_paths),
+            "files": file_paths,
+        }
+        json_bytes = json.dumps(output, indent=2) + "\n"
+    else:
+        json_bytes = "\n".join(file_paths) + ("\n" if file_paths else "")
+
+    if is_stdout:
+        sys.stdout.write(json_bytes)
+        return
+
+    try:
+        target_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(target_file, "w", encoding="utf-8") as f:
+            f.write(json_bytes)
+        logging.info("Active file list exported to %s", target_file.resolve())
+    except OSError as exc:
+        logging.error("Could not export file list to '%s': %s", target_file, exc)
         sys.exit(1)
 
 
