@@ -170,6 +170,7 @@ The resolved depth is `2`, the output file is `result.txt`, and the format is Ma
 *   `--import-presets FILENAME` (`--import-pre`, `--import-preset`): Import custom configuration preset definitions from a JSON or YAML file (or `-` for standard input).
 *   `--export-lang-map` (`--export-lang`): Export all active custom language mappings to a JSON file (defaults to `lang_map.json`). Use `-` for standard output (`stdout`).
 *   `--import-lang-map FILENAME` (`--import-lang`): Import custom language mappings from a JSON or YAML file (or `-` for standard input).
+*   `--export-file-list` (`--export-files`, `--export-file-map`): Export all active matched file paths (after filtering and exclusions) to a file list (defaults to `file_list.txt`). Use `-` for standard output (`stdout`) and `--json` for machine-readable output.
 *   `--system-info`, `--sys-info`: Show environment details (Python version, OS, and other system details). Use `--json` for machine-readable output.
 *   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without writing them to disk.
 *   `--analyze` (`-A`): Run project analysis without generating output files. Shortcut for `--dry-run --estimate-tokens --overview --include-tree --tree`.
@@ -577,13 +578,20 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
     python sourcecombine.py --import-lang-map lang_map.json
     ```
 
-14. **Override project metadata:**
+14. **Export matched file list:**
+    Export active matched file paths after filtering to a plain text file or JSON list:
+    ```bash
+    python sourcecombine.py --export-file-list file_list.txt
+    python sourcecombine.py --export-files files.json --json
+    ```
+
+15. **Override project metadata:**
     Pass explicit metadata values (such as name, version, and author) to override auto-detected project details in reports and templates:
     ```bash
     python sourcecombine.py --project-info --project-name "MyProject" --project-version "2.0.0" --project-author "Jane Doe"
     ```
 
-13. **Display system environment and project details:**
+16. **Display system environment and project details:**
     Check Python version, OS platform, optional dependencies, and detected project metadata:
     ```bash
     python sourcecombine.py --system-info
