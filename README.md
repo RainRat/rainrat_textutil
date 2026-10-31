@@ -583,7 +583,7 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
     python sourcecombine.py --project-info --project-name "MyProject" --project-version "2.0.0" --project-author "Jane Doe"
     ```
 
-13. **Display system environment and project details:**
+15. **Display system environment and project details:**
     Check Python version, OS platform, optional dependencies, and detected project metadata:
     ```bash
     python sourcecombine.py --system-info
