@@ -8982,11 +8982,11 @@ def import_lang_map(source_path, config):
 
     raw_mappings = {}
     if isinstance(data, dict):
-        if "custom_languages" in data and isinstance(data["custom_languages"], dict):
+        if "custom_languages" in data:
             raw_mappings = data["custom_languages"]
-        elif "language_mappings" in data and isinstance(data["language_mappings"], dict):
+        elif "language_mappings" in data:
             raw_mappings = data["language_mappings"]
-        elif "lang_map" in data and isinstance(data["lang_map"], dict):
+        elif "lang_map" in data:
             raw_mappings = data["lang_map"]
         else:
             raw_mappings = data
