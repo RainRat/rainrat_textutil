@@ -5049,6 +5049,14 @@ def main():
         help="Import custom language mappings from a JSON or YAML file or standard input ('-') into active configuration.",
     )
     utility_group.add_argument(
+        "--export-languages",
+        "--export-langs",
+        nargs="?",
+        const="languages.json",
+        metavar="FILENAME",
+        help="Export all supported language identifiers, file extensions, and special filenames to a JSON file (defaults to 'languages.json'). Use '-' for standard output (stdout).",
+    )
+    utility_group.add_argument(
         "--system-info",
         "--sys-info",
         action="store_true",
@@ -5210,6 +5218,7 @@ def main():
         getattr(args, 'export_replacements', None) == '-' or
         getattr(args, 'export_presets', None) == '-' or
         getattr(args, 'export_lang_map', None) == '-' or
+        getattr(args, 'export_languages', None) == '-' or
         getattr(args, 'import_presets', None) == '-' or
         getattr(args, 'import_lang_map', None) == '-' or
         args.init == '-' or
@@ -5289,6 +5298,14 @@ def main():
 
     if args.files_from and export_lang_map_val:
         logging.error("You cannot use --export-lang-map and --files-from at the same time.")
+        sys.exit(1)
+
+    export_languages_val = getattr(args, 'export_languages', None)
+    if export_languages_val and type(export_languages_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        export_languages_val = None
+
+    if args.files_from and export_languages_val:
+        logging.error("You cannot use --export-languages and --files-from at the same time.")
         sys.exit(1)
 
     import_lang_map_val = getattr(args, 'import_lang_map', None)
@@ -6291,6 +6308,10 @@ def main():
 
     if export_lang_map_val:
         export_lang_map(export_lang_map_val, config=config, json_format=getattr(args, 'json', False))
+        sys.exit(0)
+
+    if export_languages_val:
+        export_languages(export_languages_val)
         sys.exit(0)
 
     explain_val = getattr(args, 'explain', None)
@@ -9432,6 +9453,55 @@ def print_languages(query=None, json_format=False):
     count_label = f"Matching: {len(lang_tags)}" if query_lower else f"Total: {len(lang_groups)}"
     print(f"\n  {C_BOLD}{count_label}{C_RESET} languages supported.")
     print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
+
+
+def export_languages(target_path, query=None):
+    """Export all supported language identifiers, file extensions, and special filenames to a JSON file or stdout."""
+    lang_groups = {}
+    for ext, lang in utils.EXTENSION_TO_LANG.items():
+        lang_groups.setdefault(lang, []).append(ext)
+    for name, lang in utils.FILENAME_TO_LANG.items():
+        lang_groups.setdefault(lang, []).append(name)
+
+    if query:
+        query_lower = query.lower()
+        lang_groups = {
+            tag: items for tag, items in lang_groups.items()
+            if query_lower in tag.lower() or any(query_lower in item.lower() for item in items)
+        }
+
+    target_str = str(target_path) if target_path else "languages.json"
+    is_stdout = target_str == '-'
+
+    if not is_stdout:
+        target_file = Path(target_str)
+        if target_file.is_dir() or target_str.endswith(('/', '\\')):
+            target_file = target_file / "languages.json"
+    else:
+        target_file = None
+
+    sorted_languages = {tag: sorted(lang_groups[tag]) for tag in sorted(lang_groups.keys())}
+
+    output = {
+        "exported_to": "-" if is_stdout else str(target_file.resolve() if target_file else "-"),
+        "total_languages": len(sorted_languages),
+        "languages": sorted_languages,
+    }
+
+    json_bytes = json.dumps(output, indent=2) + "\n"
+
+    if is_stdout:
+        sys.stdout.write(json_bytes)
+        return
+
+    try:
+        target_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(target_file, "w", encoding="utf-8") as f:
+            f.write(json_bytes)
+        logging.info("Supported languages exported to %s", target_file.resolve())
+    except OSError as exc:
+        logging.error("Could not export supported languages to '%s': %s", target_file, exc)
+        sys.exit(1)
 
 
 def print_project_info(stats, json_format=False):
