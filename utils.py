@@ -833,19 +833,15 @@ def _validate_search_section(config):
     if root_folders is not None and not isinstance(root_folders, list):
         raise InvalidConfigError("search.root_folders must be a list of folders.")
 
-    _normalize_extension_list(search.get('allowed_extensions'), 'search.allowed_extensions')
-    _normalize_extension_list(search.get('exclude_extensions'), 'search.exclude_extensions')
+    for key in ('allowed_extensions', 'exclude_extensions'):
+        _normalize_extension_list(search.get(key), f'search.{key}')
 
-    _normalize_string_list(
-        search.get('allowed_languages'),
-        'search.allowed_languages',
-        list_label="a list of languages",
-    )
-    _normalize_string_list(
-        search.get('exclude_languages'),
-        'search.exclude_languages',
-        list_label="a list of languages",
-    )
+    for key in ('allowed_languages', 'exclude_languages'):
+        _normalize_string_list(
+            search.get(key),
+            f'search.{key}',
+            list_label="a list of languages",
+        )
     _normalize_string_list(search.get('ignore_files'), 'search.ignore_files')
 
     custom_langs = search.get('custom_languages')
