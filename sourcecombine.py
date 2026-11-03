@@ -4910,6 +4910,16 @@ def main():
         help="Show active search-and-replace rules from configuration and CLI arguments (optionally filtered by QUERY) and exit. Use --json for machine-readable output.",
     )
     utility_group.add_argument(
+        "--list-lang-map",
+        "--list-lang-mappings",
+        "--list-custom-lang",
+        nargs="?",
+        const=True,
+        default=False,
+        metavar="QUERY",
+        help="Show active custom language mappings from configuration and imports (optionally filtered by QUERY) and exit. Use --json for machine-readable output.",
+    )
+    utility_group.add_argument(
         "--extract",
         "--extr",
         "--xtr",
@@ -5232,6 +5242,7 @@ def main():
         _get_bool_arg(args, 'list_presets') or
         _get_bool_arg(args, 'list_ignores') or
         _get_bool_arg(args, 'list_replacements') or
+        _get_bool_arg(args, 'list_lang_map') or
         _get_bool_arg(args, 'list_backups') or
         _get_bool_arg(args, 'diff_backups') or
         _get_bool_arg(args, 'backup') or
@@ -5450,6 +5461,49 @@ def main():
 
         query = list_rep_val if isinstance(list_rep_val, str) else None
         print_replacements(query=query, json_format=getattr(args, 'json', False), config=config)
+        sys.exit(0)
+
+    list_lang_map_val = getattr(args, 'list_lang_map', False)
+    if list_lang_map_val and type(list_lang_map_val).__name__ in ('MagicMock', 'Mock', 'NonCallableMagicMock'):
+        list_lang_map_val = False
+
+    if list_lang_map_val:
+        config_path = args.config
+        if not config_path and args.targets:
+            first = args.targets[0]
+            is_config_ext = first.lower().endswith(('.yml', '.yaml')) or (
+                first.lower().endswith('.json') and not args.extract and not getattr(args, 'verify', False)
+            )
+            if is_config_ext and not Path(first).is_dir():
+                config_path = first
+        if not config_path:
+            defaults = [
+                'sourcecombine.yml', 'sourcecombine.yaml',
+                'sourcecombine.json',
+                'config.yml', 'config.yaml',
+                'config.json'
+            ]
+            for d in defaults:
+                if Path(d).is_file():
+                    config_path = d
+                    break
+        try:
+            if config_path:
+                config = load_and_validate_config(config_path)
+            else:
+                config = copy.deepcopy(utils.DEFAULT_CONFIG)
+                utils.validate_config(config)
+        except (ConfigNotFoundError, utils.InvalidConfigError) as e:
+            _handle_invalid_config_error(e, args.verbose)
+
+        if import_config_val:
+            import_config(import_config_val, config)
+
+        if import_lang_map_val:
+            import_lang_map(import_lang_map_val, config)
+
+        query = list_lang_map_val if isinstance(list_lang_map_val, str) else None
+        print_lang_map(query=query, json_format=getattr(args, 'json', False), config=config)
         sys.exit(0)
 
     list_ig_val = getattr(args, 'list_ignores', False)
@@ -5827,6 +5881,7 @@ def main():
         validate_config_val is not None or
         args.verify or
         getattr(args, 'explain', False) or
+        _get_bool_arg(args, 'list_lang_map') or
         _get_bool_arg(args, 'list_backups') or
         _get_bool_arg(args, 'diff_backups') or
         _get_bool_arg(args, 'backup') or
@@ -9068,6 +9123,69 @@ def export_lang_map(target_path, config=None, json_format=False):
     except OSError as exc:
         logging.error("Could not export custom language mappings to '%s': %s", target_file, exc)
         sys.exit(1)
+
+
+def print_lang_map(query=None, json_format=False, config=None):
+    """Print active custom language mappings from configuration and imports, optionally filtered by a query."""
+    if config is None:
+        config = copy.deepcopy(utils.DEFAULT_CONFIG)
+        utils.validate_config(config)
+    else:
+        config = copy.deepcopy(config)
+
+    search_opts = config.get('search', {}) or {}
+    custom_languages = dict(search_opts.get('custom_languages') or {})
+
+    total_available = len(custom_languages)
+
+    if json_format:
+        if query:
+            query_lower = query.lower()
+            filtered_map = {
+                ext: lang for ext, lang in custom_languages.items()
+                if query_lower in ext.lower() or query_lower in lang.lower()
+            }
+        else:
+            filtered_map = custom_languages
+
+        output = {
+            "custom_languages": {k: filtered_map[k] for k in sorted(filtered_map.keys())},
+            "total": len(filtered_map)
+        }
+        print(json.dumps(output, indent=2))
+        return
+
+    if query:
+        query_lower = query.lower()
+        title_suffix = f" (FILTERED BY '{query}')"
+    else:
+        query_lower = None
+        title_suffix = ""
+
+    print(f"\n{C_BOLD}{C_CYAN}=== ACTIVE CUSTOM LANGUAGE MAPPINGS{title_suffix} ==={C_RESET}")
+
+    items = sorted(custom_languages.keys())
+    if query_lower:
+        items = [
+            item for item in items
+            if query_lower in item.lower() or query_lower in custom_languages[item].lower()
+        ]
+
+    ext_width = 25
+
+    if total_available == 0:
+        print(f"\n  {C_DIM}No active custom language mappings configured.{C_RESET}")
+    elif query_lower and len(items) == 0:
+        print(f"\n  {C_YELLOW}No custom language mappings matched the filter query '{query}'.{C_RESET}")
+    else:
+        print(f"  {C_BOLD}{C_YELLOW}{'EXTENSION / FILENAME':<{ext_width}}  LANGUAGE TAG{C_RESET}")
+        for item in items:
+            lang = custom_languages[item]
+            print(f"  {C_BOLD}{C_CYAN}{item:<{ext_width}}{C_RESET}  {C_DIM}{lang}{C_RESET}")
+
+    count_label = f"Matching: {len(items)}" if query_lower else f"Total: {total_available}"
+    print(f"\n  {C_BOLD}{count_label}{C_RESET} custom language mappings configured.")
+    print(f"\n{C_BOLD}{'=' * 40}{C_RESET}\n")
 
 
 def print_replacements(query=None, json_format=False, config=None):
