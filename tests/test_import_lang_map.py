@@ -260,3 +260,70 @@ def test_cli_import_lang_map_and_files_from_conflict(monkeypatch, caplog):
 
     assert exc_info.value.code == 1
     assert "cannot use --import-lang-map and --files-from at the same time" in caplog.text
+
+
+def test_import_lang_map_oserror_reading_file(tmp_path, monkeypatch):
+    test_file = tmp_path / "unreadable.json"
+    test_file.write_text("{}", encoding="utf-8")
+
+    def mock_open(*args, **kwargs):
+        raise OSError("Permission denied")
+
+    monkeypatch.setattr("builtins.open", mock_open)
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+    with pytest.raises(SystemExit) as exc_info:
+        import_lang_map(test_file, config)
+    assert exc_info.value.code == 1
+
+
+def test_import_lang_map_json_parse_error_without_yaml(tmp_path, monkeypatch):
+    bad_file = tmp_path / "bad.json"
+    bad_file.write_text("{invalid json", encoding="utf-8")
+
+    monkeypatch.setattr(utils, "yaml", None)
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+    with pytest.raises(SystemExit) as exc_info:
+        import_lang_map(bad_file, config)
+    assert exc_info.value.code == 1
+
+
+def test_import_lang_map_invalid_raw_mappings(tmp_path):
+    map_file = tmp_path / "invalid_mappings.json"
+    map_file.write_text(json.dumps("not-a-dict-or-list-mappings"), encoding="utf-8")
+
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+    with pytest.raises(SystemExit) as exc_info:
+        import_lang_map(map_file, config)
+    assert exc_info.value.code == 1
+
+
+def test_import_lang_map_reinitializes_non_dict_custom_languages(tmp_path):
+    map_file = tmp_path / "lang.json"
+    map_file.write_text(json.dumps({".ts": "typescript"}), encoding="utf-8")
+
+    config = copy.deepcopy(utils.DEFAULT_CONFIG)
+    config["search"]["custom_languages"] = None
+
+    import_lang_map(map_file, config)
+    assert config["search"]["custom_languages"][".ts"] == "typescript"
+
+
+def test_cli_import_lang_map_with_list_replacements(tmp_path, monkeypatch, capsys):
+    lang_file = tmp_path / "lang.json"
+    lang_file.write_text(json.dumps({".ts": "typescript"}), encoding="utf-8")
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            "--list-replacements",
+            "--import-lang-map",
+            str(lang_file),
+        ],
+    )
+
+    with pytest.raises(SystemExit):
+        sourcecombine.main()
+
+    captured = capsys.readouterr()
+    assert "ACTIVE SEARCH-AND-REPLACE RULES" in captured.out
