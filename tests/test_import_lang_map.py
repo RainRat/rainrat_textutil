@@ -260,3 +260,25 @@ def test_cli_import_lang_map_and_files_from_conflict(monkeypatch, caplog):
 
     assert exc_info.value.code == 1
     assert "cannot use --import-lang-map and --files-from at the same time" in caplog.text
+
+
+def test_cli_import_lang_map_with_list_replacements(tmp_path, monkeypatch, capsys):
+    map_file = tmp_path / "custom_lang.json"
+    map_file.write_text(json.dumps({".custom": "python"}), encoding="utf-8")
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sourcecombine.py",
+            "--list-replacements",
+            "--import-lang-map",
+            str(map_file),
+        ],
+    )
+
+    from sourcecombine import main
+    with pytest.raises(SystemExit):
+        main()
+
+    captured = capsys.readouterr()
+    assert "ACTIVE SEARCH-AND-REPLACE RULES" in captured.out
