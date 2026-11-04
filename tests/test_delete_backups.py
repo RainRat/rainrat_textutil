@@ -99,6 +99,32 @@ def test_delete_backups_cli_integration(tmp_path):
     assert not bak1.exists()
 
 
+def test_delete_backups_del_bak_shortcut(tmp_path, capsys):
+    bak1 = tmp_path / "file1.txt.bak"
+    bak1.write_text("Backup 1")
+
+    with patch("sys.argv", ["sourcecombine.py", str(tmp_path), "--del-bak"]):
+        with pytest.raises(SystemExit) as excinfo:
+            main()
+        assert excinfo.value.code == 0
+
+    assert not bak1.exists()
+
+    # Verify --del-bak with --dry-run and --json
+    bak2 = tmp_path / "file2.txt.bak"
+    bak2.write_text("Backup 2")
+
+    with patch("sys.argv", ["sourcecombine.py", str(tmp_path), "--del-bak", "--dry-run", "--json"]):
+        with pytest.raises(SystemExit) as excinfo:
+            main()
+        assert excinfo.value.code == 0
+
+    assert bak2.exists()
+    captured = capsys.readouterr()
+    assert '"dry_run": true' in captured.out
+    assert '"deleted_count": 1' in captured.out
+
+
 def test_delete_backups_single_original_file_target(tmp_path):
     """Verify that targeting an original file successfully deletes its .bak backup."""
     file1 = tmp_path / "file1.txt"

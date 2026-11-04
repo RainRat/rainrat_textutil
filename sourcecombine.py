@@ -4958,6 +4958,7 @@ def main():
     utility_group.add_argument(
         "--delete-backups",
         "--clean",
+        "--del-bak",
         action="store_true",
         help="Remove all '.bak' files from target folders. Use this to clean up after '--apply-in-place'. Supports --dry-run and --json.",
     )
@@ -5237,7 +5238,8 @@ def main():
         _get_bool_arg(args, 'backup') or
         _get_bool_arg(args, 'restore') or
         _get_bool_arg(args, 'delete_backups') or
-        _get_bool_arg(args, 'clean')
+        _get_bool_arg(args, 'clean') or
+        _get_bool_arg(args, 'del_bak')
     ):
         root_logger.setLevel(logging.ERROR)
 
@@ -5795,7 +5797,7 @@ def main():
         create_backups_for_targets(backup_targets, config, dry_run=args.dry_run, json_format=_get_bool_arg(args, 'json'))
         sys.exit(0)
 
-    if args.delete_backups:
+    if _get_bool_arg(args, 'delete_backups') or _get_bool_arg(args, 'clean') or _get_bool_arg(args, 'del_bak'):
         # Use the finalized root folders for deletion
         delete_targets = config.get('search', {}).get('root_folders', ["."])
         delete_backups(delete_targets, dry_run=args.dry_run, json_format=_get_bool_arg(args, 'json'))
@@ -5832,7 +5834,8 @@ def main():
         _get_bool_arg(args, 'backup') or
         _get_bool_arg(args, 'restore') or
         _get_bool_arg(args, 'delete_backups') or
-        _get_bool_arg(args, 'clean')
+        _get_bool_arg(args, 'clean') or
+        _get_bool_arg(args, 'del_bak')
     ):
         logging.getLogger().setLevel(logging.ERROR)
     elif _get_bool_arg(args, 'quiet'):
