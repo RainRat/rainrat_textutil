@@ -144,7 +144,7 @@ The resolved depth is `2`, the output file is `result.txt`, and the format is Ma
 *   `--backup` (`--bak`): Create `.bak` backup files for matching files without modifying original files. Supports `--dry-run` and `--json`.
 *   `--keep-line-numbers` (`--keep-lines`, `--keep-ln`): Keep existing line numbers when rebuilding files with `--extract`. By default, the tool removes line numbers automatically.
 *   `--restore` (`--rst`): Restore files from `.bak` backups. The backup replaces the current file and is removed after a successful restore, so edits made after the backup are discarded. Use `--json` for machine-readable output.
-*   `--delete-backups`: Remove all `.bak` files from the folders. Use `--json` for machine-readable output.
+*   `--delete-backups` (`--clean`, `--del-bak`): Remove all `.bak` files from the folders. Use `--json` for machine-readable output.
 *   `--list-backups` (`--list-bak`): List all `.bak` backup files in target folders along with their statuses relative to original files. Use `--json` for machine-readable output.
 *   `--diff-backups` (`--diff-bak`): Show a unified diff between current files on disk and their `.bak` backup files. Use `--json` for machine-readable output.
 *   `--list-languages` (`--list-lang`): Show all supported language identifiers and exit. Use `--json` for machine-readable output.
@@ -173,7 +173,7 @@ The resolved depth is `2`, the output file is `result.txt`, and the format is Ma
 *   `--system-info`, `--sys-info`: Show environment details (Python version, OS, and other system details). Use `--json` for machine-readable output.
 *   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without writing them to disk.
 *   `--analyze` (`-A`): Run project analysis without generating output files. Shortcut for `--dry-run --estimate-tokens --overview --include-tree --tree`.
-*   `--clean`: (Alias for `--delete-backups`) Remove all `.bak` backup files from the current directory and its subfolders. Use `--json` for machine-readable output.
+*   `--clean`: (Alias for `--delete-backups`, `--del-bak`) Remove all `.bak` backup files from the current directory and its subfolders. Use `--json` for machine-readable output.
 *   `--version` (`-V`): Show the application version and exit.
 
 Text exports can restore Unicode, empty files, and delimiter-like content. A content line exactly equal to that file's text end marker (`--- end PATH ---`) is ambiguous with the export boundary and cannot be round-tripped exactly. Paired-file exports use this text format.
@@ -458,7 +458,10 @@ You can create, inspect, compare, restore, or clean up these backups:
 5. **Delete backup files (Clean up):**
    When you are happy with your changes and no longer need the backups, remove all `.bak` files (add `--json` for machine-readable summary output):
    ```bash
+   python sourcecombine.py --delete-backups
+   # or using the shortcut flags:
    python sourcecombine.py --clean
+   python sourcecombine.py --del-bak
    ```
 
 ### File Listing and Folder Tree Preview
