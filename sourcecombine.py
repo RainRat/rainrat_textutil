@@ -4958,6 +4958,7 @@ def main():
     utility_group.add_argument(
         "--delete-backups",
         "--clean",
+        "--del-bak",
         action="store_true",
         help="Remove all '.bak' files from target folders. Use this to clean up after '--apply-in-place'. Supports --dry-run and --json.",
     )
