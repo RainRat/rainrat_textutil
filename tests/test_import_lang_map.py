@@ -260,3 +260,34 @@ def test_cli_import_lang_map_and_files_from_conflict(monkeypatch, caplog):
 
     assert exc_info.value.code == 1
     assert "cannot use --import-lang-map and --files-from at the same time" in caplog.text
+
+
+def test_cli_list_replacements_with_import_lang_map(tmp_path, monkeypatch):
+    lang_file = tmp_path / "lang.json"
+    lang_file.write_text(json.dumps({".customext": "python"}), encoding="utf-8")
+
+    captured_configs = []
+    orig_print_replacements = sourcecombine.print_replacements
+
+    def mock_print_replacements(query=None, json_format=False, config=None):
+        captured_configs.append(config)
+        return orig_print_replacements(query=query, json_format=json_format, config=config)
+
+    monkeypatch.setattr(sourcecombine, "print_replacements", mock_print_replacements)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sourcecombine.py",
+            "--list-replacements",
+            "--import-lang-map",
+            str(lang_file),
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sourcecombine.main()
+
+    assert exc_info.value.code == 0
+    assert len(captured_configs) == 1
+    assert captured_configs[0]["search"]["custom_languages"][".customext"] == "python"
