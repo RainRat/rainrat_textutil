@@ -171,6 +171,7 @@ The resolved depth is `2`, the output file is `result.txt`, and the format is Ma
 *   `--export-extensions` (`--export-ext`): Export all supported file extension and special filename language mappings to a JSON file (defaults to `extensions.json`). Use `-` for standard output (`stdout`).
 *   `--export-lang-map` (`--export-lang`): Export all active custom language mappings to a JSON file (defaults to `lang_map.json`). Use `-` for standard output (`stdout`).
 *   `--import-lang-map FILENAME` (`--import-lang`): Import custom language mappings from a JSON or YAML file (or `-` for standard input).
+*   `--export-languages` (`--export-langs`): Export all supported language identifiers, file extensions, and special filenames to a JSON file (defaults to `languages.json`). Use `-` for standard output (`stdout`).
 *   `--system-info`, `--sys-info`: Show environment details (Python version, OS, and other system details). Use `--json` for machine-readable output.
 *   `--preview`: (Alias for `--dry-run`) See what files would be processed or extracted without writing them to disk.
 *   `--analyze` (`-A`): Run project analysis without generating output files. Shortcut for `--dry-run --estimate-tokens --overview --include-tree --tree`.
@@ -587,13 +588,19 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
     python3 sourcecombine.py --import-lang-map lang_map.json
     ```
 
-15. **Override project metadata:**
+15. **Export supported language mappings:**
+    Export all supported language identifiers and file mappings to a JSON file or output to stdout (`-`):
+    ```bash
+    python3 sourcecombine.py --export-languages languages.json
+    ```
+
+16. **Override project metadata:**
     Pass explicit metadata values (such as name, version, and author) to override auto-detected project details in reports and templates:
     ```bash
     python3 sourcecombine.py --project-info --project-name "MyProject" --project-version "2.0.0" --project-author "Jane Doe"
     ```
 
-15. **Display system environment and project details:**
+17. **Display system environment and project details:**
     Check Python version, OS platform, optional dependencies, and detected project metadata:
     ```bash
     python3 sourcecombine.py --system-info
