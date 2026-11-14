@@ -169,6 +169,7 @@ The resolved depth is `2`, the output file is `result.txt`, and the format is Ma
 *   `--export-presets` (`--export-pre`): Export all built-in configuration preset definitions and expanded options to a JSON file (defaults to `presets.json`). Use `-` for standard output (`stdout`).
 *   `--import-presets FILENAME` (`--import-pre`, `--import-preset`): Import custom configuration preset definitions from a JSON or YAML file (or `-` for standard input).
 *   `--export-extensions` (`--export-ext`): Export all supported file extension and special filename language mappings to a JSON file (defaults to `extensions.json`). Use `-` for standard output (`stdout`).
+*   `--list-lang-map` (`--list-lang-mappings`, `--list-custom-lang`): Show active custom language mappings from configuration and imports (optionally filtered by query). Use `--json` for machine-readable output.
 *   `--export-lang-map` (`--export-lang`): Export all active custom language mappings to a JSON file (defaults to `lang_map.json`). Use `-` for standard output (`stdout`).
 *   `--import-lang-map FILENAME` (`--import-lang`): Import custom language mappings from a JSON or YAML file (or `-` for standard input).
 *   `--export-languages` (`--export-langs`): Export all supported language identifiers, file extensions, and special filenames to a JSON file (defaults to `languages.json`). Use `-` for standard output (`stdout`).
@@ -589,26 +590,33 @@ Check active ignore rules, search-and-replace rules, template placeholders, supp
     python3 sourcecombine.py --import-lang-map lang_map.json
     ```
 
-15. **Export supported language mappings:**
+15. **Inspect active custom language mappings:**
+    Display active custom language mappings configured in files or imported via CLI (optionally filtered by keyword):
+    ```bash
+    python3 sourcecombine.py --list-lang-map
+    python3 sourcecombine.py --list-lang-map python
+    ```
+
+16. **Export supported language mappings:**
     Export all supported language identifiers and file mappings to a JSON file or output to stdout (`-`):
     ```bash
     python3 sourcecombine.py --export-languages languages.json
     ```
 
-16. **Export matched file list:**
+17. **Export matched file list:**
     Export active matched file paths after filtering to a plain text file or JSON list:
     ```bash
     python3 sourcecombine.py --export-file-list file_list.txt
     python3 sourcecombine.py --export-files files.json --json
     ```
 
-17. **Override project metadata:**
+18. **Override project metadata:**
     Pass explicit metadata values (such as name, version, and author) to override auto-detected project details in reports and templates:
     ```bash
     python3 sourcecombine.py --project-info --project-name "MyProject" --project-version "2.0.0" --project-author "Jane Doe"
     ```
 
-18. **Display system environment and project details:**
+19. **Display system environment and project details:**
     Check Python version, OS platform, optional dependencies, and detected project metadata:
     ```bash
     python3 sourcecombine.py --system-info
