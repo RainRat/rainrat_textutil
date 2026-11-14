@@ -99,6 +99,19 @@ def test_delete_backups_cli_integration(tmp_path):
     assert not bak1.exists()
 
 
+def test_delete_backups_cli_shortcut_alias(tmp_path):
+    """Verify that --del-bak works as a shortcut alias for --delete-backups."""
+    bak1 = tmp_path / "file_del_bak.txt.bak"
+    bak1.write_text("Backup Del Bak")
+
+    with patch("sys.argv", ["sourcecombine.py", str(tmp_path), "--del-bak"]):
+        with pytest.raises(SystemExit) as excinfo:
+            main()
+        assert excinfo.value.code == 0
+
+    assert not bak1.exists()
+
+
 def test_delete_backups_single_original_file_target(tmp_path):
     """Verify that targeting an original file successfully deletes its .bak backup."""
     file1 = tmp_path / "file1.txt"
