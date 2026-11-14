@@ -131,6 +131,30 @@ def test_cli_git_files_flag():
             config = mock_find.call_args[0][0]
             assert config['search']['use_git'] is True
 
+
+def test_cli_git_files_aliases():
+    """Test that --use-git and --git aliases set use_git in config."""
+    mock_stats = {
+        'total_files': 0,
+        'total_discovered': 0,
+        'total_size_bytes': 0,
+        'total_tokens': 0,
+        'total_lines': 0,
+        'top_files': [],
+        'files_by_language': {},
+    }
+    for flag in ['--use-git', '--git']:
+        with patch('sourcecombine.find_and_combine_files', return_value=mock_stats) as mock_find:
+            with patch('sys.argv', ['sourcecombine.py', '.', flag]):
+                try:
+                    sourcecombine.main()
+                except SystemExit:
+                    pass
+
+                assert mock_find.called
+                config = mock_find.call_args[0][0]
+                assert config['search']['use_git'] is True
+
 def test_utils_config_validation():
     """Test that use_git is validated in config."""
     config = {

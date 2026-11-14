@@ -4443,6 +4443,8 @@ def main():
     )
     filtering_group.add_argument(
         "--git-files",
+        "--use-git",
+        "--git",
         "-G",
         action="store_true",
         help="Use Git to find files and follow .gitignore rules automatically.",
