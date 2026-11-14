@@ -4694,6 +4694,8 @@ def main():
     )
     output_group.add_argument(
         "--collapsible",
+        "--details",
+        "--col",
         action="store_true",
         help="Wrap each file's markdown code block in collapsible HTML <details> and <summary> tags.",
     )
