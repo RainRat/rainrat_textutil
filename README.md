@@ -76,7 +76,7 @@ SourceCombine is a tool for the terminal that helps you find, filter, and combin
 *   `--replace-line PATTERN REPLACEMENT`: Find and replace line patterns using regular expressions. You can repeat this flag.
 *   `--import-replacements FILENAME` (`--import-rep`, `--import-rules`): Import search-and-replace rules from a JSON or YAML file (or `-` for standard input).
 *   `--git-log [N]`: Include recent Git commit history in project overview and templates (`{{GIT_LOG}}`). Accepts an optional commit count `N` (default is 5).
-*   `--include-diff`: Include Git diffs in project overview and templates (`{{GIT_DIFF}}` and `{{FILE_DIFF}}`).
+*   `--include-diff` (aliases `--inc-diff`, `--git-diff-overview`): Include Git diffs in project overview and templates (`{{GIT_DIFF}}` and `{{FILE_DIFF}}`).
 *   `--diff`: Display colored line differences when writing, extracting, verifying, or modifying files.
 *   `--json-summary PATH`: Save execution summary metrics (file counts, token counts, processing duration) to a JSON file. Use `-` to print the summary to standard output (`stdout`).
 *   `--ai` (`-a`): Preset for AI models (Markdown format, line numbers, Table of Contents, folder tree, project overview, skipping binary files, removing duplicates, and automatically including Git context like logs and diffs). This also copies to the system clipboard if you do not specify an output.

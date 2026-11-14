@@ -4648,6 +4648,8 @@ def main():
     )
     output_group.add_argument(
         "--include-diff",
+        "--inc-diff",
+        "--git-diff-overview",
         action="store_true",
         help="Include the Git diff in the project overview and templates ({{GIT_DIFF}} and {{FILE_DIFF}}).",
     )
